@@ -20,7 +20,7 @@ public class DispatcherBolt extends BaseRichBolt {
     private final String nextComponentID;
     private final DataSchema schema;
     // TODO hard coded for now. make dynamic.
-    private final double [] RANGE_BREAKPOINTS = {103.8,103.85,103.90};
+    private final double [] RANGE_BREAKPOINTS = {103.8,103.85,103.90,104.00};
     private List<Integer> nextComponentTasks;
     private String rangePartitionField;
 
@@ -29,20 +29,16 @@ public class DispatcherBolt extends BaseRichBolt {
         schema = null;
     }
 
-    private DispatcherBolt(String nextComponentID,String rangePartitioningField,DataSchema schema) {
+    public DispatcherBolt(String nextComponentID,String rangePartitioningField,DataSchema schema) {
         this.nextComponentID=nextComponentID;
         rangePartitionField=rangePartitioningField;
         this.schema=schema;
     }
 
-    public static DispatcherBolt getNewInstance(String nextComponentID, String rangePartitioningField, DataSchema schema) {
-        return new DispatcherBolt(nextComponentID,rangePartitioningField,schema);
-    }
-
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector=outputCollector;
         this.nextComponentTasks=topologyContext.getComponentTasks(nextComponentID);
-        assert this.nextComponentTasks.size()==RANGE_BREAKPOINTS.length+1 : "its hardcoded for now. lengths should match";
+        assert this.nextComponentTasks.size()==RANGE_BREAKPOINTS.length : "its hardcoded for now. lengths should match";
     }
 
     public void execute(Tuple tuple) {

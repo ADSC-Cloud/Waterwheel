@@ -5,13 +5,14 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by parijatmazumdar on 17/09/15.
  */
-public class DataSchema {
+public class DataSchema implements Serializable {
     private final Fields dataFields;
     private final List<Class> valueTypes;
     public DataSchema(List<String> fieldNames,List<Class> valueTypes) {
@@ -23,14 +24,13 @@ public class DataSchema {
 
     public Fields getFieldsObject() { return dataFields; }
     public Values getValuesObject(Tuple tuple) throws IOException {
-        if (!dataFields.equals(tuple.getFields())) throw new IOException("tuple fields do not match data schema fields");
         Values values=new Values();
         for (int i=0;i<valueTypes.size();i++) {
             if (valueTypes.get(i).equals(Double.class)) {
                 values.add(tuple.getDouble(i));
             }
             else if (valueTypes.get(i).equals(String.class)) {
-                values.add(tuple.getDouble(i));
+                values.add(tuple.getString(i));
             }
             else {
                 throw new IOException("Only classes supported till now are string and double");
