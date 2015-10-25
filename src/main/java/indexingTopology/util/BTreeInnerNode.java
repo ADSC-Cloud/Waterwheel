@@ -1,21 +1,33 @@
 package indexingTopology.util;
 
+import indexingTopology.exception.UnsupportedGenericException;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
+
 class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
-	protected Object[] children; 
+	protected ArrayList<BTreeNode<TKey>> children;
 	
-	public BTreeInnerNode(int order) {
-		super(order);
-		this.keys = new Object[ORDER + 1];
-		this.children = new Object[ORDER + 2];
+	public BTreeInnerNode(int order, BytesCounter counter) {
+		super(order,counter);
+		this.keys = new ArrayList<TKey>();
+		this.children = new ArrayList<BTreeNode<TKey>>();
 	}
 	
 	@SuppressWarnings("unchecked")
 	public BTreeNode<TKey> getChild(int index) {
-		return (BTreeNode<TKey>)this.children[index];
+		return this.children.get(index);
 	}
 
 	public void setChild(int index, BTreeNode<TKey> child) {
-		this.children[index] = child;
+		if (index<children.size())
+		    this.children.set(index,child);
+        else if (index==children.size())
+            this.children.add(child);
+        else
+            throw new ArrayIndexOutOfBoundsException("Out of bounds");
+
 		if (child != null)
 			child.setParent(this);
 	}
@@ -40,23 +52,34 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
 		
 		return index;
 	}
+
+
+    public Collection<BTreeNode<TKey>> recursiveSerialize(ByteBuffer allocatedBuffer) {
+        allocatedBuffer.put((byte) 'i');
+        allocatedBuffer.putInt(this.getKeyCount());
+        for (Object k : this.keys) {
+            try {
+                UtilGenerics.putIntoByteBuffer(allocatedBuffer,k);
+            } catch (UnsupportedGenericException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return this.children;
+    }
 	
 	
 	/* The codes below are used to support insertion operation */
 	
 	private void insertAt(int index, TKey key, BTreeNode<TKey> leftChild, BTreeNode<TKey> rightChild) {
-		// move space for the new key
-		for (int i = this.getKeyCount() + 1; i > index; --i) {
-			this.setChild(i, this.getChild(i - 1));
-		}
-		for (int i = this.getKeyCount(); i > index; --i) {
-			this.setKey(i, this.getKey(i - 1));
-		}
-		
-		// insert the new key
-		this.setKey(index, key);
-		this.setChild(index, leftChild);
-		this.setChild(index + 1, rightChild);
+        try {
+            counter.countKeyAddition(UtilGenerics.sizeOf(key.getClass()));
+        } catch (UnsupportedGenericException e) {
+            e.printStackTrace();
+        }
+        this.keys.add(index,key);
+        this.children.add(index,leftChild);
+        this.setChild(index+1,rightChild);
 		this.keyCount += 1;
 	}
 	
@@ -67,20 +90,25 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
 	protected BTreeNode<TKey> split() {
 		int midIndex = this.getKeyCount() / 2;
 		
-		BTreeInnerNode<TKey> newRNode = new BTreeInnerNode<TKey>(this.ORDER);
+		BTreeInnerNode<TKey> newRNode = new BTreeInnerNode<TKey>(this.ORDER,this.counter);
 		for (int i = midIndex + 1; i < this.getKeyCount(); ++i) {
-			newRNode.setKey(i - midIndex - 1, this.getKey(i));
-			this.setKey(i, null);
-		}
+            try {
+                newRNode.setKey(i - midIndex - 1, this.getKey(i));
+            } catch (UnsupportedGenericException e) {
+                e.printStackTrace();
+            }
+        }
 		for (int i = midIndex + 1; i <= this.getKeyCount(); ++i) {
 			newRNode.setChild(i - midIndex - 1, this.getChild(i));
 			newRNode.getChild(i - midIndex - 1).setParent(newRNode);
-			this.setChild(i, null);
 		}
-		this.setKey(midIndex, null);
-		newRNode.keyCount = this.getKeyCount() - midIndex - 1;
-		this.keyCount = midIndex;
-		
+
+        newRNode.keyCount = this.getKeyCount() - midIndex - 1;
+
+        for (int i=this.getKeyCount()-1;i>=midIndex;i--) {
+            this.deleteAt(i);
+        }
+
 		return newRNode;
 	}
 	
@@ -100,20 +128,18 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
 			return this.getParent() == null ? this : null;
 		}
 	}
-	
-	
-	
-	
+
+
 	/* The codes below are used to support delete operation */
 	
 	private void deleteAt(int index) {
-		int i = 0;
-		for (i = index; i < this.getKeyCount() - 1; ++i) {
-			this.setKey(i, this.getKey(i + 1));
-			this.setChild(i + 1, this.getChild(i + 2));
-		}
-		this.setKey(i, null);
-		this.setChild(i + 1, null);
+        try {
+            counter.countKeyRemoval(UtilGenerics.sizeOf(this.keys.get(index).getClass()));
+        } catch (UnsupportedGenericException e) {
+            e.printStackTrace();
+        }
+        this.keys.remove(index);
+        this.children.remove(index+1);
 		--this.keyCount;
 	}
 	
@@ -127,13 +153,21 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
 		if (borrowIndex == 0) {
 			// borrow a key from right sibling
 			TKey upKey = borrower.transferFromSibling(this.getKey(borrowerChildIndex), lender, borrowIndex);
-			this.setKey(borrowerChildIndex, upKey);
-		}
+            try {
+                this.setKey(borrowerChildIndex, upKey);
+            } catch (UnsupportedGenericException e) {
+                e.printStackTrace();
+            }
+        }
 		else {
 			// borrow a key from left sibling
 			TKey upKey = borrower.transferFromSibling(this.getKey(borrowerChildIndex - 1), lender, borrowIndex);
-			this.setKey(borrowerChildIndex - 1, upKey);
-		}
+            try {
+                this.setKey(borrowerChildIndex - 1, upKey);
+            } catch (UnsupportedGenericException e) {
+                e.printStackTrace();
+            }
+        }
 	}
 	
 	@Override
@@ -174,11 +208,19 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
 		BTreeInnerNode<TKey> rightSiblingNode = (BTreeInnerNode<TKey>)rightSibling;
 		
 		int j = this.getKeyCount();
-		this.setKey(j++, sinkKey);
-		
-		for (int i = 0; i < rightSiblingNode.getKeyCount(); ++i) {
-			this.setKey(j + i, rightSiblingNode.getKey(i));
-		}
+        try {
+            this.setKey(j++, sinkKey);
+        } catch (UnsupportedGenericException e) {
+            e.printStackTrace();
+        }
+
+        for (int i = 0; i < rightSiblingNode.getKeyCount(); ++i) {
+            try {
+                this.setKey(j + i, rightSiblingNode.getKey(i));
+            } catch (UnsupportedGenericException e) {
+                e.printStackTrace();
+            }
+        }
 		for (int i = 0; i < rightSiblingNode.getKeyCount() + 1; ++i) {
 			this.setChild(j + i, rightSiblingNode.getChild(i));
 		}
@@ -197,8 +239,12 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
 		if (borrowIndex == 0) {
 			// borrow the first key from right sibling, append it to tail
 			int index = this.getKeyCount();
-			this.setKey(index, sinkKey);
-			this.setChild(index + 1, siblingNode.getChild(borrowIndex));			
+            try {
+                this.setKey(index, sinkKey);
+            } catch (UnsupportedGenericException e) {
+                e.printStackTrace();
+            }
+            this.setChild(index + 1, siblingNode.getChild(borrowIndex));
 			this.keyCount += 1;
 			
 			upKey = siblingNode.getKey(0);

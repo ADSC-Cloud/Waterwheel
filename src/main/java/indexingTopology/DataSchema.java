@@ -6,7 +6,6 @@ import backtype.storm.tuple.Values;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -58,5 +57,25 @@ public class DataSchema implements Serializable {
         }
 
         return values;
+    }
+
+    public byte[] serializeTuple(Tuple t) throws IOException {
+        StringBuffer sb=new StringBuffer("");
+        for (int i=0;i<valueTypes.size();i++) {
+            if (valueTypes.get(i).equals(Double.class)) {
+                sb.append(String.valueOf(t.getDouble(i)));
+            }
+            else if (valueTypes.get(i).equals(String.class)) {
+                sb.append(t.getString(i));
+            }
+            else {
+                throw new IOException("Only classes supported till now are string and double");
+            }
+
+            if (i!=valueTypes.size()-1)
+                sb.append(',');
+        }
+
+        return sb.toString().getBytes();
     }
 }

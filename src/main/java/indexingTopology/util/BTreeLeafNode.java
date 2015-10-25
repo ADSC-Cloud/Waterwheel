@@ -1,24 +1,35 @@
 package indexingTopology.util;
 
+import indexingTopology.exception.UnsupportedGenericException;
+
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
-class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKey> {
-	private Object[] values;
+class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
+	private ArrayList<byte[]> values;
 	
-	public BTreeLeafNode(int order) {
-        super(order);
-        this.keys = new Object[ORDER + 1];
-		this.values = new Object[ORDER + 1];
+	public BTreeLeafNode(int order, BytesCounter counter) {
+        super(order,counter);
+        this.keys = new ArrayList<TKey>();
+		this.values = new ArrayList<byte[]>();
 	}
 
 	@SuppressWarnings("unchecked")
-	public TValue getValue(int index) {
-		return (TValue)this.values[index];
+	public byte[] getValue(int index) {
+		return this.values.get(index);
 	}
 
-	public void setValue(int index, TValue value) {
-		this.values[index] = value;
+	public void setValue(int index, byte[] value) {
+        if (index<this.values.size())
+		    this.values.set(index,value);
+        else if (index==this.values.size()) {
+            this.counter.countValueAddition(value.length);
+            this.values.add(index, value);
+        }
+        else
+            throw new ArrayIndexOutOfBoundsException("index out of bounds");
 	}
 	
 	@Override
@@ -41,31 +52,54 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 		
 		return -1;
 	}
-	
-	
+
+    public Collection<BTreeNode<TKey>> recursiveSerialize(ByteBuffer allocatedBuffer) {
+        allocatedBuffer.put((byte) 'l');
+        allocatedBuffer.putInt(this.getKeyCount());
+        for (int i=0;i<this.keys.size();i++) {
+            try {
+                UtilGenerics.putIntoByteBuffer(allocatedBuffer,this.keys.get(i));
+            } catch (UnsupportedGenericException e) {
+                e.printStackTrace();
+            }
+
+            allocatedBuffer.putInt(this.values.get(i).length);
+            allocatedBuffer.put(this.values.get(i));
+        }
+
+        return null;
+    }
+
 	/* The codes below are used to support insertion operation */
 	
-	public void insertKey(TKey key, TValue value) {
+	public void insertKey(TKey key, byte[] value) throws UnsupportedGenericException {
+        counter.countKeyAddition(UtilGenerics.sizeOf(key.getClass()));
+        counter.countValueAddition(value.length);
+
 		int index = 0;
 		while (index < this.getKeyCount() && this.getKey(index).compareTo(key) < 0)
 			++index;
-		this.insertAt(index, key, value);
+
+        this.keys.add(index,key);
+        this.values.add(index,value);
+        ++this.keyCount;
+
 	}
-	
-	private void insertAt(int index, TKey key, TValue value) {
-		// move space for the new key
-		for (int i = this.getKeyCount() - 1; i >= index; --i) {
-			this.setKey(i + 1, this.getKey(i));
-			this.setValue(i + 1, this.getValue(i));
-		}
-		
-		// insert new key and value
-		this.setKey(index, key);
-		this.setValue(index, value);
-		++this.keyCount;
-	}
-	
-	
+
+//	private void insertAt(int index, TKey key, TValue value) {
+//		// move space for the new key
+//		for (int i = this.getKeyCount() - 1; i >= index; --i) {
+//			this.setKey(i + 1, this.getKey(i));
+//			this.setValue(i + 1, this.getValue(i));
+//		}
+//
+//		// insert new key and value
+//		this.setKey(index, key);
+//		this.setValue(index, value);
+//		++this.keyCount;
+//	}
+
+
 	/**
 	 * When splits a leaf node, the middle key is kept on new node and be pushed to parent node.
 	 */
@@ -73,16 +107,22 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 	protected BTreeNode<TKey> split() {
 		int midIndex = this.getKeyCount() / 2;
 		
-		BTreeLeafNode<TKey, TValue> newRNode = new BTreeLeafNode<TKey, TValue>(this.ORDER);
+		BTreeLeafNode<TKey> newRNode = new BTreeLeafNode<TKey>(this.ORDER,counter);
 		for (int i = midIndex; i < this.getKeyCount(); ++i) {
-			newRNode.setKey(i - midIndex, this.getKey(i));
-			newRNode.setValue(i - midIndex, this.getValue(i));
-			this.setKey(i, null);
-			this.setValue(i, null);
+            try {
+                newRNode.setKey(i - midIndex, this.getKey(i));
+            } catch (UnsupportedGenericException e) {
+                e.printStackTrace();
+            }
+            newRNode.setValue(i - midIndex, this.getValue(i));
 		}
+
 		newRNode.keyCount = this.getKeyCount() - midIndex;
-		this.keyCount = midIndex;
-		
+
+        for (int i=this.getKeyCount()-1;i>=midIndex;i--)
+            this.deleteAt(i);
+
+        this.keyCount=midIndex;
 		return newRNode;
 	}
 	
@@ -95,7 +135,6 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 	
 	
 	/* The codes below are used to support deletion operation */
-	
 	public boolean delete(TKey key) {
 		int index = this.search(key);
 		if (index == -1)
@@ -106,13 +145,15 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 	}
 	
 	private void deleteAt(int index) {
-		int i;
-		for (i = index; i < this.getKeyCount() - 1; ++i) {
-			this.setKey(i, this.getKey(i + 1));
-			this.setValue(i, this.getValue(i + 1));
-		}
-		this.setKey(i, null);
-		this.setValue(i, null);
+        try {
+            counter.countKeyRemoval(UtilGenerics.sizeOf(this.keys.get(index).getClass()));
+        } catch (UnsupportedGenericException e) {
+            e.printStackTrace();
+        }
+
+        counter.countValueRemoval(this.values.get(index).length);
+        this.keys.remove(index);
+        this.values.remove(index);
 		--this.keyCount;
 	}
 	
@@ -132,12 +173,16 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 	@Override
 	@SuppressWarnings("unchecked")
 	protected void fusionWithSibling(TKey sinkKey, BTreeNode<TKey> rightSibling) {
-		BTreeLeafNode<TKey, TValue> siblingLeaf = (BTreeLeafNode<TKey, TValue>)rightSibling;
+		BTreeLeafNode<TKey> siblingLeaf = (BTreeLeafNode<TKey>)rightSibling;
 		
 		int j = this.getKeyCount();
 		for (int i = 0; i < siblingLeaf.getKeyCount(); ++i) {
-			this.setKey(j + i, siblingLeaf.getKey(i));
-			this.setValue(j + i, siblingLeaf.getValue(i));
+            try {
+                this.setKey(j + i, siblingLeaf.getKey(i));
+            } catch (UnsupportedGenericException e) {
+                e.printStackTrace();
+            }
+            this.setValue(j + i, siblingLeaf.getValue(i));
 		}
 		this.keyCount += siblingLeaf.getKeyCount();
 		
@@ -149,15 +194,18 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 	@Override
 	@SuppressWarnings("unchecked")
 	protected TKey transferFromSibling(TKey sinkKey, BTreeNode<TKey> sibling, int borrowIndex) {
-		BTreeLeafNode<TKey, TValue> siblingNode = (BTreeLeafNode<TKey, TValue>)sibling;
-		
-		this.insertKey(siblingNode.getKey(borrowIndex), siblingNode.getValue(borrowIndex));
-		siblingNode.deleteAt(borrowIndex);
+		BTreeLeafNode<TKey> siblingNode = (BTreeLeafNode<TKey>)sibling;
+        try {
+            this.insertKey(siblingNode.getKey(borrowIndex), siblingNode.getValue(borrowIndex));
+        } catch (UnsupportedGenericException e) {
+            e.printStackTrace();
+        }
+        siblingNode.deleteAt(borrowIndex);
 		
 		return borrowIndex == 0 ? sibling.getKey(0) : this.getKey(0);
 	}
 
-    public List<TValue> searchRange(TKey leftKey, TKey rightKey) {
+    public List<byte[]> searchRange(TKey leftKey, TKey rightKey) {
         // find first index satisfying range
         int firstIndex;
         for (firstIndex=0;firstIndex<this.getKeyCount();firstIndex++) {
@@ -166,13 +214,13 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
                 break;
         }
 
-        List<TValue> retList = new ArrayList<TValue>();
-        BTreeLeafNode<TKey,TValue> currLeaf=this;
+        List<byte[]> retList = new ArrayList<byte[]>();
+        BTreeLeafNode<TKey> currLeaf=this;
         int currIndex=firstIndex;
 
         // case when all keys in the node are smaller than leftKey - shift to next rightSibling
         if (firstIndex>=this.getKeyCount()) {
-            currLeaf = (BTreeLeafNode<TKey, TValue>) this.rightSibling;
+            currLeaf = (BTreeLeafNode<TKey>) this.rightSibling;
             currIndex = 0;
         }
 
@@ -180,7 +228,7 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
             retList.add(currLeaf.getValue(currIndex));
             currIndex++;
             if (currIndex>=currLeaf.getKeyCount()) {
-                currLeaf = (BTreeLeafNode<TKey, TValue>) currLeaf.rightSibling;
+                currLeaf = (BTreeLeafNode<TKey>) currLeaf.rightSibling;
                 currIndex = 0;
             }
         }

@@ -47,9 +47,15 @@ public class CSVReaderSpout extends BaseRichSpout {
                 String [] tokens = line.split(",");
                 collector_.emit(schema.getValuesObject(tokens));
             }
+
+            while (true) {
+                Thread.sleep(5000);
+            }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }

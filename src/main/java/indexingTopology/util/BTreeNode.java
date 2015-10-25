@@ -1,5 +1,11 @@
 package indexingTopology.util;
 
+import indexingTopology.exception.UnsupportedGenericException;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
+
 enum TreeNodeType {
 	InnerNode,
 	LeafNode
@@ -7,31 +13,42 @@ enum TreeNodeType {
 
 abstract class BTreeNode<TKey extends Comparable<TKey>> {
 	protected final int ORDER;
-	protected Object[] keys;
+    protected BytesCounter counter;
+	protected ArrayList<TKey> keys;
 	protected int keyCount;
 	protected BTreeNode<TKey> parentNode;
 	protected BTreeNode<TKey> leftSibling;
 	protected BTreeNode<TKey> rightSibling;
 
-    protected BTreeNode(int order) {
+    protected BTreeNode(int order, BytesCounter counter) {
         this.keyCount = 0;
         ORDER = order;
         this.parentNode = null;
         this.leftSibling = null;
         this.rightSibling = null;
+        this.counter=counter;
+        this.counter.countNewNode();
     }
 
 	public int getKeyCount() {
 		return this.keyCount;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public TKey getKey(int index) {
-		return (TKey)this.keys[index];
+		return (TKey)this.keys.get(index);
 	}
 
-	public void setKey(int index, TKey key) {
-		this.keys[index] = key;
+	public void setKey(int index, TKey key) throws UnsupportedGenericException {
+        if (index<this.keys.size())
+		    this.keys.set(index,key);
+        else if (index==this.keys.size()) {
+            this.counter.countKeyAddition(UtilGenerics.sizeOf(key.getClass()));
+            this.keys.add(index, key);
+        }
+        else {
+            throw new ArrayIndexOutOfBoundsException("index is out of bounds");
+        }
 	}
 
 	public BTreeNode<TKey> getParent() {
@@ -51,13 +68,13 @@ abstract class BTreeNode<TKey extends Comparable<TKey>> {
 	 * return the child node index which should contain the key for a internal node.
 	 */
 	public abstract int search(TKey key);
-	
 
+    public abstract Collection<BTreeNode<TKey>> recursiveSerialize(ByteBuffer allocatedBuffer);
 	
 	/* The codes below are used to support insertion operation */
 	
 	public boolean isOverflow() {
-		return this.getKeyCount() == this.keys.length;
+		return this.getKeyCount() > this.ORDER;
 	}
 	
 	public BTreeNode<TKey> dealOverflow() {
@@ -67,7 +84,8 @@ abstract class BTreeNode<TKey extends Comparable<TKey>> {
 		BTreeNode<TKey> newRNode = this.split();
 				
 		if (this.getParent() == null) {
-			this.setParent(new BTreeInnerNode<TKey>(this.ORDER));
+			this.setParent(new BTreeInnerNode<TKey>(this.ORDER,this.counter));
+            counter.increaseHeightCount();
 		}
 		newRNode.setParent(this.getParent());
 		
@@ -94,11 +112,11 @@ abstract class BTreeNode<TKey extends Comparable<TKey>> {
 	/* The codes below are used to support deletion operation */
 	
 	public boolean isUnderflow() {
-		return this.getKeyCount() < (this.keys.length / 2);
+		return this.getKeyCount() < ((this.ORDER+1) / 2);
 	}
 	
 	public boolean canLendAKey() {
-		return this.getKeyCount() > (this.keys.length / 2);
+		return this.getKeyCount() > ((this.ORDER+1) / 2);
 	}
 	
 	public BTreeNode<TKey> getLeftSibling() {
@@ -120,7 +138,7 @@ abstract class BTreeNode<TKey extends Comparable<TKey>> {
 	public void setRightSibling(BTreeNode<TKey> sibling) {
 		this.rightSibling = sibling;
 	}
-	
+
 	public BTreeNode<TKey> dealUnderflow() {
 		if (this.getParent() == null)
 			return null;
