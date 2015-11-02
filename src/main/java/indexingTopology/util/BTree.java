@@ -16,7 +16,7 @@ import java.util.Queue;
  */
 public class BTree<TKey extends Comparable<TKey>> {
 	private BTreeNode<TKey> root;
-    private BytesCounter counter;
+    private final BytesCounter counter;
 	
 	public BTree(int order) {
 		counter=new BytesCounter();
@@ -25,7 +25,7 @@ public class BTree<TKey extends Comparable<TKey>> {
 	}
 
     public int getTotalBytes() {
-        return counter.getCount();
+        return counter.getBytesCount();
     }
 
     public int getBytesEstimateForInsert(TKey key,byte [] value) throws UnsupportedGenericException {
@@ -104,7 +104,19 @@ public class BTree<TKey extends Comparable<TKey>> {
 		return (BTreeLeafNode<TKey>)node;
 	}
 
-    public int getTotalHeight() {
-        return counter.getHeightCount();
-    }
+	/*  method to keep tree template intact, while just removing the tree data payload
+	 */
+	public void clearPayload() {
+		Queue<BTreeNode<TKey>> q=new LinkedList<BTreeNode<TKey>>();
+		q.add(this.root);
+		while (!q.isEmpty()) {
+			BTreeNode<TKey> curr=q.remove();
+			if (curr.getNodeType().equals(TreeNodeType.LeafNode)) {
+				((BTreeLeafNode) curr).clearNode();
+
+			} else {
+				q.addAll(((BTreeInnerNode) curr).children);
+			}
+		}
+	}
 }

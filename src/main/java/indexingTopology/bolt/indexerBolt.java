@@ -9,7 +9,6 @@ import indexingTopology.DataSchema;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.util.BTree;
 import indexingTopology.util.HdfsHandle;
-import org.apache.hadoop.fs.Hdfs;
 
 import java.io.IOException;
 import java.util.Map;
@@ -66,7 +65,13 @@ public class IndexerBolt extends BaseRichBolt {
             }
         } else {
             writeIndexedDataToHDFS();
-            indexedData=new BTree<Double>(btreeOrder);
+//            indexedData=new BTree<Double>(btreeOrder);
+            indexedData.clearPayload();
+            try {
+                indexedData.insert(indexValue,serializedTuple);
+            } catch (UnsupportedGenericException e) {
+                e.printStackTrace();
+            }
         }
 
         try {

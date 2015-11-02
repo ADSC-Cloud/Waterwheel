@@ -13,7 +13,7 @@ enum TreeNodeType {
 
 abstract class BTreeNode<TKey extends Comparable<TKey>> {
 	protected final int ORDER;
-    protected BytesCounter counter;
+    protected final BytesCounter counter;
 	protected ArrayList<TKey> keys;
 	protected int keyCount;
 	protected BTreeNode<TKey> parentNode;

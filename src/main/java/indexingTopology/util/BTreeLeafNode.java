@@ -8,7 +8,7 @@ import java.util.Collection;
 import java.util.List;
 
 class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
-	private ArrayList<byte[]> values;
+	protected ArrayList<byte[]> values;
 	
 	public BTreeLeafNode(int order, BytesCounter counter) {
         super(order,counter);
@@ -85,20 +85,6 @@ class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
         ++this.keyCount;
 
 	}
-
-//	private void insertAt(int index, TKey key, TValue value) {
-//		// move space for the new key
-//		for (int i = this.getKeyCount() - 1; i >= index; --i) {
-//			this.setKey(i + 1, this.getKey(i));
-//			this.setValue(i + 1, this.getValue(i));
-//		}
-//
-//		// insert new key and value
-//		this.setKey(index, key);
-//		this.setValue(index, value);
-//		++this.keyCount;
-//	}
-
 
 	/**
 	 * When splits a leaf node, the middle key is kept on new node and be pushed to parent node.
@@ -235,4 +221,24 @@ class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
 
         return retList;
     }
+
+	protected void clearNode() {
+		// counter updates
+		for (TKey k : this.keys) {
+			try {
+				counter.countKeyRemoval(UtilGenerics.sizeOf(k.getClass()));
+			} catch (UnsupportedGenericException e) {
+				e.printStackTrace();
+			}
+		}
+
+		for (byte[] val : this.values) {
+			counter.countValueRemoval(val.length);
+		}
+
+		// clear node
+		this.keys.clear();
+		this.values.clear();
+		this.keyCount=0;
+	}
 }
