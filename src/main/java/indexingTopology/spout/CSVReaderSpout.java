@@ -41,7 +41,7 @@ public class CSVReaderSpout extends BaseRichSpout {
         try {
             BufferedReader br=new BufferedReader(new FileReader(CSV_FILENAME));
             // skip header line
-            String line=br.readLine();
+            String line;
             while ((line=br.readLine())!=null) {
                 Utils.sleep(100);
                 String [] tokens = line.split(",");

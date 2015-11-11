@@ -17,11 +17,13 @@ import java.util.Queue;
 public class BTree<TKey extends Comparable<TKey>> {
 	private BTreeNode<TKey> root;
     private final BytesCounter counter;
+	private boolean templateMode;
 	
 	public BTree(int order) {
 		counter=new BytesCounter();
         this.root = new BTreeLeafNode<TKey>(order,counter);
         counter.increaseHeightCount();
+		templateMode=false;
 	}
 
     public int getTotalBytes() {
@@ -29,7 +31,10 @@ public class BTree<TKey extends Comparable<TKey>> {
     }
 
     public int getBytesEstimateForInsert(TKey key,byte [] value) throws UnsupportedGenericException {
-        return counter.getBytesEstimateForInsert(UtilGenerics.sizeOf(key.getClass()), value.length);
+		if (!templateMode)
+        	return counter.getBytesEstimateForInsert(UtilGenerics.sizeOf(key.getClass()), value.length);
+		else
+			return counter.getBytesEstimateForInsertInTemplate(UtilGenerics.sizeOf(key.getClass()), value.length);
     }
 
     public byte[] serializeTree() {
@@ -49,14 +54,22 @@ public class BTree<TKey extends Comparable<TKey>> {
 	/**
 	 * Insert a new key and its associated value into the B+ tree.
 	 */
-	public void insert(TKey key, byte [] value) throws UnsupportedGenericException {
+	public boolean insert(TKey key, byte [] value) throws UnsupportedGenericException {
 		BTreeLeafNode<TKey> leaf = this.findLeafNodeShouldContainKey(key);
-        leaf.insertKey(key, value);
+		if (leaf.willOverflowOnInsert()) {
+			if (templateMode)
+				return false;
+			else {
+				leaf.insertKey(key,value);
+				BTreeNode<TKey> n = leaf.dealOverflow();
+				if (n != null)
+					this.root = n;
 
-        if (leaf.isOverflow()) {
-			BTreeNode<TKey> n = leaf.dealOverflow();
-			if (n != null)
-				this.root = n;
+				return true;
+			}
+		} else {
+			leaf.insertKey(key, value);
+			return true;
 		}
 	}
 
@@ -107,6 +120,7 @@ public class BTree<TKey extends Comparable<TKey>> {
 	/*  method to keep tree template intact, while just removing the tree data payload
 	 */
 	public void clearPayload() {
+		templateMode=true;
 		Queue<BTreeNode<TKey>> q=new LinkedList<BTreeNode<TKey>>();
 		q.add(this.root);
 		while (!q.isEmpty()) {

@@ -47,6 +47,7 @@ public class DispatcherBolt extends BaseRichBolt {
             if (partitionValue<RANGE_BREAKPOINTS[i]) {
                 try {
                     collector.emitDirect(nextComponentTasks.get(i),schema.getValuesObject(tuple));
+//                    collector.emit(schema.getValuesObject(tuple));
                 } catch (IOException e) {
                     e.printStackTrace();
                 } finally {

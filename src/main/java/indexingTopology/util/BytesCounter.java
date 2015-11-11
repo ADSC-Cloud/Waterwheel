@@ -22,6 +22,10 @@ public class BytesCounter {
         return bytesCount +(height+1)*NUM_NODE_BOOKKEEPING_BYTES+2*keyLen+valLen+NUM_VAL_BOOKKEEPING_BYTES;
     }
 
+    public int getBytesEstimateForInsertInTemplate(int keyLen,int valLen) {
+        return bytesCount+keyLen+valLen+NUM_VAL_BOOKKEEPING_BYTES;
+    }
+
     public void countNewNode() {
         bytesCount += NUM_NODE_BOOKKEEPING_BYTES;
     }

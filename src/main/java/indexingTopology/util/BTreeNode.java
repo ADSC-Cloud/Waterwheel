@@ -76,7 +76,11 @@ abstract class BTreeNode<TKey extends Comparable<TKey>> {
 	public boolean isOverflow() {
 		return this.getKeyCount() > this.ORDER;
 	}
-	
+
+	public boolean willOverflowOnInsert() {
+		return this.getKeyCount() == this.ORDER;
+	}
+
 	public BTreeNode<TKey> dealOverflow() {
 		int midIndex = this.getKeyCount() / 2;
 		TKey upKey = this.getKey(midIndex);
