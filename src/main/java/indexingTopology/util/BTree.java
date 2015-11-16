@@ -133,4 +133,26 @@ public class BTree<TKey extends Comparable<TKey>> {
 			}
 		}
 	}
+
+	public void printBtree() {
+		Queue<BTreeNode<TKey>> q=new LinkedList<BTreeNode<TKey>>();
+		q.add(root);
+		while (!q.isEmpty()) {
+			Queue<BTreeNode<TKey>> qInner=new LinkedList<BTreeNode<TKey>>();
+			while (!q.isEmpty()) {
+				BTreeNode<TKey> curr = q.remove();
+				if (curr.getNodeType().equals(TreeNodeType.InnerNode)) {
+					qInner.addAll(((BTreeInnerNode) curr).children);
+				}
+
+				for (TKey k : curr.keys)
+					System.out.print(k+" ");
+
+				System.out.print(": ");
+			}
+
+			System.out.println();
+			q=qInner;
+		}
+	}
 }

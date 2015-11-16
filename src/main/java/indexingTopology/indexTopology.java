@@ -33,8 +33,8 @@ public class indexTopology {
 
         DataSchema schema=new DataSchema(fieldNames,valueTypes);
         builder.setSpout("TupleGenerator", new CSVReaderSpout(args[0], schema), 1);
-        builder.setBolt("Dispatcher",new DispatcherBolt("Indexer","longitude",schema),1).shuffleGrouping("TupleGenerator");
-        builder.setBolt("Indexer",new IndexerBolt("longitude",schema,100,10000),4).directGrouping("Dispatcher");
+//        builder.setBolt("Dispatcher",new DispatcherBolt("Indexer","longitude",schema),1).shuffleGrouping("TupleGenerator");
+        builder.setBolt("Indexer",new IndexerBolt("longitude",schema,20,100000),1).shuffleGrouping("TupleGenerator");
 
         Config conf = new Config();
         conf.setDebug(true);

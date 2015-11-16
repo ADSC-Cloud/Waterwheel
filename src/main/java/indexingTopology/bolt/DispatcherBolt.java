@@ -24,11 +24,6 @@ public class DispatcherBolt extends BaseRichBolt {
     private List<Integer> nextComponentTasks;
     private String rangePartitionField;
 
-    private DispatcherBolt() {
-        nextComponentID=null;
-        schema = null;
-    }
-
     public DispatcherBolt(String nextComponentID,String rangePartitioningField,DataSchema schema) {
         this.nextComponentID=nextComponentID;
         rangePartitionField=rangePartitioningField;
@@ -43,17 +38,24 @@ public class DispatcherBolt extends BaseRichBolt {
 
     public void execute(Tuple tuple) {
         double partitionValue=tuple.getDoubleByField(rangePartitionField);
-        for (int i=0;i<RANGE_BREAKPOINTS.length;i++) {
-            if (partitionValue<RANGE_BREAKPOINTS[i]) {
-                try {
-                    collector.emitDirect(nextComponentTasks.get(i),schema.getValuesObject(tuple));
+/*
+for (int i=0;i<RANGE_BREAKPOINTS.length;i++) {
+if (partitionValue<RANGE_BREAKPOINTS[i]) {
+try {
+collector.emitDirect(nextComponentTasks.get(i),schema.getValuesObject(tuple));
 //                    collector.emit(schema.getValuesObject(tuple));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } finally {
-                    break;
-                }
-            }
+} catch (IOException e) {
+e.printStackTrace();
+} finally {
+break;
+}
+}
+}
+*/
+        try {
+            collector.emitDirect(nextComponentTasks.get(0),schema.getValuesObject(tuple));
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 

@@ -24,11 +24,13 @@ public class IndexerBolt extends BaseRichBolt {
     private final String indexField;
     private final int btreeOrder;
     private final int bytesLimit;
-    private BTree<Double> indexedData;
+    private BTree<Double> indexedDataWoTemplate;
+    private BTree<Double> indexedDataWithTemplate;
     private BTree<Double> planBIndex;
     private HdfsHandle hdfs;
     private int numTuples;
-    private int numWritten;
+    private int numWrittenTemplate;
+    private int numWrittenWoTemplate;
     private long processingTime;
     private int numFailedInsert;
 
@@ -40,10 +42,12 @@ public class IndexerBolt extends BaseRichBolt {
     }
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector=outputCollector;
-        indexedData=new BTree<Double>(btreeOrder);
+        indexedDataWoTemplate=new BTree<Double>(btreeOrder);
+        indexedDataWithTemplate=new BTree<Double>(btreeOrder);
         planBIndex=new BTree<Double>(btreeOrder);
         this.numTuples=0;
-        this.numWritten=0;
+        this.numWrittenTemplate=0;
+        this.numWrittenWoTemplate=0;
         this.processingTime=0;
         this.numFailedInsert =0;
         try {
@@ -62,71 +66,75 @@ public class IndexerBolt extends BaseRichBolt {
             e.printStackTrace();
         }
 
-        long startTime=System.nanoTime();
         numTuples+=1;
-//        indexTuple(indexValue, serializedTuple);
-        indexTupleWithTemplates(indexValue, serializedTuple);
-
-        processingTime+=(System.nanoTime()-startTime);
-        collector.emit(new Values(processingTime,numTuples,numWritten, numFailedInsert));
+//        long woTemplateTime=indexTuple(indexValue, serializedTuple);
+        long templateTime=indexTupleWithTemplates(indexValue, serializedTuple);
+        processingTime+=templateTime;
+        collector.emit(new Values(numTuples,processingTime,templateTime,numFailedInsert,numWrittenTemplate));
     }
 
-    private void indexTupleWithTemplates(Double indexValue, byte[] serializedTuple) {
+    private long indexTupleWithTemplates(Double indexValue, byte[] serializedTuple) {
+        long startTime=System.nanoTime();
         try {
-            int bytesEstimate=indexedData.getBytesEstimateForInsert(indexValue,serializedTuple);
+            int bytesEstimate=indexedDataWithTemplate.getBytesEstimateForInsert(indexValue,serializedTuple);
             if (bytesEstimate<bytesLimit) {
-                if (!indexedData.insert(indexValue,serializedTuple)) {
-                    numFailedInsert++;
+                if (!indexedDataWithTemplate.insert(indexValue,serializedTuple)) {
                     planBIndex.insert(indexValue, serializedTuple);
-                }
+                } else
+                    numFailedInsert++;
             } else {
 //            writeIndexedDataToHDFS();
-                numWritten++;
-                indexedData.clearPayload();
+                numWrittenTemplate++;
+                indexedDataWithTemplate.clearPayload();
                 planBIndex=new BTree<Double>(btreeOrder);
-                indexedData.insert(indexValue,serializedTuple);
+                indexedDataWithTemplate.insert(indexValue,serializedTuple);
             }
         } catch (UnsupportedGenericException e) {
             e.printStackTrace();
         }
+
+        return System.nanoTime()-startTime;
     }
 
-    private void indexTuple(Double indexValue, byte[] serializedTuple) {
-        int bytesEstimate = 0;
+    private long indexTuple(Double indexValue, byte[] serializedTuple) {
+        long startTime=System.nanoTime();
+        int bytesEstimate=0;
         try {
-            bytesEstimate=indexedData.getBytesEstimateForInsert(indexValue,serializedTuple);
+            bytesEstimate=indexedDataWoTemplate.getBytesEstimateForInsert(indexValue,serializedTuple);
         } catch (UnsupportedGenericException e) {
             e.printStackTrace();
         }
 
         if (bytesEstimate<bytesLimit) {
             try {
-                indexedData.insert(indexValue,serializedTuple);
+                indexedDataWoTemplate.insert(indexValue,serializedTuple);
             } catch (UnsupportedGenericException e) {
                 e.printStackTrace();
             }
         } else {
 //            writeIndexedDataToHDFS();
-            numWritten++;
-            indexedData=new BTree<Double>(btreeOrder);
+            numWrittenWoTemplate++;
+            indexedDataWoTemplate=new BTree<Double>(btreeOrder);
             try {
-                indexedData.insert(indexValue,serializedTuple);
+                indexedDataWoTemplate.insert(indexValue,serializedTuple);
             } catch (UnsupportedGenericException e) {
                 e.printStackTrace();
             }
         }
+
+        return System.nanoTime()-startTime;
     }
 
     private void writeIndexedDataToHDFS() {
-        try {
-            hdfs.writeToNewFile(indexedData.serializeTree(),"testname"+System.currentTimeMillis()+".dat");
-            System.out.println("**********************************WRITTEN*******************************");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            hdfs.writeToNewFile(indexedData.serializeTree(),"testname"+System.currentTimeMillis()+".dat");
+//            System.out.println("**********************************WRITTEN*******************************");
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
     }
 
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
-        outputFieldsDeclarer.declare(new Fields("processing_time","num_tuples","num_written","num_failed_inserts"));
+        outputFieldsDeclarer.declare(new Fields("num_tuples","wo_template_time","template_time","wo_template_written","template_written"));
     }
 }

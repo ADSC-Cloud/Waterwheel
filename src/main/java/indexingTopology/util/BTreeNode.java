@@ -176,4 +176,9 @@ abstract class BTreeNode<TKey extends Comparable<TKey>> {
 	protected abstract void fusionWithSibling(TKey sinkKey, BTreeNode<TKey> rightSibling);
 	
 	protected abstract TKey transferFromSibling(TKey sinkKey, BTreeNode<TKey> sibling, int borrowIndex);
+
+	public void print() {
+		for (TKey k : keys)
+			System.out.print(k+" ");
+	}
 }
