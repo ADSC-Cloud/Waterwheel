@@ -4,28 +4,30 @@ import indexingTopology.exception.UnsupportedGenericException;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
 class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
-	protected ArrayList<byte[]> values;
+	protected ArrayList<ArrayList<byte[]>> values;
 	
 	public BTreeLeafNode(int order, BytesCounter counter) {
         super(order,counter);
         this.keys = new ArrayList<TKey>();
-		this.values = new ArrayList<byte[]>();
+		this.values = new ArrayList<ArrayList<byte[]>>();
 	}
 
 	@SuppressWarnings("unchecked")
-	public byte[] getValue(int index) {
+	public ArrayList<byte[]> getValueList(int index) {
 		return this.values.get(index);
 	}
 
-	public void setValue(int index, byte[] value) {
+	public void setValueList(int index, ArrayList<byte[]> value) {
         if (index<this.values.size())
 		    this.values.set(index,value);
         else if (index==this.values.size()) {
-            this.counter.countValueAddition(value.length);
+			// TODO fix this
+//            this.counter.countValueAddition(value.length);
             this.values.add(index, value);
         }
         else
@@ -54,36 +56,41 @@ class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
 	}
 
     public Collection<BTreeNode<TKey>> recursiveSerialize(ByteBuffer allocatedBuffer) {
-        allocatedBuffer.put((byte) 'l');
-        allocatedBuffer.putInt(this.getKeyCount());
-        for (int i=0;i<this.keys.size();i++) {
-            try {
-                UtilGenerics.putIntoByteBuffer(allocatedBuffer,this.keys.get(i));
-            } catch (UnsupportedGenericException e) {
-                e.printStackTrace();
-            }
-
-            allocatedBuffer.putInt(this.values.get(i).length);
-            allocatedBuffer.put(this.values.get(i));
-        }
-
+		// TODO fix this
+//        allocatedBuffer.put((byte) 'l');
+//        allocatedBuffer.putInt(this.getKeyCount());
+//        for (int i=0;i<this.keys.size();i++) {
+//            try {
+//                UtilGenerics.putIntoByteBuffer(allocatedBuffer,this.keys.get(i));
+//            } catch (UnsupportedGenericException e) {
+//                e.printStackTrace();
+//            }
+//
+//            allocatedBuffer.putInt(this.values.get(i).length);
+//            allocatedBuffer.put(this.values.get(i));
+//        }
+//
         return null;
     }
 
 	/* The codes below are used to support insertion operation */
 	
-	public void insertKey(TKey key, byte[] value) throws UnsupportedGenericException {
-        counter.countKeyAddition(UtilGenerics.sizeOf(key.getClass()));
-        counter.countValueAddition(value.length);
+	public void insertKeyValueList(TKey key, List<byte[]> values) throws UnsupportedGenericException {
+		// todo fix this
+//        counter.countKeyAddition(UtilGenerics.sizeOf(key.getClass()));
+//        counter.countValueAddition(values.length);
 
 		int index = 0;
 		while (index < this.getKeyCount() && this.getKey(index).compareTo(key) < 0)
 			++index;
 
-        this.keys.add(index,key);
-        this.values.add(index,value);
-        ++this.keyCount;
-
+		if (index<this.keys.size() && this.getKey(index).compareTo(key)==0) {
+			this.values.get(index).addAll(values);
+		} else {
+			this.keys.add(index, key);
+			this.values.add(index, new ArrayList<byte[]>(values));
+			++this.keyCount;
+		}
 	}
 
 	/**
@@ -100,7 +107,7 @@ class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
             } catch (UnsupportedGenericException e) {
                 e.printStackTrace();
             }
-            newRNode.setValue(i - midIndex, this.getValue(i));
+            newRNode.setValueList(i - midIndex, this.getValueList(i));
 		}
 
 		newRNode.keyCount = this.getKeyCount() - midIndex;
@@ -137,7 +144,8 @@ class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
             e.printStackTrace();
         }
 
-        counter.countValueRemoval(this.values.get(index).length);
+		// TODO fix this
+//        counter.countValueRemoval(this.values.get(index).length);
         this.keys.remove(index);
         this.values.remove(index);
 		--this.keyCount;
@@ -168,7 +176,7 @@ class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
             } catch (UnsupportedGenericException e) {
                 e.printStackTrace();
             }
-            this.setValue(j + i, siblingLeaf.getValue(i));
+            this.setValueList(j + i, siblingLeaf.getValueList(i));
 		}
 		this.keyCount += siblingLeaf.getKeyCount();
 		
@@ -182,7 +190,7 @@ class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
 	protected TKey transferFromSibling(TKey sinkKey, BTreeNode<TKey> sibling, int borrowIndex) {
 		BTreeLeafNode<TKey> siblingNode = (BTreeLeafNode<TKey>)sibling;
         try {
-            this.insertKey(siblingNode.getKey(borrowIndex), siblingNode.getValue(borrowIndex));
+            this.insertKeyValueList(siblingNode.getKey(borrowIndex), siblingNode.getValueList(borrowIndex));
         } catch (UnsupportedGenericException e) {
             e.printStackTrace();
         }
@@ -211,7 +219,7 @@ class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
         }
 
         while (currLeaf!=null && currLeaf.getKey(currIndex).compareTo(rightKey)<=0) {
-            retList.add(currLeaf.getValue(currIndex));
+            retList.addAll(currLeaf.getValueList(currIndex));
             currIndex++;
             if (currIndex>=currLeaf.getKeyCount()) {
                 currLeaf = (BTreeLeafNode<TKey>) currLeaf.rightSibling;
@@ -232,9 +240,10 @@ class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
 			}
 		}
 
-		for (byte[] val : this.values) {
-			counter.countValueRemoval(val.length);
-		}
+		// Todo fix this
+//		for (byte[] val : this.values) {
+//			counter.countValueRemoval(val.length);
+//		}
 
 		// clear node
 		this.keys.clear();

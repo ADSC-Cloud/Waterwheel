@@ -3,10 +3,7 @@ package indexingTopology.util;
 import indexingTopology.exception.UnsupportedGenericException;
 
 import java.nio.ByteBuffer;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 
 /**
  * A B+ tree
@@ -56,11 +53,11 @@ public class BTree<TKey extends Comparable<TKey>> {
 	 */
 	public boolean insert(TKey key, byte [] value) throws UnsupportedGenericException {
 		BTreeLeafNode<TKey> leaf = this.findLeafNodeShouldContainKey(key);
-		if (leaf.willOverflowOnInsert()) {
+		if (leaf.willOverflowOnInsert(key)) {
 			if (templateMode)
 				return false;
 			else {
-				leaf.insertKey(key,value);
+				leaf.insertKeyValueList(key, Arrays.asList(value));
 				BTreeNode<TKey> n = leaf.dealOverflow();
 				if (n != null)
 					this.root = n;
@@ -68,7 +65,7 @@ public class BTree<TKey extends Comparable<TKey>> {
 				return true;
 			}
 		} else {
-			leaf.insertKey(key, value);
+			leaf.insertKeyValueList(key, Arrays.asList(value));
 			return true;
 		}
 	}
@@ -77,11 +74,11 @@ public class BTree<TKey extends Comparable<TKey>> {
 	 * TODO what happens if same key different value
 	 * Search a key value on the tree and return its associated value.
 	 */
-	public byte [] search(TKey key) {
+	public ArrayList<byte []> search(TKey key) {
 		BTreeLeafNode<TKey> leaf = this.findLeafNodeShouldContainKey(key);
 		
 		int index = leaf.search(key);
-		return (index == -1) ? null : leaf.getValue(index);
+		return (index == -1) ? null : leaf.getValueList(index);
 	}
 
     public List<byte[]> searchRange(TKey leftKey, TKey rightKey) {

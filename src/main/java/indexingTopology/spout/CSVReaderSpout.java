@@ -19,44 +19,46 @@ import java.util.Map;
  */
 public class CSVReaderSpout extends BaseRichSpout {
     SpoutOutputCollector collector_;
-    final String CSV_FILENAME;
-    final DataSchema schema;
+    private final DataSchema schema;
+    private final String CSV_FILENAME;
+    private BufferedReader bufRead;
+    transient BufferedReader brtest;
 
     public CSVReaderSpout(String CSV_FILENAME, DataSchema schema)
     {
-        this.CSV_FILENAME = CSV_FILENAME;
         this.schema=schema;
+        this.CSV_FILENAME=CSV_FILENAME;
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-
         declarer.declare(schema.getFieldsObject());
     }
 
     public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
         collector_=collector;
-    }
-
-    public void nextTuple() {
+        Utils.sleep(60000);
         try {
-            BufferedReader br=new BufferedReader(new FileReader(CSV_FILENAME));
-            // skip header line
-            String line=br.readLine();
-            Utils.sleep(60000);
-            while ((line=br.readLine())!=null) {
-                Utils.sleep(200);
-                String [] tokens = line.split(",");
-                collector_.emit(schema.getValuesObject(tokens));
-            }
-
-            while (true) {
-                Thread.sleep(5000);
-            }
+            bufRead=new BufferedReader(new FileReader(CSV_FILENAME));
+            // skip header
+            bufRead.readLine();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
-        } catch (InterruptedException e) {
+        }
+    }
+
+    public void nextTuple() {
+        try {
+            String line=bufRead.readLine();
+            if (line!=null) {
+                Utils.sleep(100);
+                String [] tokens = line.split(",");
+                collector_.emit(schema.getValuesObject(tokens));
+            } else {
+                Utils.sleep(5000);
+            }
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }

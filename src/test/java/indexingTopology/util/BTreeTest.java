@@ -37,7 +37,12 @@ public class BTreeTest {
     public void setUp() throws Exception {
         btree=new BTree<Integer>(4);
         range=20;
-        customInsert(btree,range,5,0);
+        customInsert(btree, range, 5, 0);
+        customInsert(btree, range, 5, 1);
+        customInsert(btree, range, 5, 2);
+        customInsert(btree, range, 5, 3);
+        customInsert(btree, range, 5, 4);
+        customInsert(btree, range, 5, 0);
         customInsert(btree, range, 5, 1);
         customInsert(btree, range, 5, 2);
         customInsert(btree, range, 5, 3);
@@ -47,10 +52,9 @@ public class BTreeTest {
     @org.junit.Test
     public void testSearch() throws Exception {
         for (int i=0;i<range;i++) {
-            assertArrayEquals(String.valueOf(100 * i).getBytes(), btree.search(i));
+            assertEquals(2,btree.search(i).size());
+            assertArrayEquals(String.valueOf(100 * i).getBytes(), btree.search(i).get(0));
         }
-
-        assertArrayEquals(btree.search(range + 1), null);
     }
 
     @org.junit.Test
