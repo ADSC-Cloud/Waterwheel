@@ -11,7 +11,7 @@ import static org.junit.Assert.*;
  * Created by parijatmazumdar on 23/09/15.
  */
 public class BTreeTest {
-    BTree<Integer> btree;
+/*    BTree<Integer> btree;
     int range;
 
     private void customInsert(BTree<Integer> b, int range, int mod,int modResidue) {

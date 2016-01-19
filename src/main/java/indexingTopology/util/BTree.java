@@ -1,5 +1,6 @@
 package indexingTopology.util;
 
+import clojure.lang.Cons;
 import indexingTopology.exception.UnsupportedGenericException;
 
 import java.nio.ByteBuffer;
@@ -11,16 +12,20 @@ import java.util.*;
  * so there are two different classes for each kind of node.
  * @param <TKey> the data type of the key
  */
-public class BTree<TKey extends Comparable<TKey>> {
+public class BTree<TKey extends Comparable<TKey>,TValue> {
 	private BTreeNode<TKey> root;
     private final BytesCounter counter;
+	private final TimingModule tm;
 	private boolean templateMode;
 	
-	public BTree(int order) {
+	public BTree(int order,TimingModule tm) {
 		counter=new BytesCounter();
-        this.root = new BTreeLeafNode<TKey>(order,counter);
+        this.root = new BTreeLeafNode<TKey,TValue>(order,counter);
         counter.increaseHeightCount();
 		templateMode=false;
+
+		assert tm!=null : "Timing module cannot be null";
+		this.tm=tm;
 	}
 
     public int getTotalBytes() {
@@ -50,41 +55,40 @@ public class BTree<TKey extends Comparable<TKey>> {
 
 	/**
 	 * Insert a new key and its associated value into the B+ tree.
+     * return true if
 	 */
-	public boolean insert(TKey key, byte [] value) throws UnsupportedGenericException {
-		BTreeLeafNode<TKey> leaf = this.findLeafNodeShouldContainKey(key);
-		if (leaf.willOverflowOnInsert(key)) {
-			if (templateMode)
-				return false;
-			else {
-				leaf.insertKeyValueList(key, Arrays.asList(value));
-				BTreeNode<TKey> n = leaf.dealOverflow();
-				if (n != null)
-					this.root = n;
+	public void insert(TKey key, TValue value) throws UnsupportedGenericException {
+        tm.startTiming(Constants.TIME_INSERTION.str);
+		BTreeLeafNode<TKey,TValue> leaf = this.findLeafNodeShouldContainKey(key);
+        leaf.insertKeyValueList(key, Arrays.asList(value));
+        tm.endTiming(Constants.TIME_INSERTION.str);
 
-				return true;
-			}
-		} else {
-			leaf.insertKeyValueList(key, Arrays.asList(value));
-			return true;
-		}
+        if (templateMode || !leaf.isOverflow()) {
+            tm.putDuration(Constants.TIME_SPLIT.str, 0);
+        } else {
+            tm.startTiming(Constants.TIME_SPLIT.str);
+            BTreeNode<TKey> n = leaf.dealOverflow();
+            if (n != null)
+                this.root = n;
+            tm.endTiming(Constants.TIME_SPLIT.str);
+        }
 	}
 
 	/**
 	 * TODO what happens if same key different value
 	 * Search a key value on the tree and return its associated value.
 	 */
-	public ArrayList<byte []> search(TKey key) {
-		BTreeLeafNode<TKey> leaf = this.findLeafNodeShouldContainKey(key);
+	public ArrayList<TValue> search(TKey key) {
+		BTreeLeafNode<TKey,TValue> leaf = this.findLeafNodeShouldContainKey(key);
 		
 		int index = leaf.search(key);
 		return (index == -1) ? null : leaf.getValueList(index);
 	}
 
-    public List<byte[]> searchRange(TKey leftKey, TKey rightKey) {
+    public List<TValue> searchRange(TKey leftKey, TKey rightKey) {
         assert leftKey.compareTo(rightKey)<=0 : "leftKey provided is greater than the right key";
-        BTreeLeafNode<TKey> leafLeft=this.findLeafNodeShouldContainKey(leftKey);
-        List<byte[]> values=leafLeft.searchRange(leftKey, rightKey);
+        BTreeLeafNode<TKey,TValue> leafLeft=this.findLeafNodeShouldContainKey(leftKey);
+        List<TValue> values=leafLeft.searchRange(leftKey, rightKey);
         return values;
     }
 
@@ -92,7 +96,7 @@ public class BTree<TKey extends Comparable<TKey>> {
 	 * Delete a key and its associated value from the tree. TODO Fix.might have a bug.
 	 */
 	public void delete(TKey key) {
-		BTreeLeafNode<TKey> leaf = this.findLeafNodeShouldContainKey(key);
+		BTreeLeafNode<TKey,TValue> leaf = this.findLeafNodeShouldContainKey(key);
 		
 		if (leaf.delete(key) && leaf.isUnderflow()) {
 			BTreeNode<TKey> n = leaf.dealUnderflow();
@@ -105,13 +109,13 @@ public class BTree<TKey extends Comparable<TKey>> {
 	 * Search the leaf node which should contain the specified key
 	 */
 	@SuppressWarnings("unchecked")
-	private BTreeLeafNode<TKey> findLeafNodeShouldContainKey(TKey key) {
+	private BTreeLeafNode<TKey,TValue> findLeafNodeShouldContainKey(TKey key) {
 		BTreeNode<TKey> node = this.root;
 		while (node.getNodeType() == TreeNodeType.InnerNode) {
 			node = ((BTreeInnerNode<TKey>)node).getChild( node.search(key) );
 		}
 		
-		return (BTreeLeafNode<TKey>)node;
+		return (BTreeLeafNode<TKey,TValue>)node;
 	}
 
 	/*  method to keep tree template intact, while just removing the tree data payload

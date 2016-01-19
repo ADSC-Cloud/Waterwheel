@@ -5,7 +5,11 @@ package indexingTopology.util;
  */
 public enum Constants {
     HDFS_CORE_SITE("core_site"),
-    HDFS_HDFS_SITE("hdfs_site");
+    HDFS_HDFS_SITE("hdfs_site"),
+    TIME_SERIALIZATION_WRITE("time_serialization_write"),
+    TIME_INSERTION("time_insertion"),
+    TIME_SPLIT("time_split"),
+    TIME_TOTAL("time_total");
 
     public final String str;
     Constants(String str) {

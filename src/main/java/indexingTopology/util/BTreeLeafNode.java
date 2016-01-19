@@ -8,21 +8,21 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
-	protected ArrayList<ArrayList<byte[]>> values;
+class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKey> {
+	protected ArrayList<ArrayList<TValue>> values;
 	
 	public BTreeLeafNode(int order, BytesCounter counter) {
         super(order,counter);
         this.keys = new ArrayList<TKey>();
-		this.values = new ArrayList<ArrayList<byte[]>>();
+		this.values = new ArrayList<ArrayList<TValue>>();
 	}
 
 	@SuppressWarnings("unchecked")
-	public ArrayList<byte[]> getValueList(int index) {
+	public ArrayList<TValue> getValueList(int index) {
 		return this.values.get(index);
 	}
 
-	public void setValueList(int index, ArrayList<byte[]> value) {
+	public void setValueList(int index, ArrayList<TValue> value) {
         if (index<this.values.size())
 		    this.values.set(index,value);
         else if (index==this.values.size()) {
@@ -75,7 +75,7 @@ class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
 
 	/* The codes below are used to support insertion operation */
 	
-	public void insertKeyValueList(TKey key, List<byte[]> values) throws UnsupportedGenericException {
+	public void insertKeyValueList(TKey key, List<TValue> values) throws UnsupportedGenericException {
 		// todo fix this
 //        counter.countKeyAddition(UtilGenerics.sizeOf(key.getClass()));
 //        counter.countValueAddition(values.length);
@@ -88,7 +88,7 @@ class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
 			this.values.get(index).addAll(values);
 		} else {
 			this.keys.add(index, key);
-			this.values.add(index, new ArrayList<byte[]>(values));
+			this.values.add(index, new ArrayList<TValue>(values));
 			++this.keyCount;
 		}
 	}
@@ -100,7 +100,7 @@ class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
 	protected BTreeNode<TKey> split() {
 		int midIndex = this.getKeyCount() / 2;
 		
-		BTreeLeafNode<TKey> newRNode = new BTreeLeafNode<TKey>(this.ORDER,counter);
+		BTreeLeafNode<TKey,TValue> newRNode = new BTreeLeafNode<TKey,TValue>(this.ORDER,counter);
 		for (int i = midIndex; i < this.getKeyCount(); ++i) {
             try {
                 newRNode.setKey(i - midIndex, this.getKey(i));
@@ -167,7 +167,7 @@ class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
 	@Override
 	@SuppressWarnings("unchecked")
 	protected void fusionWithSibling(TKey sinkKey, BTreeNode<TKey> rightSibling) {
-		BTreeLeafNode<TKey> siblingLeaf = (BTreeLeafNode<TKey>)rightSibling;
+		BTreeLeafNode<TKey,TValue> siblingLeaf = (BTreeLeafNode<TKey,TValue>)rightSibling;
 		
 		int j = this.getKeyCount();
 		for (int i = 0; i < siblingLeaf.getKeyCount(); ++i) {
@@ -188,7 +188,7 @@ class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
 	@Override
 	@SuppressWarnings("unchecked")
 	protected TKey transferFromSibling(TKey sinkKey, BTreeNode<TKey> sibling, int borrowIndex) {
-		BTreeLeafNode<TKey> siblingNode = (BTreeLeafNode<TKey>)sibling;
+		BTreeLeafNode<TKey,TValue> siblingNode = (BTreeLeafNode<TKey,TValue>)sibling;
         try {
             this.insertKeyValueList(siblingNode.getKey(borrowIndex), siblingNode.getValueList(borrowIndex));
         } catch (UnsupportedGenericException e) {
@@ -199,7 +199,7 @@ class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
 		return borrowIndex == 0 ? sibling.getKey(0) : this.getKey(0);
 	}
 
-    public List<byte[]> searchRange(TKey leftKey, TKey rightKey) {
+    public List<TValue> searchRange(TKey leftKey, TKey rightKey) {
         // find first index satisfying range
         int firstIndex;
         for (firstIndex=0;firstIndex<this.getKeyCount();firstIndex++) {
@@ -208,13 +208,13 @@ class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
                 break;
         }
 
-        List<byte[]> retList = new ArrayList<byte[]>();
-        BTreeLeafNode<TKey> currLeaf=this;
+        List<TValue> retList = new ArrayList<TValue>();
+        BTreeLeafNode<TKey,TValue> currLeaf=this;
         int currIndex=firstIndex;
 
         // case when all keys in the node are smaller than leftKey - shift to next rightSibling
         if (firstIndex>=this.getKeyCount()) {
-            currLeaf = (BTreeLeafNode<TKey>) this.rightSibling;
+            currLeaf = (BTreeLeafNode<TKey,TValue>) this.rightSibling;
             currIndex = 0;
         }
 
@@ -222,7 +222,7 @@ class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
             retList.addAll(currLeaf.getValueList(currIndex));
             currIndex++;
             if (currIndex>=currLeaf.getKeyCount()) {
-                currLeaf = (BTreeLeafNode<TKey>) currLeaf.rightSibling;
+                currLeaf = (BTreeLeafNode<TKey,TValue>) currLeaf.rightSibling;
                 currIndex = 0;
             }
         }

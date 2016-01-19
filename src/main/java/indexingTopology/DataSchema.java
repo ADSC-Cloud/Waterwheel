@@ -3,9 +3,13 @@ package indexingTopology;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import org.apache.commons.lang.SerializationUtils;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -59,23 +63,33 @@ public class DataSchema implements Serializable {
         return values;
     }
 
-    public byte[] serializeTuple(Tuple t) throws IOException {
-        StringBuffer sb=new StringBuffer("");
-        for (int i=0;i<valueTypes.size();i++) {
-            if (valueTypes.get(i).equals(Double.class)) {
-                sb.append(String.valueOf(t.getDouble(i)));
-            }
-            else if (valueTypes.get(i).equals(String.class)) {
-                sb.append(t.getString(i));
-            }
-            else {
-                throw new IOException("Only classes supported till now are string and double");
-            }
+    public Values deserialize(byte [] b) throws IOException {
+        Serializable [] serializableObjects = (Serializable []) SerializationUtils.deserialize(b);
 
-            if (i!=valueTypes.size()-1)
-                sb.append(',');
+        if (dataFields.size()!=serializableObjects.length)
+            throw new IOException("number of values provided does not " +
+                "match number of fields in data schema");
+
+        Values values=new Values();
+        for (int i=0;i<valueTypes.size();i++) {
+            values.add(serializableObjects[i]);
         }
 
-        return sb.toString().getBytes();
+        return values;
+    }
+
+    public byte[] serializeTuple(Tuple t) throws IOException {
+        Serializable [] serializableObjects = new Serializable[valueTypes.size()];
+        for (int i=0;i<valueTypes.size();i++) {
+            if (valueTypes.get(i).equals(Double.class)) {
+                serializableObjects[i] = t.getDouble(i);
+            } else if (valueTypes.get(i).equals(String.class)) {
+                serializableObjects[i] = t.getString(i);
+            } else {
+                throw new IOException("Only classes supported till now are string and double");
+            }
+        }
+
+        return SerializationUtils.serialize(serializableObjects);
     }
 }
