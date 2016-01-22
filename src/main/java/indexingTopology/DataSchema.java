@@ -5,10 +5,12 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import org.apache.commons.lang.SerializationUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -18,6 +20,11 @@ import java.util.List;
 public class DataSchema implements Serializable {
     private final Fields dataFields;
     private final List<Class> valueTypes;
+
+    private class SerializationIntermediate {
+
+    }
+
     public DataSchema(List<String> fieldNames,List<Class> valueTypes) {
         assert fieldNames.size()==valueTypes.size() : "number of fields should be " +
                 "same as the number of value types provided";
@@ -64,32 +71,47 @@ public class DataSchema implements Serializable {
     }
 
     public Values deserialize(byte [] b) throws IOException {
-        Serializable [] serializableObjects = (Serializable []) SerializationUtils.deserialize(b);
-
-        if (dataFields.size()!=serializableObjects.length)
-            throw new IOException("number of values provided does not " +
-                "match number of fields in data schema");
-
         Values values=new Values();
+        int offset = 0;
         for (int i=0;i<valueTypes.size();i++) {
-            values.add(serializableObjects[i]);
+            if (valueTypes.get(i).equals(Double.class)) {
+                int len = Double.SIZE/Byte.SIZE;
+                double val = ByteBuffer.wrap(b,offset,len).getDouble();
+                values.add(val);
+                offset+=len;
+            } else if (valueTypes.get(i).equals(String.class)) {
+                int len = Integer.SIZE/Byte.SIZE;
+                int sizeHeader = ByteBuffer.wrap(b,offset,len).getInt();
+                offset+=len;
+                len = sizeHeader;
+                String val = new String(b,offset,len);
+                values.add(val);
+                offset+=len;
+
+            } else {
+                throw new IOException("Only classes supported till now are string and double");
+            }
         }
 
         return values;
     }
 
     public byte[] serializeTuple(Tuple t) throws IOException {
-        Serializable [] serializableObjects = new Serializable[valueTypes.size()];
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
         for (int i=0;i<valueTypes.size();i++) {
             if (valueTypes.get(i).equals(Double.class)) {
-                serializableObjects[i] = t.getDouble(i);
+                byte [] b = ByteBuffer.allocate(Double.SIZE / Byte.SIZE).putDouble(t.getDouble(i)).array();
+                bos.write(b);
             } else if (valueTypes.get(i).equals(String.class)) {
-                serializableObjects[i] = t.getString(i);
+                byte [] b = t.getString(i).getBytes();
+                byte [] sizeHeader = ByteBuffer.allocate(Integer.SIZE/ Byte.SIZE).putInt(b.length).array();
+                bos.write(sizeHeader);
+                bos.write(b);
             } else {
                 throw new IOException("Only classes supported till now are string and double");
             }
         }
 
-        return SerializationUtils.serialize(serializableObjects);
+        return bos.toByteArray();
     }
 }

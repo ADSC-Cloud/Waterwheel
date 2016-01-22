@@ -31,22 +31,25 @@ public class TimingModule {
         time.clear();
     }
 
-    public String printTimes(boolean computeTotal) {
+    public long getTotal() {
+        long total = 0;
+        for (String k : time.keySet()) {
+            total+=time.get(k);
+        }
+
+        return total;
+    }
+
+    public String printTimes() {
         StringBuffer sb = new StringBuffer();
         int count = time.keySet().size();
-        long total=0;
         for (String k : time.keySet()) {
             sb.append(k+":"+time.get(k));
             if (count>1)
                 sb.append(" , ");
 
             count--;
-            if (computeTotal)
-                total+=time.get(k);
         }
-
-        if (computeTotal)
-            sb.append(" , total:"+total);
 
         return sb.toString();
     }

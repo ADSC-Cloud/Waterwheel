@@ -8,7 +8,6 @@ import java.nio.ByteBuffer;
 public class MemChunk {
     private int allocatedSize;
     private ByteBuffer data;
-    private static final int INITIAL_OFFSET = 4;
     private MemChunk() {
         allocatedSize = 0;
         data = null;
@@ -18,7 +17,6 @@ public class MemChunk {
         assert allocateSize>=5 : "allocate size should be greater than 5";
         this.allocatedSize = allocateSize;
         data = ByteBuffer.allocateDirect(allocateSize);
-        data.position(INITIAL_OFFSET);
     }
 
     public static MemChunk createNew(int allocateSize) {
@@ -31,16 +29,17 @@ public class MemChunk {
             return -1;
 
         data.put(serialData,0,serialData.length);
-        assert data.position() == offset+serialData.length : "Sanity check, position should be 4";
+        assert data.position() == offset+serialData.length : "Sanity check";
         return offset;
     }
 
     public final byte [] serializeAndRefresh() {
         int offset = data.position();
+        byte [] ret = new byte[offset];
         data.position(0);
-        data.put(ByteBuffer.allocate(INITIAL_OFFSET).putInt(offset));
-        assert data.position() == INITIAL_OFFSET : "Sanity check, position should be 4";
-        return data.array();
+        data.get(ret);
+        data.position(0);
+        return ret;
     }
 
     public int getOffset() {

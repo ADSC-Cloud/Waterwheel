@@ -30,6 +30,7 @@ public class IndexerBolt extends BaseRichBolt {
     private int numWritten;
     private MemChunk chunk;
     private TimingModule tm;
+    private long processingTime;
 
     public IndexerBolt(String indexField,DataSchema schema, int btreeOrder, int bytesLimit) {
         this.schema=schema;
@@ -44,6 +45,7 @@ public class IndexerBolt extends BaseRichBolt {
         chunk = MemChunk.createNew(this.bytesLimit);
         this.numTuples=0;
         this.numWritten=0;
+        this.processingTime=0;
         try {
             hdfs=new HdfsHandle(map);
         } catch (IOException e) {
@@ -58,9 +60,11 @@ public class IndexerBolt extends BaseRichBolt {
             Double indexValue = tuple.getDoubleByField(indexField);
             byte [] serializedTuple = schema.serializeTuple(tuple);
             numTuples+=1;
-            indexTuple(indexValue, serializedTuple);
-            System.out.println("num_tuples:" + numTuples + " , offset:" + offset + " , " +
-                    "num_written:" + numWritten + " , " + tm.printTimes(true));
+            indexTupleWithTemplates(indexValue, serializedTuple);
+            long total = tm.getTotal();
+            processingTime+=total;
+            System.out.println("num_tuples:" + numTuples + " , offset:" + offset + " , num_written:" + numWritten
+                    + " , " + tm.printTimes()+" , total:"+total+" , processingTotal:"+processingTime);
 //        collector.emit(new Values(numTuples,processingTime,templateTime,numFailedInsert,numWrittenTemplate));
         } catch (IOException e) {
             e.printStackTrace();
