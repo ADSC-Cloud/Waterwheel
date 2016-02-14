@@ -8,6 +8,8 @@ public enum Constants {
     HDFS_HDFS_SITE("hdfs_site"),
     TIME_SERIALIZATION_WRITE("time_serialization_write"),
     TIME_INSERTION("time_insertion"),
+    TIME_LEAF_FIND("time_leaf_find"),
+    TIME_LEAF_INSERTION("time_leaf_insertion"),
     TIME_SPLIT("time_split"),
     TIME_TOTAL("time_total");
 

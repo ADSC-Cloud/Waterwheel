@@ -75,11 +75,21 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 
 	/* The codes below are used to support insertion operation */
 	
-	public void insertKeyValueList(TKey key, List<TValue> values) throws UnsupportedGenericException {
-		// todo fix this
-//        counter.countKeyAddition(UtilGenerics.sizeOf(key.getClass()));
-//        counter.countValueAddition(values.length);
+	public void insertKeyValue(TKey key, TValue value) throws UnsupportedGenericException {
+		int index = 0;
+		while (index < this.getKeyCount() && this.getKey(index).compareTo(key) < 0)
+			++index;
 
+		if (index<this.keys.size() && this.getKey(index).compareTo(key)==0) {
+			this.values.get(index).add(value);
+		} else {
+			this.keys.add(index, key);
+			this.values.add(index, new ArrayList<TValue>(Arrays.asList(value)));
+			++this.keyCount;
+		}
+	}
+
+	public void insertKeyValueList(TKey key, ArrayList<TValue> values) throws UnsupportedGenericException {
 		int index = 0;
 		while (index < this.getKeyCount() && this.getKey(index).compareTo(key) < 0)
 			++index;
@@ -135,6 +145,17 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 		
 		this.deleteAt(index);
 		return true;
+	}
+
+	public void deleteKeyValue(TKey key, TValue value) throws UnsupportedGenericException {
+		int index = 0;
+		while (index < this.getKeyCount() && this.getKey(index).compareTo(key) < 0)
+			++index;
+
+		if (index<this.keys.size() && this.getKey(index).compareTo(key)==0) {
+			int indexLast = this.values.get(index).lastIndexOf(value);
+			this.values.get(index).remove(indexLast);
+		}
 	}
 	
 	private void deleteAt(int index) {

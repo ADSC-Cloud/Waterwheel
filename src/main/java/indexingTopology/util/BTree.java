@@ -17,6 +17,7 @@ public class BTree<TKey extends Comparable<TKey>,TValue> {
     private final BytesCounter counter;
 	private final TimingModule tm;
 	private boolean templateMode;
+
 	
 	public BTree(int order,TimingModule tm) {
 		counter=new BytesCounter();
@@ -58,10 +59,22 @@ public class BTree<TKey extends Comparable<TKey>,TValue> {
      * return true if
 	 */
 	public void insert(TKey key, TValue value) throws UnsupportedGenericException {
-        tm.startTiming(Constants.TIME_INSERTION.str);
-		BTreeLeafNode<TKey,TValue> leaf = this.findLeafNodeShouldContainKey(key);
-        leaf.insertKeyValueList(key, Arrays.asList(value));
-        tm.endTiming(Constants.TIME_INSERTION.str);
+		BTreeLeafNode<TKey, TValue> leaf = null;
+		leaf = this.findLeafNodeShouldContainKey(key);
+
+//		for (int i=0;i<1000;i++) {
+//			tm.startTiming(Constants.TIME_LEAF_FIND.str);
+//			leaf = this.findLeafNodeShouldContainKey(key);
+//			tm.endTiming(Constants.TIME_LEAF_FIND.str);
+//		}
+
+//		leaf.insertKeyValue(key,value);
+		for (int i=0;i<1000;i++) {
+			tm.startTiming(Constants.TIME_LEAF_INSERTION.str);
+			leaf.insertKeyValue(key,value);
+			tm.endTiming(Constants.TIME_LEAF_INSERTION.str);
+			leaf.deleteKeyValue(key,value);
+		}
 
         if (templateMode || !leaf.isOverflow()) {
             tm.putDuration(Constants.TIME_SPLIT.str, 0);
