@@ -68,13 +68,16 @@ public class BTree<TKey extends Comparable<TKey>,TValue> {
 //			tm.endTiming(Constants.TIME_LEAF_FIND.str);
 //		}
 
-//		leaf.insertKeyValue(key,value);
-		for (int i=0;i<1000;i++) {
-			tm.startTiming(Constants.TIME_LEAF_INSERTION.str);
-			leaf.insertKeyValue(key,value);
-			tm.endTiming(Constants.TIME_LEAF_INSERTION.str);
-			leaf.deleteKeyValue(key,value);
+		synchronized (leaf) {
+			leaf.insertKeyValue(key, value);
 		}
+
+//		for (int i=0;i<1000;i++) {
+//			tm.startTiming(Constants.TIME_LEAF_INSERTION.str);
+//			leaf.insertKeyValue(key,value);
+//			tm.endTiming(Constants.TIME_LEAF_INSERTION.str);
+//			leaf.deleteKeyValue(key,value);
+//		}
 
         if (templateMode || !leaf.isOverflow()) {
             tm.putDuration(Constants.TIME_SPLIT.str, 0);

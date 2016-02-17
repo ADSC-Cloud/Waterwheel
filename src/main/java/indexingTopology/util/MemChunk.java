@@ -29,7 +29,6 @@ public class MemChunk {
             return -1;
 
         data.put(serialData,0,serialData.length);
-        assert data.position() == offset+serialData.length : "Sanity check";
         return offset;
     }
 

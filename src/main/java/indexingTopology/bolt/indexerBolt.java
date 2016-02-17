@@ -12,6 +12,9 @@ import indexingTopology.util.*;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by parijatmazumdar on 17/09/15.
@@ -31,6 +34,28 @@ public class IndexerBolt extends BaseRichBolt {
     private MemChunk chunk;
     private TimingModule tm;
     private long processingTime;
+    private ExecutorService es;
+    private final static int numThreads = 2;
+
+    private class IndexerThread implements Runnable {
+        private final BTree<Double,Integer> index;
+        private final double indexValue;
+        private final int offset;
+
+        public IndexerThread(BTree<Double,Integer> index,double indexValue,int offset) {
+            this.index = index;
+            this.offset = offset;
+            this.indexValue = indexValue;
+        }
+
+        public void run() {
+            try {
+                index.insert(indexValue,offset);
+            } catch (UnsupportedGenericException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
     public IndexerBolt(String indexField,DataSchema schema, int btreeOrder, int bytesLimit) {
         this.schema=schema;
@@ -46,11 +71,19 @@ public class IndexerBolt extends BaseRichBolt {
         this.numTuples=0;
         this.numWritten=0;
         this.processingTime=0;
+        es = Executors.newFixedThreadPool(1);
+
         try {
             hdfs=new HdfsHandle(map);
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public void cleanup() {
+        super.cleanup();
+        es.shutdownNow();
     }
 
     public void execute(Tuple tuple) {
@@ -72,22 +105,31 @@ public class IndexerBolt extends BaseRichBolt {
     }
 
     private void indexTupleWithTemplates(Double indexValue, byte[] serializedTuple) {
-        try {
+        offset = chunk.write(serializedTuple);
+        if (offset>=0) {
+            tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
+            es.submit(new IndexerThread(indexedData,indexValue,offset));
+        } else {
+            shutdownAndRestartThreadPool(numThreads);
+            writeIndexedDataToHDFS();
+            numWritten++;
+            indexedData.clearPayload();
             offset = chunk.write(serializedTuple);
-            if (offset>=0) {
-                tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
-                indexedData.insert(indexValue,offset);
-            } else {
-                writeIndexedDataToHDFS();
-                numWritten++;
-                indexedData.clearPayload();
-                offset = chunk.write(serializedTuple);
-                tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
-                indexedData.insert(indexValue,offset);
-            }
-        } catch (UnsupportedGenericException e) {
+            tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
+            es.submit(new IndexerThread(indexedData,indexValue,offset));
+        }
+    }
+
+    // todo find a way to not shutdown threadpool everytime
+    private void shutdownAndRestartThreadPool(int threads) {
+        es.shutdown();
+        try {
+            es.awaitTermination(60,TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
+        es = Executors.newFixedThreadPool(threads);
     }
 
     private void debugPrint(int numFailedInsert, Double indexValue) {
