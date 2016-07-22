@@ -36,7 +36,7 @@ public class CSVReaderSpout extends BaseRichSpout {
 
     public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
         collector_=collector;
-        Utils.sleep(60000);
+     //   Utils.sleep(60000);
         try {
             bufRead=new BufferedReader(new FileReader(CSV_FILENAME));
             // skip header
@@ -52,7 +52,7 @@ public class CSVReaderSpout extends BaseRichSpout {
         try {
             String line=bufRead.readLine();
             if (line!=null) {
-                Utils.sleep(100);
+            //    Utils.sleep(100);
                 String [] tokens = line.split(",");
                 collector_.emit(schema.getValuesObject(tokens));
             } else {

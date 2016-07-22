@@ -6,6 +6,7 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
+import indexingTopology.Config.Config;
 import indexingTopology.DataSchema;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.util.*;
@@ -29,13 +30,17 @@ public class IndexerBolt extends BaseRichBolt {
     private BTree<Double,Integer> indexedData;
     private HdfsHandle hdfs;
     private int numTuples;
+    private int numTuplesBeforeWritting;
     private int offset;
     private int numWritten;
     private MemChunk chunk;
     private TimingModule tm;
+    private SplitCounterModule sm;
     private long processingTime;
     private ExecutorService es;
     private final static int numThreads = 2;
+    private int numSplit;
+    private BulkLoader bulkLoader;
 
     private class IndexerThread implements Runnable {
         private final BTree<Double,Integer> index;
@@ -57,24 +62,27 @@ public class IndexerBolt extends BaseRichBolt {
         }
     }
 
-    public IndexerBolt(String indexField,DataSchema schema, int btreeOrder, int bytesLimit) {
-        this.schema=schema;
-        this.indexField=indexField;
-        this.btreeOrder=btreeOrder;
+    public IndexerBolt(String indexField, DataSchema schema, int btreeOrder, int bytesLimit) {
+        this.schema = schema;
+        this.indexField = indexField;
+        this.btreeOrder = btreeOrder;
         this.bytesLimit = bytesLimit;
     }
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
-        collector=outputCollector;
+        collector = outputCollector;
         this.tm = TimingModule.createNew();
-        indexedData = new BTree<Double,Integer>(btreeOrder,tm);
+        this.sm = SplitCounterModule.createNew();
+        indexedData = new BTree<Double,Integer>(btreeOrder,tm, sm);
         chunk = MemChunk.createNew(this.bytesLimit);
         this.numTuples=0;
+        this.numTuplesBeforeWritting = 0;
         this.numWritten=0;
         this.processingTime=0;
+        this.bulkLoader = new BulkLoader(btreeOrder, tm, sm);
         es = Executors.newFixedThreadPool(1);
 
         try {
-            hdfs=new HdfsHandle(map);
+            hdfs = new HdfsHandle(map);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -92,12 +100,15 @@ public class IndexerBolt extends BaseRichBolt {
             tm.startTiming(Constants.TIME_SERIALIZATION_WRITE.str);
             Double indexValue = tuple.getDoubleByField(indexField);
             byte [] serializedTuple = schema.serializeTuple(tuple);
-            numTuples+=1;
+            numTuples += 1;
             indexTupleWithTemplates(indexValue, serializedTuple);
-            long total = tm.getTotal();
-            processingTime+=total;
-            System.out.println("num_tuples:" + numTuples + " , offset:" + offset + " , num_written:" + numWritten
-                    + " , " + tm.printTimes()+" , total:"+total+" , processingTotal:"+processingTime);
+        //    long total = tm.getTotal();
+        //    processingTime += total;
+        //    if (numSplit > 0) {
+        //        System.out.println("numberOfSplit: " + numSplit);
+         //   }
+       //     System.out.println("num_tuples:" + numTuples + " , offset:" + offset + " , num_written:" + numWritten
+       //             + " , " + tm.printTimes()+" , total:"+total+" , processingTotal:"+processingTime + " , numberOfSplit:" + numSplit);
 //        collector.emit(new Values(numTuples,processingTime,templateTime,numFailedInsert,numWrittenTemplate));
         } catch (IOException e) {
             e.printStackTrace();
@@ -108,12 +119,29 @@ public class IndexerBolt extends BaseRichBolt {
         offset = chunk.write(serializedTuple);
         if (offset>=0) {
             tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
-            es.submit(new IndexerThread(indexedData,indexValue,offset));
+            bulkLoader.addRecord(indexValue, offset);
+            es.submit(new IndexerThread(indexedData, indexValue, offset));
         } else {
             shutdownAndRestartThreadPool(numThreads);
             writeIndexedDataToHDFS();
             numWritten++;
+            int processedTuple = numTuples - numTuplesBeforeWritting;
+            numTuplesBeforeWritting = numTuples;
+            System.out.println("The chunk is full, split time is " + sm.getCounter() + ", " + processedTuple + "tuples has been processed");
+            double percentage = (double) sm.getCounter() * 100 / (double) processedTuple;
+            System.out.println("The percentage of insert failure is " + percentage + "%");
+            if (percentage > Config.rebuildTemplatePercentage) {
+                indexedData = bulkLoader.createTreeWithBulkLoading();
+                System.out.println("New template has been built");
+            }
+            sm.resetCounter();
+        //    indexedData.clearPayload();
+        //    percentage = bulkLoader.checkNewTree(indexedData, sm);
+        //    System.out.println("After rebuilt the tree, the insert failure is " + percentage);
+            sm.resetCounter();
+            bulkLoader.resetRecord();
             indexedData.clearPayload();
+          //  System.out.println(sm.getCounter());
             offset = chunk.write(serializedTuple);
             tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
             es.submit(new IndexerThread(indexedData,indexValue,offset));
@@ -169,7 +197,7 @@ public class IndexerBolt extends BaseRichBolt {
             } else {
                 writeIndexedDataToHDFS();
                 numWritten++;
-                indexedData = new BTree<Double,Integer>(btreeOrder,tm);
+                indexedData = new BTree<Double,Integer>(btreeOrder,tm, sm);
                 offset = chunk.write(serializedTuple);
                 tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
                 indexedData.insert(indexValue,offset);

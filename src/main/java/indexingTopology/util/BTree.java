@@ -1,6 +1,5 @@
 package indexingTopology.util;
 
-import clojure.lang.Cons;
 import indexingTopology.exception.UnsupportedGenericException;
 
 import java.nio.ByteBuffer;
@@ -17,18 +16,23 @@ public class BTree<TKey extends Comparable<TKey>,TValue> {
     private final BytesCounter counter;
 	private final TimingModule tm;
 	private boolean templateMode;
-
+    private final SplitCounterModule sm;
 	
-	public BTree(int order,TimingModule tm) {
-		counter=new BytesCounter();
+	public BTree(int order, TimingModule tm, SplitCounterModule sm) {
+		counter = new BytesCounter();
         this.root = new BTreeLeafNode<TKey,TValue>(order,counter);
         counter.increaseHeightCount();
-		templateMode=false;
+		templateMode = false;
 
-		assert tm!=null : "Timing module cannot be null";
-		this.tm=tm;
+		assert tm != null : "Timing module cannot be null";
+		assert sm != null : "Split counter module cannot be null";
+		this.tm = tm;
+		this.sm = sm;
 	}
 
+	public void setRoot(BTreeNode root) {
+		this.root = root;
+	}
     public int getTotalBytes() {
         return counter.getBytesCount();
     }
@@ -78,16 +82,27 @@ public class BTree<TKey extends Comparable<TKey>,TValue> {
 //			tm.endTiming(Constants.TIME_LEAF_INSERTION.str);
 //			leaf.deleteKeyValue(key,value);
 //		}
-
-        if (templateMode || !leaf.isOverflow()) {
-            tm.putDuration(Constants.TIME_SPLIT.str, 0);
-        } else {
+        if (templateMode && leaf.isOverflow()) {
+			tm.putDuration(Constants.TIME_SPLIT.str, 0);
+			sm.addCounter();
+		} else if (!leaf.isOverflow()) {
+			tm.putDuration(Constants.TIME_SPLIT.str, 0);
+		} else {
+       // if (templateMode || !leaf.isOverflow()) {
+       //     tm.putDuration(Constants.TIME_SPLIT.str, 0);
+      //  } else {
             tm.startTiming(Constants.TIME_SPLIT.str);
-            BTreeNode<TKey> n = leaf.dealOverflow();
-            if (n != null)
-                this.root = n;
-            tm.endTiming(Constants.TIME_SPLIT.str);
+			BTreeNode<TKey> n = leaf.dealOverflow(sm, leaf);
+			if (n != null) {
+				this.root = n;
+				tm.endTiming(Constants.TIME_SPLIT.str);
+			}
         }
+	//	int numberOfSplit = sm.getSplitTimeOnLeaf(leaf);
+	//	sm.reset(leaf);
+	//	sm.traverseSplit();
+	//	sm.reset(leaf);
+	//	return numberOfSplit;
 	}
 
 	/**
@@ -150,6 +165,7 @@ public class BTree<TKey extends Comparable<TKey>,TValue> {
 			}
 		}
 	}
+
 
 	public void printBtree() {
 		Queue<BTreeNode<TKey>> q=new LinkedList<BTreeNode<TKey>>();

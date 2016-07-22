@@ -1,7 +1,9 @@
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.util.BTree;
+import indexingTopology.util.SplitCounterModule;
 import indexingTopology.util.TimingModule;
 import org.apache.commons.exec.Executor;
+import org.apache.hadoop.hdfs.server.namenode.SafeMode;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -54,8 +56,9 @@ public class WithTemplateMain {
     public static void main(String [] args) {
         Random rn = new Random(1000);
         TimingModule tm = TimingModule.createNew();
+        SplitCounterModule sm = SplitCounterModule.createNew();
         es = Executors.newFixedThreadPool(1);
-        indexedData=new BTree<Double,Integer>(btreeOrder,tm);
+        indexedData=new BTree<Double,Integer>(btreeOrder,tm,sm);
         long startTime = System.nanoTime();
         int numTuples=0;
         while (true) {

@@ -45,6 +45,7 @@ abstract class BTreeNode<TKey extends Comparable<TKey>> {
         else if (index==this.keys.size()) {
             this.counter.countKeyAddition(UtilGenerics.sizeOf(key.getClass()));
             this.keys.add(index, key);
+			keyCount += 1;
         }
         else {
             throw new ArrayIndexOutOfBoundsException("index is out of bounds");
@@ -86,12 +87,12 @@ abstract class BTreeNode<TKey extends Comparable<TKey>> {
 		return this.getKeyCount() == this.ORDER;
 	}
 
-	public BTreeNode<TKey> dealOverflow() {
+	public BTreeNode<TKey> dealOverflow(SplitCounterModule sm, BTreeLeafNode leaf) {
 		int midIndex = this.getKeyCount() / 2;
 		TKey upKey = this.getKey(midIndex);
-		
+
+		sm.addCounter();
 		BTreeNode<TKey> newRNode = this.split();
-				
 		if (this.getParent() == null) {
 			this.setParent(new BTreeInnerNode<TKey>(this.ORDER,this.counter));
             counter.increaseHeightCount();
@@ -106,12 +107,17 @@ abstract class BTreeNode<TKey extends Comparable<TKey>> {
 		this.setRightSibling(newRNode);
 		
 		// push up a key to parent internal node
-		return this.getParent().pushUpKey(upKey, this, newRNode);
+		synchronized (this.getParent()) {
+			if (this.getParent() == null) {
+				System.out.println("parent is null");
+			}
+			return this.getParent().pushUpKey(upKey, this, newRNode, sm, leaf);
+		}
 	}
 	
 	protected abstract BTreeNode<TKey> split();
 	
-	protected abstract BTreeNode<TKey> pushUpKey(TKey key, BTreeNode<TKey> leftChild, BTreeNode<TKey> rightNode);
+	protected abstract BTreeNode<TKey> pushUpKey(TKey key, BTreeNode<TKey> leftChild, BTreeNode<TKey> rightNode, SplitCounterModule sm, BTreeLeafNode leaf);
 	
 	
 	
@@ -185,5 +191,6 @@ abstract class BTreeNode<TKey extends Comparable<TKey>> {
 	public void print() {
 		for (TKey k : keys)
 			System.out.print(k+" ");
+		System.out.println();
 	}
 }

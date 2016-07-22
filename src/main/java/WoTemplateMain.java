@@ -1,5 +1,6 @@
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.util.BTree;
+import indexingTopology.util.SplitCounterModule;
 import indexingTopology.util.TimingModule;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -20,8 +21,9 @@ public class WoTemplateMain {
         try {
             Random rn = new Random(1000);
             TimingModule tm = TimingModule.createNew();
+            SplitCounterModule sm = SplitCounterModule.createNew();
             long startTime = System.nanoTime();
-            indexedDataWoTemplate = new BTree<Double,Integer>(btreeOrder,tm);
+            indexedDataWoTemplate = new BTree<Double,Integer>(btreeOrder, tm, sm);
             int numTuples=0;
             numWrittenWoTemplate=0;
             while (true) {
@@ -29,7 +31,7 @@ public class WoTemplateMain {
                 if (numTuples % maxTuples==0 && numTuples!=0) {
                     long curr = System.nanoTime();
                     System.out.println(curr-startTime);
-                    indexedDataWoTemplate = new BTree<Double,Integer>(btreeOrder,tm);
+                    indexedDataWoTemplate = new BTree<Double,Integer>(btreeOrder, tm, sm);
                     numWrittenWoTemplate++;
                     startTime = System.nanoTime();
                 }

@@ -20,6 +20,22 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
 		return this.children.get(index);
 	}
 
+	public BTreeInnerNode<TKey> getRightMostChild() {
+		BTreeInnerNode root = this;
+		if (root == null) {
+			System.out.println("yes");
+		}
+	//	root.print();
+		while (root.getChild(0).getNodeType() != TreeNodeType.LeafNode) {
+			int index = root.children.size();
+			root = (BTreeInnerNode) root.getChild(index-1);
+		}
+		if (root == null) {
+			System.out.println("yes");
+		}
+		return root;
+	}
+
 	public void setChild(int index, BTreeNode<TKey> child) {
 		if (index<children.size())
 		    this.children.set(index,child);
@@ -113,7 +129,7 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
 	}
 	
 	@Override
-	protected BTreeNode<TKey> pushUpKey(TKey key, BTreeNode<TKey> leftChild, BTreeNode<TKey> rightNode) {
+	protected BTreeNode<TKey> pushUpKey(TKey key, BTreeNode<TKey> leftChild, BTreeNode<TKey> rightNode, SplitCounterModule sm, BTreeLeafNode leaf) {
 		// find the target position of the new key
 		int index = this.search(key);
 		
@@ -122,10 +138,18 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
 
 		// check whether current node need to be split
 		if (this.isOverflow()) {
-			return this.dealOverflow();
+			return this.dealOverflow(sm, leaf);
 		}
 		else {
-			return this.getParent() == null ? this : null;
+			if (this.getParent() == null) {
+				return this;
+			} else {
+				BTreeNode root = this.getParent();
+				while (root.getParent() != null) {
+					root = root.getParent();
+				}
+				return root;
+			}
 		}
 	}
 

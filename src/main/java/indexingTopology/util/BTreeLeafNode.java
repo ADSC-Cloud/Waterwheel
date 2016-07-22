@@ -23,9 +23,9 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 	}
 
 	public void setValueList(int index, ArrayList<TValue> value) {
-        if (index<this.values.size())
+        if (index < this.values.size())
 		    this.values.set(index,value);
-        else if (index==this.values.size()) {
+        else if (index == this.values.size()) {
 			// TODO fix this
 //            this.counter.countValueAddition(value.length);
             this.values.add(index, value);
@@ -130,7 +130,7 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 	}
 	
 	@Override
-	protected BTreeNode<TKey> pushUpKey(TKey key, BTreeNode<TKey> leftChild, BTreeNode<TKey> rightNode) {
+	protected BTreeNode<TKey> pushUpKey(TKey key, BTreeNode<TKey> leftChild, BTreeNode<TKey> rightNode, SplitCounterModule sm, BTreeLeafNode leaf) {
 		throw new UnsupportedOperationException();
 	}
 	

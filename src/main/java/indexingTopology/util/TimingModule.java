@@ -3,15 +3,16 @@ package indexingTopology.util;
 import indexingTopology.exception.TimingModuleException;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by parijatmazumdar on 18/01/16.
  */
 public class TimingModule {
-    private HashMap<String,Stack<Long>> time;
+    private ConcurrentHashMap<String,Stack<Long>> time;
     private boolean medianComputed;
     private TimingModule() {
-        time = new HashMap<String, Stack<Long>>();
+        time = new ConcurrentHashMap<String, Stack<Long>>();
         medianComputed = false;
     }
 

@@ -2,9 +2,10 @@ package indexingTopology;
 
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
+import backtype.storm.StormSubmitter;
 import backtype.storm.topology.TopologyBuilder;
 import indexingTopology.bolt.IndexerBolt;
-import indexingTopology.bolt.IndexerBolt;
+import indexingTopology.bolt.InputTestBolt;
 import indexingTopology.spout.CSVReaderSpout;
 import indexingTopology.util.Constants;
 
@@ -15,10 +16,9 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Created by parijatmazumdar on 14/09/15.
+ * Created by acelzj on 7/22/16.
  */
-public class indexTopology {
-
+public class SpoutTestTopology {
     public static void main(String[] args) throws Exception {
         TopologyBuilder builder = new TopologyBuilder();
         List<String> fieldNames=new ArrayList<String>(Arrays.asList("user_id","id_1","id_2","ts_epoch",
@@ -34,7 +34,7 @@ public class indexTopology {
         builder.setSpout("TupleGenerator", new CSVReaderSpout(args[1], schema), 1).setNumTasks(1);
 //        builder.setBolt("Dispatcher",new DispatcherBolt("Indexer","longitude",schema),1).shuffleGrouping("TupleGenerator");
 
-        builder.setBolt("Indexer",new IndexerBolt("longitude",schema,4,6500000),1)
+        builder.setBolt("InputTest",new InputTestBolt(),1)
                 .setNumTasks(1)
                 .shuffleGrouping("TupleGenerator");
 
@@ -46,11 +46,15 @@ public class indexTopology {
         conf.put(Constants.HDFS_HDFS_SITE.str,"/Users/parijatmazumdar/" +
                 "Desktop/thesis/hadoop-2.7.1/etc/hadoop/hdfs-site.xml");
 
-        LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("generatorTest", conf, builder.createTopology());
+     //   LocalCluster cluster = new LocalCluster();
+        if (args != null && args.length > 0) {
+            conf.setNumWorkers(8);
+            StormSubmitter.submitTopologyWithProgressBar(args[0], conf, builder.createTopology());
+        }
+    //    cluster.submitTopology("generatorTest", conf, builder.createTopology());
         BufferedReader in=new BufferedReader(new InputStreamReader(System.in));
         System.out.println("Type anything to stop the cluster");
         in.readLine();
-        cluster.shutdown();
+    //    cluster.shutdown();
     }
 }
