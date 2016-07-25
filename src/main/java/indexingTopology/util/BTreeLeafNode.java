@@ -10,6 +10,8 @@ import java.util.List;
 
 class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKey> {
 	protected ArrayList<ArrayList<TValue>> values;
+	protected double templateOverflowPercentage;
+
 	
 	public BTreeLeafNode(int order, BytesCounter counter) {
         super(order,counter);
@@ -271,4 +273,6 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 		this.values.clear();
 		this.keyCount=0;
 	}
+
+
 }

@@ -40,7 +40,8 @@ public class TimingModule {
             Stack<Long> newStack = new Stack<Long>();
             newStack.push(duration);
             time.put(id,newStack);
-        }    }
+        }
+    }
 
     public void endTiming(String id) {
         long startTime = time.get(id).pop();

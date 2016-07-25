@@ -34,6 +34,12 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
         record.put(key, value);
     }
 
+    public Boolean containsKey(TKey key) {
+        return record.containsKey(key);
+    }
+    public int getNumberOfRecord() {
+        return record.size();
+    }
     public void resetRecord() {
         record = new TreeMap<TKey, TValue>();
     }
@@ -46,7 +52,7 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
         TKey lastKey = record.firstKey();
         int count = 0;
         for (TKey key : record.keySet()) {
-            if (leaf.isOverflow()) {
+            if (leaf.isOverflowIntemplate()) {
                 leaf.delete(lastKey);
                 leaves.add(leaf);
                 leaf = new BTreeLeafNode(order, counter);
@@ -65,9 +71,8 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
                 }
             }
         }
-        if (leaf.isOverflow()) {
-            leaf.keys.remove(lastKey);
-            leaf.values.remove(lastKey);
+        if (leaf.isOverflowIntemplate()) {
+            leaf.delete(lastKey);
             leaves.add(leaf);
             leaf = new BTreeLeafNode(order, counter);
             try {
@@ -135,7 +140,7 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
                 e.printStackTrace();
             }
         }
-
+        System.out.println("insert failure is " + sm.getCounter() + "number of record is " + numberOfRecord);
         return ((double) sm.getCounter() / numberOfRecord);
     }
 }

@@ -1,5 +1,6 @@
 package indexingTopology.util;
 
+import indexingTopology.Config.Config;
 import indexingTopology.exception.UnsupportedGenericException;
 
 import java.nio.ByteBuffer;
@@ -192,5 +193,10 @@ abstract class BTreeNode<TKey extends Comparable<TKey>> {
 		for (TKey k : keys)
 			System.out.print(k+" ");
 		System.out.println();
+	}
+
+	public boolean isOverflowIntemplate() {
+		double threshold = this.ORDER * Config.templateOverflowPercentage;
+		return ((double) this.getKeyCount() > threshold);
 	}
 }

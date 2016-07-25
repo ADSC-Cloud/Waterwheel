@@ -49,7 +49,7 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
         int count = 0;
         for (TKey key : treeMap.keySet()) {
             System.out.println(key);
-            if (leaf.isOverflow()) {
+            if (leaf.isOverflowIntemplate()) {
                 leaf.delete(lastKey);
                 leaves.add(leaf);
                 leaf = new BTreeLeafNode(order, counter);
@@ -68,7 +68,7 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
                 }
             }
         }
-        if (leaf.isOverflow()) {
+        if (leaf.isOverflowIntemplate()) {
             leaf.keys.remove(lastKey);
             leaf.values.remove(lastKey);
             leaves.add(leaf);
@@ -127,6 +127,8 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
                     if (parent.isOverflow()) {
                         root = (BTreeInnerNode) parent.dealOverflow(sm, leaf);
                     }
+                    bt.setRoot(root);
+                    bt.printBtree();
                 } catch (UnsupportedGenericException e) {
                     e.printStackTrace();
                 }
@@ -137,7 +139,7 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
     }
 
     public static void main(String[] args) {
-    /*    double[] list = {103.657223,
+     /*   double[] list = {103.657223,
         103.6610031, 103.6809998,103.71283,
         103.717561 ,103.721557 ,103.726143 ,103.727173,
         103.732578, 103.734946, 103.747694, 103.748366,
@@ -166,7 +168,13 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
         103.958248, 103.9609985, 103.961526, 103.9629974,
         103.963071, 103.964748,103.96688, 103.96769, 103.968, 103.97, 103.9850006, 103.986};*/
         List<Integer> Keys = new LinkedList<Integer>();
-        Keys.add(3);
+        for (int i = 0; i <= 10; ++i) {
+            Keys.add(i);
+        }
+        Keys.add(10);
+        Keys.add(10);
+        Keys.add(10);
+    /*    Keys.add(3);
         Keys.add(4);
         Keys.add(6);
         Keys.add(9);
@@ -186,15 +194,15 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
         Keys.add(50);
         Keys.add(50);
         Keys.add(50);
-        Keys.add(50);
-     //   List<Double> Keys = new LinkedList<Double>();
-     /*   for (int i = 0; i < list.length; ++i) {
+        Keys.add(50);*/
+      /*  List<Double> Keys = new LinkedList<Double>();
+        for (int i = 0; i < list.length; ++i) {
             Keys.add(list[i]);
         }*/
 
-        for (Integer key : Keys) {
+     /*   for (Double key : Keys) {
             System.out.println(key);
-        }
+        }*/
         testCreateLeaves_dataPages testCase = new testCreateLeaves_dataPages<Double, Integer>();
         LinkedList<BTreeLeafNode> leaves = testCase.createLeaves(Keys);
         for (BTreeLeafNode leaf : leaves) {
@@ -206,6 +214,34 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
         bt.printBtree();
         bt.clearPayload();
         testCase.checkNewTree(new SplitCounterModule());
+        bt = new BTree(4, tm, sm);
+        int offset = 0;
+        for (int i = 0; i <= 10; ++i) {
+            try {
+                bt.insert(i, ++offset);
+            } catch (UnsupportedGenericException e) {
+                e.printStackTrace();
+            }
+        }
+        try {
+            bt.insert(10, ++offset);
+        } catch (UnsupportedGenericException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            bt.insert(10, ++offset);
+        } catch (UnsupportedGenericException e) {
+            e.printStackTrace();
+        }
+        try {
+            bt.insert(10, ++offset);
+        } catch (UnsupportedGenericException e) {
+            e.printStackTrace();
+        }
+
+        bt.printBtree();
+
      //   TreeMap record = testCase.createRecord(Keys);
 
     }

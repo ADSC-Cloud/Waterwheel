@@ -169,23 +169,38 @@ public class BTree<TKey extends Comparable<TKey>,TValue> {
 
 	public void printBtree() {
 		Queue<BTreeNode<TKey>> q=new LinkedList<BTreeNode<TKey>>();
+	//	int height = 0;
+	//	int numberOfLeaves = 0;
+	//	List<TKey> list = new LinkedList<TKey>();
 		q.add(root);
 		while (!q.isEmpty()) {
+		//	++height;
 			Queue<BTreeNode<TKey>> qInner=new LinkedList<BTreeNode<TKey>>();
+		//	list = new LinkedList<TKey>();
+		//	numberOfLeaves = 0;
 			while (!q.isEmpty()) {
 				BTreeNode<TKey> curr = q.remove();
+		//		++numberOfLeaves;
 				if (curr.getNodeType().equals(TreeNodeType.InnerNode)) {
 					qInner.addAll(((BTreeInnerNode) curr).children);
 				}
-
-				for (TKey k : curr.keys)
-					System.out.print(k+" ");
+				if (qInner.isEmpty()) {
+					for (TKey k : curr.keys) {
+		//				list.add(k);
+						System.out.print(k + " ");
+					}
+				}
 
 				System.out.print(": ");
 			}
 
 			System.out.println();
 			q=qInner;
+		//	if (q.isEmpty()) {
+		//		System.out.println("The number of leaves of the tree is " + numberOfLeaves);
+		//	}
 		}
+	//	System.out.println("The height of BTree is " + height);
+	//	return list;
 	}
 }

@@ -11,7 +11,12 @@ import indexingTopology.DataSchema;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.util.*;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,6 +46,11 @@ public class IndexerBolt extends BaseRichBolt {
     private final static int numThreads = 2;
     private int numSplit;
     private BulkLoader bulkLoader;
+    private int dumplicateKeys;
+    private int chunkId;
+    private File file;
+    private FileOutputStream fop;
+  //  private LinkedList<Tuple> tuples;
 
     private class IndexerThread implements Runnable {
         private final BTree<Double,Integer> index;
@@ -79,6 +89,28 @@ public class IndexerBolt extends BaseRichBolt {
         this.numWritten=0;
         this.processingTime=0;
         this.bulkLoader = new BulkLoader(btreeOrder, tm, sm);
+        this.chunkId = 0;
+
+
+
+
+        file = new File("/home/acelzj/IndexTopology_experiment/insert_failure_without_rebuild");
+        try {
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            fop = new FileOutputStream(file);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+
+      //  this.tuples = new LinkedList<Tuple>();
         es = Executors.newFixedThreadPool(1);
 
         try {
@@ -100,50 +132,78 @@ public class IndexerBolt extends BaseRichBolt {
             tm.startTiming(Constants.TIME_SERIALIZATION_WRITE.str);
             Double indexValue = tuple.getDoubleByField(indexField);
             byte [] serializedTuple = schema.serializeTuple(tuple);
+         //   tuples.add(tuple);
             numTuples += 1;
             indexTupleWithTemplates(indexValue, serializedTuple);
-        //    long total = tm.getTotal();
+         //   long total = tm.getTotal();
         //    processingTime += total;
         //    if (numSplit > 0) {
         //        System.out.println("numberOfSplit: " + numSplit);
          //   }
-       //     System.out.println("num_tuples:" + numTuples + " , offset:" + offset + " , num_written:" + numWritten
-       //             + " , " + tm.printTimes()+" , total:"+total+" , processingTotal:"+processingTime + " , numberOfSplit:" + numSplit);
+         //   System.out.println("num_tuples:" + numTuples + " , offset:" + offset + " , num_written:" + numWritten
+        //            + " , " + tm.printTimes()+" , total:"+total+" , processingTotal:"+processingTime + " , numberOfSplit:" + numSplit);
 //        collector.emit(new Values(numTuples,processingTime,templateTime,numFailedInsert,numWrittenTemplate));
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void indexTupleWithTemplates(Double indexValue, byte[] serializedTuple) {
+    private void indexTupleWithTemplates(Double indexValue, byte[] serializedTuple) throws IOException{
         offset = chunk.write(serializedTuple);
         if (offset>=0) {
             tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
+            if (bulkLoader.containsKey(indexValue)) {
+                ++dumplicateKeys;
+            }
             bulkLoader.addRecord(indexValue, offset);
             es.submit(new IndexerThread(indexedData, indexValue, offset));
         } else {
             shutdownAndRestartThreadPool(numThreads);
+
+
+
             writeIndexedDataToHDFS();
             numWritten++;
             int processedTuple = numTuples - numTuplesBeforeWritting;
             numTuplesBeforeWritting = numTuples;
             System.out.println("The chunk is full, split time is " + sm.getCounter() + ", " + processedTuple + "tuples has been processed");
             double percentage = (double) sm.getCounter() * 100 / (double) processedTuple;
+
+
+
+            String content = "" + chunkId + " " + percentage;
+            String newline = System.getProperty("line.separator");
+            byte[] contentInBytes = content.getBytes();
+            byte[] nextLineInBytes = newline.getBytes();
+            fop.write(contentInBytes);
+            fop.write(nextLineInBytes);
             System.out.println("The percentage of insert failure is " + percentage + "%");
+        //    System.out.println
+            System.out.println("Before rebuild the BTree: ");
+
+         //   List keysBeforeRebuild = indexedData.printBtree();
+         //   System.out.println("The number of record is " + bulkLoader.getNumberOfRecord());
             if (percentage > Config.rebuildTemplatePercentage) {
                 indexedData = bulkLoader.createTreeWithBulkLoading();
                 System.out.println("New template has been built");
             }
-            sm.resetCounter();
-        //    indexedData.clearPayload();
-        //    percentage = bulkLoader.checkNewTree(indexedData, sm);
-        //    System.out.println("After rebuilt the tree, the insert failure is " + percentage);
+         //   indexedData.printBtree();
+         //   sm.resetCounter();
+         //   indexedData.clearPayload();
+         //   percentage = bulkLoader.checkNewTree(indexedData, sm);
+         //   System.out.println("After rebuilt the tree, the insert failure is " + percentage);
             sm.resetCounter();
             bulkLoader.resetRecord();
+            System.out.println("After rebuild the BTree: ");
+         //   List keysAfterRebuild = indexedData.printBtree();
+          //  for ()
             indexedData.clearPayload();
           //  System.out.println(sm.getCounter());
             offset = chunk.write(serializedTuple);
             tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
+        //    dumplicateKeys = 0;
+            bulkLoader.addRecord(indexValue, offset);
+            ++chunkId;
             es.submit(new IndexerThread(indexedData,indexValue,offset));
         }
     }
