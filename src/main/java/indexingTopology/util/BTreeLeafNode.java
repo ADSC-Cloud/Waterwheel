@@ -275,4 +275,26 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 	}
 
 
+	public Object clone() {
+		BTreeLeafNode node = new BTreeLeafNode(ORDER, (BytesCounter) counter.clone());
+		node.keyCount = keyCount;
+		if (parentNode != null) {
+			node.parentNode = (BTreeNode) parentNode.clone();
+		}
+		if (leftSibling != null) {
+			node.leftSibling = (BTreeNode) leftSibling.clone();
+		}
+		if (rightSibling != null) {
+			node.rightSibling = (BTreeNode) rightSibling.clone();
+		}
+		for (ArrayList list : values) {
+			node.values.addAll(list);
+		}
+
+		node.keys.addAll(keys);
+
+		return node;
+	}
+
+
 }

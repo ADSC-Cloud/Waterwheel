@@ -12,9 +12,10 @@ enum TreeNodeType {
 	LeafNode
 }
 
-abstract class BTreeNode<TKey extends Comparable<TKey>> {
+abstract class BTreeNode<TKey extends Comparable<TKey>> implements Cloneable{
 	protected final int ORDER;
-    protected final BytesCounter counter;
+ //   protected final BytesCounter counter;
+	protected BytesCounter counter;
 	protected ArrayList<TKey> keys;
 	protected int keyCount;
 	protected BTreeNode<TKey> parentNode;
@@ -199,4 +200,6 @@ abstract class BTreeNode<TKey extends Comparable<TKey>> {
 		double threshold = this.ORDER * Config.templateOverflowPercentage;
 		return ((double) this.getKeyCount() > threshold);
 	}
+
+	public abstract Object clone();
 }

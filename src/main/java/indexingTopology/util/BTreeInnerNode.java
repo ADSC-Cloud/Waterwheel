@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 
-class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
+class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> implements Cloneable{
 	protected ArrayList<BTreeNode<TKey>> children;
 	
 	public BTreeInnerNode(int order, BytesCounter counter) {
@@ -282,5 +282,32 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> {
 		}
 		
 		return upKey;
+	}
+
+
+	public Object clone() {
+		BTreeInnerNode node = new BTreeInnerNode(ORDER, (BytesCounter) counter.clone());
+	/*	node.keyCount = keyCount;
+		node.counter = counter;
+		node.parentNode = (BTreeNode) parentNode.clone();
+		node.leftSibling = (BTreeNode) leftSibling.clone();
+		node.rightSibling = (BTreeNode) rightSibling.clone();*/
+		node.keyCount = keyCount;
+	//	node.counter = (BytesCounter) counter.clone();
+		if (parentNode != null) {
+			node.parentNode = (BTreeNode) parentNode.clone();
+		}
+		if (leftSibling != null) {
+			node.leftSibling = (BTreeNode) leftSibling.clone();
+		}
+		if (rightSibling != null) {
+			node.rightSibling = (BTreeNode) rightSibling.clone();
+		}
+		for (TKey key : keys) {
+			node.keys.add(key);
+		}
+
+		node.children.addAll(children);
+		return node;
 	}
 }

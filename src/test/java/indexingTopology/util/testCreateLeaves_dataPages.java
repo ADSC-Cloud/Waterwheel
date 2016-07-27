@@ -5,6 +5,7 @@ import indexingTopology.DataSchema;
 import indexingTopology.exception.UnsupportedGenericException;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.*;
 
 /**
@@ -241,7 +242,10 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
         }
 
         bt.printBtree();
-
+        BigInteger a = BigInteger.valueOf(65536);
+        BigInteger b = BigInteger.valueOf(65536);
+        System.out.println(""+a.add(b));
+        System.out.println(System.nanoTime());
      //   TreeMap record = testCase.createRecord(Keys);
 
     }

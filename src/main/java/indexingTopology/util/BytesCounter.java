@@ -3,7 +3,7 @@ package indexingTopology.util;
 /**
  * Created by parijatmazumdar on 09/10/15.
  */
-public class BytesCounter {
+public class BytesCounter implements Cloneable{
     /**
      * 4 bytes for storing number of keys
      * 1 byte for storing node type - internal/leaf
@@ -56,5 +56,17 @@ public class BytesCounter {
 
     public int getHeightCount() {
         return height;
+    }
+
+    public Object clone() {
+        BytesCounter newCounter = new BytesCounter();
+        try {
+            super.clone();
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
+        newCounter.bytesCount = bytesCount;
+        newCounter.height = height;
+        return newCounter;
     }
 }

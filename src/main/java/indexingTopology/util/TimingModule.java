@@ -2,6 +2,7 @@ package indexingTopology.util;
 
 import indexingTopology.exception.TimingModuleException;
 
+import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -9,11 +10,16 @@ import java.util.concurrent.ConcurrentHashMap;
  * Created by parijatmazumdar on 18/01/16.
  */
 public class TimingModule {
-    private ConcurrentHashMap<String,Stack<Long>> time;
+  //  private ConcurrentHashMap<String,Stack<Long>> time;
+  private ConcurrentHashMap<String,Stack<Long>> time;
     private boolean medianComputed;
+    private int numEndTime = 0;
+    private int numStartTime = 0;
     private TimingModule() {
         time = new ConcurrentHashMap<String, Stack<Long>>();
         medianComputed = false;
+        numEndTime = 0;
+        numStartTime = 0;
     }
 
     public static TimingModule createNew() {
@@ -24,11 +30,18 @@ public class TimingModule {
      * minus of start_time to get the time elapsed
      */
     public void startTiming(String id) {
-        if (time.containsKey(id))
+        ++numStartTime;
+        if (time.containsKey(id)) {
             time.get(id).push(-System.nanoTime());
-        else {
+
+            //      time.get(id).push(-System.currentTimeMillis());
+        } else {
+         //   Stack<Long> newStack = new Stack<Long>();
             Stack<Long> newStack = new Stack<Long>();
+            long currentTime = -System.nanoTime();
             newStack.push(-System.nanoTime());
+
+        //    newStack.push(-System.currentTimeMillis());
             time.put(id,newStack);
         }
     }
@@ -46,23 +59,52 @@ public class TimingModule {
     public void endTiming(String id) {
         long startTime = time.get(id).pop();
         time.get(id).push(System.nanoTime()+startTime);
+        ++numEndTime;
+    //    time.get(id).push(System.currentTimeMillis()+startTime);
+    }
+
+    public int getNumEndTime() {
+        return numEndTime;
+    }
+
+    public int getNumStartTime() {
+        return numStartTime;
     }
 
     public void reset() {
         time.clear();
+        numEndTime = 0;
+        numStartTime = 0;
         medianComputed = false;
     }
 
     public long getTotal() {
-        if (!medianComputed)
-            computeMedian();
+    //    if (!medianComputed)
+    //        computeMedian();
 
         long total = 0;
         for (String k : time.keySet()) {
-            total+=time.get(k).peek();
+            Stack<Long> stack = time.get(k);
+            while (!stack.empty()) {
+                total += stack.pop();
+            }
+        //    total+=time.get(k).peek();
         }
 
         return total;
+    }
+
+    public long getSplitTime() {
+
+        long total = 0;
+        if (time.containsKey(Constants.TIME_SPLIT.str)) {
+            Stack<Long> stack = time.get(Constants.TIME_SPLIT.str);
+            while (!stack.empty()) {
+                total += stack.pop();
+            }
+        }
+        return total;
+
     }
 
     public String printTimes() {

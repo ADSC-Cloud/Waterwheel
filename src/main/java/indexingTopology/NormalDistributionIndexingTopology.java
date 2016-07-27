@@ -6,7 +6,9 @@ import backtype.storm.StormSubmitter;
 import backtype.storm.topology.TopologyBuilder;
 import indexingTopology.bolt.IndexerBolt;
 import indexingTopology.bolt.InputTestBolt;
+import indexingTopology.bolt.NormalDistributionIndexerBolt;
 import indexingTopology.spout.CSVReaderSpout;
+import indexingTopology.spout.NormalDistributionGenerator;
 import indexingTopology.util.Constants;
 
 import java.io.BufferedReader;
@@ -18,10 +20,10 @@ import java.util.List;
 /**
  * Created by acelzj on 7/22/16.
  */
-public class SpoutTestTopology {
+public class NormalDistributionIndexingTopology {
     public static void main(String[] args) throws Exception {
         TopologyBuilder builder = new TopologyBuilder();
-        List<String> fieldNames=new ArrayList<String>(Arrays.asList("user_id","id_1","id_2","ts_epoch",
+     /*   List<String> fieldNames=new ArrayList<String>(Arrays.asList("user_id","id_1","id_2","ts_epoch",
                 "date","time","latitude","longitude","time_elapsed","distance","speed","angel",
                 "mrt_station","label_1","label_2","label_3","label_4"));
 
@@ -30,11 +32,16 @@ public class SpoutTestTopology {
                 Double.class,Double.class,String.class,String.class,Double.class,Double.class,
                 Double.class,Double.class));
 
+
+
+        DataSchema schema=new DataSchema(fieldNames,valueTypes);*/
+        List<String> fieldNames=new ArrayList<String>(Arrays.asList("user_id"));
+        List<Class> valueTypes=new ArrayList<Class>(Arrays.asList(Double.class));
         DataSchema schema=new DataSchema(fieldNames,valueTypes);
-        builder.setSpout("TupleGenerator", new CSVReaderSpout(args[1], schema), 1).setNumTasks(1);
+        builder.setSpout("TupleGenerator", new NormalDistributionGenerator(), 1).setNumTasks(1);
 //        builder.setBolt("Dispatcher",new DispatcherBolt("Indexer","longitude",schema),1).shuffleGrouping("TupleGenerator");
 
-        builder.setBolt("InputTest",new InputTestBolt(),1)
+        builder.setBolt("InputTest",new NormalDistributionIndexerBolt(schema, 4, 6500000),1)
                 .setNumTasks(1)
                 .shuffleGrouping("TupleGenerator");
 
@@ -47,14 +54,12 @@ public class SpoutTestTopology {
                 "Desktop/thesis/hadoop-2.7.1/etc/hadoop/hdfs-site.xml");
 
      //   LocalCluster cluster = new LocalCluster();
-        if (args != null && args.length > 0) {
-            conf.setNumWorkers(8);
-            StormSubmitter.submitTopologyWithProgressBar(args[0], conf, builder.createTopology());
-        }
-    //    cluster.submitTopology("generatorTest", conf, builder.createTopology());
+        LocalCluster cluster = new LocalCluster();
+        cluster.submitTopology("generatorTest", conf, builder.createTopology());
         BufferedReader in=new BufferedReader(new InputStreamReader(System.in));
         System.out.println("Type anything to stop the cluster");
         in.readLine();
+        cluster.shutdown();
     //    cluster.shutdown();
     }
 }

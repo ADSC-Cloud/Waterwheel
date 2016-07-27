@@ -11,12 +11,13 @@ import java.util.*;
  * so there are two different classes for each kind of node.
  * @param <TKey> the data type of the key
  */
-public class BTree<TKey extends Comparable<TKey>,TValue> {
+public class BTree <TKey extends Comparable<TKey>,TValue> implements Cloneable{
 	private BTreeNode<TKey> root;
-    private final BytesCounter counter;
-	private final TimingModule tm;
+  //  private final BytesCounter counter;
+	private BytesCounter counter;
+	private TimingModule tm;
 	private boolean templateMode;
-    private final SplitCounterModule sm;
+    private SplitCounterModule sm;
 	
 	public BTree(int order, TimingModule tm, SplitCounterModule sm) {
 		counter = new BytesCounter();
@@ -33,6 +34,17 @@ public class BTree<TKey extends Comparable<TKey>,TValue> {
 	public void setRoot(BTreeNode root) {
 		this.root = root;
 	}
+
+	public void setCounter(BytesCounter counter) { this.counter = counter; }
+
+	public void setTimingModule(TimingModule tm) {
+		this.tm = tm;
+	}
+
+	public void setSplitCounterModule(SplitCounterModule sm) {
+		this.sm = sm;
+	}
+
     public int getTotalBytes() {
         return counter.getBytesCount();
     }
@@ -64,17 +76,30 @@ public class BTree<TKey extends Comparable<TKey>,TValue> {
 	 */
 	public void insert(TKey key, TValue value) throws UnsupportedGenericException {
 		BTreeLeafNode<TKey, TValue> leaf = null;
+		long start = System.nanoTime();
+//			tm.startTiming(Constants.TIME_LEAF_FIND.str);
 		leaf = this.findLeafNodeShouldContainKey(key);
+//			tm.endTiming(Constants.TIME_LEAF_FIND.str);
+
+		long time = System.nanoTime() - start;
+		tm.putDuration(Constants.TIME_LEAF_FIND.str, time);
+
 
 //		for (int i=0;i<1000;i++) {
 //			tm.startTiming(Constants.TIME_LEAF_FIND.str);
 //			leaf = this.findLeafNodeShouldContainKey(key);
 //			tm.endTiming(Constants.TIME_LEAF_FIND.str);
 //		}
-
+		start = System.nanoTime();
+	//	tm.startTiming(Constants.TIME_LEAF_INSERTION.str);
 		synchronized (leaf) {
 			leaf.insertKeyValue(key, value);
 		}
+		time = System.nanoTime() - start;
+	//	tm.endTiming(Constants.TIME_LEAF_INSERTION.str);
+		tm.putDuration(Constants.TIME_LEAF_INSERTION.str, time);
+
+
 
 //		for (int i=0;i<1000;i++) {
 //			tm.startTiming(Constants.TIME_LEAF_INSERTION.str);
@@ -82,20 +107,29 @@ public class BTree<TKey extends Comparable<TKey>,TValue> {
 //			tm.endTiming(Constants.TIME_LEAF_INSERTION.str);
 //			leaf.deleteKeyValue(key,value);
 //		}
-        if (templateMode && leaf.isOverflow()) {
-			tm.putDuration(Constants.TIME_SPLIT.str, 0);
-			sm.addCounter();
-		} else if (!leaf.isOverflow()) {
+     //   if (templateMode && leaf.isOverflow()) {
+	//		tm.putDuration(Constants.TIME_SPLIT.str, 0);
+	//		sm.addCounter();
+	//	}
+	//	//else if (!leaf.isOverflow()) {
+		if(!leaf.isOverflow()) {
 			tm.putDuration(Constants.TIME_SPLIT.str, 0);
 		} else {
-       // if (templateMode || !leaf.isOverflow()) {
-       //     tm.putDuration(Constants.TIME_SPLIT.str, 0);
-      //  } else {
-            tm.startTiming(Constants.TIME_SPLIT.str);
+     //   if (templateMode || !leaf.isOverflow()) {
+     //       tm.putDuration(Constants.TIME_SPLIT.str, 0);
+
+     //   } else {
+			start = System.nanoTime();
+		//	tm.startTiming(Constants.TIME_SPLIT.str);
 			BTreeNode<TKey> n = leaf.dealOverflow(sm, leaf);
+				//	tm.endTiming(Constants.TIME_SPLIT.str);
 			if (n != null) {
 				this.root = n;
-				tm.endTiming(Constants.TIME_SPLIT.str);
+				time = System.nanoTime() - start;
+				tm.putDuration(Constants.TIME_SPLIT.str, time);
+			//	tm.endTiming(Constants.TIME_SPLIT.str);
+			} else {
+				System.out.println("the root is null");
 			}
         }
 	//	int numberOfSplit = sm.getSplitTimeOnLeaf(leaf);
@@ -202,5 +236,19 @@ public class BTree<TKey extends Comparable<TKey>,TValue> {
 		}
 	//	System.out.println("The height of BTree is " + height);
 	//	return list;
+	}
+
+
+    public Object clone() {
+		BTree newBtree = null;
+		try {
+			newBtree = (BTree) super.clone();
+		} catch (CloneNotSupportedException e) {
+			e.printStackTrace();
+		}
+		newBtree.setRoot((BTreeNode) root.clone());
+		newBtree.setCounter((BytesCounter) counter.clone());
+		newBtree.templateMode = templateMode;
+		return newBtree;
 	}
 }
