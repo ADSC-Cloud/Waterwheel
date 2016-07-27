@@ -58,10 +58,10 @@ public class BytesCounter implements Cloneable{
         return height;
     }
 
-    public Object clone() {
-        BytesCounter newCounter = new BytesCounter();
+    public Object clone() throws CloneNotSupportedException{
+        BytesCounter newCounter = null;
         try {
-            super.clone();
+            newCounter = (BytesCounter) super.clone();
         } catch (CloneNotSupportedException e) {
             e.printStackTrace();
         }

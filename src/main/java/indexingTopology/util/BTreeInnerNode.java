@@ -285,8 +285,10 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 	}
 
 
-	public Object clone() {
-		BTreeInnerNode node = new BTreeInnerNode(ORDER, (BytesCounter) counter.clone());
+	public Object clone() throws CloneNotSupportedException{
+		BTreeInnerNode node = null;
+		node = (BTreeInnerNode) super.clone();
+	//	node = new BTreeInnerNode(ORDER, (BytesCounter) counter.clone());
 	/*	node.keyCount = keyCount;
 		node.counter = counter;
 		node.parentNode = (BTreeNode) parentNode.clone();
@@ -303,8 +305,9 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 		if (rightSibling != null) {
 			node.rightSibling = (BTreeNode) rightSibling.clone();
 		}
+
 		for (TKey key : keys) {
-			node.keys.add(key);
+				node.keys.add(key);
 		}
 
 		node.children.addAll(children);

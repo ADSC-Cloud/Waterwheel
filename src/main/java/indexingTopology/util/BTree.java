@@ -218,12 +218,10 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Cloneable{
 				if (curr.getNodeType().equals(TreeNodeType.InnerNode)) {
 					qInner.addAll(((BTreeInnerNode) curr).children);
 				}
-				if (qInner.isEmpty()) {
-					for (TKey k : curr.keys) {
+				for (TKey k : curr.keys) {
 		//				list.add(k);
 						System.out.print(k + " ");
 					}
-				}
 
 				System.out.print(": ");
 			}
@@ -239,7 +237,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Cloneable{
 	}
 
 
-    public Object clone() {
+    public Object clone() throws CloneNotSupportedException{
 		BTree newBtree = null;
 		try {
 			newBtree = (BTree) super.clone();

@@ -129,7 +129,7 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
                         root = (BTreeInnerNode) parent.dealOverflow(sm, leaf);
                     }
                     bt.setRoot(root);
-                    bt.printBtree();
+                //    bt.printBtree();
                 } catch (UnsupportedGenericException e) {
                     e.printStackTrace();
                 }
@@ -139,7 +139,7 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
         return bt;
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws CloneNotSupportedException{
      /*   double[] list = {103.657223,
         103.6610031, 103.6809998,103.71283,
         103.717561 ,103.721557 ,103.726143 ,103.727173,
@@ -175,6 +175,9 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
         Keys.add(10);
         Keys.add(10);
         Keys.add(10);
+        Keys.add(11);
+        Keys.add(12);
+        Keys.add(13);
     /*    Keys.add(3);
         Keys.add(4);
         Keys.add(6);
@@ -206,46 +209,28 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
         }*/
         testCreateLeaves_dataPages testCase = new testCreateLeaves_dataPages<Double, Integer>();
         LinkedList<BTreeLeafNode> leaves = testCase.createLeaves(Keys);
-        for (BTreeLeafNode leaf : leaves) {
-            leaf.print();
-        }
+     //   for (BTreeLeafNode leaf : leaves) {
+      //      leaf.print();
+     //   }
         TimingModule tm = TimingModule.createNew();
         SplitCounterModule sm = SplitCounterModule.createNew();
         BTree bt = testCase.createTreeWithBulkLoading(leaves, tm, sm);
         bt.printBtree();
-        bt.clearPayload();
-        testCase.checkNewTree(new SplitCounterModule());
-        bt = new BTree(4, tm, sm);
+        BTree newBT = (BTree)bt.clone();
+        newBT.printBtree();
+        BTree newBT1 = (BTree) newBT.clone();
+        newBT1.printBtree();
         int offset = 0;
-        for (int i = 0; i <= 10; ++i) {
-            try {
-                bt.insert(i, ++offset);
-            } catch (UnsupportedGenericException e) {
-                e.printStackTrace();
-            }
-        }
         try {
-            bt.insert(10, ++offset);
-        } catch (UnsupportedGenericException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            bt.insert(10, ++offset);
-        } catch (UnsupportedGenericException e) {
-            e.printStackTrace();
-        }
-        try {
-            bt.insert(10, ++offset);
+            bt.insert(14, ++offset);
         } catch (UnsupportedGenericException e) {
             e.printStackTrace();
         }
 
         bt.printBtree();
-        BigInteger a = BigInteger.valueOf(65536);
-        BigInteger b = BigInteger.valueOf(65536);
-        System.out.println(""+a.add(b));
-        System.out.println(System.nanoTime());
+        newBT.printBtree();
+        newBT1.printBtree();
+     //   bt.printBtree();
      //   TreeMap record = testCase.createRecord(Keys);
 
     }

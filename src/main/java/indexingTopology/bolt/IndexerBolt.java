@@ -84,7 +84,7 @@ public class IndexerBolt extends BaseRichBolt {
         this.tm = TimingModule.createNew();
         this.sm = SplitCounterModule.createNew();
         indexedData = new BTree<Double,Integer>(btreeOrder,tm, sm);
-        copyOfIndexedData = indexedData;
+      //  copyOfIndexedData = indexedData;
         chunk = MemChunk.createNew(this.bytesLimit);
         this.numTuples=0;
         this.numTuplesBeforeWritting = 0;
@@ -198,13 +198,30 @@ public class IndexerBolt extends BaseRichBolt {
             }// else {
             //    indexedData = copyOfIndexedData;
            // }
+            System.out.println("Before deep copy, the BTree is: ");
+            indexedData.printBtree();
             if (chunkId == 0) {
-                copyOfIndexedData = (BTree) indexedData.clone();
+                System.out.println("The copy of BTree is: ");
+                try {
+                    copyOfIndexedData = (BTree) indexedData.clone();
+                } catch (CloneNotSupportedException e) {
+                    e.printStackTrace();
+                }
+             //   copyOfIndexedData = org.apache.commons.lang.SerializationUtils.clone(indexedData);
+                copyOfIndexedData.printBtree();
             } else {
-                indexedData = (BTree) copyOfIndexedData.clone();
+                System.out.println("The copy of BTree is: ");
+                copyOfIndexedData.printBtree();
+                try {
+                    indexedData = (BTree) copyOfIndexedData.clone();
+                } catch (CloneNotSupportedException e) {
+                    e.printStackTrace();
+                }
+
                 indexedData.setSplitCounterModule(sm);
                 indexedData.setTimingModule(tm);
             }
+            System.out.println("After deep copy, the BTree is: ");
             indexedData.printBtree();
          //   indexedData.printBtree();
          //   sm.resetCounter();

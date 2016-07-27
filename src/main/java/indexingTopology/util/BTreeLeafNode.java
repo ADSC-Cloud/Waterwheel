@@ -275,8 +275,10 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 	}
 
 
-	public Object clone() {
-		BTreeLeafNode node = new BTreeLeafNode(ORDER, (BytesCounter) counter.clone());
+	public Object clone() throws CloneNotSupportedException{
+		BTreeLeafNode node = null;
+		node = (BTreeLeafNode) super.clone();
+	//	node = new BTreeLeafNode(ORDER, (BytesCounter) counter.clone());
 		node.keyCount = keyCount;
 		if (parentNode != null) {
 			node.parentNode = (BTreeNode) parentNode.clone();
@@ -287,10 +289,10 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 		if (rightSibling != null) {
 			node.rightSibling = (BTreeNode) rightSibling.clone();
 		}
-		for (ArrayList list : values) {
-			node.values.addAll(list);
-		}
 
+		for (ArrayList list : values) {
+				node.values.addAll(list);
+		}
 		node.keys.addAll(keys);
 
 		return node;

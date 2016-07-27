@@ -201,5 +201,8 @@ abstract class BTreeNode<TKey extends Comparable<TKey>> implements Cloneable{
 		return ((double) this.getKeyCount() > threshold);
 	}
 
-	public abstract Object clone();
+	public Object clone() throws CloneNotSupportedException {
+		BTreeNode node = (BTreeNode) super.clone();
+		return node;
+	}
 }

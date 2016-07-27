@@ -198,9 +198,17 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
             //    indexedData = copyOfIndexedData;
             // }
             if (chunkId == 0) {
-                copyOfIndexedData = (BTree) indexedData.clone();
+                try {
+                    copyOfIndexedData = (BTree) indexedData.clone();
+                } catch (CloneNotSupportedException e) {
+                    e.printStackTrace();
+                }
             } else {
-                indexedData = (BTree) copyOfIndexedData.clone();
+                try {
+                    indexedData = (BTree) copyOfIndexedData.clone();
+                } catch (CloneNotSupportedException e) {
+                    e.printStackTrace();
+                }
                 indexedData.setSplitCounterModule(sm);
                 indexedData.setTimingModule(tm);
             }
