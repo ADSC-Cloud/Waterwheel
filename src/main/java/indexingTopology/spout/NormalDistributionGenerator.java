@@ -28,12 +28,16 @@ public class NormalDistributionGenerator extends BaseRichSpout {
     SpoutOutputCollector collector_;
     transient Thread normalDistributionChanger;
     NormalDistribution distribution;
+    Random random;
+    long randomFactor;
 
     public NormalDistributionGenerator()
     {
         mean = 500;
         sd = 20;
         distribution = new NormalDistribution(mean, sd);
+        randomFactor = 1000;
+        random = new Random(randomFactor);
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
@@ -47,7 +51,6 @@ public class NormalDistributionGenerator extends BaseRichSpout {
             public void run() {
                 while (true) {
                     Utils.sleep(30000);
-                    Random random = new Random(System.currentTimeMillis());
                     mean = random.nextInt(1000);
                     sd = random.nextInt(100);
                     distribution = new NormalDistribution(mean, sd);

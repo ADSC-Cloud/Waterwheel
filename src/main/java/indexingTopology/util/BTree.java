@@ -2,6 +2,7 @@ package indexingTopology.util;
 
 import indexingTopology.exception.UnsupportedGenericException;
 
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.*;
 
@@ -11,7 +12,7 @@ import java.util.*;
  * so there are two different classes for each kind of node.
  * @param <TKey> the data type of the key
  */
-public class BTree <TKey extends Comparable<TKey>,TValue> implements Cloneable{
+public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializable{
 	private BTreeNode<TKey> root;
   //  private final BytesCounter counter;
 	private BytesCounter counter;
@@ -29,6 +30,18 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Cloneable{
 		assert sm != null : "Split counter module cannot be null";
 		this.tm = tm;
 		this.sm = sm;
+	}
+
+	public BTreeNode getRoot() {
+		return root;
+	}
+
+	public BTree(BTree bt) throws CloneNotSupportedException{
+		this.counter = (BytesCounter) bt.counter.clone();
+		this.root = (BTreeNode) bt.root.clone(bt.root);
+		setTimingModule(bt.tm);
+		setSplitCounterModule(bt.sm);
+		templateMode = bt.templateMode;
 	}
 
 	public void setRoot(BTreeNode root) {
@@ -237,16 +250,23 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Cloneable{
 	}
 
 
-    public Object clone() throws CloneNotSupportedException{
-		BTree newBtree = null;
-		try {
-			newBtree = (BTree) super.clone();
-		} catch (CloneNotSupportedException e) {
-			e.printStackTrace();
-		}
-		newBtree.setRoot((BTreeNode) root.clone());
-		newBtree.setCounter((BytesCounter) counter.clone());
-		newBtree.templateMode = templateMode;
+    public Object clone(BTree bt) throws CloneNotSupportedException{
+		BTree newBtree = new BTree(bt);
 		return newBtree;
+	}
+
+	public static Object deepClone(Object object) {
+		try {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			ObjectOutputStream oos = new ObjectOutputStream(baos);
+			oos.writeObject(object);
+			ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+			ObjectInputStream ois = new ObjectInputStream(bais);
+			return ois.readObject();
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 }

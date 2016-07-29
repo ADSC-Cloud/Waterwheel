@@ -216,20 +216,34 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
         SplitCounterModule sm = SplitCounterModule.createNew();
         BTree bt = testCase.createTreeWithBulkLoading(leaves, tm, sm);
         bt.printBtree();
-        BTree newBT = (BTree)bt.clone();
+        BTree newBT = (BTree) bt.clone(bt);
+        System.out.println(((BTreeInnerNode)bt.getRoot()).children.get(0) == ((BTreeInnerNode)newBT.getRoot()).children.get(0));
+        newBT.clearPayload();
+     //   BTree newBT = (BTree) org.apache.commons.lang.SerializationUtils.clone(bt);
         newBT.printBtree();
-        BTree newBT1 = (BTree) newBT.clone();
+    //    BTree newBT1 = (BTree) org.apache.commons.lang.SerializationUtils.clone(newBT);
+    //    newBT1.printBtree();
+        BTree newBT1 = (BTree) newBT.clone(newBT);
         newBT1.printBtree();
         int offset = 0;
-        try {
-            bt.insert(14, ++offset);
-        } catch (UnsupportedGenericException e) {
-            e.printStackTrace();
+        for (int i = 0; i <= 13; ++i) {
+            try {
+                newBT.insert(i, ++offset);
+            } catch (UnsupportedGenericException e) {
+                e.printStackTrace();
+            }
         }
-
+        System.out.println("bt is ");
         bt.printBtree();
+        System.out.println("new BT is");
         newBT.printBtree();
+        System.out.println("new BT1 is");
         newBT1.printBtree();
+        Random random = new Random(100);
+        System.out.println(random.nextInt(1000));
+        System.out.println(random.nextInt(10));
+        System.out.println(random.nextInt(1000));
+        System.out.println(random.nextInt(10));
      //   bt.printBtree();
      //   TreeMap record = testCase.createRecord(Keys);
 

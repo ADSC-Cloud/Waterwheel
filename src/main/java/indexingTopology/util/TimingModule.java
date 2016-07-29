@@ -2,6 +2,7 @@ package indexingTopology.util;
 
 import indexingTopology.exception.TimingModuleException;
 
+import java.io.*;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -9,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Created by parijatmazumdar on 18/01/16.
  */
-public class TimingModule {
+public class TimingModule implements Serializable{
   //  private ConcurrentHashMap<String,Stack<Long>> time;
   private ConcurrentHashMap<String,Stack<Long>> time;
     private boolean medianComputed;
@@ -107,6 +108,32 @@ public class TimingModule {
 
     }
 
+    public long getFindTime() {
+
+        long total = 0;
+        if (time.containsKey(Constants.TIME_LEAF_FIND.str)) {
+            Stack<Long> stack = time.get(Constants.TIME_LEAF_FIND.str);
+            while (!stack.empty()) {
+                total += stack.pop();
+            }
+        }
+        return total;
+
+    }
+
+    public long getInsertionTime() {
+
+        long total = 0;
+        if (time.containsKey(Constants.TIME_LEAF_INSERTION.str)) {
+            Stack<Long> stack = time.get(Constants.TIME_LEAF_INSERTION.str);
+            while (!stack.empty()) {
+                total += stack.pop();
+            }
+        }
+        return total;
+
+    }
+
     public String printTimes() {
         if (!medianComputed)
             computeMedian();
@@ -137,5 +164,20 @@ public class TimingModule {
             return (Long) objects[objects.length/2];
         else
             return (((Long) objects[objects.length/2]) + ((Long) objects[objects.length/2-1]))/2;
+    }
+
+    public static Object deepClone(Object object) {
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            oos.writeObject(object);
+            ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+            ObjectInputStream ois = new ObjectInputStream(bais);
+            return ois.readObject();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }

@@ -1,5 +1,6 @@
 package indexingTopology.util;
 
+import java.io.*;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Stack;
@@ -8,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Created by acelzj on 7/18/16.
  */
-public class SplitCounterModule {
+public class SplitCounterModule implements Serializable{
     private int counter;
     public SplitCounterModule() {
         counter = 0;
@@ -71,5 +72,17 @@ public class SplitCounterModule {
             System.out.println(splits.get(leaf));
         }
     }*/
-
+    public static Object deepClone(Object object) {
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            oos.writeObject(object);
+            ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+            ObjectInputStream ois = new ObjectInputStream(bais);
+            return ois.readObject();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }

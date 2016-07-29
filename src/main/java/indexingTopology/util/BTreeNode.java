@@ -3,6 +3,7 @@ package indexingTopology.util;
 import indexingTopology.Config.Config;
 import indexingTopology.exception.UnsupportedGenericException;
 
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -12,7 +13,7 @@ enum TreeNodeType {
 	LeafNode
 }
 
-abstract class BTreeNode<TKey extends Comparable<TKey>> implements Cloneable{
+abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serializable{
 	protected final int ORDER;
  //   protected final BytesCounter counter;
 	protected BytesCounter counter;
@@ -31,6 +32,7 @@ abstract class BTreeNode<TKey extends Comparable<TKey>> implements Cloneable{
         this.counter=counter;
         this.counter.countNewNode();
     }
+
 
 	public int getKeyCount() {
 		return this.keyCount;
@@ -201,8 +203,21 @@ abstract class BTreeNode<TKey extends Comparable<TKey>> implements Cloneable{
 		return ((double) this.getKeyCount() > threshold);
 	}
 
-	public Object clone() throws CloneNotSupportedException {
-		BTreeNode node = (BTreeNode) super.clone();
-		return node;
+	public abstract Object clone(BTreeNode oldNode) throws CloneNotSupportedException;
+
+
+	public static Object deepClone(Object object) {
+		try {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			ObjectOutputStream oos = new ObjectOutputStream(baos);
+			oos.writeObject(object);
+			ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+			ObjectInputStream ois = new ObjectInputStream(bais);
+			return ois.readObject();
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 }

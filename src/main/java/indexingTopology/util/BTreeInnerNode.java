@@ -2,11 +2,12 @@ package indexingTopology.util;
 
 import indexingTopology.exception.UnsupportedGenericException;
 
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 
-class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> implements Cloneable{
+class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> implements Serializable {
 	protected ArrayList<BTreeNode<TKey>> children;
 	
 	public BTreeInnerNode(int order, BytesCounter counter) {
@@ -285,10 +286,8 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 	}
 
 
-	public Object clone() throws CloneNotSupportedException{
-		BTreeInnerNode node = null;
-		node = (BTreeInnerNode) super.clone();
-	//	node = new BTreeInnerNode(ORDER, (BytesCounter) counter.clone());
+	public Object clone(BTreeNode oldNode) throws CloneNotSupportedException{
+		BTreeInnerNode node = new BTreeInnerNode(ORDER, (BytesCounter) counter.clone());
 	/*	node.keyCount = keyCount;
 		node.counter = counter;
 		node.parentNode = (BTreeNode) parentNode.clone();
@@ -297,20 +296,42 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 		node.keyCount = keyCount;
 	//	node.counter = (BytesCounter) counter.clone();
 		if (parentNode != null) {
-			node.parentNode = (BTreeNode) parentNode.clone();
+			node.parentNode = oldNode;
 		}
 		if (leftSibling != null) {
-			node.leftSibling = (BTreeNode) leftSibling.clone();
+		//	node.leftSibling = (BTreeNode) leftSibling.clone(oldNode);
+			node.leftSibling = oldNode.leftSibling;
 		}
 		if (rightSibling != null) {
-			node.rightSibling = (BTreeNode) rightSibling.clone();
+		//	node.rightSibling = (BTreeNode) rightSibling.clone(oldNode);
+			node.leftSibling = oldNode.rightSibling;
 		}
 
-		for (TKey key : keys) {
-				node.keys.add(key);
-		}
+	/*	for (TKey key : keys) {
+			node.keys.add(key);
+		}*/
 
-		node.children.addAll(children);
+		node.keys.addAll(keys);
+
+		for (BTreeNode child : children) {
+			BTreeNode newNode = (BTreeNode) child.clone(node);
+			node.children.add(newNode);
+		}
 		return node;
+	}
+
+	public static Object deepClone(Object object) {
+		try {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			ObjectOutputStream oos = new ObjectOutputStream(baos);
+			oos.writeObject(object);
+			ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+			ObjectInputStream ois = new ObjectInputStream(bais);
+			return ois.readObject();
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 }

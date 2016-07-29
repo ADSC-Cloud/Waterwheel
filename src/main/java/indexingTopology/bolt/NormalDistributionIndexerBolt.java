@@ -93,7 +93,7 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
 
 
         //    file = new File("/home/acelzj/IndexTopology_experiment/insert_time_without_rebuild_but_split");
-        file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/insert_time_without_rebuild_but_split");
+        file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/insert_time_with_rebuild_and_split_total");
         try {
             if (!file.exists()) {
                 file.createNewFile();
@@ -176,11 +176,16 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
          //   System.out.println(processedTuple);
          //   System.out.println(tm.getTotal() / processedTuple);
             double insertionTime = ((double) tm.getTotal()) / ((double) processedTuple);
-            //   String content = "" + tm.getTotal();
             String content = "" + insertionTime;
+         /*   double insertionTime = ((double) tm.getInsertionTime()) / ((double) processedTuple);
+            double findTime = ((double) tm.getFindTime()) / ((double) processedTuple);
+            double splitTime = ((double) tm.getSplitTime()) / ((double) processedTuple);*/
+         //   String content = "" + tm.getTotal();
+         //   String content = "insertion time is : " + insertionTime + " find time is : " + findTime + " split time is : " + splitTime;
             String newline = System.getProperty("line.separator");
             byte[] contentInBytes = content.getBytes();
             byte[] nextLineInBytes = newline.getBytes();
+
             fop.write(contentInBytes);
             fop.write(nextLineInBytes);
             System.out.println("The percentage of insert failure is " + percentage + "%");
@@ -190,14 +195,15 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
 
             //   List keysBeforeRebuild = indexedData.printBtree();
             //   System.out.println("The number of record is " + bulkLoader.getNumberOfRecord());
-        //    if (percentage > Config.rebuildTemplatePercentage) {
-         //       indexedData = bulkLoader.createTreeWithBulkLoading();
+            if (percentage > Config.rebuildTemplatePercentage) {
+                indexedData = bulkLoader.createTreeWithBulkLoading();
                 //   copyOfIndexedData = indexedData;
-        //        System.out.println("New template has been built");
+                System.out.println("New template has been built");
+            }
         //    }// else {
             //    indexedData = copyOfIndexedData;
             // }
-            if (chunkId == 0) {
+         /*   if (chunkId == 0) {
                 try {
                     copyOfIndexedData = (BTree) indexedData.clone();
                 } catch (CloneNotSupportedException e) {
@@ -211,7 +217,28 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
                 }
                 indexedData.setSplitCounterModule(sm);
                 indexedData.setTimingModule(tm);
-            }
+            }*/
+         /*   if (chunkId == 0) {
+                System.out.println("The copy of BTree is: ");
+                //    copyOfIndexedData = (BTree) BTree.deepClone(indexedData);
+                //    copyOfIndexedData = (BTree) org.apache.commons.lang.SerializationUtils.clone(indexedData);
+                try {
+                    copyOfIndexedData = (BTree) indexedData.clone(indexedData);
+                } catch (CloneNotSupportedException e) {
+                    e.printStackTrace();
+                }
+                //    copyOfIndexedData.printBtree();
+            } else {
+                System.out.println("The copy of BTree is: ");
+                //    copyOfIndexedData.printBtree();
+                //    indexedData = (BTree) BTree.deepClone(copyOfIndexedData);
+                //    copyOfIndexedData = (BTree) org.apache.commons.lang.SerializationUtils.clone(indexedData);
+                try {
+                    indexedData = (BTree) copyOfIndexedData.clone(copyOfIndexedData);
+                } catch (CloneNotSupportedException e) {
+                    e.printStackTrace();
+                }
+            }*/
             //   indexedData.printBtree();
             //   sm.resetCounter();
             //   indexedData.clearPayload();

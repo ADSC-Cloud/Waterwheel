@@ -1,9 +1,11 @@
 package indexingTopology.util;
 
+import java.io.*;
+
 /**
  * Created by parijatmazumdar on 09/10/15.
  */
-public class BytesCounter implements Cloneable{
+public class BytesCounter implements Serializable{
     /**
      * 4 bytes for storing number of keys
      * 1 byte for storing node type - internal/leaf
@@ -59,14 +61,24 @@ public class BytesCounter implements Cloneable{
     }
 
     public Object clone() throws CloneNotSupportedException{
-        BytesCounter newCounter = null;
-        try {
-            newCounter = (BytesCounter) super.clone();
-        } catch (CloneNotSupportedException e) {
-            e.printStackTrace();
-        }
+        BytesCounter newCounter = new BytesCounter();
         newCounter.bytesCount = bytesCount;
         newCounter.height = height;
         return newCounter;
+    }
+
+    public static Object deepClone(Object object) {
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            oos.writeObject(object);
+            ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+            ObjectInputStream ois = new ObjectInputStream(bais);
+            return ois.readObject();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }

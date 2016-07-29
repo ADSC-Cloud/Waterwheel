@@ -176,14 +176,18 @@ public class IndexerBolt extends BaseRichBolt {
 
          //   String content = "" + chunkId + " " + percentage;
          //   System.out.println("The total time is " + tm.getTotal());
-            double insertionTime = ((double) tm.getTotal()) / ((double) processedTuple);
+         //   double insertionTime = ((double) tm.getTotal()) / ((double) processedTuple);
+            double insertionTime = ((double) tm.getInsertionTime()) / ((double) processedTuple);
+            double findTime = ((double) tm.getFindTime()) / ((double) processedTuple);
+            double splitTime = ((double) tm.getSplitTime()) / ((double) processedTuple);
          //   String content = "" + tm.getTotal();
-            String content = "" + insertionTime;
+            String content = "insertion time is : " + insertionTime + "find time is : " + findTime + "split time is : " + splitTime;
             String newline = System.getProperty("line.separator");
             byte[] contentInBytes = content.getBytes();
             byte[] nextLineInBytes = newline.getBytes();
-         //   fop.write(contentInBytes);
-         //   fop.write(nextLineInBytes);
+
+            fop.write(contentInBytes);
+            fop.write(nextLineInBytes);
             System.out.println("The percentage of insert failure is " + percentage + "%");
             System.out.println(content);
         //    System.out.println
@@ -201,28 +205,29 @@ public class IndexerBolt extends BaseRichBolt {
             System.out.println("Before deep copy, the BTree is: ");
             indexedData.printBtree();
             if (chunkId == 0) {
-                System.out.println("The copy of BTree is: ");
+            //    copyOfIndexedData = (BTree) BTree.deepClone(indexedData);
+            //    copyOfIndexedData = (BTree) org.apache.commons.lang.SerializationUtils.clone(indexedData);
                 try {
-                    copyOfIndexedData = (BTree) indexedData.clone();
+                    System.out.println("The copy of BTree is: ");
+                    copyOfIndexedData = (BTree) indexedData.clone(indexedData);
+                    copyOfIndexedData.printBtree();
                 } catch (CloneNotSupportedException e) {
                     e.printStackTrace();
                 }
-             //   copyOfIndexedData = org.apache.commons.lang.SerializationUtils.clone(indexedData);
-                copyOfIndexedData.printBtree();
+            //    copyOfIndexedData.printBtree();
             } else {
-                System.out.println("The copy of BTree is: ");
-                copyOfIndexedData.printBtree();
+            //    copyOfIndexedData.printBtree();
+            //    indexedData = (BTree) BTree.deepClone(copyOfIndexedData);
+            //    copyOfIndexedData = (BTree) org.apache.commons.lang.SerializationUtils.clone(indexedData);
                 try {
-                    indexedData = (BTree) copyOfIndexedData.clone();
+                    System.out.println("After deep copy, the BTree is: ");
+                    indexedData = (BTree) copyOfIndexedData.clone(copyOfIndexedData);
+                    indexedData.printBtree();
                 } catch (CloneNotSupportedException e) {
                     e.printStackTrace();
                 }
-
-                indexedData.setSplitCounterModule(sm);
-                indexedData.setTimingModule(tm);
             }
-            System.out.println("After deep copy, the BTree is: ");
-            indexedData.printBtree();
+         //   indexedData.printBtree();
          //   indexedData.printBtree();
          //   sm.resetCounter();
          //   indexedData.clearPayload();
