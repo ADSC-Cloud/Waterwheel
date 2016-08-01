@@ -84,13 +84,17 @@ public class TimingModule implements Serializable{
     //        computeMedian();
 
         long total = 0;
-        for (String k : time.keySet()) {
+    /*    for (String k : time.keySet()) {
             Stack<Long> stack = time.get(k);
             while (!stack.empty()) {
                 total += stack.pop();
             }
         //    total+=time.get(k).peek();
-        }
+        }*/
+
+        total += getSplitTime();
+        total += getInsertionTime();
+        total += getFindTime();
 
         return total;
     }
@@ -126,6 +130,19 @@ public class TimingModule implements Serializable{
         long total = 0;
         if (time.containsKey(Constants.TIME_LEAF_INSERTION.str)) {
             Stack<Long> stack = time.get(Constants.TIME_LEAF_INSERTION.str);
+            while (!stack.empty()) {
+                total += stack.pop();
+            }
+        }
+        return total;
+
+    }
+
+    public long getSerializeTime() {
+
+        long total = 0;
+        if (time.containsKey(Constants.TIME_SERIALIZATION_WRITE.str)) {
+            Stack<Long> stack = time.get(Constants.TIME_SERIALIZATION_WRITE.str);
             while (!stack.empty()) {
                 total += stack.pop();
             }

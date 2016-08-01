@@ -7,6 +7,9 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 enum TreeNodeType {
 	InnerNode,
@@ -22,6 +25,9 @@ abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serializable{
 	protected BTreeNode<TKey> parentNode;
 	protected BTreeNode<TKey> leftSibling;
 	protected BTreeNode<TKey> rightSibling;
+	protected ReadWriteLock rwl;
+	protected Lock readLock;
+	protected Lock writeLock;
 
     protected BTreeNode(int order, BytesCounter counter) {
         this.keyCount = 0;
@@ -31,6 +37,9 @@ abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serializable{
         this.rightSibling = null;
         this.counter=counter;
         this.counter.countNewNode();
+		this.rwl = new ReentrantReadWriteLock();
+		this.readLock = rwl.readLock();
+		this.writeLock = rwl.writeLock();
     }
 
 
@@ -109,14 +118,15 @@ abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serializable{
 		if (this.getRightSibling() != null)
 			this.getRightSibling().setLeftSibling(newRNode);
 		this.setRightSibling(newRNode);
-		
 		// push up a key to parent internal node
+
 		synchronized (this.getParent()) {
 			if (this.getParent() == null) {
 				System.out.println("parent is null");
 			}
 			return this.getParent().pushUpKey(upKey, this, newRNode, sm, leaf);
 		}
+
 	}
 	
 	protected abstract BTreeNode<TKey> split();

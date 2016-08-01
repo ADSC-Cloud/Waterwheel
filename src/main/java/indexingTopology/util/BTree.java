@@ -5,6 +5,9 @@ import indexingTopology.exception.UnsupportedGenericException;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * A B+ tree
@@ -19,12 +22,18 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	private TimingModule tm;
 	private boolean templateMode;
     private SplitCounterModule sm;
+	private ReadWriteLock rwl;
+	private Lock readLock;
+	private Lock writeLock;
 	
 	public BTree(int order, TimingModule tm, SplitCounterModule sm) {
 		counter = new BytesCounter();
         this.root = new BTreeLeafNode<TKey,TValue>(order,counter);
         counter.increaseHeightCount();
 		templateMode = false;
+        rwl = new ReentrantReadWriteLock();
+        readLock = rwl.readLock();
+		writeLock = rwl.writeLock();
 
 		assert tm != null : "Timing module cannot be null";
 		assert sm != null : "Split counter module cannot be null";
@@ -89,6 +98,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	 */
 	public void insert(TKey key, TValue value) throws UnsupportedGenericException {
 		BTreeLeafNode<TKey, TValue> leaf = null;
+		System.out.println("Insert has been called");
 		long start = System.nanoTime();
 //			tm.startTiming(Constants.TIME_LEAF_FIND.str);
 		leaf = this.findLeafNodeShouldContainKey(key);
@@ -108,6 +118,10 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		synchronized (leaf) {
 			leaf.insertKeyValue(key, value);
 		}
+	/*	leaf.writeLock.lock();
+		leaf.insertKeyValue(key, value);
+		leaf.writeLock.unlock();*/
+
 		time = System.nanoTime() - start;
 	//	tm.endTiming(Constants.TIME_LEAF_INSERTION.str);
 		tm.putDuration(Constants.TIME_LEAF_INSERTION.str, time);
@@ -127,11 +141,11 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	//	//else if (!leaf.isOverflow()) {
 		if(!leaf.isOverflow()) {
 			tm.putDuration(Constants.TIME_SPLIT.str, 0);
-		} else {
+	//	} else {
      //   if (templateMode || !leaf.isOverflow()) {
      //       tm.putDuration(Constants.TIME_SPLIT.str, 0);
 
-     //   } else {
+        } else {
 			start = System.nanoTime();
 		//	tm.startTiming(Constants.TIME_SPLIT.str);
 			BTreeNode<TKey> n = leaf.dealOverflow(sm, leaf);

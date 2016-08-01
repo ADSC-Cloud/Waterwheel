@@ -10,11 +10,14 @@ import indexingTopology.Config.Config;
 import indexingTopology.DataSchema;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.util.*;
+import javafx.util.Pair;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -47,6 +50,8 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
     private int chunkId;
     private File file;
     private FileOutputStream fop;
+    private LinkedList<Pair> queue;
+    private Thread insertThread;
     //  private LinkedList<Tuple> tuples;
 
     private class IndexerThread implements Runnable {
@@ -88,12 +93,33 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
         this.processingTime=0;
         this.bulkLoader = new BulkLoader(btreeOrder, tm, sm);
         this.chunkId = 0;
-
+        this.queue = new LinkedList<Pair>();
+        this.insertThread = new Thread(new Runnable() {
+            public void run() {
+                while (true) {
+                    System.out.println(queue.size());
+                    if (!queue.isEmpty()) {
+                    //    System.out.println("****");
+                        Pair pair = queue.poll();
+                        Double indexValue = (Double) pair.getKey();
+                        Integer offset = (Integer) pair.getValue();
+                        try {
+                         //   System.out.println(indexValue);
+                         //   System.out.println(offset);
+                            indexedData.insert(indexValue, offset);
+                        } catch (UnsupportedGenericException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        });
+        this.insertThread.start();
 
 
 
         //    file = new File("/home/acelzj/IndexTopology_experiment/insert_time_without_rebuild_but_split");
-        file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/insert_time_with_rebuild_and_split_total");
+        file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/queue_every_time_with_rebuild_and_split");
         try {
             if (!file.exists()) {
                 file.createNewFile();
@@ -125,10 +151,32 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
         es.shutdownNow();
     }
 
+  /*  public void execute(Tuple tuple) {
+        try {
+            Double indexValue = tuple.getDouble(0);
+            tm.startTiming(Constants.TIME_SERIALIZATION_WRITE.str);
+            byte[] serializedTuple = schema.serializeTuple(tuple);
+            offset = chunk.write(serializedTuple);
+            if (offset >= 0) {
+                tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
+                Pair pair = new Pair(indexValue, offset);
+                queue.add(pair);
+            } else {
+                writeIndexedDataToHDFS();
+                offset = chunk.write(serializedTuple);
+                tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
+                Pair pair = new Pair(indexValue, offset);
+                queue.add(pair);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }*/
+
     public void execute(Tuple tuple) {
         try {
             //    tm.reset();
-            //    tm.startTiming(Constants.TIME_SERIALIZATION_WRITE.str);
+            tm.startTiming(Constants.TIME_SERIALIZATION_WRITE.str);
             Double indexValue = tuple.getDouble(0);
             byte [] serializedTuple = schema.serializeTuple(tuple);
             //   tuples.add(tuple);
@@ -150,57 +198,110 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
     private void indexTupleWithTemplates(Double indexValue, byte[] serializedTuple) throws IOException{
         offset = chunk.write(serializedTuple);
         if (offset>=0) {
-            //    tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
+            tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
+            Pair pair = new Pair(indexValue, offset);
+            queue.add(pair);
+         //   System.out.println(queue.size());
             if (bulkLoader.containsKey(indexValue)) {
                 ++dumplicateKeys;
             }
             bulkLoader.addRecord(indexValue, offset);
-            es.submit(new IndexerThread(indexedData, indexValue, offset));
+        //    es.submit(new IndexerThread(indexedData, indexValue, offset));
         } else {
-            shutdownAndRestartThreadPool(numThreads);
-
+        //    shutdownAndRestartThreadPool(numThreads);
 
 
             writeIndexedDataToHDFS();
-            numWritten++;
+            offset = chunk.write(serializedTuple);
+            Pair pair = new Pair(indexValue, offset);
+            queue.add(pair);
+            tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
             int processedTuple = numTuples - numTuplesBeforeWritting;
-            numTuplesBeforeWritting = numTuples;
-            System.out.println("The chunk is full, split time is " + sm.getCounter() + ", " + processedTuple + "tuples has been processed");
-            double percentage = (double) sm.getCounter() * 100 / (double) processedTuple;
-
-
-
-            //   String content = "" + chunkId + " " + percentage;
-         //   System.out.println("The total time is " + tm.getTotal());
-         //   System.out.println(tm.getTotal());
-         //   System.out.println(processedTuple);
-         //   System.out.println(tm.getTotal() / processedTuple);
-            double insertionTime = ((double) tm.getTotal()) / ((double) processedTuple);
-            String content = "" + insertionTime;
-         /*   double insertionTime = ((double) tm.getInsertionTime()) / ((double) processedTuple);
+            double serializeTime = ((double) tm.getSerializeTime()) / ((double) processedTuple);
+            double insertionTime = ((double) tm.getInsertionTime()) / ((double) processedTuple);
             double findTime = ((double) tm.getFindTime()) / ((double) processedTuple);
-            double splitTime = ((double) tm.getSplitTime()) / ((double) processedTuple);*/
-         //   String content = "" + tm.getTotal();
-         //   String content = "insertion time is : " + insertionTime + " find time is : " + findTime + " split time is : " + splitTime;
+            double splitTime = ((double) tm.getSplitTime()) / ((double) processedTuple);
+            String content = "" + chunkId + " " + findTime + " " + insertionTime + " " + splitTime + " " + serializeTime;
+            //  String content = "" + chunkId + " " + serializeTime;
             String newline = System.getProperty("line.separator");
             byte[] contentInBytes = content.getBytes();
             byte[] nextLineInBytes = newline.getBytes();
 
             fop.write(contentInBytes);
             fop.write(nextLineInBytes);
-            System.out.println("The percentage of insert failure is " + percentage + "%");
+            numWritten++;
             System.out.println(content);
+          //  int processedTuple = numTuples - numTuplesBeforeWritting;
+            numTuplesBeforeWritting = numTuples;
+            double percentage = (double) sm.getCounter() * 100 / (double) processedTuple;
+            if (percentage > Config.rebuildTemplatePercentage) {
+                    indexedData = bulkLoader.createTreeWithBulkLoading();
+            //   copyOfIndexedData = indexedData;
+            }
+
+            indexedData.clearPayload();
+
+            /*   if (chunkId == 0) {
+                System.out.println("The copy of BTree is: ");
+                //    copyOfIndexedData = (BTree) BTree.deepClone(indexedData);
+                //    copyOfIndexedData = (BTree) org.apache.commons.lang.SerializationUtils.clone(indexedData);
+                try {
+                    copyOfIndexedData = (BTree) indexedData.clone(indexedData);
+                } catch (CloneNotSupportedException e) {
+                    e.printStackTrace();
+                }
+                //    copyOfIndexedData.printBtree();
+            } else {
+                System.out.println("The copy of BTree is: ");
+                //    copyOfIndexedData.printBtree();
+                //    indexedData = (BTree) BTree.deepClone(copyOfIndexedData);
+                //    copyOfIndexedData = (BTree) org.apache.commons.lang.SerializationUtils.clone(indexedData);
+                try {
+                    indexedData = (BTree) copyOfIndexedData.clone(copyOfIndexedData);
+                } catch (CloneNotSupportedException e) {
+                    e.printStackTrace();
+                }
+            }*/
+
+            sm.resetCounter();
+            tm.reset();
+            bulkLoader.resetRecord();
+            bulkLoader.addRecord(indexValue, offset);
+            ++chunkId;
+
+            //   String content = "" + chunkId + " " + percentage;
+            //   System.out.println("The total time is " + tm.getTotal());
+            //   System.out.println(tm.getTotal());
+            //   System.out.println(processedTuple);
+            //   System.out.println(tm.getTotal() / processedTuple);
+            //   double insertionTime = ((double) tm.getTotal()) / ((double) processedTuple);
+            //   String content = "" + insertionTime;
+            //   double insertionTime = ((double) tm.getInsertionTime()) / ((double) processedTuple);
+            //   double findTime = ((double) tm.getFindTime()) / ((double) processedTuple);
+            //   double splitTime = ((double) tm.getSplitTime()) / ((double) processedTuple);
+            //   String content = "" + tm.getTotal();
+         /*   double serializeTime = ((double) tm.getSerializeTime()) / ((double) processedTuple);
+         //   String content = "" + chunkId + " " + insertionTime + " " + findTime + " " + splitTime;
+            String content = "" + chunkId + " " + serializeTime;
+            String newline = System.getProperty("line.separator");
+            byte[] contentInBytes = content.getBytes();
+            byte[] nextLineInBytes = newline.getBytes();
+
+            fop.write(contentInBytes);
+            fop.write(nextLineInBytes);*/
+            //   System.out.println("The percentage of insert failure is " + percentage + "%");
+            //   System.out.println(content);
             //    System.out.println
-            System.out.println("Before rebuild the BTree: ");
+            //   System.out.println("Before rebuild the BTree: ");
 
             //   List keysBeforeRebuild = indexedData.printBtree();
             //   System.out.println("The number of record is " + bulkLoader.getNumberOfRecord());
-            if (percentage > Config.rebuildTemplatePercentage) {
-                indexedData = bulkLoader.createTreeWithBulkLoading();
-                //   copyOfIndexedData = indexedData;
-                System.out.println("New template has been built");
-            }
-        //    }// else {
+            //    if (percentage > Config.rebuildTemplatePercentage) {
+            //        indexedData = bulkLoader.createTreeWithBulkLoading();
+            //   copyOfIndexedData = indexedData;
+            //        System.out.println("New template has been built");
+            //    }
+            //    }// else {
             //    indexedData = copyOfIndexedData;
             // }
          /*   if (chunkId == 0) {
@@ -244,20 +345,21 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
             //   indexedData.clearPayload();
             //   percentage = bulkLoader.checkNewTree(indexedData, sm);
             //   System.out.println("After rebuilt the tree, the insert failure is " + percentage);
-            sm.resetCounter();
-            tm.reset();
-            bulkLoader.resetRecord();
             //    System.out.println("After rebuild the BTree: ");
             //   List keysAfterRebuild = indexedData.printBtree();
             //  for ()
-            indexedData.clearPayload();
+            //    indexedData.clearPayload();
             //  System.out.println(sm.getCounter());
-            offset = chunk.write(serializedTuple);
-            //    tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
+            //  offset = chunk.write(serializedTuple);
+
             //    dumplicateKeys = 0;
-            bulkLoader.addRecord(indexValue, offset);
-            ++chunkId;
-            es.submit(new IndexerThread(indexedData,indexValue,offset));
+            //    sm.resetCounter();
+            //    tm.reset();
+            //    bulkLoader.resetRecord();
+            //     bulkLoader.addRecord(indexValue, offset);
+            //     ++chunkId;
+            //     es.submit(new IndexerThread(indexedData,indexValue,offset));
+            // }
         }
     }
 

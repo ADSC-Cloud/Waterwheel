@@ -66,9 +66,26 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 				return index;
 			}
 		}
-		
 		return index;
 	}
+
+	/*	public int search(TKey key) {
+		int low = 0;
+		int high = this.getKeyCount() - 1;
+	    while (low <= high) {
+			int mid = (low + high) >> 1;
+			int cmp = this.getKey(mid).compareTo(key);
+			if (cmp == 0) {
+				return (mid + 1);
+			} else if (cmp < 0) {
+				low = mid + 1;
+			} else {
+				high = mid - 1;
+			}
+		}
+
+		return -1;
+	}*/
 
 
     public Collection<BTreeNode<TKey>> recursiveSerialize(ByteBuffer allocatedBuffer) {
@@ -133,7 +150,7 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 	protected BTreeNode<TKey> pushUpKey(TKey key, BTreeNode<TKey> leftChild, BTreeNode<TKey> rightNode, SplitCounterModule sm, BTreeLeafNode leaf) {
 		// find the target position of the new key
 		int index = this.search(key);
-		
+
 		// insert the new key
 		this.insertAt(index, key, leftChild, rightNode);
 

@@ -65,9 +65,28 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 				 return -1;
 			 }
 		}
-		
 		return -1;
 	}
+
+/*	public int search(TKey key) {
+		int low = 0;
+		int high = this.getKeyCount() - 1;
+	    while (low <= high) {
+			int mid = (low + high) >> 1;
+			int cmp = this.getKey(mid).compareTo(key);
+			if (cmp == 0) {
+				return (mid + 1);
+			} else if (cmp < 0) {
+				low = mid + 1;
+			} else {
+				high = mid - 1;
+			}
+		}
+
+		return -1;
+	}*/
+
+	
 
     public Collection<BTreeNode<TKey>> recursiveSerialize(ByteBuffer allocatedBuffer) {
 		// TODO fix this
