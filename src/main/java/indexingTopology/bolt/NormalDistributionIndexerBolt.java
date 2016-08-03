@@ -192,7 +192,7 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
             byte [] serializedTuple = schema.serializeTuple(tuple);
             //   tuples.add(tuple);
             numTuples += 1;
-            tm.putChunkStartTime(Constants.TIME_CHUNK_START.str);
+            tm.putChunkStartTime();
             indexTupleWithTemplates(indexValue, serializedTuple);
             //   long total = tm.getTotal();
             //    processingTime += total;

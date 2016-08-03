@@ -57,17 +57,16 @@ public class TimingModule implements Serializable{
         }
     }
 
-    public void putChunkStartTime(String id) {
-        if (!time.containsKey(id)) {
+    public void putChunkStartTime() {
+        if (!time.containsKey(Constants.TIME_CHUNK_START.str)) {
             Stack<Long> newStack = new Stack<Long>();
             newStack.push(-System.nanoTime());
-            time.put(id, newStack);
-            System.out.println("new stack has been put into time");
+            time.put(Constants.TIME_CHUNK_START.str, newStack);
         }
     }
 
     public long getChunkStartTime() {
-        return time.get(Constants.TIME_CHUNK_START).peek();
+            return time.get(Constants.TIME_CHUNK_START.str).peek();
     }
 
     public void endTiming(String id) {
@@ -142,7 +141,6 @@ public class TimingModule implements Serializable{
 
         long total = 0;
         if (time.containsKey(Constants.TIME_LEAF_INSERTION.str)) {
-            System.out.println("insertion time");
             Stack<Long> stack = time.get(Constants.TIME_LEAF_INSERTION.str);
             while (!stack.empty()) {
                 total += stack.pop();
