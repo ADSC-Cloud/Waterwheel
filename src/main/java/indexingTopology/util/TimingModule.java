@@ -57,6 +57,19 @@ public class TimingModule implements Serializable{
         }
     }
 
+    public void putChunkStartTime(String id) {
+        if (!time.containsKey(id)) {
+            Stack<Long> newStack = new Stack<Long>();
+            newStack.push(-System.nanoTime());
+            time.put(id, newStack);
+            System.out.println("new stack has been put into time");
+        }
+    }
+
+    public long getChunkStartTime() {
+        return time.get(Constants.TIME_CHUNK_START).peek();
+    }
+
     public void endTiming(String id) {
         long startTime = time.get(id).pop();
         time.get(id).push(System.nanoTime()+startTime);
