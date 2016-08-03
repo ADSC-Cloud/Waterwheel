@@ -98,7 +98,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	 */
 	public void insert(TKey key, TValue value) throws UnsupportedGenericException {
 		BTreeLeafNode<TKey, TValue> leaf = null;
-		System.out.println("Insert has been called");
+	//	System.out.println("Insert has been called");
 		long start = System.nanoTime();
 //			tm.startTiming(Constants.TIME_LEAF_FIND.str);
 		leaf = this.findLeafNodeShouldContainKey(key);
@@ -106,6 +106,8 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 
 		long time = System.nanoTime() - start;
 		tm.putDuration(Constants.TIME_LEAF_FIND.str, time);
+
+	//	System.out.println(tm.getFindTime());
 
 
 //		for (int i=0;i<1000;i++) {
@@ -118,9 +120,6 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		synchronized (leaf) {
 			leaf.insertKeyValue(key, value);
 		}
-	/*	leaf.writeLock.lock();
-		leaf.insertKeyValue(key, value);
-		leaf.writeLock.unlock();*/
 
 		time = System.nanoTime() - start;
 	//	tm.endTiming(Constants.TIME_LEAF_INSERTION.str);
@@ -141,11 +140,11 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	//	//else if (!leaf.isOverflow()) {
 		if(!leaf.isOverflow()) {
 			tm.putDuration(Constants.TIME_SPLIT.str, 0);
-	//	} else {
+		} else {
      //   if (templateMode || !leaf.isOverflow()) {
      //       tm.putDuration(Constants.TIME_SPLIT.str, 0);
 
-        } else {
+     //   } else {
 			start = System.nanoTime();
 		//	tm.startTiming(Constants.TIME_SPLIT.str);
 			BTreeNode<TKey> n = leaf.dealOverflow(sm, leaf);

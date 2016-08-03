@@ -129,6 +129,7 @@ public class TimingModule implements Serializable{
 
         long total = 0;
         if (time.containsKey(Constants.TIME_LEAF_INSERTION.str)) {
+            System.out.println("insertion time");
             Stack<Long> stack = time.get(Constants.TIME_LEAF_INSERTION.str);
             while (!stack.empty()) {
                 total += stack.pop();

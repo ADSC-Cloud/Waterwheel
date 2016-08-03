@@ -55,6 +55,7 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
             if (leaf.isOverflowIntemplate()) {
                 leaf.delete(lastKey);
                 leaves.add(leaf);
+                counter = new BytesCounter();
                 leaf = new BTreeLeafNode(order, counter);
                 try {
                     leaf.insertKeyValue(lastKey, record.get(lastKey));
@@ -74,6 +75,7 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
         if (leaf.isOverflowIntemplate()) {
             leaf.delete(lastKey);
             leaves.add(leaf);
+            counter = new BytesCounter();
             leaf = new BTreeLeafNode(order, counter);
             try {
                 leaf.insertKeyValue(lastKey, record.get(lastKey));
