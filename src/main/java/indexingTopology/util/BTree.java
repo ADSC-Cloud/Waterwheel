@@ -98,7 +98,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	 */
 	public void insert(TKey key, TValue value) throws UnsupportedGenericException {
 		BTreeLeafNode<TKey, TValue> leaf = null;
-		System.out.println("Insert has been called");
+	//	System.out.println("Insert has been called");
 		long start = System.nanoTime();
 //			tm.startTiming(Constants.TIME_LEAF_FIND.str);
 		leaf = this.findLeafNodeShouldContainKey(key);
