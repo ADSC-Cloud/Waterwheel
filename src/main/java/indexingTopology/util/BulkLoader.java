@@ -3,6 +3,7 @@ package indexingTopology.util;
 import backtype.storm.tuple.Tuple;
 import indexingTopology.DataSchema;
 import indexingTopology.exception.UnsupportedGenericException;
+import javafx.util.Pair;
 
 import java.io.IOException;
 import java.util.*;
@@ -17,7 +18,9 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
 
     public BTree bt;
 
-    private TreeMap<TKey, TValue> record;
+//    private TreeMap<TKey, TValue> record;
+
+    private List<Pair<TKey, TValue>> record;
 
     private TimingModule tm;
 
@@ -27,58 +30,64 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
         order = btreeOrder;
         this.tm = tm;
         this.sm = sm;
-        record = new TreeMap<TKey, TValue>();
+//        record = new TreeMap<TKey, TValue>();
+        record = new ArrayList<Pair<TKey, TValue>>();
     }
 
-    public void addRecord(TKey key, TValue value) {
-        record.put(key, value);
+    public void addRecord(Pair pair) {
+        record.add(pair);
     }
 
-    public Boolean containsKey(TKey key) {
-        return record.containsKey(key);
-    }
     public int getNumberOfRecord() {
         return record.size();
     }
     public void resetRecord() {
-        record = new TreeMap<TKey, TValue>();
+        record = new ArrayList<Pair<TKey, TValue>>();
     }
 
     public LinkedList<BTreeLeafNode> createLeaves() {
         BytesCounter counter = new BytesCounter();
         BTreeLeafNode leaf = new BTreeLeafNode(order, counter);
+        Collections.sort(record, new Comparator<Pair>() {
+            public int compare(Pair pair1, Pair pair2)
+            {
+
+                return  ((Double) pair1.getKey()).compareTo(((Double) pair2.getKey()));
+            }
+        });
         LinkedList<BTreeLeafNode> leaves = new LinkedList<BTreeLeafNode>();
         BTreeLeafNode lastLeaf = leaf;
-        TKey lastKey = record.firstKey();
+        Pair lastPair = record.get(0);
         int count = 0;
-        for (TKey key : record.keySet()) {
+        for (Pair pair : record) {
+            TKey key = (TKey) pair.getKey();
             if (leaf.isOverflowIntemplate()) {
-                leaf.delete(lastKey);
+                leaf.delete((TKey) lastPair.getKey());
                 leaves.add(leaf);
                 counter = new BytesCounter();
                 leaf = new BTreeLeafNode(order, counter);
                 try {
-                    leaf.insertKeyValue(lastKey, record.get(lastKey));
-                    leaf.insertKeyValue(key, record.get(key));
+                    leaf.insertKeyValue((TKey) lastPair.getKey(), lastPair.getValue());
+                    leaf.insertKeyValue((Double) pair.getKey(), (Double) pair.getValue());
                 } catch (UnsupportedGenericException e) {
                     e.printStackTrace();
                 }
             } else {
                 try {
-                    leaf.insertKeyValue(key, record.get(key));
-                    lastKey = key;
+                    leaf.insertKeyValue(key, pair.getValue());
+                    lastPair = pair;
                 } catch (UnsupportedGenericException e) {
                     e.printStackTrace();
                 }
             }
         }
         if (leaf.isOverflowIntemplate()) {
-            leaf.delete(lastKey);
+            leaf.delete((TKey) lastPair.getKey());
             leaves.add(leaf);
             counter = new BytesCounter();
             leaf = new BTreeLeafNode(order, counter);
             try {
-                leaf.insertKeyValue(lastKey, record.get(lastKey));
+                leaf.insertKeyValue((TKey) lastPair.getKey(), lastPair.getValue());
             } catch (UnsupportedGenericException e) {
                 e.printStackTrace();
             }
@@ -131,7 +140,7 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
         return bt;
     }
 
-    public double checkNewTree(BTree<TKey, TValue> indexedData, SplitCounterModule sm) {
+  /*  public double checkNewTree(BTree<TKey, TValue> indexedData, SplitCounterModule sm) {
         double numberOfRecord = 0;
         for (TKey rec : record.keySet()) {
             TValue value = record.get(rec);
@@ -144,5 +153,5 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
         }
         System.out.println("insert failure is " + sm.getCounter() + "number of record is " + numberOfRecord);
         return ((double) sm.getCounter() / numberOfRecord);
-    }
+    }*/
 }

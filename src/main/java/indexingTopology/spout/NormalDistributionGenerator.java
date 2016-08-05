@@ -27,6 +27,7 @@ public class NormalDistributionGenerator extends BaseRichSpout {
  //   transient Thread normalDistributionChanger;
     File file;
     BufferedReader bufferedReader;
+    int count;
  //   Random random;
  //   long randomFactor;
 
@@ -37,7 +38,6 @@ public class NormalDistributionGenerator extends BaseRichSpout {
      //   randomFactor = 1000;
      //   random = new Random(randomFactor);
         file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/input_data");
-
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
@@ -74,8 +74,9 @@ public class NormalDistributionGenerator extends BaseRichSpout {
         String text = null;
         try {
             text = bufferedReader.readLine();
+            ++count;
             double indexValue = Double.parseDouble(text);
-            collector_.emit(new Values(indexValue));
+//            collector_.emit(new Values(indexValue));
         } catch (IOException e) {
             e.printStackTrace();
         }

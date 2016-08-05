@@ -17,6 +17,7 @@ import javax.sound.midi.SysexMessage;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
@@ -54,7 +55,7 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
     private int chunkId;
     private File file;
     private FileOutputStream fop;
-    private Queue<Pair> queue;
+    private LinkedBlockingQueue<Pair> queue;
     private Thread insertThread;
     //  private LinkedList<Tuple> tuples;
 
@@ -106,18 +107,20 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
                 //    System.out.println(queue.size());
                     if (!queue.isEmpty()) {
                     //    System.out.println("****");
-                        Pair pair = queue.poll();
+                        try {
+                        Pair pair = queue.take();
                         Double indexValue = (Double) pair.getKey();
                     //    System.out.println(indexValue);
                         Integer offset = (Integer) pair.getValue();
                      //   System.out.println(chunkId);
                     //    System.out.println(offset);
-                        try {
                          //   System.out.println(indexValue);
                          //   System.out.println(offset);
                             indexedData.insert(indexValue, offset);
                          //   System.out.println(tm.getInsertionTime());
                         } catch (UnsupportedGenericException e) {
+                            e.printStackTrace();
+                        } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
                     }
@@ -128,7 +131,7 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
 
 
         //   file = new File("/home/acelzj/IndexTopology_experiment/insert_time_without_rebuild_but_split");
-        file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/insert_time_without_rebuild_but_split");
+        file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/serialize_time");
         try {
             if (!file.exists()) {
                 file.createNewFile();
@@ -187,11 +190,15 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
     public void execute(Tuple tuple) {
         try {
             //    tm.reset();
-        //    tm.startTiming(Constants.TIME_SERIALIZATION_WRITE.str);
+            tm.startTiming(Constants.TIME_SERIALIZATION_WRITE.str);
+            tm.putChunkStartTime();
             Double indexValue = tuple.getDouble(0);
             byte [] serializedTuple = schema.serializeTuple(tuple);
+//            byte[] serializedTuple = new byte[8];
+//            System.out.print("size = " + serializedTuple.length);
             //   tuples.add(tuple);
             ++numTuples;
+
             indexTupleWithTemplates(indexValue, serializedTuple);
 
 
@@ -205,19 +212,20 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
 //        collector.emit(new Values(numTuples,processingTime,templateTime,numFailedInsert,numWrittenTemplate));
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
-    private void indexTupleWithTemplates(Double indexValue, byte[] serializedTuple) throws IOException{
+    private void indexTupleWithTemplates(Double indexValue, byte[] serializedTuple) throws IOException, InterruptedException{
         offset = chunk.write(serializedTuple);
         if (offset>=0) {
-        //    tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
             Pair pair = new Pair(indexValue, offset);
-            queue.add(pair);
+            queue.put(pair);
          //   System.out.println(queue.size());
-            if (bulkLoader.containsKey(indexValue)) {
-                ++dumplicateKeys;
-            }
+//            if (bulkLoader.containsKey(indexValue)) {
+//                ++dumplicateKeys;
+//            }
 
 
          /*   try {
@@ -228,32 +236,36 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
 
 
 
-            bulkLoader.addRecord(indexValue, offset);
+            bulkLoader.addRecord(pair);
+            tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
          //   es.submit(new IndexerThread(indexedData, indexValue, offset));
         } else {
          //   shutdownAndRestartThreadPool(numThreads);
-
+            tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
             System.out.println("The chunk is full");
             writeIndexedDataToHDFS();
-         //   long start = System.nanoTime();
+            long processingTime = System.nanoTime() + tm.getChunkStartTime();
+            long start = System.nanoTime();
             while (!queue.isEmpty()) {
                 Utils.sleep(1);
             }
             int processedTuple = numTuples - numTuplesBeforeWritting;
          //   System.out.println("" + processedTuple + "has been processed");
-         //   long processingTime = System.nanoTime() + tm.getChunkStartTime();
-         //   long sleepTime = System.nanoTime() - start;
+            long sleepTime = System.nanoTime() - start;
          //   tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
-         /*   double serializeTime = ((double) tm.getSerializeTime()) / ((double) processedTuple);
-            double insertionTime = ((double) tm.getInsertionTime()) / ((double) processedTuple);
+         //   double serializeTime = ((double) tm.getSerializeTime()) / ((double) processedTuple);
+            long serializeTime = tm.getSerializeTime();
+         /*   double insertionTime = ((double) tm.getInsertionTime()) / ((double) processedTuple);
             double findTime = ((double) tm.getFindTime()) / ((double) processedTuple);
             double splitTime = ((double) tm.getSplitTime()) / ((double) processedTuple);*/
-            double totalTime = ((double) tm.getTotal()) / ((double) processedTuple);
+         //   double totalTime = ((double) tm.getTotal()) / ((double) processedTuple);
+        //    double totalTime = ((double) tm.getTotal());
         //    String content = "" + chunkId + " " + findTime + " " + insertionTime + " " + splitTime + " " + sleepTime;
         //    String content = "" + chunkId + " " + totalTime + " " + sleepTime;
         //    String content = "" + chunkId + " " + processingTime + " " + sleepTime;
         //      String content = "" + chunkId + " " + serializeTime;
-            String content = "" + totalTime;
+            String content = "" + processingTime / processedTuple  + " " + serializeTime / processedTuple+ " " + sleepTime / processedTuple;
+            String content1 = "" + processingTime  + " " + serializeTime + " " + sleepTime ;
             String newline = System.getProperty("line.separator");
             byte[] contentInBytes = content.getBytes();
             byte[] nextLineInBytes = newline.getBytes();
@@ -262,6 +274,7 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
             fop.write(nextLineInBytes);
             numWritten++;
             System.out.println(content);
+            System.out.println(content1);
           //  int processedTuple = numTuples - numTuplesBeforeWritting;
             numTuplesBeforeWritting = numTuples;
             double percentage = (double) sm.getCounter() * 100 / (double) processedTuple;
@@ -311,12 +324,12 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
 
 
 
-            bulkLoader.addRecord(indexValue, offset);
 
             ++chunkId;
             offset = chunk.write(serializedTuple);
             Pair pair = new Pair(indexValue, offset);
-            queue.add(pair);
+            bulkLoader.addRecord(pair);
+            queue.put(pair);
             //   String content = "" + chunkId + " " + percentage;
             //   System.out.println("The total time is " + tm.getTotal());
             //   System.out.println(tm.getTotal());

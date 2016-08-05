@@ -10,14 +10,12 @@ import indexingTopology.Config.Config;
 import indexingTopology.DataSchema;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.util.*;
+import javafx.util.Pair;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -51,6 +49,8 @@ public class IndexerBolt extends BaseRichBolt {
     private int chunkId;
     private File file;
     private FileOutputStream fop;
+    private Queue<Pair> queue;
+    private Thread insertThread;
   //  private LinkedList<Tuple> tuples;
 
     private class IndexerThread implements Runnable {
@@ -92,7 +92,31 @@ public class IndexerBolt extends BaseRichBolt {
         this.processingTime=0;
         this.bulkLoader = new BulkLoader(btreeOrder, tm, sm);
         this.chunkId = 0;
-
+        this.insertThread = new Thread(new Runnable() {
+            public void run() {
+                while (true) {
+                    //    System.out.println(queue.size());
+                    if (!queue.isEmpty()) {
+                        //    System.out.println("****");
+                        Pair pair = queue.poll();
+                        Double indexValue = (Double) pair.getKey();
+                        //    System.out.println(indexValue);
+                        Integer offset = (Integer) pair.getValue();
+                        //   System.out.println(chunkId);
+                        //    System.out.println(offset);
+                        try {
+                            //   System.out.println(indexValue);
+                            //   System.out.println(offset);
+                            indexedData.insert(indexValue, offset);
+                            //   System.out.println(tm.getInsertionTime());
+                        } catch (UnsupportedGenericException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        });
+        this.insertThread.start();
 
 
 
@@ -155,10 +179,9 @@ public class IndexerBolt extends BaseRichBolt {
         offset = chunk.write(serializedTuple);
         if (offset>=0) {
         //    tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
-            if (bulkLoader.containsKey(indexValue)) {
-                ++dumplicateKeys;
-            }
-            bulkLoader.addRecord(indexValue, offset);
+            Pair pair = new Pair(indexValue, offset);
+            queue.add(pair);
+            bulkLoader.addRecord(pair);
             es.submit(new IndexerThread(indexedData, indexValue, offset));
         } else {
             shutdownAndRestartThreadPool(numThreads);
@@ -244,7 +267,9 @@ public class IndexerBolt extends BaseRichBolt {
             offset = chunk.write(serializedTuple);
         //    tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
         //    dumplicateKeys = 0;
-            bulkLoader.addRecord(indexValue, offset);
+            Pair pair = new Pair(indexValue, offset);
+            bulkLoader.addRecord(pair);
+//            bulkLoader.addRecord(indexValue, offset);
             ++chunkId;
             es.submit(new IndexerThread(indexedData,indexValue,offset));
         }
