@@ -11,10 +11,7 @@ import backtype.storm.utils.Utils;
 import indexingTopology.DataSchema;
 import org.apache.commons.math3.distribution.NormalDistribution;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.Map;
 import java.util.Random;
 
@@ -23,21 +20,24 @@ import java.util.Random;
  */
 public class NormalDistributionGenerator extends BaseRichSpout {
 
-    double mean;
-    double sd;
+ //   double mean;
+ //   double sd;
     SpoutOutputCollector collector_;
-    transient Thread normalDistributionChanger;
-    NormalDistribution distribution;
-    Random random;
-    long randomFactor;
+ //   NormalDistribution distribution;
+ //   transient Thread normalDistributionChanger;
+    File file;
+    BufferedReader bufferedReader;
+ //   Random random;
+ //   long randomFactor;
 
-    public NormalDistributionGenerator()
-    {
-        mean = 500;
-        sd = 20;
-        distribution = new NormalDistribution(mean, sd);
-        randomFactor = 1000;
-        random = new Random(randomFactor);
+    public NormalDistributionGenerator() throws FileNotFoundException {
+      //  mean = 500;
+      //  sd = 20;
+      //  distribution = new NormalDistribution(mean, sd);
+     //   randomFactor = 1000;
+     //   random = new Random(randomFactor);
+        file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/input_data");
+
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
@@ -46,8 +46,15 @@ public class NormalDistributionGenerator extends BaseRichSpout {
 
     public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
         collector_=collector;
-        //   Utils.sleep(60000);
-        normalDistributionChanger = new Thread(new Runnable() {
+        try {
+            bufferedReader = new BufferedReader(new FileReader(file));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+     /*   normalDistributionChanger = new Thread(new Runnable() {
             public void run() {
                 while (true) {
                     Utils.sleep(30000);
@@ -57,11 +64,23 @@ public class NormalDistributionGenerator extends BaseRichSpout {
                 }
             }
         });
-        normalDistributionChanger.start();
+        normalDistributionChanger.start();*/
+
+
+
     }
 
     public void nextTuple() {
-        double indexValue = distribution.sample();
-        collector_.emit(new Values(indexValue));
+        String text = null;
+        try {
+            text = bufferedReader.readLine();
+            double indexValue = Double.parseDouble(text);
+            collector_.emit(new Values(indexValue));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+     //   double indexValue = distribution.sample();
+     //   collector_.emit(new Values(indexValue));
     }
 }

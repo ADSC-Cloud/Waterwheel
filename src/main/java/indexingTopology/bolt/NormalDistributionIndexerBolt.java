@@ -127,8 +127,8 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
         this.insertThread.start();
 
 
-        //    file = new File("/home/acelzj/IndexTopology_experiment/insert_time_without_rebuild_but_split");
-        file = new File("/home/lzj/IndexTopology_experiment/NormalDistribution/queue_every_time_without_rebuild_but_split");
+        //   file = new File("/home/acelzj/IndexTopology_experiment/insert_time_without_rebuild_but_split");
+        file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/insert_time_without_rebuild_but_split");
         try {
             if (!file.exists()) {
                 file.createNewFile();
@@ -191,9 +191,10 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
             Double indexValue = tuple.getDouble(0);
             byte [] serializedTuple = schema.serializeTuple(tuple);
             //   tuples.add(tuple);
-            numTuples += 1;
-            tm.putChunkStartTime();
+            ++numTuples;
             indexTupleWithTemplates(indexValue, serializedTuple);
+
+
             //   long total = tm.getTotal();
             //    processingTime += total;
             //    if (numSplit > 0) {
@@ -232,16 +233,16 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
         } else {
          //   shutdownAndRestartThreadPool(numThreads);
 
-            ++chunkId;
             System.out.println("The chunk is full");
             writeIndexedDataToHDFS();
-            long start = System.nanoTime();
+         //   long start = System.nanoTime();
             while (!queue.isEmpty()) {
                 Utils.sleep(1);
             }
             int processedTuple = numTuples - numTuplesBeforeWritting;
-            long processingTime = System.nanoTime() - tm.getChunkStartTime();
-            long sleepTime = System.nanoTime() - start;
+         //   System.out.println("" + processedTuple + "has been processed");
+         //   long processingTime = System.nanoTime() + tm.getChunkStartTime();
+         //   long sleepTime = System.nanoTime() - start;
          //   tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
          /*   double serializeTime = ((double) tm.getSerializeTime()) / ((double) processedTuple);
             double insertionTime = ((double) tm.getInsertionTime()) / ((double) processedTuple);
@@ -250,8 +251,9 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
             double totalTime = ((double) tm.getTotal()) / ((double) processedTuple);
         //    String content = "" + chunkId + " " + findTime + " " + insertionTime + " " + splitTime + " " + sleepTime;
         //    String content = "" + chunkId + " " + totalTime + " " + sleepTime;
-            String content = "" + chunkId + " " + processingTime + " " + sleepTime;
-            //  String content = "" + chunkId + " " + serializeTime;
+        //    String content = "" + chunkId + " " + processingTime + " " + sleepTime;
+        //      String content = "" + chunkId + " " + serializeTime;
+            String content = "" + totalTime;
             String newline = System.getProperty("line.separator");
             byte[] contentInBytes = content.getBytes();
             byte[] nextLineInBytes = newline.getBytes();
@@ -263,15 +265,17 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
           //  int processedTuple = numTuples - numTuplesBeforeWritting;
             numTuplesBeforeWritting = numTuples;
             double percentage = (double) sm.getCounter() * 100 / (double) processedTuple;
-            System.out.println(sm.getCounter());
-            if (percentage > Config.rebuildTemplatePercentage) {
-                    indexedData = bulkLoader.createTreeWithBulkLoading();
+            System.out.println("The percentage is " + percentage);
+          //  System.out.println(sm.getCounter());
+         /*   if (percentage > Config.rebuildTemplatePercentage) {
+                indexedData = bulkLoader.createTreeWithBulkLoading();
             //   copyOfIndexedData = indexedData;
-            }
+                System.out.println("New template has been constructed");
+            }*/
 
             indexedData.clearPayload();
 
-         /*     if (chunkId == 0) {
+              if (chunkId == 0) {
               //  System.out.println("The copy of BTree is: ");
                 //    copyOfIndexedData = (BTree) BTree.deepClone(indexedData);
                 //    copyOfIndexedData = (BTree) org.apache.commons.lang.SerializationUtils.clone(indexedData);
@@ -291,7 +295,7 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
                 } catch (CloneNotSupportedException e) {
                     e.printStackTrace();
                 }
-            }*/
+            }
 
             sm.resetCounter();
             tm.reset();
