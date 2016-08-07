@@ -95,13 +95,13 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
         copyOfIndexedData = indexedData;
         chunk = MemChunk.createNew(this.bytesLimit);
         this.numTuples=0;
-        this.numTuplesBeforeWritting = 0;
+        this.numTuplesBeforeWritting = 1;
         this.numWritten=0;
         this.processingTime=0;
         this.bulkLoader = new BulkLoader(btreeOrder, tm, sm);
         this.chunkId = 0;
         this.queue = new LinkedBlockingQueue<Pair>();
-        this.insertThread = new Thread(new Runnable() {
+    /*    this.insertThread = new Thread(new Runnable() {
             public void run() {
                 while (true) {
                 //    System.out.println(queue.size());
@@ -127,28 +127,28 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
                 }
             }
         });
-        this.insertThread.start();
+        this.insertThread.start();*/
 
 
         //   file = new File("/home/acelzj/IndexTopology_experiment/insert_time_without_rebuild_but_split");
-        file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/serialize_time");
-        try {
-            if (!file.exists()) {
-                file.createNewFile();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            fop = new FileOutputStream(file);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/serialize_time");
+//        try {
+//            if (!file.exists()) {
+//                file.createNewFile();
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        try {
+//            fop = new FileOutputStream(file);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
 
 
         //  this.tuples = new LinkedList<Tuple>();
-        es = Executors.newFixedThreadPool(1);
+//        es = Executors.newFixedThreadPool(1);
 
     //    es.submit(new IndexerThread(indexedData));
 
@@ -189,7 +189,7 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
 
     public void execute(Tuple tuple) {
         try {
-            //    tm.reset();
+            tm.reset();
             tm.startTiming(Constants.TIME_SERIALIZATION_WRITE.str);
             tm.putChunkStartTime();
             Double indexValue = tuple.getDouble(0);
@@ -258,27 +258,29 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
          /*   double insertionTime = ((double) tm.getInsertionTime()) / ((double) processedTuple);
             double findTime = ((double) tm.getFindTime()) / ((double) processedTuple);
             double splitTime = ((double) tm.getSplitTime()) / ((double) processedTuple);*/
+            String content = "" + processedTuple + "has been processed" + "processingTime : " + processingTime / 1000 / 1000 / 1000 + "sleepTime : " + sleepTime / 1000 / 1000 / 1000;
          //   double totalTime = ((double) tm.getTotal()) / ((double) processedTuple);
         //    double totalTime = ((double) tm.getTotal());
         //    String content = "" + chunkId + " " + findTime + " " + insertionTime + " " + splitTime + " " + sleepTime;
         //    String content = "" + chunkId + " " + totalTime + " " + sleepTime;
         //    String content = "" + chunkId + " " + processingTime + " " + sleepTime;
         //      String content = "" + chunkId + " " + serializeTime;
-            String content = "" + processingTime / processedTuple  + " " + serializeTime / processedTuple+ " " + sleepTime / processedTuple;
-            String content1 = "" + processingTime  + " " + serializeTime + " " + sleepTime ;
+//            String content = "" + processingTime / processedTuple  + " " + serializeTime / processedTuple+ " " + sleepTime / processedTuple;
+//            String content1 = "" + processingTime  + " " + serializeTime + " " + sleepTime ;
             String newline = System.getProperty("line.separator");
-            byte[] contentInBytes = content.getBytes();
-            byte[] nextLineInBytes = newline.getBytes();
+//            byte[] contentInBytes = content.getBytes();
+//            byte[] nextLineInBytes = newline.getBytes();
 
-            fop.write(contentInBytes);
-            fop.write(nextLineInBytes);
+//            fop.write(contentInBytes);
+//            fop.write(nextLineInBytes);
             numWritten++;
             System.out.println(content);
-            System.out.println(content1);
+//            System.out.println(content1);
           //  int processedTuple = numTuples - numTuplesBeforeWritting;
             numTuplesBeforeWritting = numTuples;
             double percentage = (double) sm.getCounter() * 100 / (double) processedTuple;
             System.out.println("The percentage is " + percentage);
+            System.out.println(bulkLoader.checkInsertion(indexedData, processedTuple));
           //  System.out.println(sm.getCounter());
          /*   if (percentage > Config.rebuildTemplatePercentage) {
                 indexedData = bulkLoader.createTreeWithBulkLoading();

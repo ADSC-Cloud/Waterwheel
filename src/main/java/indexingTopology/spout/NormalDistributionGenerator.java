@@ -20,24 +20,27 @@ import java.util.Random;
  */
 public class NormalDistributionGenerator extends BaseRichSpout {
 
- //   double mean;
- //   double sd;
+    double mean;
+    double sd;
     SpoutOutputCollector collector_;
- //   NormalDistribution distribution;
- //   transient Thread normalDistributionChanger;
+    NormalDistribution distribution;
+    transient Thread normalDistributionChanger;
+    transient Thread ioSpeedTester;
     File file;
     BufferedReader bufferedReader;
     int count;
- //   Random random;
- //   long randomFactor;
+    Random random;
+    long randomFactor;
+    private FileOutputStream fop;
+
 
     public NormalDistributionGenerator() throws FileNotFoundException {
-      //  mean = 500;
-      //  sd = 20;
-      //  distribution = new NormalDistribution(mean, sd);
-     //   randomFactor = 1000;
-     //   random = new Random(randomFactor);
-        file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/input_data");
+//        mean = 500;
+//        sd = 20;
+//       distribution = new NormalDistribution(mean, sd);
+//        randomFactor = 1000;
+//        random = new Random(randomFactor);
+        file = new File("/home/lzj/IndexTopology_experiment/NormalDistribution/input_data");
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
@@ -46,6 +49,7 @@ public class NormalDistributionGenerator extends BaseRichSpout {
 
     public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
         collector_=collector;
+        count = 0;
         try {
             bufferedReader = new BufferedReader(new FileReader(file));
         } catch (FileNotFoundException e) {
@@ -54,17 +58,33 @@ public class NormalDistributionGenerator extends BaseRichSpout {
             e.printStackTrace();
         }
 
-     /*   normalDistributionChanger = new Thread(new Runnable() {
+//        try {
+//            fop = new FileOutputStream(file);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+
+//        normalDistributionChanger = new Thread(new Runnable() {
+//            public void run() {
+//                while (true) {
+//                    Utils.sleep(30000);
+//                    mean = random.nextInt(1000);
+//                    sd = random.nextInt(100);
+//                    distribution = new NormalDistribution(mean, sd);
+//                }
+//            }
+//        });
+//        normalDistributionChanger.start();
+        ioSpeedTester = new Thread((new Runnable() {
             public void run() {
                 while (true) {
-                    Utils.sleep(30000);
-                    mean = random.nextInt(1000);
-                    sd = random.nextInt(100);
-                    distribution = new NormalDistribution(mean, sd);
+                    Utils.sleep(10000);
+                    System.out.println(count + "tuples has been emitted in 10 seconds");
+                    count = 0;
                 }
             }
-        });
-        normalDistributionChanger.start();*/
+        }));
+        ioSpeedTester.start();
 
 
 
@@ -75,13 +95,25 @@ public class NormalDistributionGenerator extends BaseRichSpout {
         try {
             text = bufferedReader.readLine();
             ++count;
+//            System.out.println(text);
             double indexValue = Double.parseDouble(text);
-//            collector_.emit(new Values(indexValue));
+            collector_.emit(new Values(indexValue));
         } catch (IOException e) {
             e.printStackTrace();
         }
+//        double indexValue = distribution.sample();
+//        String content = "" + indexValue;
+//        byte[] contentInBytes = content.getBytes();
+//        String newline = System.getProperty("line.separator");
+//        byte[] nextLineInBytes = newline.getBytes();
+//        try {
+//            fop.write(contentInBytes);
+//            fop.write(nextLineInBytes);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
 
-     //   double indexValue = distribution.sample();
-     //   collector_.emit(new Values(indexValue));
+//        collector_.emit(new Values(indexValue));
     }
 }

@@ -54,9 +54,9 @@ public class NormalDistributionIndexingTopology {
                 "Desktop/thesis/hadoop-2.7.1/etc/hadoop/hdfs-site.xml");
 
       //  LocalCluster cluster = new LocalCluster();
-     //   LocalCluster cluster = new LocalCluster();
-      //  cluster.submitTopology("generatorTest", conf, builder.createTopology());
-        StormSubmitter.submitTopologyWithProgressBar(args[0], conf, builder.createTopology());
+        LocalCluster cluster = new LocalCluster();
+        cluster.submitTopology("generatorTest", conf, builder.createTopology());
+//        StormSubmitter.submitTopologyWithProgressBar(args[0], conf, builder.createTopology());
         BufferedReader in=new BufferedReader(new InputStreamReader(System.in));
         System.out.println("Type anything to stop the cluster");
         in.readLine();

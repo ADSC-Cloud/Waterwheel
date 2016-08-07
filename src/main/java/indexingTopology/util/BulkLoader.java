@@ -154,4 +154,18 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
         System.out.println("insert failure is " + sm.getCounter() + "number of record is " + numberOfRecord);
         return ((double) sm.getCounter() / numberOfRecord);
     }*/
+    public boolean checkInsertion(BTree indexedData, int processedTuple) {
+        int count = 0;
+//        System.out.println("The size of record is " + record.size());
+        for (Pair pair : record) {
+            TKey key = (TKey) pair.getKey();
+            if (indexedData.search(key) != null) {
+                ++count;
+            }
+        }
+       System.out.println("count = " + count);
+        System.out.println("processedTuple = " + processedTuple);
+        return count == processedTuple;
+
+    }
 }
