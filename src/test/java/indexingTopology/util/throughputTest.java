@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Created by acelzj on 8/8/16.
@@ -25,7 +26,7 @@ public class throughputTest {
     BufferedReader bufferedReader;
     MemChunk chunk;
     int bytesLimit;
-    AtomicInteger total;
+    AtomicLong total;
     int btreeOrder;
     int numTuples;
     ByteArrayOutputStream bos;
@@ -47,7 +48,7 @@ public class throughputTest {
         sm = SplitCounterModule.createNew();
         btreeOrder = 4;
         chunkId = 0;
-        total = new AtomicInteger(0);
+        total = new AtomicLong(0);
         numTuples = 0;
         numTuplesBeforeWritting = 1;
         indexedData = new BTree<Double,Integer>(btreeOrder, tm, sm);
@@ -93,7 +94,8 @@ public class throughputTest {
                         if (percentage > Config.rebuildTemplatePercentage) {
                             indexedData = bulkLoader.createTreeWithBulkLoading();
                         }
-                        System.out.println((double) total / (double) processedTuples);
+                        long totalTime = total.get();
+                        System.out.println((double) totalTime / (double) processedTuples);
                         chunk = MemChunk.createNew(bytesLimit);
                         offset = chunk.write(bos.toByteArray());
                         Pair pair = new Pair(indexValue, offset);
@@ -105,7 +107,7 @@ public class throughputTest {
                             e.printStackTrace();
                         }
                         ++chunkId;
-                        total = new AtomicInteger(0);
+                        total = new AtomicLong(0);
                     }
                 }
             }
@@ -121,7 +123,7 @@ public class throughputTest {
                             Integer offset = (Integer) pair.getValue();
                             long start = System.nanoTime();
                             indexedData.insert(indexValue, offset);
-                            total += System.nanoTime() - start;
+                            total.addAndGet(System.nanoTime() - start);
                         } catch (UnsupportedGenericException e) {
                             e.printStackTrace();
                         } catch (InterruptedException e) {
