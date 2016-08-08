@@ -41,7 +41,7 @@ public class NormalDistributionIndexingTopology {
         builder.setSpout("TupleGenerator", new NormalDistributionGenerator(), 1).setNumTasks(1);
 //        builder.setBolt("Dispatcher",new DispatcherBolt("Indexer","longitude",schema),1).shuffleGrouping("TupleGenerator");
 
-        builder.setBolt("InputTest",new NormalDistributionIndexerBolt(schema, 4, 6500000),1)
+        builder.setBolt("InputTest",new NormalDistributionIndexerBolt(schema, 16, 6500000),1)
                 .setNumTasks(1)
                 .shuffleGrouping("TupleGenerator");
 
@@ -53,8 +53,8 @@ public class NormalDistributionIndexingTopology {
         conf.put(Constants.HDFS_HDFS_SITE.str,"/Users/parijatmazumdar/" +
                 "Desktop/thesis/hadoop-2.7.1/etc/hadoop/hdfs-site.xml");
 
-      //  LocalCluster cluster = new LocalCluster();
         LocalCluster cluster = new LocalCluster();
+//        LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("generatorTest", conf, builder.createTopology());
 //        StormSubmitter.submitTopologyWithProgressBar(args[0], conf, builder.createTopology());
         BufferedReader in=new BufferedReader(new InputStreamReader(System.in));

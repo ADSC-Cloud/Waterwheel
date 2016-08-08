@@ -68,7 +68,7 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
                 leaf = new BTreeLeafNode(order, counter);
                 try {
                     leaf.insertKeyValue((TKey) lastPair.getKey(), lastPair.getValue());
-                    leaf.insertKeyValue((Double) pair.getKey(), (Double) pair.getValue());
+                    leaf.insertKeyValue((Double) pair.getKey(),  pair.getValue());
                 } catch (UnsupportedGenericException e) {
                     e.printStackTrace();
                 }

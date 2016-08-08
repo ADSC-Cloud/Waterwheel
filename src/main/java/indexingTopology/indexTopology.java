@@ -2,6 +2,7 @@ package indexingTopology;
 
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
+import backtype.storm.StormSubmitter;
 import backtype.storm.topology.TopologyBuilder;
 import indexingTopology.bolt.IndexerBolt;
 import indexingTopology.bolt.IndexerBolt;
@@ -46,11 +47,12 @@ public class indexTopology {
         conf.put(Constants.HDFS_HDFS_SITE.str,"/Users/parijatmazumdar/" +
                 "Desktop/thesis/hadoop-2.7.1/etc/hadoop/hdfs-site.xml");
 
-        LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("generatorTest", conf, builder.createTopology());
+//        LocalCluster cluster = new LocalCluster();
+//        cluster.submitTopology("generatorTest", conf, builder.createTopology());
+        StormSubmitter.submitTopologyWithProgressBar(args[0], conf, builder.createTopology());
         BufferedReader in=new BufferedReader(new InputStreamReader(System.in));
-        System.out.println("Type anything to stop the cluster");
+//        System.out.println("Type anything to stop the cluster");
         in.readLine();
-        cluster.shutdown();
+//        cluster.shutdown();
     }
 }

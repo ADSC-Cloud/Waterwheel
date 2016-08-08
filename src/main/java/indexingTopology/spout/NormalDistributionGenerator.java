@@ -40,7 +40,7 @@ public class NormalDistributionGenerator extends BaseRichSpout {
 //       distribution = new NormalDistribution(mean, sd);
 //        randomFactor = 1000;
 //        random = new Random(randomFactor);
-        file = new File("/home/lzj/IndexTopology_experiment/NormalDistribution/input_data");
+        file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/input_data");
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {

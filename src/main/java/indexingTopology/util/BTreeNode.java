@@ -120,12 +120,12 @@ abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serializable{
 		this.setRightSibling(newRNode);
 		// push up a key to parent internal node
 
-		synchronized (this.getParent()) {
+//		synchronized (this.getParent()) {
 			if (this.getParent() == null) {
 				System.out.println("parent is null");
 			}
 			return this.getParent().pushUpKey(upKey, this, newRNode, sm, leaf);
-		}
+//		}
 
 	}
 	

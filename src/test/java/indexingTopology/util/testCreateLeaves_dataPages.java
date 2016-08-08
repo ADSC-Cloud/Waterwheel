@@ -49,8 +49,9 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
         TKey lastKey = treeMap.firstKey();
         int count = 0;
         for (TKey key : treeMap.keySet()) {
-            System.out.println(key);
+//            System.out.println(key);
             if (leaf.isOverflowIntemplate()) {
+//                leaf.print();
                 leaf.delete(lastKey);
                 leaves.add(leaf);
                 leaf = new BTreeLeafNode(order, counter);
@@ -63,6 +64,7 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
             } else {
                 try {
                     leaf.insertKeyValue(key, treeMap.get(key));
+                    leaf.print();
                     lastKey = key;
                 } catch (UnsupportedGenericException e) {
                     e.printStackTrace();
@@ -119,16 +121,17 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
                 try {
                     BTreeInnerNode parent = root.getRightMostChild();
                     int index = parent.getKeyCount();
-                    System.out.println("count: = " + count + "index: = " + index + " ");
+//                    System.out.println("count: = " + count + "index: = " + index + " ");
                   //  parent.print();
                     parent.setKey(index, leaf.getKey(0));
                     parent.setChild(index+1, leaf);
                     preNode = leaf;
-                    parent.print();
+//                    parent.print();
                     if (parent.isOverflow()) {
                         root = (BTreeInnerNode) parent.dealOverflow(sm, leaf);
                     }
                     bt.setRoot(root);
+                    bt.printBtree();
                 //    bt.printBtree();
                 } catch (UnsupportedGenericException e) {
                     e.printStackTrace();
@@ -169,15 +172,15 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
         103.958248, 103.9609985, 103.961526, 103.9629974,
         103.963071, 103.964748,103.96688, 103.96769, 103.968, 103.97, 103.9850006, 103.986};*/
         List<Integer> Keys = new LinkedList<Integer>();
-        for (int i = 0; i <= 10; ++i) {
+        for (int i = 0; i <= 50; ++i) {
             Keys.add(i);
         }
-        Keys.add(10);
-        Keys.add(10);
-        Keys.add(10);
-        Keys.add(11);
-        Keys.add(12);
-        Keys.add(13);
+//        Keys.add(10);
+//        Keys.add(10);
+//        Keys.add(10);
+//        Keys.add(11);
+//        Keys.add(12);
+//        Keys.add(13);
     /*    Keys.add(3);
         Keys.add(4);
         Keys.add(6);

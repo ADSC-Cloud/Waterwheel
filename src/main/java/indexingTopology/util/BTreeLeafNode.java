@@ -55,36 +55,36 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 	
 	@Override
     // TODO optimize to binary search
-	public int search(TKey key) {
-		for (int i = 0; i < this.getKeyCount(); ++i) {
-			 int cmp = this.getKey(i).compareTo(key);
-			 if (cmp == 0) {
-				 return i;
-			 }
-			 else if (cmp > 0) {
-				 return -1;
-			 }
-		}
-		return -1;
-	}
+//	public int search(TKey key) {
+//		for (int i = 0; i < this.getKeyCount(); ++i) {
+//			 int cmp = this.getKey(i).compareTo(key);
+//			 if (cmp == 0) {
+//				 return i;
+//			 }
+//			 else if (cmp > 0) {
+//				 return -1;
+//			 }
+//		}
+//		return -1;
+//	}
 
-/*	public int search(TKey key) {
+	public int search(TKey key) {
 		int low = 0;
 		int high = this.getKeyCount() - 1;
 	    while (low <= high) {
 			int mid = (low + high) >> 1;
 			int cmp = this.getKey(mid).compareTo(key);
 			if (cmp == 0) {
-				return (mid + 1);
-			} else if (cmp < 0) {
-				low = mid + 1;
-			} else {
+				return mid;
+			} else if (cmp > 0) {
 				high = mid - 1;
+			} else {
+				low = mid + 1;
 			}
 		}
 
 		return -1;
-	}*/
+	}
 
 	
 
@@ -175,7 +175,7 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 		int index = this.search(key);
 		if (index == -1)
 			return false;
-		
+		System.out.println(index);
 		this.deleteAt(index);
 		return true;
 	}

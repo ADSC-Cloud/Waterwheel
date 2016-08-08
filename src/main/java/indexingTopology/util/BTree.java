@@ -117,9 +117,9 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 //		}
 		start = System.nanoTime();
 	//	tm.startTiming(Constants.TIME_LEAF_INSERTION.str);
-		synchronized (leaf) {
+//		synchronized (leaf) {
 			leaf.insertKeyValue(key, value);
-		}
+//		}
 
 		time = System.nanoTime() - start;
 	//	tm.endTiming(Constants.TIME_LEAF_INSERTION.str);

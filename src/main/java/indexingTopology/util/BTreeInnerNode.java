@@ -55,37 +55,37 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 	}
 	
 	@Override
-	public int search(TKey key) {
-		int index = 0;
-		for (index = 0; index < this.getKeyCount(); ++index) {
-			int cmp = this.getKey(index).compareTo(key);
-			if (cmp == 0) {
-				return index + 1;
-			}
-			else if (cmp > 0) {
-				return index;
-			}
-		}
-		return index;
-	}
+//	public int search(TKey key) {
+//		int index = 0;
+//		for (index = 0; index < this.getKeyCount(); ++index) {
+//			int cmp = this.getKey(index).compareTo(key);
+//			if (cmp == 0) {
+//				return index + 1;
+//			}
+//			else if (cmp > 0) {
+//				return index;
+//			}
+//		}
+//		return index;
+//	}
 
-	/*	public int search(TKey key) {
+	public int search(TKey key) {
 		int low = 0;
 		int high = this.getKeyCount() - 1;
-	    while (low <= high) {
+		while (low <= high) {
 			int mid = (low + high) >> 1;
 			int cmp = this.getKey(mid).compareTo(key);
 			if (cmp == 0) {
 				return (mid + 1);
-			} else if (cmp < 0) {
-				low = mid + 1;
-			} else {
+			} else if (cmp > 0) {
 				high = mid - 1;
+			} else {
+				low = mid + 1;
 			}
 		}
 
-		return -1;
-	}*/
+		return low;
+	}
 
 
     public Collection<BTreeNode<TKey>> recursiveSerialize(ByteBuffer allocatedBuffer) {
