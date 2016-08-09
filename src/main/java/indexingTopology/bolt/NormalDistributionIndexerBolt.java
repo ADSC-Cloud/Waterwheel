@@ -282,13 +282,8 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
             double percentage = (double) sm.getCounter() * 100 / (double) processedTuple;
             System.out.println("The percentage is " + percentage);
             System.out.println(bulkLoader.checkInsertion(indexedData, processedTuple));
-          //  System.out.println(sm.getCounter());
-            if (percentage > Config.rebuildTemplatePercentage) {
-                indexedData = bulkLoader.createTreeWithBulkLoading();
-            //   copyOfIndexedData = indexedData;
-//                System.out.println("New template has been constructed");
-            }
-
+//            createNewTree(percentage);
+//            copyTree(chunkId);
             indexedData.clearPayload();
 
 //              if (chunkId == 0) {
@@ -316,14 +311,6 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
             sm.resetCounter();
             tm.reset();
             bulkLoader.resetRecord();
-
-
-
-          /*  try {
-                indexedData.insert(indexValue, offset);
-            } catch (UnsupportedGenericException e) {
-                e.printStackTrace();
-            }*/
 
 
 
@@ -428,6 +415,22 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
         }
     }
 
+    private void copyTree(int chunkId) {
+        if (chunkId == 0) {
+            try {
+                copyOfIndexedData = (BTree) indexedData.clone(indexedData);
+            } catch (CloneNotSupportedException e) {
+                 e.printStackTrace();
+            }
+        } else {
+            try {
+                indexedData = (BTree) copyOfIndexedData.clone(copyOfIndexedData);
+            } catch (CloneNotSupportedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     // todo find a way to not shutdown threadpool everytime
     private void shutdownAndRestartThreadPool(int threads) {
         es.shutdown();
@@ -438,6 +441,12 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
         }
 
         es = Executors.newFixedThreadPool(threads);
+    }
+
+    private void createNewTree(double percentage) {
+        if (percentage > Config.rebuildTemplatePercentage) {
+            indexedData = bulkLoader.createTreeWithBulkLoading();
+        }
     }
 
     private void debugPrint(int numFailedInsert, Double indexValue) {

@@ -41,7 +41,7 @@ public class throughputTest {
     BTree<Double, Integer> copyOfIndexedData;
     public throughputTest() {
         queue = new LinkedBlockingQueue<Pair>();
-        file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/input_data");
+        file = new File("/home/lzj/IndexTopology_experiment/NormalDistribution/input_data");
         bytesLimit = 6500000;
         chunk = MemChunk.createNew(bytesLimit);
         tm = TimingModule.createNew();
@@ -67,15 +67,17 @@ public class throughputTest {
                     try {
                         text = bufferedReader.readLine();
                         indexValue = Double.parseDouble(text);
-                        bos = new ByteArrayOutputStream();
-                        byte[] b = ByteBuffer.allocate(Double.SIZE / Byte.SIZE).putDouble(indexValue).array();
-                        bos.write(b);
                         ++numTuples;
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
 
-                    int offset = chunk.write(bos.toByteArray());
+                    int offset = 0;
+                    try {
+                        offset = chunk.write(serializeIndexValue());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                     if (offset >= 0) {
                         Pair pair = new Pair(indexValue, offset);
                         try {
@@ -91,13 +93,18 @@ public class throughputTest {
                         indexedData.clearPayload();
                         int processedTuples = numTuples - numTuplesBeforeWritting;
                         double percentage = (double) sm.getCounter() * 100 / (double) processedTuples;
-                        if (percentage > Config.rebuildTemplatePercentage) {
-                            indexedData = bulkLoader.createTreeWithBulkLoading();
-                        }
+//                        copyTree(chunkId);
+                        createNewTree(percentage);
+                        numTuplesBeforeWritting = numTuples;
                         long totalTime = total.get();
-                        System.out.println((double) totalTime / (double) processedTuples);
+                        bulkLoader.resetRecord();
+                        System.out.println("Average time is " + (double) totalTime / (double) processedTuples);
                         chunk = MemChunk.createNew(bytesLimit);
-                        offset = chunk.write(bos.toByteArray());
+                        try {
+                            offset = chunk.write(serializeIndexValue());
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                         Pair pair = new Pair(indexValue, offset);
                         bulkLoader.addRecord(pair);
                         sm.resetCounter();
@@ -107,6 +114,7 @@ public class throughputTest {
                             e.printStackTrace();
                         }
                         ++chunkId;
+                        tm.reset();
                         total = new AtomicLong(0);
                     }
                 }
@@ -135,6 +143,37 @@ public class throughputTest {
         });
         indexThread.start();
     }
+
+    public byte[] serializeIndexValue() throws IOException{
+        bos = new ByteArrayOutputStream();
+        byte[] b = ByteBuffer.allocate(Double.SIZE / Byte.SIZE).putDouble(indexValue).array();
+        bos.write(b);
+        return bos.toByteArray();
+    }
+
+    private void copyTree(int chunkId) {
+        if (chunkId == 0) {
+            try {
+                copyOfIndexedData = (BTree) indexedData.clone(indexedData);
+            } catch (CloneNotSupportedException e) {
+                e.printStackTrace();
+            }
+        } else {
+            try {
+                indexedData = (BTree) copyOfIndexedData.clone(copyOfIndexedData);
+            } catch (CloneNotSupportedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void createNewTree(double percentage) {
+        if (percentage > Config.rebuildTemplatePercentage) {
+            indexedData = bulkLoader.createTreeWithBulkLoading();
+        }
+    }
+
+
     public static void main(String[] args) {
         File file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/input_data");
         throughputTest test = new throughputTest();
