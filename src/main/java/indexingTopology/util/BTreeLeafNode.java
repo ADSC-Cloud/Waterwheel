@@ -110,9 +110,9 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 	
 	public void insertKeyValue(TKey key, TValue value) throws UnsupportedGenericException {
 		int index = 0;
-		while (index < this.getKeyCount() && this.getKey(index).compareTo(key) < 0)
-			++index;
-
+//		while (index < this.getKeyCount() && this.getKey(index).compareTo(key) < 0)
+//			++index;
+		index = searchIndex(key);
 		if (index<this.keys.size() && this.getKey(index).compareTo(key)==0) {
 			this.values.get(index).add(value);
 		} else {
@@ -122,11 +122,28 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 		}
 	}
 
-	public void insertKeyValueList(TKey key, ArrayList<TValue> values) throws UnsupportedGenericException {
-		int index = 0;
-		while (index < this.getKeyCount() && this.getKey(index).compareTo(key) < 0)
-			++index;
+	private int searchIndex(TKey key) {
+		int low = 0;
+		int high = this.getKeyCount() - 1;
+		while (low <= high) {
+			int mid = (low + high) >> 1;
+			int cmp = this.getKey(mid).compareTo(key);
+			if (cmp == 0) {
+				return mid;
+			} else if (cmp > 0) {
+				high = mid - 1;
+			} else {
+				low = mid + 1;
+			}
+		}
+		return low;
+	}
 
+	public void insertKeyValueList(TKey key, ArrayList<TValue> values) throws UnsupportedGenericException {
+//		int index = 0;
+//		while (index < this.getKeyCount() && this.getKey(index).compareTo(key) < 0)
+//			++index;
+		int index = searchIndex(key);
 		if (index<this.keys.size() && this.getKey(index).compareTo(key)==0) {
 			this.values.get(index).addAll(values);
 		} else {
@@ -175,7 +192,7 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 		int index = this.search(key);
 		if (index == -1)
 			return false;
-		System.out.println(index);
+//		System.out.println(index);
 		this.deleteAt(index);
 		return true;
 	}

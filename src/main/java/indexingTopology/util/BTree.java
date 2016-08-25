@@ -140,11 +140,12 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	//	//else if (!leaf.isOverflow()) {
 		if(!leaf.isOverflow()) {
 			tm.putDuration(Constants.TIME_SPLIT.str, 0);
-		} else {
-     //   if (templateMode || !leaf.isOverflow()) {
-     //       tm.putDuration(Constants.TIME_SPLIT.str, 0);
+//
+//		} else {
+//        if (templateMode || !leaf.isOverflow()) {
+//            tm.putDuration(Constants.TIME_SPLIT.str, 0);
 
-     //   } else {
+        } else {
 			start = System.nanoTime();
 		//	tm.startTiming(Constants.TIME_SPLIT.str);
 			BTreeNode<TKey> n = leaf.dealOverflow(sm, leaf);

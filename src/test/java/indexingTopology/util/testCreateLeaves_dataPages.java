@@ -229,7 +229,7 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
         BTree newBT1 = (BTree) newBT.clone(newBT);
         newBT1.printBtree();
         int offset = 0;
-        for (int i = 0; i <= 13; ++i) {
+        for (int i = 13; i >= 0; --i) {
             try {
                 newBT.insert(i, ++offset);
             } catch (UnsupportedGenericException e) {

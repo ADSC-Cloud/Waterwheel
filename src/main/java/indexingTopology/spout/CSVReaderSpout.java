@@ -23,6 +23,8 @@ public class CSVReaderSpout extends BaseRichSpout {
     private final String CSV_FILENAME;
     private BufferedReader bufRead;
     transient BufferedReader brtest;
+    private Thread ioSpeedTester;
+    int count = 0;
 
     public CSVReaderSpout(String CSV_FILENAME, DataSchema schema)
     {
@@ -46,11 +48,23 @@ public class CSVReaderSpout extends BaseRichSpout {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+//        ioSpeedTester = new Thread((new Runnable() {
+//            public void run() {
+//                while (true) {
+//                    Utils.sleep(10000);
+//                    System.out.println(count + "tuples has been emitted in 10 seconds");
+//                    count = 0;
+//                }
+//            }
+//        }));
+//        ioSpeedTester.start();
     }
 
     public void nextTuple() {
         try {
             String line=bufRead.readLine();
+            ++count;
             if (line!=null) {
             //    Utils.sleep(100);
                 String [] tokens = line.split(",");

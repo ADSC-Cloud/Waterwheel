@@ -95,36 +95,31 @@ public class IndexerBolt extends BaseRichBolt {
         this.bulkLoader = new BulkLoader(btreeOrder, tm, sm);
         this.chunkId = 0;
         this.queue = new LinkedBlockingQueue<Pair>();
-        this.insertThread = new Thread(new Runnable() {
-            public void run() {
-                while (true) {
-                    //    System.out.println(queue.size());
-                    if (!queue.isEmpty()) {
-                        //    System.out.println("****");
-                        Pair pair = null;
-                        try {
-                            pair = queue.take();
-                            Double indexValue = (Double) pair.getKey();
-                            //    System.out.println(indexValue);
-                            Integer offset = (Integer) pair.getValue();
-                            indexedData.insert(indexValue, offset);
-                            //   System.out.println(chunkId);
-                            //    System.out.println(offset);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        } catch (UnsupportedGenericException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-            }
-        });
-        this.insertThread.start();
+//        this.insertThread = new Thread(new Runnable() {
+//            public void run() {
+//                while (true) {
+//                    if (!queue.isEmpty()) {
+//                        Pair pair = null;
+//                        try {
+//                            pair = queue.take();
+//                            Double indexValue = (Double) pair.getKey();
+//                            Integer offset = (Integer) pair.getValue();
+//                            indexedData.insert(indexValue, offset);
+//                        } catch (InterruptedException e) {
+//                            e.printStackTrace();
+//                        } catch (UnsupportedGenericException e) {
+//                            e.printStackTrace();
+//                        }
+//                    }
+//                }
+//            }
+//        });
+//        this.insertThread.start();
 
 
 
-    //    file = new File("/home/acelzj/IndexTopology_experiment/insert_time_without_rebuild_but_split");
-        file = new File("/home/acelzj/IndexTopology_experiment/insert_time_without_rebuild_but_split");
+        file = new File("/home/acelzj/IndexTopology_experiment/insert_time_with_rebuild_and_split");
+//        file = new File("/home/acelzj/IndexTopology_experiment/insert_time_without_rebuild_and_split_thread_pool");
         try {
             if (!file.exists()) {
                 file.createNewFile();
@@ -141,7 +136,7 @@ public class IndexerBolt extends BaseRichBolt {
 
 
       //  this.tuples = new LinkedList<Tuple>();
-//        es = Executors.newFixedThreadPool(1);
+        es = Executors.newFixedThreadPool(1);
 
         try {
             hdfs = new HdfsHandle(map);
@@ -159,8 +154,8 @@ public class IndexerBolt extends BaseRichBolt {
     public void execute(Tuple tuple) {
         try {
         //    tm.reset();
-            tm.startTiming(Constants.TIME_SERIALIZATION_WRITE.str);
-            tm.putChunkStartTime();
+//            tm.startTiming(Constants.TIME_SERIALIZATION_WRITE.str);
+//            tm.putChunkStartTime();
             Double indexValue = tuple.getDoubleByField(indexField);
             byte [] serializedTuple = schema.serializeTuple(tuple);
          //   tuples.add(tuple);
@@ -186,15 +181,15 @@ public class IndexerBolt extends BaseRichBolt {
         if (offset>=0) {
 //            tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
             Pair pair = new Pair(indexValue, offset);
-            queue.put(pair);
+//            queue.put(pair);
             bulkLoader.addRecord(pair);
-            tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
-//            es.submit(new IndexerThread(indexedData, indexValue, offset));
+//            tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
+            es.submit(new IndexerThread(indexedData, indexValue, offset));
         } else {
-//            shutdownAndRestartThreadPool(numThreads);
+            shutdownAndRestartThreadPool(numThreads);
 
 
-            tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
+//            tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
             writeIndexedDataToHDFS();
             numWritten++;
             int processedTuple = numTuples - numTuplesBeforeWritting;
@@ -205,17 +200,19 @@ public class IndexerBolt extends BaseRichBolt {
             while (!queue.isEmpty()) {
                 Utils.sleep(1);
             }
-            long processingTime = System.nanoTime() + tm.getChunkStartTime();
-            long sleepTime = System.nanoTime() - start;
-            long serializeTime = tm.getSerializeTime();
-            String content = "" + processingTime / processedTuple + " " + sleepTime / processedTuple + " " + serializeTime / processedTuple;
+//            long processingTime = System.nanoTime() + tm.getChunkStartTime();
+//            long sleepTime = System.nanoTime() - start;
+//            long serializeTime = tm.getSerializeTime();
+//            String content = "" + processingTime / processedTuple + " " + sleepTime / processedTuple + " " + serializeTime / processedTuple;
          //   String content = "" + chunkId + " " + percentage;
          //   System.out.println("The total time is " + tm.getTotal());
          //   double insertionTime = ((double) tm.getTotal()) / ((double) processedTuple);
 //            double insertionTime = ((double) tm.getInsertionTime()) / ((double) processedTuple);
 //            double findTime = ((double) tm.getFindTime()) / ((double) processedTuple);
 //            double splitTime = ((double) tm.getSplitTime()) / ((double) processedTuple);
-         //   String content = "" + tm.getTotal();
+//            System.out.println(processedTuple);
+            String content = "" + (double) tm.getTotal() / (double) processedTuple;
+            System.out.println(content);
 //            String content = "insertion time is : " + insertionTime + "find time is : " + findTime + "split time is : " + splitTime;
             String newline = System.getProperty("line.separator");
             byte[] contentInBytes = content.getBytes();
@@ -223,6 +220,8 @@ public class IndexerBolt extends BaseRichBolt {
 
             fop.write(contentInBytes);
             fop.write(nextLineInBytes);
+//            copyTree(chunkId);
+//            createNewTree(percentage);
 //            System.out.println("The percentage of insert failure is " + percentage + "%");
 //            System.out.println(content);
         //    System.out.println
@@ -239,7 +238,7 @@ public class IndexerBolt extends BaseRichBolt {
            // }
 //            System.out.println("Before deep copy, the BTree is: ");
 //            indexedData.printBtree();
-            if (chunkId == 0) {
+/*            if (chunkId == 0) {
 
 //                copyOfIndexedData = (BTree) BTree.deepClone(indexedData);
             //    copyOfIndexedData = (BTree) org.apache.commons.lang.SerializationUtils.clone(indexedData);
@@ -262,7 +261,7 @@ public class IndexerBolt extends BaseRichBolt {
                 } catch (CloneNotSupportedException e) {
                     e.printStackTrace();
                 }
-            }
+            }*/
          //   indexedData.printBtree();
          //   indexedData.printBtree();
          //   sm.resetCounter();
@@ -282,10 +281,32 @@ public class IndexerBolt extends BaseRichBolt {
         //    dumplicateKeys = 0;
             Pair pair = new Pair(indexValue, offset);
             bulkLoader.addRecord(pair);
-            queue.put(pair);
+//            queue.put(pair);
 //            bulkLoader.addRecord(indexValue, offset);
             ++chunkId;
-//            es.submit(new IndexerThread(indexedData,indexValue,offset));
+            es.submit(new IndexerThread(indexedData,indexValue,offset));
+        }
+    }
+
+    private void copyTree(int chunkId) {
+        if (chunkId == 0) {
+            try {
+                copyOfIndexedData = (BTree) indexedData.clone(indexedData);
+            } catch (CloneNotSupportedException e) {
+                e.printStackTrace();
+            }
+        } else {
+            try {
+                indexedData = (BTree) copyOfIndexedData.clone(copyOfIndexedData);
+            } catch (CloneNotSupportedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void createNewTree(double percentage) {
+        if (percentage > Config.rebuildTemplatePercentage) {
+            indexedData = bulkLoader.createTreeWithBulkLoading();
         }
     }
 

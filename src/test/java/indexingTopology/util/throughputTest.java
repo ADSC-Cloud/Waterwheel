@@ -23,6 +23,7 @@ public class throughputTest {
     LinkedBlockingQueue<Pair> queue = new LinkedBlockingQueue<Pair>();
     BTree<Double, Integer> indexedData;
     File file;
+    File outputFile;
     BufferedReader bufferedReader;
     MemChunk chunk;
     int bytesLimit;
@@ -34,6 +35,7 @@ public class throughputTest {
     SplitCounterModule sm;
     TimingModule tm;
     double indexValue;
+    FileOutputStream fop;
     byte[] bytes;
 //    CopyOnWriteArrayList<Long> timer = new CopyOnWriteArrayList<Long>();
     int chunkId;
@@ -41,12 +43,14 @@ public class throughputTest {
     BTree<Double, Integer> copyOfIndexedData;
     public throughputTest() {
         queue = new LinkedBlockingQueue<Pair>();
-        file = new File("/home/lzj/IndexTopology_experiment/NormalDistribution/input_data");
+        file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/input_data");
+//        outputFile = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/total_time_thread_base_line_32");
+        outputFile = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/total_time_thread_256");
         bytesLimit = 6500000;
         chunk = MemChunk.createNew(bytesLimit);
         tm = TimingModule.createNew();
         sm = SplitCounterModule.createNew();
-        btreeOrder = 4;
+        btreeOrder = 256;
         chunkId = 0;
         total = new AtomicLong(0);
         numTuples = 0;
@@ -57,6 +61,18 @@ public class throughputTest {
             bufferedReader = new BufferedReader(new FileReader(file));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            if (!outputFile.exists()) {
+                outputFile.createNewFile();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            fop = new FileOutputStream(outputFile);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -90,17 +106,24 @@ public class throughputTest {
                         while (!queue.isEmpty()) {
                             Utils.sleep(1);
                         }
-                        indexedData.clearPayload();
                         int processedTuples = numTuples - numTuplesBeforeWritting;
                         double percentage = (double) sm.getCounter() * 100 / (double) processedTuples;
-//                        copyTree(chunkId);
-                        createNewTree(percentage);
+//                        System.out.println("percentage is " + percentage);
+//                        copyTree();
+                        createNewTree(percentage, processedTuples);
+                        indexedData.clearPayload();
                         numTuplesBeforeWritting = numTuples;
                         long totalTime = total.get();
                         bulkLoader.resetRecord();
-                        System.out.println("Average time is " + (double) totalTime / (double) processedTuples);
+//                        System.out.println("Average time is " + (double) totalTime / (double) processedTuples);
+                        String content = "" + (double) totalTime / (double) processedTuples;
+                        String newline = System.getProperty("line.separator");
+                        byte[] contentInBytes = content.getBytes();
+                        byte[] nextLineInBytes = newline.getBytes();
                         chunk = MemChunk.createNew(bytesLimit);
                         try {
+                            fop.write(contentInBytes);
+                            fop.write(nextLineInBytes);
                             offset = chunk.write(serializeIndexValue());
                         } catch (IOException e) {
                             e.printStackTrace();
@@ -114,7 +137,7 @@ public class throughputTest {
                             e.printStackTrace();
                         }
                         ++chunkId;
-                        tm.reset();
+//                        tm.reset();
                         total = new AtomicLong(0);
                     }
                 }
@@ -151,7 +174,7 @@ public class throughputTest {
         return bos.toByteArray();
     }
 
-    private void copyTree(int chunkId) {
+    private void copyTree() {
         if (chunkId == 0) {
             try {
                 copyOfIndexedData = (BTree) indexedData.clone(indexedData);
@@ -167,8 +190,9 @@ public class throughputTest {
         }
     }
 
-    private void createNewTree(double percentage) {
+    private void createNewTree(double percentage, int processedTuples) {
         if (percentage > Config.rebuildTemplatePercentage) {
+//            System.out.println("Hello");
             indexedData = bulkLoader.createTreeWithBulkLoading();
         }
     }

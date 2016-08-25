@@ -100,7 +100,7 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
         this.processingTime=0;
         this.bulkLoader = new BulkLoader(btreeOrder, tm, sm);
         this.chunkId = 0;
-        this.queue = new LinkedBlockingQueue<Pair>();
+        this.queue = new LinkedBlockingQueue<Pair>(1024);
         this.insertThread = new Thread(new Runnable() {
             public void run() {
                 while (true) {
@@ -114,8 +114,7 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
                         Integer offset = (Integer) pair.getValue();
                      //   System.out.println(chunkId);
                     //    System.out.println(offset);
-                         //   System.out.println(indexValue);
-                         //   System.out.println(offset);
+
                             indexedData.insert(indexValue, offset);
                          //   System.out.println(tm.getInsertionTime());
                         } catch (UnsupportedGenericException e) {
@@ -131,7 +130,7 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
 
 
 //        file = new File("/home/acelzj/IndexTopology_experiment/insert_time_without_rebuild_but_split_new_16");
-        file = new File("/home/acelzj/IndexTopology_experiment/insert_time_with_rebuild_and_split_new_16");
+        file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/insert_time_with_rebuild_and_split_single_thread_4");
 //        file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/serialize_time");
         try {
             if (!file.exists()) {
@@ -163,7 +162,7 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
     @Override
     public void cleanup() {
         super.cleanup();
-        es.shutdownNow();
+//        es.shutdownNow();
     }
 
   /*  public void execute(Tuple tuple) {
@@ -210,6 +209,7 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
             //   System.out.println("num_tuples:" + numTuples + " , offset:" + offset + " , num_written:" + numWritten
             //            + " , " + tm.printTimes()+" , total:"+total+" , processingTotal:"+processingTime + " , numberOfSplit:" + numSplit);
 //        collector.emit(new Values(numTuples,processingTime,templateTime,numFailedInsert,numWrittenTemplate));
+            collector.ack(tuple);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
@@ -249,16 +249,18 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
             while (!queue.isEmpty()) {
                 Utils.sleep(1);
             }
+            System.out.println("The queue has been empty");
             int processedTuple = numTuples - numTuplesBeforeWritting;
          //   System.out.println("" + processedTuple + "has been processed");
 //            long sleepTime = System.nanoTime() - start;
          //   tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
          //   double serializeTime = ((double) tm.getSerializeTime()) / ((double) processedTuple);
             long serializeTime = tm.getSerializeTime();
-            double insertionTime = ((double) tm.getInsertionTime()) / ((double) processedTuple);
-            double findTime = ((double) tm.getFindTime()) / ((double) processedTuple);
-            double splitTime = ((double) tm.getSplitTime()) / ((double) processedTuple);
-            String content = "" + findTime + " " + insertionTime + " " + splitTime;
+//            double insertionTime = ((double) tm.getInsertionTime()) / ((double) processedTuple);
+//            double findTime = ((double) tm.getFindTime()) / ((double) processedTuple);
+//            double splitTime = ((double) tm.getSplitTime()) / ((double) processedTuple);
+//            String content = "" + findTime + " " + insertionTime + " " + splitTime;
+            String content = "" + (double) tm.getTotal() / (double) processedTuple;
 //            String content = "" + processedTuple + "has been processed" + "processingTime : " + processingTime / 1000 / 1000 / 1000 + "sleepTime : " + sleepTime / 1000 / 1000 / 1000;
          //   double totalTime = ((double) tm.getTotal()) / ((double) processedTuple);
         //    double totalTime = ((double) tm.getTotal());
@@ -281,8 +283,8 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
             numTuplesBeforeWritting = numTuples;
             double percentage = (double) sm.getCounter() * 100 / (double) processedTuple;
             System.out.println("The percentage is " + percentage);
-            System.out.println(bulkLoader.checkInsertion(indexedData, processedTuple));
-//            createNewTree(percentage);
+//            System.out.println(bulkLoader.checkInsertion(indexedData, processedTuple));
+            createNewTree(percentage);
 //            copyTree(chunkId);
             indexedData.clearPayload();
 
