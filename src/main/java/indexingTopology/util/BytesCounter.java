@@ -81,4 +81,8 @@ public class BytesCounter implements Serializable{
             return null;
         }
     }
+
+    public void setHeight(int height) {
+        this.height = height;
+    }
 }

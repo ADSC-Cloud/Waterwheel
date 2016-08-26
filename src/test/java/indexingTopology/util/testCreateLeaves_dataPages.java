@@ -108,6 +108,7 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
         bt = new BTree(this.order, tm, sm);
         BTreeNode preNode = new BTreeLeafNode(this.order, counter);
         BTreeInnerNode root = new BTreeInnerNode(this.order, counter);
+        root.addHeight();
         for (BTreeLeafNode leaf : leaves) {
             ++count;
             if (count == 1) {
@@ -115,11 +116,13 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
                 parent.setChild(0, leaf);
                 leaf.setParent(parent);
                 preNode = leaf;
+                root.addHeight();
             } else {
                 leaf.leftSibling = preNode;
                 preNode.rightSibling = leaf;
                 try {
                     BTreeInnerNode parent = root.getRightMostChild();
+                    System.out.println(parent.getHeight());
                     int index = parent.getKeyCount();
 //                    System.out.println("count: = " + count + "index: = " + index + " ");
                   //  parent.print();
@@ -130,19 +133,21 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
                     if (parent.isOverflow()) {
                         root = (BTreeInnerNode) parent.dealOverflow(sm, leaf);
                     }
+                    bt.setCounter(counter);
                     bt.setRoot(root);
                     bt.printBtree();
+                    System.out.println("The height of the tree is " + bt.getHeight());
                 //    bt.printBtree();
                 } catch (UnsupportedGenericException e) {
                     e.printStackTrace();
                 }
             }
         }
-        bt.setRoot(root);
+        bt.setHeight(counter.getHeightCount());
         return bt;
     }
 
-    public static void main(String[] args) throws CloneNotSupportedException{
+    public static void main(String[] args) throws CloneNotSupportedException, UnsupportedGenericException {
      /*   double[] list = {103.657223,
         103.6610031, 103.6809998,103.71283,
         103.717561 ,103.721557 ,103.726143 ,103.727173,
@@ -219,6 +224,7 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
         SplitCounterModule sm = SplitCounterModule.createNew();
         BTree bt = testCase.createTreeWithBulkLoading(leaves, tm, sm);
         bt.printBtree();
+//        System.out.println("The height of the tree is " + bt.getHeight());
         BTree newBT = (BTree) bt.clone(bt);
         System.out.println(((BTreeInnerNode)bt.getRoot()).children.get(0) == ((BTreeInnerNode)newBT.getRoot()).children.get(0));
         newBT.clearPayload();
@@ -238,6 +244,7 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
         }
         System.out.println("bt is ");
         bt.printBtree();
+//        System.out.println("The height of the tree is " + bt.getHeight());
         System.out.println("new BT is");
         newBT.printBtree();
         System.out.println("new BT1 is");
@@ -247,7 +254,13 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
         System.out.println(random.nextInt(10));
         System.out.println(random.nextInt(1000));
         System.out.println(random.nextInt(10));
-     //   bt.printBtree();
+        for (int i = 51; i <= 60; ++i) {
+            bt.insert(i, ++offset);
+        }
+        bt.printBtree();
+        System.out.println(bt.getHeight());
+        bt.clearPayload();
+        System.out.println(bt.getHeight());
      //   TreeMap record = testCase.createRecord(Keys);
 
     }

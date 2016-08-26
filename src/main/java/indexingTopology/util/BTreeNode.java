@@ -164,6 +164,10 @@ abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serializable{
 		return null;
 	}
 
+	public void addHeight() {
+		counter.increaseHeightCount();
+	}
+
 	public void setRightSibling(BTreeNode<TKey> sibling) {
 		this.rightSibling = sibling;
 	}

@@ -243,6 +243,10 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 		
 		return null;
 	}
+
+	public int getHeight() {
+		return counter.getHeightCount();
+	}
 	
 	
 	@Override

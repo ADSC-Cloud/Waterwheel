@@ -22,18 +22,14 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	private TimingModule tm;
 	private boolean templateMode;
     private SplitCounterModule sm;
-	private ReadWriteLock rwl;
-	private Lock readLock;
-	private Lock writeLock;
+
 	
 	public BTree(int order, TimingModule tm, SplitCounterModule sm) {
 		counter = new BytesCounter();
         this.root = new BTreeLeafNode<TKey,TValue>(order,counter);
         counter.increaseHeightCount();
 		templateMode = false;
-        rwl = new ReentrantReadWriteLock();
-        readLock = rwl.readLock();
-		writeLock = rwl.writeLock();
+
 
 		assert tm != null : "Timing module cannot be null";
 		assert sm != null : "Split counter module cannot be null";
@@ -51,6 +47,10 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		setTimingModule(bt.tm);
 		setSplitCounterModule(bt.sm);
 		templateMode = bt.templateMode;
+	}
+
+	public int getHeight() {
+		return counter.getHeightCount();
 	}
 
 	public void setRoot(BTreeNode root) {
@@ -282,5 +282,9 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 			e.printStackTrace();
 			return null;
 		}
+	}
+
+	public void setHeight(int height) {
+		this.counter.setHeight(height);
 	}
 }
