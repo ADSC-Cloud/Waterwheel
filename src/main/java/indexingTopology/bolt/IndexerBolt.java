@@ -288,24 +288,16 @@ public class IndexerBolt extends BaseRichBolt {
         }
     }
 
-    private void copyTree(int chunkId) {
+    private void copyTree(int chunkId) throws CloneNotSupportedException {
         if (chunkId == 0) {
-            try {
-                copyOfIndexedData = (BTree) indexedData.clone(indexedData);
-            } catch (CloneNotSupportedException e) {
-                e.printStackTrace();
-            }
+            copyOfIndexedData = (BTree) indexedData.clone(indexedData);
         } else {
-            try {
-                indexedData = (BTree) copyOfIndexedData.clone(copyOfIndexedData);
-            } catch (CloneNotSupportedException e) {
-                e.printStackTrace();
-            }
+            indexedData = (BTree) copyOfIndexedData.clone(copyOfIndexedData);
         }
     }
 
     private void createNewTree(double percentage) {
-        if (percentage > Config.rebuildTemplatePercentage) {
+        if (percentage > Config.REBUILD_TEMPLATE_PERCENTAGE) {
             indexedData = bulkLoader.createTreeWithBulkLoading();
         }
     }

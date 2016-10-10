@@ -12,7 +12,11 @@ public enum Constants {
     TIME_LEAF_INSERTION("time_leaf_insertion"),
     TIME_SPLIT("time_split"),
     TIME_CHUNK_START("time_chunk_start"),
+    TIME_SEARCH_INDEX("time_search_index"),
+    TIME_INSERT_INTO_ARRAYLIST("time_insert_into_arraylist"),
+    TIME_QUERY("time_query_index"),
     TIME_TOTAL("time_total");
+
 
     public final String str;
     Constants(String str) {

@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class throughputTest {
     LinkedBlockingQueue<Pair> queue = new LinkedBlockingQueue<Pair>();
     BTree<Double, Integer> indexedData;
-    File file;
+    File inputFile;
     File outputFile;
     BufferedReader bufferedReader;
     MemChunk chunk;
@@ -43,7 +43,7 @@ public class throughputTest {
     BTree<Double, Integer> copyOfIndexedData;
     public throughputTest() {
         queue = new LinkedBlockingQueue<Pair>();
-        file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/input_data");
+        inputFile = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/input_data");
 //        outputFile = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/total_time_thread_base_line_32");
         outputFile = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/total_time_thread_256");
         bytesLimit = 6500000;
@@ -58,7 +58,7 @@ public class throughputTest {
         indexedData = new BTree<Double,Integer>(btreeOrder, tm, sm);
         bulkLoader = new BulkLoader(btreeOrder, tm, sm);
         try {
-            bufferedReader = new BufferedReader(new FileReader(file));
+            bufferedReader = new BufferedReader(new FileReader(inputFile));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -174,25 +174,16 @@ public class throughputTest {
         return bos.toByteArray();
     }
 
-    private void copyTree() {
+    private void copyTree() throws CloneNotSupportedException {
         if (chunkId == 0) {
-            try {
-                copyOfIndexedData = (BTree) indexedData.clone(indexedData);
-            } catch (CloneNotSupportedException e) {
-                e.printStackTrace();
-            }
+            copyOfIndexedData = (BTree) indexedData.clone(indexedData);
         } else {
-            try {
-                indexedData = (BTree) copyOfIndexedData.clone(copyOfIndexedData);
-            } catch (CloneNotSupportedException e) {
-                e.printStackTrace();
-            }
+            indexedData = (BTree) copyOfIndexedData.clone(copyOfIndexedData);
         }
     }
 
     private void createNewTree(double percentage, int processedTuples) {
-        if (percentage > Config.rebuildTemplatePercentage) {
-//            System.out.println("Hello");
+        if (percentage > Config.REBUILD_TEMPLATE_PERCENTAGE) {
             indexedData = bulkLoader.createTreeWithBulkLoading();
         }
     }

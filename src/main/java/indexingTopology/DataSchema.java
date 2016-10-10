@@ -51,11 +51,11 @@ public class DataSchema implements Serializable {
     }
 
     public Values getValuesObject(String [] valuesAsString) throws IOException {
-        if (dataFields.size()!=valuesAsString.length) throw new IOException("number of values provided does not " +
+        if (dataFields.size() != valuesAsString.length) throw new IOException("number of values provided does not " +
                 "match number of fields in data schema");
 
-        Values values=new Values();
-        for (int i=0;i<valueTypes.size();i++) {
+        Values values = new Values();
+        for (int i=0;i < valueTypes.size();i++) {
             if (valueTypes.get(i).equals(Double.class)) {
                 values.add(Double.parseDouble(valuesAsString[i]));
             }

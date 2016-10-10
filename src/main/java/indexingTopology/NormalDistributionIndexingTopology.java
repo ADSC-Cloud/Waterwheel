@@ -35,13 +35,15 @@ public class NormalDistributionIndexingTopology {
 
 
         DataSchema schema=new DataSchema(fieldNames,valueTypes);*/
-        List<String> fieldNames=new ArrayList<String>(Arrays.asList("user_id"));
-        List<Class> valueTypes=new ArrayList<Class>(Arrays.asList(Double.class));
-        DataSchema schema=new DataSchema(fieldNames,valueTypes);
-        builder.setSpout("TupleGenerator", new NormalDistributionGenerator(), 1).setNumTasks(1);
+        List<String> fieldNames = new ArrayList<String>(Arrays.asList("user_id", "id_1", "id_2", "ts_epoch",
+                "date", "time", "latitude", "longitude"));
+        List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
+                Double.class, Double.class, Double.class, Double.class, Double.class));
+        DataSchema schema = new DataSchema(fieldNames, valueTypes);
+        builder.setSpout("TupleGenerator", new NormalDistributionGenerator(schema), 1).setNumTasks(1);
 //        builder.setBolt("Dispatcher",new DispatcherBolt("Indexer","longitude",schema),1).shuffleGrouping("TupleGenerator");
 
-        builder.setBolt("InputTest",new NormalDistributionIndexerBolt(schema, 4, 6500000),1)
+        builder.setBolt("IndexerBolt", new NormalDistributionIndexerBolt("user_id", schema, 256, 65000000),1)
                 .setNumTasks(1)
                 .shuffleGrouping("TupleGenerator");
 
@@ -58,9 +60,9 @@ public class NormalDistributionIndexingTopology {
 //        cluster.submitTopology("generatorTest", conf, builder.createTopology());
         StormSubmitter.submitTopologyWithProgressBar(args[0], conf, builder.createTopology());
         BufferedReader in=new BufferedReader(new InputStreamReader(System.in));
-        System.out.println("Type anything to stop the cluster");
+//        System.out.println("Type anything to stop the cluster");
         in.readLine();
-     //   cluster.shutdown();
-    //    cluster.shutdown();
+        //   cluster.shutdown();
+        //    cluster.shutdown();
     }
 }

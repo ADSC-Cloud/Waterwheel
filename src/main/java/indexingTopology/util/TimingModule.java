@@ -11,8 +11,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * Created by parijatmazumdar on 18/01/16.
  */
 public class TimingModule implements Serializable{
-  //  private ConcurrentHashMap<String,Stack<Long>> time;
-  private ConcurrentHashMap<String,Stack<Long>> time;
+    //  private ConcurrentHashMap<String,Stack<Long>> time;
+    private ConcurrentHashMap<String,Stack<Long>> time;
     private boolean medianComputed;
     private int numEndTime = 0;
     private int numStartTime = 0;
@@ -37,12 +37,12 @@ public class TimingModule implements Serializable{
 
             //      time.get(id).push(-System.currentTimeMillis());
         } else {
-         //   Stack<Long> newStack = new Stack<Long>();
+            //   Stack<Long> newStack = new Stack<Long>();
             Stack<Long> newStack = new Stack<Long>();
             long currentTime = -System.nanoTime();
             newStack.push(-System.nanoTime());
 
-        //    newStack.push(-System.currentTimeMillis());
+            //    newStack.push(-System.currentTimeMillis());
             time.put(id,newStack);
         }
     }
@@ -66,14 +66,14 @@ public class TimingModule implements Serializable{
     }
 
     public long getChunkStartTime() {
-            return time.get(Constants.TIME_CHUNK_START.str).peek();
+        return time.get(Constants.TIME_CHUNK_START.str).peek();
     }
 
     public void endTiming(String id) {
         long startTime = time.get(id).pop();
         time.get(id).push(System.nanoTime()+startTime);
         ++numEndTime;
-    //    time.get(id).push(System.currentTimeMillis()+startTime);
+        //    time.get(id).push(System.currentTimeMillis()+startTime);
     }
 
     public int getNumEndTime() {
@@ -92,8 +92,8 @@ public class TimingModule implements Serializable{
     }
 
     public long getTotal() {
-    //    if (!medianComputed)
-    //        computeMedian();
+        //    if (!medianComputed)
+        //        computeMedian();
 
         long total = 0;
     /*    for (String k : time.keySet()) {
@@ -122,6 +122,28 @@ public class TimingModule implements Serializable{
         }
         return total;
 
+    }
+
+    public long getSearchIndexTime() {
+        long total = 0;
+        if (time.containsKey(Constants.TIME_SEARCH_INDEX.str)) {
+            Stack<Long> stack = time.get(Constants.TIME_SEARCH_INDEX.str);
+            while (!stack.empty()) {
+                total += stack.pop();
+            }
+        }
+        return total;
+    }
+
+    public long getInsertIntoArrayListTime() {
+        long total = 0;
+        if (time.containsKey(Constants.TIME_INSERT_INTO_ARRAYLIST.str)) {
+            Stack<Long> stack = time.get(Constants.TIME_INSERT_INTO_ARRAYLIST.str);
+            while (!stack.empty()) {
+                total += stack.pop();
+            }
+        }
+        return total;
     }
 
     public long getFindTime() {
@@ -208,5 +230,16 @@ public class TimingModule implements Serializable{
             e.printStackTrace();
             return null;
         }
+    }
+
+    public long getQueryTime() {
+        long total = 0;
+        if (time.containsKey(Constants.TIME_QUERY.str)) {
+            Stack<Long> stack = time.get(Constants.TIME_QUERY.str);
+            while (!stack.empty()) {
+                total += stack.pop();
+            }
+        }
+        return total;
     }
 }

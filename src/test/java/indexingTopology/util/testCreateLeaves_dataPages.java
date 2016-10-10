@@ -3,6 +3,7 @@ package indexingTopology.util;
 import backtype.storm.tuple.Tuple;
 import indexingTopology.DataSchema;
 import indexingTopology.exception.UnsupportedGenericException;
+import javafx.util.Pair;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -23,61 +24,74 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
 
     public BTree bt;
 
-    private TreeMap<TKey, Integer> record;
+    private List<Pair<TKey, TValue>> record;
+
+    private TimingModule tm;
+
+    private BytesCounter counter;
+
+    private boolean templateMode;
+
+    private SplitCounterModule sm;
 
     public testCreateLeaves_dataPages() {
         this.order = 4;
+        counter = new BytesCounter();
+        SplitCounterModule sm = new SplitCounterModule();
+        templateMode = false;
     }
 
-    public TreeMap createRecord(List<TKey> keys) {
-        HashMap<TKey, Integer> record = new HashMap<TKey, Integer>();
+    public List createRecord(List<TKey> keys) {
+        record = new ArrayList<Pair<TKey, TValue>>();
         int offset = 0;
         for (TKey key : keys) {
-            offset += 1;
-            record.put(key, offset);
+            Pair pair = new Pair(key, offset++);
+            record.add(pair);
         }
-        this.record = new TreeMap<TKey, Integer>(record);
-        return this.record;
+        return record;
     }
     public LinkedList<BTreeLeafNode> createLeaves(List<TKey> keys) {
         createRecord(keys);
-        TreeMap<TKey, Integer> treeMap = new TreeMap<TKey, Integer>(record);
-        BytesCounter counter = new BytesCounter();
+        counter.increaseHeightCount();
         BTreeLeafNode leaf = new BTreeLeafNode(order, counter);
+        Collections.sort(record, new Comparator<Pair>() {
+            public int compare(Pair pair1, Pair pair2)
+            {
+                return  ((Double) pair1.getKey()).compareTo(((Double) pair2.getKey()));
+            }
+        });
         LinkedList<BTreeLeafNode> leaves = new LinkedList<BTreeLeafNode>();
         BTreeLeafNode lastLeaf = leaf;
-        TKey lastKey = treeMap.firstKey();
+        Pair lastPair = record.get(0);
+        tm = TimingModule.createNew();
         int count = 0;
-        for (TKey key : treeMap.keySet()) {
-//            System.out.println(key);
+        for (Pair pair : record) {
+            TKey key = (TKey) pair.getKey();
             if (leaf.isOverflowIntemplate()) {
-//                leaf.print();
-                leaf.delete(lastKey);
+                leaf.delete((TKey) lastPair.getKey());
                 leaves.add(leaf);
                 leaf = new BTreeLeafNode(order, counter);
                 try {
-                    leaf.insertKeyValue(lastKey, treeMap.get(lastKey));
-                    leaf.insertKeyValue(key, treeMap.get(key));
+                    leaf.insertKeyValueInBulkLoading((TKey) lastPair.getKey(), lastPair.getValue());
+                    leaf.insertKeyValueInBulkLoading((Double) pair.getKey(),  pair.getValue());
                 } catch (UnsupportedGenericException e) {
                     e.printStackTrace();
                 }
             } else {
                 try {
-                    leaf.insertKeyValue(key, treeMap.get(key));
-                    leaf.print();
-                    lastKey = key;
+                    leaf.insertKeyValueInBulkLoading(key, pair.getValue());
+                    lastPair = pair;
                 } catch (UnsupportedGenericException e) {
                     e.printStackTrace();
                 }
             }
         }
         if (leaf.isOverflowIntemplate()) {
-            leaf.keys.remove(lastKey);
-            leaf.values.remove(lastKey);
+            leaf.delete((TKey) lastPair.getKey());
             leaves.add(leaf);
             leaf = new BTreeLeafNode(order, counter);
             try {
-                leaf.insertKeyValue(lastKey, treeMap.get(lastKey));
+                leaf.insertKeyValueInBulkLoading((TKey) lastPair.getKey(), lastPair.getValue());
             } catch (UnsupportedGenericException e) {
                 e.printStackTrace();
             }
@@ -88,62 +102,44 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
         return leaves;
     }
 
-    public void checkNewTree(SplitCounterModule sm) {
-        double numberOfKeys = 0;
-        for (TKey key : record.keySet()) {
-            ++numberOfKeys;
-            try {
-                bt.insert(key, record.get(key));
-            } catch (UnsupportedGenericException e) {
-                e.printStackTrace();
-            }
-        }
-        double percentage = (double) sm.getCounter() / numberOfKeys;
-        System.out.println(percentage);
-    }
+
 
     public BTree createTreeWithBulkLoading(LinkedList<BTreeLeafNode> leaves, TimingModule tm, SplitCounterModule sm) {
         int count = 0;
-        BytesCounter counter = new BytesCounter();
         bt = new BTree(this.order, tm, sm);
         BTreeNode preNode = new BTreeLeafNode(this.order, counter);
         BTreeInnerNode root = new BTreeInnerNode(this.order, counter);
-        root.addHeight();
         for (BTreeLeafNode leaf : leaves) {
             ++count;
             if (count == 1) {
                 BTreeInnerNode parent = root;
+                counter.increaseHeightCount();
                 parent.setChild(0, leaf);
                 leaf.setParent(parent);
                 preNode = leaf;
-                root.addHeight();
             } else {
                 leaf.leftSibling = preNode;
                 preNode.rightSibling = leaf;
                 try {
                     BTreeInnerNode parent = root.getRightMostChild();
-                    System.out.println(parent.getHeight());
                     int index = parent.getKeyCount();
-//                    System.out.println("count: = " + count + "index: = " + index + " ");
-                  //  parent.print();
+                    // System.out.println("count: = " + count + "index: = " + index + " ");
+                    //  parent.print();
                     parent.setKey(index, leaf.getKey(0));
                     parent.setChild(index+1, leaf);
                     preNode = leaf;
-//                    parent.print();
+                    //  parent.print();
                     if (parent.isOverflow()) {
-                        root = (BTreeInnerNode) parent.dealOverflow(sm, leaf);
+                        root = (BTreeInnerNode) parent.dealOverflow();
                     }
-                    bt.setCounter(counter);
+                    bt.setHeight(counter.getHeightCount());
                     bt.setRoot(root);
-                    bt.printBtree();
-                    System.out.println("The height of the tree is " + bt.getHeight());
-                //    bt.printBtree();
                 } catch (UnsupportedGenericException e) {
                     e.printStackTrace();
                 }
             }
         }
-        bt.setHeight(counter.getHeightCount());
+        bt.setRoot(root);
         return bt;
     }
 
@@ -176,9 +172,9 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
         103.9509964, 103.9540024, 103.9560013, 103.956213,
         103.958248, 103.9609985, 103.961526, 103.9629974,
         103.963071, 103.964748,103.96688, 103.96769, 103.968, 103.97, 103.9850006, 103.986};*/
-        List<Integer> Keys = new LinkedList<Integer>();
-        for (int i = 0; i <= 50; ++i) {
-            Keys.add(i);
+        List<Double> Keys = new LinkedList<Double>();
+        for (int i = 0; i <= 100; ++i) {
+            Keys.add((double) i);
         }
 //        Keys.add(10);
 //        Keys.add(10);
@@ -220,48 +216,47 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
      //   for (BTreeLeafNode leaf : leaves) {
       //      leaf.print();
      //   }
+
         TimingModule tm = TimingModule.createNew();
         SplitCounterModule sm = SplitCounterModule.createNew();
-        BTree bt = testCase.createTreeWithBulkLoading(leaves, tm, sm);
-        bt.printBtree();
-//        System.out.println("The height of the tree is " + bt.getHeight());
-        BTree newBT = (BTree) bt.clone(bt);
-        System.out.println(((BTreeInnerNode)bt.getRoot()).children.get(0) == ((BTreeInnerNode)newBT.getRoot()).children.get(0));
-        newBT.clearPayload();
-     //   BTree newBT = (BTree) org.apache.commons.lang.SerializationUtils.clone(bt);
-        newBT.printBtree();
-    //    BTree newBT1 = (BTree) org.apache.commons.lang.SerializationUtils.clone(newBT);
-    //    newBT1.printBtree();
-        BTree newBT1 = (BTree) newBT.clone(newBT);
-        newBT1.printBtree();
-        int offset = 0;
-        for (int i = 13; i >= 0; --i) {
-            try {
-                newBT.insert(i, ++offset);
-            } catch (UnsupportedGenericException e) {
-                e.printStackTrace();
-            }
-        }
-        System.out.println("bt is ");
-        bt.printBtree();
-//        System.out.println("The height of the tree is " + bt.getHeight());
-        System.out.println("new BT is");
-        newBT.printBtree();
-        System.out.println("new BT1 is");
-        newBT1.printBtree();
-        Random random = new Random(100);
-        System.out.println(random.nextInt(1000));
-        System.out.println(random.nextInt(10));
-        System.out.println(random.nextInt(1000));
-        System.out.println(random.nextInt(10));
-        for (int i = 51; i <= 60; ++i) {
-            bt.insert(i, ++offset);
-        }
-        bt.printBtree();
-        System.out.println(bt.getHeight());
-        bt.clearPayload();
-        System.out.println(bt.getHeight());
-     //   TreeMap record = testCase.createRecord(Keys);
+        final BTree bt;
+        long startTime;
+
+//        bt = testCase.createTreeWithBulkLoading(leaves, tm, sm);
+//        bt.printBtree();
+//        System.out.println(bt.searchRange((double) 50, (double) 60));
+        bt = new BTree(4, tm, sm);
+//        bt.clearPayload();
+        final int offset = 0;
+            new Thread(new Runnable() {
+                public void run() {
+                    while (true) {
+                        try {
+                            Thread.sleep(1);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        bt.search((double) 0);
+//                        System.out.println(bt.search((double) 1000));
+                    }
+                }
+            }).start();
+            new Thread(new Runnable() {
+                public void run() {
+                    while (true) {
+                        for (int i = 0; ; ++i)
+                            try {
+                                bt.insert((double) i, offset);
+                                System.out.println("After insert, the btree is : ");
+                                bt.printBtree();
+                                System.out.println();
+                            } catch (UnsupportedGenericException e) {
+                                e.printStackTrace();
+                            }
+
+                    }
+                }
+            }).start();
 
     }
 }

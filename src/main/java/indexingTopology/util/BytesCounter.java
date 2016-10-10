@@ -60,7 +60,7 @@ public class BytesCounter implements Serializable{
         return height;
     }
 
-    public Object clone() throws CloneNotSupportedException{
+    public Object clone() throws CloneNotSupportedException {
         BytesCounter newCounter = new BytesCounter();
         newCounter.bytesCount = bytesCount;
         newCounter.height = height;
