@@ -244,7 +244,9 @@ public class TestIndexing {
         });
         emitThread.start();
 
-        createIndexingThread(1);
+
+
+        createIndexingThread(4);
 
 
         Thread queryThread = new Thread(new Runnable() {
@@ -366,6 +368,18 @@ public class TestIndexing {
                 }
             });
             indexThread.start();
+        }
+    }
+
+    private void populateInputQueueWithMoreTuples(int generationTimeInMillis) {
+        try {
+            while(generationTimeInMillis > 0) {
+                Thread.sleep(1000);
+                System.out.println("Waiting for generating a large number of tuples.");
+                generationTimeInMillis -= 1000;
+            }
+        } catch (InterruptedException e) {
+
         }
     }
 

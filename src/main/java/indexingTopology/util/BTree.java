@@ -182,6 +182,38 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 			}
 			leaf.releaseWriteLock();
 		} else {
+
+			ArrayList<Lock> ancestors = new ArrayList<Lock>();
+			leaf = findLeafNodeShouldContainKeyInUpdaterWithProtocolTwo(key);
+			if(leaf == null) {
+				leaf = findLeafNodeShouldContainKeyInUpdaterWithProtocolOne(key, ancestors);
+			}
+				BTreeNode root = leaf.insertKeyValue(key, value);
+//				if (root != null && root.keys.size() != 0) {
+//					System.out.println("The keys of the root is " + root.keys);
+//				}
+				if (root != null) {
+					if (root != this.root) {
+//						if (sem.hasQueuedThreads()) {
+//							sem.release();
+//						}
+//						System.out.println(root.keys);
+						this.setRoot(root);
+//						this.printBtree();
+//						sem.release();
+//						System.out.println("insert released");
+					} else {
+						this.setRoot(root);
+					}
+				}
+				leaf.releaseWriteLock();
+				for (Lock ancestor : ancestors) {
+					ancestor.unlock();
+				}
+				ancestors.clear();
+			}
+
+/**
 //			if (this.getHeight() > 1) {
 			if (false) {
 //				leaf = findLeafNodeShouldContainKeyInUpdaterWithProtocolTwo(key);
@@ -244,7 +276,8 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 				}
 				ancestors.clear();
 			}
-		}
+ */
+
 	}
 
 
@@ -393,6 +426,10 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 
 	}
 
+
+
+
+
 	/**
 	 * Protocol 2 for the updater to find the leaf node that should contain key
 	 * @param key
@@ -400,22 +437,42 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	 */
 
 	private BTreeLeafNode<TKey,TValue> findLeafNodeShouldContainKeyInUpdaterWithProtocolTwo(TKey key) {
-		root.acquireReadLock();
+
+		BTreeNode currentRoot = root;
+		currentRoot.acquireReadLock();
+
+		if(getHeight()==1) {
+			currentRoot.releaseReadLock();
+			return null;
+		}
+
+		if(currentRoot != root) {
+			currentRoot.releaseReadLock();
+			root.acquireReadLock();
+		}
+
 //		System.out.println("Hello 2" + root.keys);
 		BTreeNode<TKey> currentNode = this.root;
+		Lock currentLock = root.getrLock();
 //		printBtree();
 		while (currentNode.getNodeType() == TreeNodeType.InnerNode) {
-			BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChildWithSpecificIndex(key);
-			if (node.getNodeType() == TreeNodeType.InnerNode) {
-				node.acquireReadLock();
+			BTreeNode<TKey> son = ((BTreeInnerNode<TKey>) currentNode).getChildWithSpecificIndex(key);
+			Lock lock;
+			if (son.getNodeType() == TreeNodeType.InnerNode) {
+				son.acquireReadLock();
+				lock = son.getrLock();
 			} else {
-				node.acquireWriteLock();
+				son.acquireWriteLock();
+				lock = son.getwLock();
 			}
-			currentNode.releaseReadLock();
-			currentNode = node;
+//			currentNode.releaseReadLock();
+			currentLock.unlock();
+			currentNode = son;
+			currentLock = lock;
 		}
 		if (!currentNode.isSafe()) {
-			currentNode.releaseWriteLock();
+//			currentNode.releaseWriteLock();
+			currentLock.unlock();
 			return null;
 		}
 		return (BTreeLeafNode<TKey,TValue>) currentNode;
@@ -429,7 +486,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	 * @return the leaf node
 	 */
 
-	private BTreeLeafNode<TKey,TValue> findLeafNodeShouldContainKeyInUpdaterWithProtocolOne(TKey key, List<BTreeNode> ancestorsOfCurrentNode) {
+	private BTreeLeafNode<TKey,TValue> findLeafNodeShouldContainKeyInUpdaterWithProtocolOne(TKey key, List<Lock> ancestorsOfCurrentNode) {
 		BTreeNode<TKey> currentRoot = root;
 		currentRoot.acquireWriteLock();
 		if(root != currentRoot) {
@@ -443,14 +500,14 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		String debug = "root = " + root.hashCode()%10;
 		while (currentNode.getNodeType() == TreeNodeType.InnerNode) {
 			BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChildWithSpecificIndex(key);
-			ancestorsOfCurrentNode.add(currentNode);
+			ancestorsOfCurrentNode.add(currentNode.getwLock());
 			debug += " visited: " + node.hashCode()%10;
 			node.acquireWriteLock();
 //			System.out.println("Iterate: " + node.getParent().keys);
 			if (node.isSafe()) {
-				for (BTreeNode ancestor : ancestorsOfCurrentNode) {
+				for (Lock ancestor : ancestorsOfCurrentNode) {
 					try {
-						ancestor.releaseWriteLock();
+						ancestor.unlock();
 					} catch (IllegalMonitorStateException e ) {
 						System.out.println("Error happens when w- on " + ancestor.hashCode() + " by thread " + Thread.currentThread().getId());
 						System.out.println(debug);

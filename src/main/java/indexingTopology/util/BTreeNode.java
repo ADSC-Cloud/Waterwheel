@@ -327,4 +327,12 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 		wLock.unlock();
 //		System.out.println("w- on " + this.hashCode()%10 + " by thread " + Thread.currentThread().getId());
 	}
+
+	public Lock getwLock() {
+		return wLock;
+	}
+
+	public Lock getrLock() {
+		return rLock;
+	}
 }
