@@ -139,7 +139,7 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 		return this.getKeyCount() == this.ORDER;
 	}
 
-	public BTreeNode<TKey> dealOverflow() {
+	public BTreeNode<TKey> dealOverflow(BTreeNode root) {
 		acquireWriteLock();
 		TKey upKey;
 		BTreeNode<TKey> newRNode;
@@ -176,14 +176,15 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 		if (this.getParent() == null) {
 			System.out.println("parent is null");
 		}
-		return this.getParent().pushUpKey(upKey, this, newRNode);
+		return this.getParent().pushUpKey(upKey, this, newRNode, root);
 //		}
 
 	}
 
 	protected abstract BTreeNode<TKey> split();
 
-	protected abstract BTreeNode<TKey> pushUpKey(TKey key, BTreeNode<TKey> leftChild, BTreeNode<TKey> rightNode);
+	protected abstract BTreeNode<TKey> pushUpKey(TKey key, BTreeNode<TKey> leftChild, BTreeNode<TKey> rightNode,
+												 BTreeNode<TKey> root);
 
 
 
@@ -239,31 +240,34 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 	public BTreeNode<TKey> dealUnderflow() {
 		acquireWriteLock();
 		BTreeNode node = null;
-		if (this.getParent() == null)
+		try {
+			if (this.getParent() == null)
 //			return null;
-			node = null;
+				node = null;
 
-		// try to borrow a key from sibling
-		BTreeNode<TKey> leftSibling = this.getLeftSibling();
-		if (leftSibling != null && leftSibling.canLendAKey()) {
-			this.getParent().processChildrenTransfer(this, leftSibling, leftSibling.getKeyCount() - 1);
+			// try to borrow a key from sibling
+			BTreeNode<TKey> leftSibling = this.getLeftSibling();
+			if (leftSibling != null && leftSibling.canLendAKey()) {
+				this.getParent().processChildrenTransfer(this, leftSibling, leftSibling.getKeyCount() - 1);
 //			return null;
-		}
+			}
 
-		BTreeNode<TKey> rightSibling = this.getRightSibling();
-		if (rightSibling != null && rightSibling.canLendAKey()) {
-			this.getParent().processChildrenTransfer(this, rightSibling, 0);
+			BTreeNode<TKey> rightSibling = this.getRightSibling();
+			if (rightSibling != null && rightSibling.canLendAKey()) {
+				this.getParent().processChildrenTransfer(this, rightSibling, 0);
 //			return null;
-		}
+			}
 
-		// Can not borrow a key from any sibling, then do fusion with sibling
-		if (leftSibling != null) {
+			// Can not borrow a key from any sibling, then do fusion with sibling
+			if (leftSibling != null) {
 //			return this.getParent().processChildrenFusion(leftSibling, this);
-			node = this.getParent().processChildrenFusion(leftSibling, this);
-		}
-		else {
+				node = this.getParent().processChildrenFusion(leftSibling, this);
+			} else {
 //			return this.getParent().processChildrenFusion(this, rightSibling);
-			node = this.getParent().processChildrenFusion(this, rightSibling);
+				node = this.getParent().processChildrenFusion(this, rightSibling);
+			}
+		} finally {
+			releaseWriteLock();
 		}
 		return node;
 	}
@@ -277,9 +281,11 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 	protected abstract TKey transferFromSibling(TKey sinkKey, BTreeNode<TKey> sibling, int borrowIndex);
 
 	public void print() {
+		acquireReadLock();
 		for (TKey k : keys)
 			System.out.print(k+" ");
 		System.out.println();
+		releaseReadLock();
 	}
 
 	public boolean isOverflowIntemplate() {
@@ -308,8 +314,6 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 
 	public void acquireReadLock() {
 		rLock.lock();
-//		System.out.println("The keys are : " + keys);
-//		System.out.println("The number of locks is " + lock.getReadLockCount());
 	}
 
 	public void releaseReadLock() {

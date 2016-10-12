@@ -235,7 +235,8 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 	}
 
 	@Override
-	protected BTreeNode<TKey> pushUpKey(TKey key, BTreeNode<TKey> leftChild, BTreeNode<TKey> rightNode) {
+	protected BTreeNode<TKey> pushUpKey(TKey key, BTreeNode<TKey> leftChild, BTreeNode<TKey> rightNode,
+										BTreeNode<TKey> root) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -472,11 +473,13 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 
 	public ArrayList<TValue> searchAndGetValuesInTemplate(TKey key) {
 		acquireReadLock();
-		releaseWriteLock();
 		ArrayList<TValue> values;
-		int index = search(key);
-		values = (index == -1 ? null : getValueList(index));
-		releaseReadLock();  //Added to check the paper
+		try {
+			int index = search(key);
+			values = (index == -1 ? null : getValueList(index));
+		} finally {
+			releaseReadLock();  //Added to check the paper
+		}
 		return values;
 	}
 
@@ -491,7 +494,7 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 		}
 	}
 
-	public BTreeNode insertKeyValue(TKey key, TValue value) throws UnsupportedGenericException{
+	public BTreeNode insertKeyValue(TKey key, TValue value, BTreeNode root) throws UnsupportedGenericException{
 		acquireWriteLock();
 		BTreeNode node = null;
 		try {
@@ -499,7 +502,7 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 			values.add(new ArrayList<TValue>(Arrays.asList(value)));
 			++keyCount;
 			if (isOverflow()) {
-				node = dealOverflow();
+				node = dealOverflow(root);
 			}
 		} finally {
 			releaseWriteLock();

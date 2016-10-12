@@ -20,8 +20,13 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 
 	@SuppressWarnings("unchecked")
 	public BTreeNode<TKey> getChild(int index) {
+		acquireReadLock();
 		BTreeNode node;
-		node = this.children.get(index);
+		try {
+			node = this.children.get(index);
+		} finally {
+			releaseReadLock();
+		}
 		return node;
 	}
 
@@ -41,17 +46,17 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 		acquireReadLock();
 		BTreeInnerNode root = this;
 		try {
-			if (root == null) {
-				System.out.println("yes");
-			}
+//			if (root == null) {
+//				System.out.println("yes");
+//			}
 			//	root.print();
 			while (root.getChild(0).getNodeType() != TreeNodeType.LeafNode) {
 				int index = root.children.size();
 				root = (BTreeInnerNode) root.getChild(index - 1);
 			}
-			if (root == null) {
-				System.out.println("yes");
-			}
+//			if (root == null) {
+//				System.out.println("yes");
+//			}
 		} finally {
 			releaseReadLock();
 		}
@@ -185,9 +190,10 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 	}
 
 	@Override
-	protected BTreeNode<TKey> pushUpKey(TKey key, BTreeNode<TKey> leftChild, BTreeNode<TKey> rightNode) {
+	protected BTreeNode<TKey> pushUpKey(TKey key, BTreeNode<TKey> leftChild, BTreeNode<TKey> rightNode,
+										BTreeNode<TKey> root) {
 		// find the target position of the new key
-		BTreeNode root;
+		BTreeNode newRoot = null;
 		acquireWriteLock();
 		try {
 			int index = this.search(key);
@@ -198,17 +204,18 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 			// check whether current node need to be split
 			if (this.isOverflow()) {
 //				System.out.println("Keys " + this.keys);
-				root = this.dealOverflow();
+				newRoot = this.dealOverflow(root);
 //				System.out.println("push up" + this.keys);
 //				return this.dealOverflow(leaf);
 			} else {
 				if (this.getParent() == null) {
 //					return this;
-					root = this;
+
+					newRoot = root;
 				} else {
-					root = this.getParent();
-					while (root.getParent() != null) {
-						root = root.getParent();
+					newRoot = this.getParent();
+					while (newRoot.getParent() != null) {
+						newRoot = newRoot.getParent();
 					}
 //					return root;
 				}
@@ -216,7 +223,7 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 		} finally {
 			releaseWriteLock();
 		}
-		return root;
+		return newRoot;
 	}
 
 
@@ -389,7 +396,7 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 		}
 		if (rightSibling != null) {
 			//	node.rightSibling = (BTreeNode) rightSibling.clone(oldNode);
-			node.leftSibling = oldNode.rightSibling;
+			node.rightSibling = oldNode.rightSibling;
 		}
 
 

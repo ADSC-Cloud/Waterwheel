@@ -228,23 +228,23 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
         bt = new BTree(4, tm, sm);
 //        bt.clearPayload();
         final int offset = 0;
-            new Thread(new Runnable() {
-                public void run() {
-                    while (true) {
-                        try {
-                            Thread.sleep(1);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        bt.search((double) 0);
-//                        System.out.println(bt.search((double) 1000));
-                    }
-                }
-            }).start();
-            new Thread(new Runnable() {
-                public void run() {
-                    while (true) {
-                        for (int i = 0; ; ++i)
+//            new Thread(new Runnable() {
+//                public void run() {
+//                    while (true) {
+//                        try {
+//                            Thread.sleep(1);
+//                        } catch (InterruptedException e) {
+//                            e.printStackTrace();
+//                        }
+//                        bt.search((double) 0);
+                        System.out.println(bt.search((double) 1000));
+//                    }
+//                }
+//            }).start();
+//            new Thread(new Runnable() {
+//                public void run() {
+//                    while (true) {
+                        for (int i = 0; i<= 60; ++i) {
                             try {
                                 bt.insert((double) i, offset);
                                 System.out.println("After insert, the btree is : ");
@@ -253,10 +253,21 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
                             } catch (UnsupportedGenericException e) {
                                 e.printStackTrace();
                             }
+                        }
+        for (int i = 60; i >= 0; --i) {
+//            try {
+                bt.delete((double) i);
+                System.out.println("After delete, the btree is : ");
+                bt.printBtree();
+                System.out.println();
+//            } catch (UnsupportedGenericException e) {
+//                e.printStackTrace();
+//            }
+        }
 
                     }
-                }
-            }).start();
+//                }
+//            }).start();
 
-    }
+//    }
 }
