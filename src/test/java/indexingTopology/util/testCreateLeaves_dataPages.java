@@ -213,9 +213,9 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
         }*/
         testCreateLeaves_dataPages testCase = new testCreateLeaves_dataPages<Double, Integer>();
         LinkedList<BTreeLeafNode> leaves = testCase.createLeaves(Keys);
-     //   for (BTreeLeafNode leaf : leaves) {
-      //      leaf.print();
-     //   }
+        //   for (BTreeLeafNode leaf : leaves) {
+        //      leaf.print();
+        //   }
 
         TimingModule tm = TimingModule.createNew();
         SplitCounterModule sm = SplitCounterModule.createNew();
@@ -237,37 +237,40 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
 //                            e.printStackTrace();
 //                        }
 //                        bt.search((double) 0);
-                        System.out.println(bt.search((double) 1000));
+        System.out.println(bt.search((double) 1000));
 //                    }
 //                }
 //            }).start();
 //            new Thread(new Runnable() {
 //                public void run() {
 //                    while (true) {
-                        for (int i = 0; i<= 60; ++i) {
-                            try {
-                                bt.insert((double) i, offset);
-                                System.out.println("After insert, the btree is : ");
-                                bt.printBtree();
-                                System.out.println();
-                            } catch (UnsupportedGenericException e) {
-                                e.printStackTrace();
-                            }
-                        }
-        for (int i = 60; i >= 0; --i) {
-//            try {
-                bt.delete((double) i);
-                System.out.println("After delete, the btree is : ");
+        for (int i = 0; i <= 60; ++i) {
+            try {
+                bt.insert((double) i, (double) i);
+                System.out.println("After insert, the btree is : ");
                 bt.printBtree();
                 System.out.println();
+            } catch (UnsupportedGenericException e) {
+                e.printStackTrace();
+            }
+        }
+        System.out.println(bt.searchRange((double) 1, (double) 60));
+        System.out.println(bt.searchRange((double) 2, (double) 50));
+//        for (int i = 60; i >= 0; --i) {
+//            try {
+//                bt.delete((double) i);
+//                System.out.println("After delete, the btree is : ");
+//                bt.printBtree();
+//                System.out.println();
 //            } catch (UnsupportedGenericException e) {
 //                e.printStackTrace();
 //            }
-        }
+//        }
 
-                    }
+//                    }
 //                }
 //            }).start();
 
 //    }
+    }
 }

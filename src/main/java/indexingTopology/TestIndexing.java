@@ -274,8 +274,8 @@ public class TestIndexing {
                         Double indexValue = random.nextDouble() * 700 + 300;
                         s2.acquire();
                         long start = System.nanoTime();
-                        indexedData.search(indexValue);
-//                        indexedData.searchRange(leftKey, rightKey);
+//                        indexedData.search(indexValue);
+                        indexedData.searchRange(leftKey, rightKey);
                         long time = System.nanoTime() - start;
                         s2.release();
 //                        indexedData.searchRange(leftKey, rightKey);

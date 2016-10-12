@@ -20,32 +20,32 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 
 	@SuppressWarnings("unchecked")
 	public BTreeNode<TKey> getChild(int index) {
-		acquireReadLock();
+//		acquireReadLock();
 		BTreeNode node;
-		try {
+//		try {
 			node = this.children.get(index);
-		} finally {
-			releaseReadLock();
-		}
+//		} finally {
+//			releaseReadLock();
+//		}
 		return node;
 	}
 
 	public BTreeNode<TKey> getChildWithSpecificIndex(TKey key) {
-		acquireReadLock();
+//		acquireReadLock();
 		BTreeNode node;
-		try {
+//		try {
 			int index = search(key);
 			node = this.children.get(index);
-		} finally {
-			releaseReadLock();
-		}
+//		} finally {
+//			releaseReadLock();
+//		}
 		return node;
 	}
 
 	public BTreeInnerNode<TKey> getRightMostChild() {
-		acquireReadLock();
+//		acquireReadLock();
 		BTreeInnerNode root = this;
-		try {
+//		try {
 //			if (root == null) {
 //				System.out.println("yes");
 //			}
@@ -57,15 +57,15 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 //			if (root == null) {
 //				System.out.println("yes");
 //			}
-		} finally {
-			releaseReadLock();
-		}
+//		} finally {
+//			releaseReadLock();
+//		}
 		return root;
 	}
 
 	public void setChild(int index, BTreeNode<TKey> child) {
-		acquireWriteLock();
-		try {
+//		acquireWriteLock();
+//		try {
 			if (index < children.size())
 				this.children.set(index, child);
 //			    this.children.add(index, child);
@@ -76,9 +76,9 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 
 			if (child != null)
 				child.setParent(this);
-		} finally {
-			releaseWriteLock();
-		}
+//		} finally {
+//			releaseWriteLock();
+//		}
 	}
 
 	@Override
@@ -137,8 +137,8 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 	/* The codes below are used to support insertion operation */
 
 	private void insertAt(int index, TKey key, BTreeNode<TKey> leftChild, BTreeNode<TKey> rightChild) {
-		acquireWriteLock();
-		try {
+//		acquireWriteLock();
+//		try {
 			try {
 				counter.countKeyAddition(UtilGenerics.sizeOf(key.getClass()));
 			} catch (UnsupportedGenericException e) {
@@ -148,9 +148,9 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 			this.children.add(index, leftChild);
 			this.setChild(index + 1, rightChild);
 			this.keyCount += 1;
-		} finally {
-			releaseWriteLock();
-		}
+//		} finally {
+//			releaseWriteLock();
+//		}
 	}
 
 	/**
@@ -158,9 +158,9 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 	 */
 	@Override
 	protected BTreeNode<TKey> split() {
-		acquireWriteLock();
+//		acquireWriteLock();
 		BTreeInnerNode<TKey> newRNode = new BTreeInnerNode<TKey>(this.ORDER, this.counter);
-		try {
+//		try {
 //			BTreeInnerNode<TKey> newRNode = new BTreeInnerNode<TKey>(this.ORDER, this.counter);
 
 			int midIndex = this.getKeyCount() / 2;
@@ -183,19 +183,18 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 			for (int i = this.getKeyCount() - 1; i >= midIndex; i--) {
 				this.deleteAt(i);
 			}
-		} finally {
-			releaseWriteLock();
-		}
+//		} finally {
+//			releaseWriteLock();
+//		}
 		return newRNode;
 	}
 
 	@Override
-	protected BTreeNode<TKey> pushUpKey(TKey key, BTreeNode<TKey> leftChild, BTreeNode<TKey> rightNode,
-										BTreeNode<TKey> root) {
+	protected BTreeNode<TKey> pushUpKey(TKey key, BTreeNode<TKey> leftChild, BTreeNode<TKey> rightNode) {
 		// find the target position of the new key
-		BTreeNode newRoot = null;
-		acquireWriteLock();
-		try {
+		BTreeNode root = null;
+//		acquireWriteLock();
+//		try {
 			int index = this.search(key);
 
 			// insert the new key
@@ -204,34 +203,33 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 			// check whether current node need to be split
 			if (this.isOverflow()) {
 //				System.out.println("Keys " + this.keys);
-				newRoot = this.dealOverflow(root);
+				root = this.dealOverflow();
 //				System.out.println("push up" + this.keys);
 //				return this.dealOverflow(leaf);
 			} else {
 				if (this.getParent() == null) {
 //					return this;
-
-					newRoot = root;
+					root = this;
 				} else {
-					newRoot = this.getParent();
-					while (newRoot.getParent() != null) {
-						newRoot = newRoot.getParent();
+					root = this.getParent();
+					while (root.getParent() != null) {
+						root = root.getParent();
 					}
 //					return root;
 				}
 			}
-		} finally {
-			releaseWriteLock();
-		}
-		return newRoot;
+//		} finally {
+//			releaseWriteLock();
+//		}
+		return root;
 	}
 
 
 	/* The codes below are used to support delete operation */
 
 	private void deleteAt(int index) {
-		acquireWriteLock();
-		try {
+//		acquireWriteLock();
+//		try {
 			try {
 				counter.countKeyRemoval(UtilGenerics.sizeOf(this.keys.get(index).getClass()));
 			} catch (UnsupportedGenericException e) {
@@ -240,16 +238,16 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 			this.keys.remove(index);
 			this.children.remove(index + 1);
 			--this.keyCount;
-		} finally {
-			releaseWriteLock();
-		}
+//		} finally {
+//			releaseWriteLock();
+//		}
 	}
 
 
 	@Override
 	protected void processChildrenTransfer(BTreeNode<TKey> borrower, BTreeNode<TKey> lender, int borrowIndex) {
-		acquireWriteLock();
-		try {
+//		acquireWriteLock();
+//		try {
 			int borrowerChildIndex = 0;
 			while (borrowerChildIndex < this.getKeyCount() + 1 && this.getChild(borrowerChildIndex) != borrower)
 				++borrowerChildIndex;
@@ -271,16 +269,16 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 					e.printStackTrace();
 				}
 			}
-		} finally {
-			releaseWriteLock();
-		}
+//		} finally {
+//			releaseWriteLock();
+//		}
 	}
 
 	@Override
 	protected BTreeNode<TKey> processChildrenFusion(BTreeNode<TKey> leftChild, BTreeNode<TKey> rightChild) {
 		BTreeNode<TKey> node = null;
-		acquireWriteLock();
-		try {
+//		acquireWriteLock();
+//		try {
 			int index = 0;
 			while (index < this.getKeyCount() && this.getChild(index) != leftChild)
 				++index;
@@ -309,9 +307,9 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 //			return this.dealUnderflow();
 				node = this.dealUnderflow();
 			}
-		} finally {
-			releaseWriteLock();
-		}
+//		} finally {
+//			releaseWriteLock();
+//		}
 //		return null;
 		return node;
 	}
@@ -319,8 +317,8 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 
 	@Override
 	protected void fusionWithSibling(TKey sinkKey, BTreeNode<TKey> rightSibling) {
-		acquireWriteLock();
-		try {
+//		acquireWriteLock();
+//		try {
 			BTreeInnerNode<TKey> rightSiblingNode = (BTreeInnerNode<TKey>) rightSibling;
 
 			int j = this.getKeyCount();
@@ -345,17 +343,17 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 			this.setRightSibling(rightSiblingNode.rightSibling);
 			if (rightSiblingNode.rightSibling != null)
 				rightSiblingNode.rightSibling.setLeftSibling(this);
-		} finally {
-			releaseWriteLock();
-		}
+//		} finally {
+//			releaseWriteLock();
+//		}
 	}
 
 	@Override
 	protected TKey transferFromSibling(TKey sinkKey, BTreeNode<TKey> sibling, int borrowIndex) {
 
 		TKey upKey = null;
-		acquireWriteLock();
-		try {
+//		acquireWriteLock();
+//		try {
 			BTreeInnerNode<TKey> siblingNode = (BTreeInnerNode<TKey>) sibling;
 			if (borrowIndex == 0) {
 				// borrow the first key from right sibling, append it to tail
@@ -376,9 +374,9 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 				upKey = siblingNode.getKey(borrowIndex);
 				siblingNode.deleteAt(borrowIndex);
 			}
-		} finally {
-			releaseWriteLock();
-		}
+//		} finally {
+//			releaseWriteLock();
+//		}
 		return upKey;
 	}
 

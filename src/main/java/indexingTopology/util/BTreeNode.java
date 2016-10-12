@@ -48,31 +48,26 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 	public int getKeyCount() {
 //		return this.keyCount;
 		int count = 0;
-		acquireReadLock();
-		try {
-			count = this.keys.size();
-		} finally {
-			releaseReadLock();
-		}
+		count = this.keys.size();
 //		return this.keys.size();  //change to keys.size();
 		return count;
 	}
 
 	@SuppressWarnings("unchecked")
 	public TKey getKey(int index) {
-		rLock.lock();
+//		rLock.lock();
 		TKey key;
-		try {
-			key = this.keys.get(index);
-		} finally {
-			rLock.unlock();
-		}
+//		try {
+		key = this.keys.get(index);
+//		} finally {
+//			rLock.unlock();
+//		}
 		return key;
 	}
 
 	public void setKey(int index, TKey key) throws UnsupportedGenericException {
-		acquireWriteLock();
-		try {
+//		acquireWriteLock();
+//		try {
 			if (index < this.keys.size())
 				this.keys.set(index, key);
 			else if (index == this.keys.size()) {
@@ -82,30 +77,30 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 			} else {
 				throw new ArrayIndexOutOfBoundsException("index is out of bounds");
 			}
-		} finally {
-			releaseWriteLock();
-		}
+//		} finally {
+//			releaseWriteLock();
+//		}
 	}
 
 	public BTreeNode<TKey> getParent() {
-		acquireReadLock();
+//		acquireReadLock();
 		BTreeNode<TKey> parent;
-		try {
+//		try {
 //			return this.parentNode;
 			parent = this.parentNode;
-		} finally {
-			releaseReadLock();
-		}
+//		} finally {
+//			releaseReadLock();
+//		}
 		return parent;
 	}
 
 	public void setParent(BTreeNode<TKey> parent) {
-		acquireWriteLock();
-		try {
+//		acquireWriteLock();
+//		try {
 			this.parentNode = parent;
-		} finally {
-			releaseWriteLock();
-		}
+//		} finally {
+//			releaseWriteLock();
+//		}
 	}
 
 	public abstract TreeNodeType getNodeType();
@@ -139,11 +134,11 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 		return this.getKeyCount() == this.ORDER;
 	}
 
-	public BTreeNode<TKey> dealOverflow(BTreeNode root) {
-		acquireWriteLock();
+	public BTreeNode<TKey> dealOverflow() {
+//		acquireWriteLock();
 		TKey upKey;
 		BTreeNode<TKey> newRNode;
-		try {
+//		try {
 			int midIndex = this.getKeyCount() / 2;
 //			TKey upKey = this.getKey(midIndex);
 			upKey = this.getKey(midIndex);
@@ -165,26 +160,25 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 			newRNode.setRightSibling(this.rightSibling);
 			if (this.getRightSibling() != null) {
 				this.getRightSibling().setLeftSibling(newRNode);
-				newRNode.setRightSibling(this.getRightSibling());
+//				newRNode.setRightSibling(this.getRightSibling());
 			}
 			this.setRightSibling(newRNode);
-		} finally {
-			releaseWriteLock();
-		}
+//		} finally {
+//			releaseWriteLock();
+//		}
 		// push up a key to parent internal node
 //		synchronized (this.getParent()) {
 		if (this.getParent() == null) {
 			System.out.println("parent is null");
 		}
-		return this.getParent().pushUpKey(upKey, this, newRNode, root);
+		return this.getParent().pushUpKey(upKey, this, newRNode);
 //		}
 
 	}
 
 	protected abstract BTreeNode<TKey> split();
 
-	protected abstract BTreeNode<TKey> pushUpKey(TKey key, BTreeNode<TKey> leftChild, BTreeNode<TKey> rightNode,
-												 BTreeNode<TKey> root);
+	protected abstract BTreeNode<TKey> pushUpKey(TKey key, BTreeNode<TKey> leftChild, BTreeNode<TKey> rightNode);
 
 
 
@@ -203,14 +197,14 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 
 	public BTreeNode<TKey> getLeftSibling() {
 		BTreeNode leftSibling = null;
-		acquireReadLock();
-		try {
+//		acquireReadLock();
+//		try {
 			if (this.leftSibling != null && this.leftSibling.getParent() == this.getParent())
 				leftSibling = this.leftSibling;
 //				return this.leftSibling;
-		} finally {
-			releaseReadLock();
-		}
+//		} finally {
+//			releaseReadLock();
+//		}
 		return leftSibling;
 	}
 
@@ -220,16 +214,16 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 
 	public BTreeNode<TKey> getRightSibling() {
 		BTreeNode rightSibling = null;
-		acquireReadLock();
-		try {
+//		acquireReadLock();
+//		try {
 			if (this.rightSibling != null && this.rightSibling.getParent() == this.getParent()) {
 				rightSibling = this.rightSibling;
 			}
 //				return this.rightSibling;
 
-		} finally {
-			releaseReadLock();
-		}
+//		} finally {
+//			releaseReadLock();
+//		}
 		return rightSibling;
 	}
 
@@ -238,9 +232,9 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 	}
 
 	public BTreeNode<TKey> dealUnderflow() {
-		acquireWriteLock();
+//		acquireWriteLock();
 		BTreeNode node = null;
-		try {
+//		try {
 			if (this.getParent() == null)
 //			return null;
 				node = null;
@@ -266,9 +260,9 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 //			return this.getParent().processChildrenFusion(this, rightSibling);
 				node = this.getParent().processChildrenFusion(this, rightSibling);
 			}
-		} finally {
-			releaseWriteLock();
-		}
+//		} finally {
+//			releaseWriteLock();
+//		}
 		return node;
 	}
 
@@ -281,11 +275,11 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 	protected abstract TKey transferFromSibling(TKey sinkKey, BTreeNode<TKey> sibling, int borrowIndex);
 
 	public void print() {
-		acquireReadLock();
+//		acquireReadLock();
 		for (TKey k : keys)
 			System.out.print(k+" ");
 		System.out.println();
-		releaseReadLock();
+//		releaseReadLock();
 	}
 
 	public boolean isOverflowIntemplate() {
