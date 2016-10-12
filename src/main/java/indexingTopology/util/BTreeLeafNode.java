@@ -17,7 +17,15 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 		this.values = new ArrayList<ArrayList<TValue>>();
 	}
 
-	public BTreeLeafNode(BTreeNode oldNode) throws CloneNotSupportedException{
+	public boolean validateParentReference() {
+		return true;
+	}
+
+    public boolean validateNoDuplicatedChildReference() {
+        return true;
+    }
+
+    public BTreeLeafNode(BTreeNode oldNode) throws CloneNotSupportedException{
 		super(oldNode.ORDER, (BytesCounter) oldNode.counter.clone());
 		this.keys = new ArrayList<TKey>();
 		this.keys.addAll(oldNode.keys);
@@ -208,6 +216,7 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 	@Override
 	protected BTreeNode<TKey> split() {
 //		acquireWriteLock();
+//		System.out.println(String.format("Leaf node %d is split!", getId()));
 		BTreeLeafNode<TKey, TValue> newRNode = new BTreeLeafNode<TKey, TValue>(this.ORDER, counter);
         try {
 			Collections.sort(keys);
@@ -493,6 +502,7 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 
 	public BTreeNode insertKeyValue(TKey key, TValue value) throws UnsupportedGenericException{
 //		acquireWriteLock();
+		checkIfCurrentHoldAnyLock();
 		BTreeNode node = null;
 		try {
 			keys.add(key);

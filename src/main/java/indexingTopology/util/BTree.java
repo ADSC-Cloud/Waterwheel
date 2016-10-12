@@ -34,7 +34,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		counter = new BytesCounter();
 		this.root = new BTreeLeafNode<TKey,TValue>(order,counter);
 		counter.increaseHeightCount();
-		templateMode = false;
+		templateMode = true;
 		sem = new Semaphore(1);
 //		this.lock = new ReentrantReadWriteLock();
 //		this.wLock = lock.writeLock();
@@ -183,12 +183,23 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 			leaf.releaseWriteLock();
 		} else {
 
-			ArrayList<Lock> ancestors = new ArrayList<Lock>();
+			ArrayList<BTreeNode.NodeLock> ancestors = new ArrayList<BTreeNode.NodeLock>();
 			leaf = findLeafNodeShouldContainKeyInUpdaterWithProtocolTwo(key);
 			if(leaf == null) {
 				leaf = findLeafNodeShouldContainKeyInUpdaterWithProtocolOne(key, ancestors);
 			}
-				BTreeNode root = leaf.insertKeyValue(key, value);
+			BTreeNode root = null;
+				try {
+					root = leaf.insertKeyValue(key, value);
+				} catch (ArrayIndexOutOfBoundsException e) {
+					System.out.println("Debug thread " + Thread.currentThread().getId());
+					e.printStackTrace();
+					throw e;
+				} catch (NullPointerException e) {
+					System.out.println("Debug thread " + Thread.currentThread().getId());
+					e.printStackTrace();
+					throw e;
+				}
 //				if (root != null && root.keys.size() != 0) {
 //					System.out.println("The keys of the root is " + root.keys);
 //				}
@@ -198,6 +209,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 //							sem.release();
 //						}
 //						System.out.println(root.keys);
+//						System.out.println(String.format("root %d->%d by thread %d", this.root.hashCode()%10, root.hashCode()%10, Thread.currentThread().getId()));
 						this.setRoot(root);
 //						this.printBtree();
 //						sem.release();
@@ -207,7 +219,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 					}
 				}
 				leaf.releaseWriteLock();
-				for (Lock ancestor : ancestors) {
+				for (BTreeNode.NodeLock ancestor : ancestors) {
 					ancestor.unlock();
 				}
 				ancestors.clear();
@@ -407,8 +419,19 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 //		} catch (InterruptedException e) {
 //			e.printStackTrace();
 //		}
+
+		BTreeNode<TKey> currentRoot;
+		Lock lastLock = null;
+		do {
+			if(lastLock!=null)
+				lastLock.unlock();
+			currentRoot = root;
+			currentRoot.acquireReadLock();
+			lastLock = currentRoot.getrLock();
+		} while(currentRoot!=root);
+
 		BTreeNode<TKey> currentNode = this.root;
-		currentNode.acquireReadLock();
+//		currentNode.acquireReadLock();
 //		System.out.println(root.lock.getReadLockCount());
 //		System.out.println("The height of the tree is " + this.getHeight());
 		while (currentNode.getNodeType() == TreeNodeType.InnerNode) {
@@ -438,17 +461,21 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 
 	private BTreeLeafNode<TKey,TValue> findLeafNodeShouldContainKeyInUpdaterWithProtocolTwo(TKey key) {
 
-		BTreeNode currentRoot = root;
-		currentRoot.acquireReadLock();
+
+		BTreeNode<TKey> currentRoot;
+		Lock lastLock = null;
+		do {
+			if(lastLock!=null)
+				lastLock.unlock();
+			currentRoot = root;
+			currentRoot.acquireReadLock();
+			lastLock = currentRoot.getrLock();
+		} while(currentRoot!=root);
+
 
 		if(getHeight()==1) {
 			currentRoot.releaseReadLock();
 			return null;
-		}
-
-		if(currentRoot != root) {
-			currentRoot.releaseReadLock();
-			root.acquireReadLock();
 		}
 
 //		System.out.println("Hello 2" + root.keys);
@@ -486,31 +513,48 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	 * @return the leaf node
 	 */
 
-	private BTreeLeafNode<TKey,TValue> findLeafNodeShouldContainKeyInUpdaterWithProtocolOne(TKey key, List<Lock> ancestorsOfCurrentNode) {
-		BTreeNode<TKey> currentRoot = root;
-		currentRoot.acquireWriteLock();
-		if(root != currentRoot) {
-			System.out.println("Such a thing happens on thread " + Thread.currentThread().getId());
-			currentRoot.releaseWriteLock();
-			root.acquireWriteLock();
-		}
+	private BTreeLeafNode<TKey,TValue> findLeafNodeShouldContainKeyInUpdaterWithProtocolOne(TKey key, List<BTreeNode.NodeLock> ancestorsOfCurrentNode) {
+//		BTreeNode<TKey> currentRoot = root;
+//		currentRoot.acquireWriteLock();
+//		if(root != currentRoot) {
+//			System.out.println("Such a thing happens on thread " + Thread.currentThread().getId());
+//			currentRoot.releaseWriteLock();
+//			root.acquireWriteLock();
+//		}
+
+		BTreeNode<TKey> currentRoot;
+		Lock lastLock = null;
+		do {
+			if(lastLock!=null)
+				lastLock.unlock();
+			currentRoot = root;
+			currentRoot.acquireWriteLock();
+			lastLock = currentRoot.getwLock();
+		} while(currentRoot!=root);
+
 //		System.out.println("The btree is ");
 //		this.printBtree();
-		BTreeNode<TKey> currentNode = this.root;
-		String debug = "root = " + root.hashCode()%10;
+		BTreeNode<TKey> currentNode = currentRoot;
+		String debug = "root = " + currentRoot.getId();
+		String unlocked = "";
 		while (currentNode.getNodeType() == TreeNodeType.InnerNode) {
 			BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChildWithSpecificIndex(key);
-			ancestorsOfCurrentNode.add(currentNode.getwLock());
-			debug += " visited: " + node.hashCode()%10;
+//			if(node.getParent().getId()!=currentNode.getId()) {
+//				System.out.println("Inconsistency is detected!");
+//			}
+			ancestorsOfCurrentNode.add(new BTreeNode.NodeLock(currentNode.getwLock(), currentNode.getId()));
+			debug += " visited: " + node.getId();
 			node.acquireWriteLock();
 //			System.out.println("Iterate: " + node.getParent().keys);
 			if (node.isSafe()) {
-				for (Lock ancestor : ancestorsOfCurrentNode) {
+				for (BTreeNode.NodeLock ancestor : ancestorsOfCurrentNode) {
 					try {
 						ancestor.unlock();
+						unlocked += ancestor.getNodeId() + " ";
 					} catch (IllegalMonitorStateException e ) {
-						System.out.println("Error happens when w- on " + ancestor.hashCode() + " by thread " + Thread.currentThread().getId());
-						System.out.println(debug);
+						System.out.println("Error happens when w- on " + ancestor.hashCode() % 10 + " by thread " + Thread.currentThread().getId());
+//						System.out.println(debug);
+						System.out.println(unlocked);
 						throw e;
 					}
 				}
@@ -536,7 +580,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 //			}
 		}
 //		System.out.println("After Hello");
-//		System.out.println("finished: " + debug);
+//		System.out.println("finished: " + debug + " thread " + Thread.currentThread().getId());
 		return (BTreeLeafNode<TKey,TValue>) currentNode;
 
 	}
@@ -630,6 +674,14 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 
 	public int getHeight() {
 		return counter.getHeightCount();
+	}
+
+	public boolean validateParanetReference() {
+		return root.validateParentReference();
+	}
+
+	public boolean validateNoDuplicatedChildReference() {
+		return root.validateNoDuplicatedChildReference();
 	}
 }
 
