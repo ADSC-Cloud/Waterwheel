@@ -18,7 +18,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @param <TKey> the data type of the key
  */
 public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializable{
-	private BTreeNode<TKey> root;
+	private volatile BTreeNode<TKey> root;
 	//  private final BytesCounter counter;
 	private BytesCounter counter;
 	private TimingModule tm;
@@ -34,6 +34,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		this.root = new BTreeLeafNode<TKey,TValue>(order,counter);
 		counter.increaseHeightCount();
 		templateMode = false;
+//		sem = new Semaphore(1);
 //		this.lock = new ReentrantReadWriteLock();
 //		this.wLock = lock.writeLock();
 //		this.rLock = lock.readLock();
@@ -170,55 +171,54 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	 * @throws UnsupportedGenericException
 	 */
 	public void insert(TKey key, TValue value) throws UnsupportedGenericException {
-		BTreeLeafNode<TKey, TValue> leaf = null;
-//        printBtree();
-		if (templateMode) {
-			leaf = findLeafNodeShouldContainKeyInTemplate(key);
-			leaf.insertKeyValueInTemplateMode(key, value);
-			if (leaf.isOverflow()) {
-				sm.addCounter();
-			}
-		} else {
-			if (this.getHeight() > 1) {
-				leaf = findLeafNodeShouldContainKeyInUpdaterWithProtocolTwo(key);
-				//if the root is null means that we need to give up using protocol 2 and use protocol 1.
-				if (leaf == null) {
-					ArrayList<BTreeNode> ancestors = new ArrayList<BTreeNode>();
-					leaf = findLeafNodeShouldContainKeyInUpdaterWithProtocolOne(key, ancestors);
-					BTreeNode root = leaf.insertKeyValue(key, value);
-					if (root != null) {
+        BTreeLeafNode<TKey, TValue> leaf = null;
+        if (templateMode) {
+            leaf = findLeafNodeShouldContainKeyInTemplate(key);
+            leaf.insertKeyValueInTemplateMode(key, value);
+            if (leaf.isOverflow()) {
+                sm.addCounter();
+            }
+        } else {
+            if (this.getHeight() > 1) {
+                leaf = findLeafNodeShouldContainKeyInUpdaterWithProtocolTwo(key);
+                //if the root is null means that we need to give up using protocol 2 and use protocol 1.
+                if (leaf == null) {
+//					System.out.println("protocol 1");
+                    ArrayList<BTreeNode> ancestors = new ArrayList<BTreeNode>();
+                    leaf = findLeafNodeShouldContainKeyInUpdaterWithProtocolOne(key, ancestors);
+                    BTreeNode root = leaf.insertKeyValue(key, value);
+//					if (root != null && root.keys.size() != 0) {
+//						System.out.println("The keys of the root is " + root.keys);
+//					}
+                    if (root != null) {
                         this.setRoot(root);
                     }
-					leaf.releaseWriteLock();
-					for (BTreeNode ancestor : ancestors) {
-						ancestor.releaseWriteLock();
-					}
-					ancestors.clear();
-				} else {
-					leaf.insertKeyValueWithoutOverflow(key, value);
-					leaf.releaseWriteLock();
-				}
-			} else {
-//				System.out.println("protocol 1");
-//				System.out.println("The height of the tree is " + this.getHeight());
-				ArrayList<BTreeNode> ancestors = new ArrayList<BTreeNode>();
-				leaf = findLeafNodeShouldContainKeyInUpdaterWithProtocolOne(key, ancestors);
-//                System.out.println("find");
-				BTreeNode root = leaf.insertKeyValue(key, value);
-//				if (root != null && root.keys.size() != 0) {
-//					System.out.println("The keys of the root is " + root.keys);
-//				}
-				if (root != null) {
+                    leaf.releaseWriteLock();
+                    for (BTreeNode ancestor : ancestors) {
+                        ancestor.releaseWriteLock();
+                    }
+                    ancestors.clear();
+                } else {
+//					System.out.println("protocol 2");
+                    leaf.insertKeyValueWithoutOverflow(key, value);
+                    leaf.releaseWriteLock();
+                }
+            } else {
+                ArrayList<BTreeNode> ancestors = new ArrayList<BTreeNode>();
+                leaf = findLeafNodeShouldContainKeyInUpdaterWithProtocolOne(key, ancestors);
+                BTreeNode root = leaf.insertKeyValue(key, value);
+
+                if (root != null) {
                     this.setRoot(root);
-				}
-				leaf.releaseWriteLock();
-				for (BTreeNode ancestor : ancestors) {
-					ancestor.releaseWriteLock();
-				}
-				ancestors.clear();
-//				this.printBtree();
-			}
-		}
+                }
+                leaf.releaseWriteLock();
+                for (BTreeNode ancestor : ancestors) {
+                    ancestor.releaseWriteLock();
+                }
+                ancestors.clear();
+            }
+        }
+
 	}
 
 
@@ -273,7 +273,9 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 			leaf.releaseReadLock();
 		} else {
 			leaf = this.findLeafNodeShouldContainKeyInTemplate(key);
+			leaf.acquireReadLock();
 			values = leaf.searchAndGetValuesInTemplate(key);
+			leaf.releaseReadLock();
 		}
 		return values;
 	}
@@ -404,9 +406,6 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	 */
 
 	private BTreeLeafNode<TKey,TValue> findLeafNodeShouldContainKeyInReader(TKey key) {
-//		System.out.println("Hello 1" + root.keys);
-//			System.out.println("read acquired");
-//			System.out.println("The keys of the root is " + root.keys);
         BTreeNode tmpRoot = root;
 		root.acquireReadLock();
         while (tmpRoot != root) {
@@ -414,35 +413,20 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
             tmpRoot = root;
             root.acquireReadLock();
         }
-//		System.out.println("number of locks of the root is " + root.lock.getReadLockCount());
-//		if (root.getNodeType() == TreeNodeType.InnerNode) {
-//			for (int i = 0; i <= root.getKeyCount(); ++i) {
-//				System.out.println("number of locks of the child is "
-//						+ ((BTreeInnerNode) root).getChild(i).lock.getReadLockCount());
-//			}
-//		}
-//		root.print();
-		assert root.lock.getReadLockCount() >= 1;
-//			System.out.println("The keys of the root is " + root.keys);
-//			System.out.println("read released");
 		BTreeNode<TKey> currentNode = this.root;
-//		System.out.println(root.lock.getReadLockCount());
-//		System.out.println("The height of the tree is " + this.getHeight());
 		while (currentNode.getNodeType() == TreeNodeType.InnerNode) {
 			BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChildWithSpecificIndex(key);
-//			if (node == currentNode) {
-//				System.out.println("yes");
-//			}
-//			System.out.println("no");
-//			System.out.println("The number of locks of the child node is : " + node.lock.getReadLockCount());
 			node.acquireReadLock();
-			assert node.lock.getReadLockCount() >= 1;
 			currentNode.releaseReadLock();
 			currentNode = node;
 		}
 		return (BTreeLeafNode<TKey,TValue>) currentNode;
 
 	}
+
+
+
+
 
 	/**
 	 * Protocol 2 for the updater to find the leaf node that should contain key
@@ -451,26 +435,23 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	 */
 
 	private BTreeLeafNode<TKey,TValue> findLeafNodeShouldContainKeyInUpdaterWithProtocolTwo(TKey key) {
-		root.acquireReadLock();
-//		System.out.println("Hello 2" + root.keys);
-		BTreeNode<TKey> currentNode = this.root;
-//		printBtree();
-		while (currentNode.getNodeType() == TreeNodeType.InnerNode) {
-			BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChildWithSpecificIndex(key);
-			if (node.getNodeType() == TreeNodeType.InnerNode) {
-				node.acquireReadLock();
-			} else {
-				node.acquireWriteLock();
-			}
-			currentNode.releaseReadLock();
-			currentNode = node;
-		}
-		if (!currentNode.isSafe()) {
-			currentNode.releaseWriteLock();
-			return null;
-		}
-		return (BTreeLeafNode<TKey,TValue>) currentNode;
-
+        root.acquireReadLock();
+        BTreeNode<TKey> currentNode = this.root;
+        while (currentNode.getNodeType() == TreeNodeType.InnerNode) {
+            BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChildWithSpecificIndex(key);
+            if (node.getNodeType() == TreeNodeType.InnerNode) {
+                node.acquireReadLock();
+            } else {
+                node.acquireWriteLock();
+            }
+            currentNode.releaseReadLock();
+            currentNode = node;
+        }
+        if (!currentNode.isSafe()) {
+            currentNode.releaseWriteLock();
+            return null;
+        }
+        return (BTreeLeafNode<TKey,TValue>) currentNode;
 	}
 
 	/**
@@ -481,41 +462,24 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	 */
 
 	private BTreeLeafNode<TKey,TValue> findLeafNodeShouldContainKeyInUpdaterWithProtocolOne(TKey key, List<BTreeNode> ancestorsOfCurrentNode) {
-		root.acquireWriteLock();
-		assert root.lock.isWriteLocked() == true;
+        root.acquireWriteLock();
+        assert root.lock.isWriteLocked() == true;
 //		System.out.println("The btree is ");
 //		this.printBtree();
-		BTreeNode<TKey> currentNode = this.root;
-		assert root.lock.getWriteHoldCount() > 0;
-		while (currentNode.getNodeType() == TreeNodeType.InnerNode) {
-			BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChildWithSpecificIndex(key);
-			ancestorsOfCurrentNode.add(currentNode);
-			node.acquireWriteLock();
-			assert node.lock.isWriteLocked() == true;
-//			System.out.println("Iterate: " + node.getParent().keys);
-			if (node.isSafe()) {
-				for (BTreeNode ancestor : ancestorsOfCurrentNode) {
-					ancestor.releaseWriteLock();
-					assert ancestor.lock.isWriteLocked() == false;
-				}
-				ancestorsOfCurrentNode.clear();
-			}
-			currentNode = node;
-		}
-//		System.out.println("Before Hello");
-		if ((!root.isSafe() && this.getHeight() == 1) || (!root.isSafe() && ancestorsOfCurrentNode.contains(root))) {
-//				System.out.println("insert acquired");
-//				System.out.println("CurrentNode " + currentNode.keys);
-//				if (currentNode.getParent() != null) {
-//					System.out.println("ParentNode " + currentNode.getParent().keys);
-//				}
-//				for (BTreeNode ancestor : ancestorsOfCurrentNode) {
-//					System.out.println("ancestors:" + ancestor.keys);
-//				}
-//				this.printBtree();
-
-		}
-//		System.out.println("After Hello");
+        BTreeNode<TKey> currentNode = this.root;
+        assert root.lock.getWriteHoldCount() > 0;
+        while (currentNode.getNodeType() == TreeNodeType.InnerNode) {
+            BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChildWithSpecificIndex(key);
+            ancestorsOfCurrentNode.add(currentNode);
+            node.acquireWriteLock();
+            if (node.isSafe()) {
+                for (BTreeNode ancestor : ancestorsOfCurrentNode) {
+                    ancestor.releaseWriteLock();
+                }
+                ancestorsOfCurrentNode.clear();
+            }
+            currentNode = node;
+        }
 		return (BTreeLeafNode<TKey,TValue>) currentNode;
 
 	}
@@ -609,6 +573,14 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 
 	public int getHeight() {
 		return counter.getHeightCount();
+	}
+
+	public boolean validateParanetReference() {
+		return root.validateParentReference();
+	}
+
+	public boolean validateNoDuplicatedChildReference() {
+		return root.validateNoDuplicatedChildReference();
 	}
 }
 

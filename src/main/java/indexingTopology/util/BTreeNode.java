@@ -7,10 +7,9 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.*;
 
 enum TreeNodeType {
 	InnerNode,
@@ -30,6 +29,13 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 	protected final Lock wLock;
 	protected final Lock rLock;
 
+	static AtomicLong idGenerator = new AtomicLong(0);
+	long id;
+
+	public long getId() {
+		return id;
+	}
+
 	protected BTreeNode(int order, BytesCounter counter) {
 		this.keyCount = 0;
 		ORDER = order;
@@ -39,11 +45,15 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 		this.counter=counter;
 		this.counter.countNewNode();
 		this.lock = new ReentrantReadWriteLock();
-		this.wLock = lock.writeLock();
-		this.rLock = lock.readLock();
+		this.wLock = new MyWriteLock(lock.writeLock());
+		this.rLock = new MyReadLock(lock.readLock());
+		id = idGenerator.getAndIncrement();
 
 	}
 
+	public abstract boolean validateParentReference();
+
+	public abstract boolean validateNoDuplicatedChildReference();
 
 	public int getKeyCount() {
 //		return this.keyCount;
@@ -91,6 +101,8 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 //		} finally {
 //			releaseReadLock();
 //		}
+//			releaseReadLock();
+
 		return parent;
 	}
 
@@ -101,6 +113,7 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 //		} finally {
 //			releaseWriteLock();
 //		}
+
 	}
 
 	public abstract TreeNodeType getNodeType();
@@ -139,6 +152,9 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 		TKey upKey;
 		BTreeNode<TKey> newRNode;
 //		try {
+//		acquireWriteLock();
+		Lock parentLock = null;
+
 			int midIndex = this.getKeyCount() / 2;
 //			TKey upKey = this.getKey(midIndex);
 			upKey = this.getKey(midIndex);
@@ -151,6 +167,8 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 //			}
 			if (this.getParent() == null) {
 				this.setParent(new BTreeInnerNode<TKey>(this.ORDER, this.counter));
+				parentLock = this.getParent().getwLock();
+				parentLock.lock();
 				counter.increaseHeightCount();
 			}
 			newRNode.setParent(this.getParent());
@@ -163,15 +181,22 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 //				newRNode.setRightSibling(this.getRightSibling());
 			}
 			this.setRightSibling(newRNode);
+
 //		} finally {
 //			releaseWriteLock();
 //		}
+
+
 		// push up a key to parent internal node
 //		synchronized (this.getParent()) {
 		if (this.getParent() == null) {
 			System.out.println("parent is null");
 		}
-		return this.getParent().pushUpKey(upKey, this, newRNode);
+		BTreeNode<TKey> ret = this.getParent().pushUpKey(upKey, this, newRNode);
+		if(parentLock!=null) {
+			parentLock.unlock();
+		}
+		return ret;
 //		}
 
 	}
@@ -216,6 +241,7 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 		BTreeNode rightSibling = null;
 //		acquireReadLock();
 //		try {
+
 			if (this.rightSibling != null && this.rightSibling.getParent() == this.getParent()) {
 				rightSibling = this.rightSibling;
 			}
@@ -308,17 +334,138 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 
 	public void acquireReadLock() {
 		rLock.lock();
+//		System.out.println("The keys are : " + keys);
+//		System.out.println("The number of locks is " + lock.getReadLockCount());
+//		System.out.println("r+ on " + this.getId() + " by thread " + Thread.currentThread().getId());
 	}
 
 	public void releaseReadLock() {
 		rLock.unlock();
+//		System.out.println("r- on " + this.getId() + " by thread " + Thread.currentThread().getId());
 	}
 
 	public void acquireWriteLock() {
 		wLock.lock();
+//		System.out.println("w+ on " + this.getId() + " by thread " + Thread.currentThread().getId());
 	}
 
 	public void releaseWriteLock() {
 		wLock.unlock();
+//		System.out.println("w- on " + this.getId() + " by thread " + Thread.currentThread().getId());
+	}
+
+	public Lock getwLock() {
+		return wLock;
+	}
+
+	public Lock getrLock() {
+		return rLock;
+	}
+
+	class MyWriteLock implements Lock {
+
+		ReentrantReadWriteLock.WriteLock lock;
+		protected MyWriteLock(ReentrantReadWriteLock.WriteLock lock) {
+			this.lock = lock;
+		}
+
+		public void lock() {
+			lock.lock();
+			writeLockThreadId = Thread.currentThread().getId();
+		}
+
+		public void lockInterruptibly() throws InterruptedException {
+
+		}
+
+		public boolean tryLock() {
+			return false;
+		}
+
+		public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
+			return false;
+		}
+
+		public void unlock() {
+			writeLockThreadId = -1;
+			lock.unlock();
+		}
+
+		public Condition newCondition() {
+			return null;
+		}
+	}
+
+	class MyReadLock implements Lock {
+
+		ReentrantReadWriteLock.ReadLock lock;
+		protected MyReadLock(ReentrantReadWriteLock.ReadLock lock) {
+			this.lock = lock;
+		}
+
+		public void lock() {
+			lock.lock();
+			readLockThreadId = Thread.currentThread().getId();
+//			System.out.println(String.format("readLock is updated to %d by thread %d", readLockThreadId, Thread.currentThread().getId()));
+		}
+
+		public void lockInterruptibly() throws InterruptedException {
+
+		}
+
+		public boolean tryLock() {
+			return false;
+		}
+
+		public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
+			return false;
+		}
+
+		public void unlock() {
+			readLockThreadId = -1;
+			lock.unlock();
+		}
+
+		public Condition newCondition() {
+			return null;
+		}
+	}
+
+	long readLockThreadId;
+	long writeLockThreadId;
+
+	public void checkIfCurrentHoldAnyLock() {
+
+//
+//		final long tid = Thread.currentThread().getId();
+//
+//		final boolean condition = tid == readLockThreadId || tid == writeLockThreadId;
+//
+//		if(!condition) {
+//			System.out.println("Hello world!");
+//		}
+//		assert condition: String.format("Thread %d does not get any lock on node %d", Thread.currentThread().getId(), getId());
+	}
+
+
+	static public class NodeLock {
+		Lock lock;
+		long nodeId;
+		public NodeLock(Lock lock, long nodeId) {
+			this.lock = lock;
+			this.nodeId = nodeId;
+		}
+
+		public void lock() {
+			lock.lock();
+		}
+
+		public void unlock() {
+			lock.unlock();
+		}
+
+		public long getNodeId() {
+			return nodeId;
+		}
 	}
 }

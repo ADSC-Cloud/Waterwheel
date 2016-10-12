@@ -6,6 +6,8 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> implements Serializable {
 	protected ArrayList<BTreeNode<TKey>> children;
@@ -16,6 +18,38 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 		this.keys = new ArrayList<TKey>();
 		this.children = new ArrayList<BTreeNode<TKey>>();
 
+	}
+
+	public boolean validateParentReference() {
+		for(BTreeNode<TKey> child: children) {
+			if(child.getParent().getId() != getId()) {
+				System.out.println(String.format("%d's parent reference is wrong!", child.getId()));
+				System.out.println(String.format("%d's parent reference is %d, should be %d", child.getId(), child.getParent().getId(), getId()));
+				return false;
+			}
+			if(!child.validateParentReference()) {
+				System.out.println(String.format("- %d ->", getId()));
+				return false;
+			}
+		}
+		return true;
+	}
+
+	public boolean validateNoDuplicatedChildReference() {
+		Set<Long> idSet = new HashSet<Long>();
+		for(BTreeNode<TKey> child: children) {
+			if(idSet.contains(child.getId())) {
+				System.out.println(String.format("Duplicated child %d is found on %d", child.getId(), getId()));
+				return false;
+			}
+			idSet.add(child.getId());
+
+			if(!child.validateNoDuplicatedChildReference()) {
+				System.out.println(String.format(" -- %d -->", getId()));
+				return false;
+			}
+		}
+		return true;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -34,8 +68,8 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 //		acquireReadLock();
 		BTreeNode node;
 //		try {
-			int index = search(key);
-			node = this.children.get(index);
+        int index = search(key);
+        node = this.children.get(index);
 //		} finally {
 //			releaseReadLock();
 //		}
@@ -93,6 +127,7 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 			int cmp = this.getKey(index).compareTo(key);
 			if (cmp == 0) {
 				return index + 1;
+//				return index;
 			}
 			else if (cmp > 0) {
 				return index;
@@ -158,6 +193,7 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 	 */
 	@Override
 	protected BTreeNode<TKey> split() {
+//		System.out.println(String.format("Inner node %d is spilt!", getId()));
 //		acquireWriteLock();
 		BTreeInnerNode<TKey> newRNode = new BTreeInnerNode<TKey>(this.ORDER, this.counter);
 //		try {
@@ -195,10 +231,39 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 		BTreeNode root = null;
 //		acquireWriteLock();
 //		try {
+//		acquireWriteLock();
 			int index = this.search(key);
 
+			// note that the there might be duplicated keys here. So the insertion may not be correct if only locating
+			// insertion point by the key.
+
 			// insert the new key
-			this.insertAt(index, key, leftChild, rightNode);
+//			this.insertAt(index, key, leftChild, rightNode);
+
+
+
+			if(children.size() == 0) {
+
+				keys.add(0, key);
+				children.add(leftChild);
+				children.add(rightNode);
+
+			} else {
+				for(int i = 0; i < children.size(); i++) {
+					if(children.get(i) == leftChild) {
+						keys.add(i, key);
+						children.add(i + 1, rightNode);
+					}
+				}
+			}
+			try {
+				counter.countKeyAddition(UtilGenerics.sizeOf(key.getClass()));
+			} catch (UnsupportedGenericException e) {
+				e.printStackTrace();
+			}
+			keyCount++;
+
+
 
 			// check whether current node need to be split
 			if (this.isOverflow()) {
@@ -310,6 +375,7 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 //		} finally {
 //			releaseWriteLock();
 //		}
+//
 //		return null;
 		return node;
 	}
@@ -346,6 +412,7 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 //		} finally {
 //			releaseWriteLock();
 //		}
+
 	}
 
 	@Override

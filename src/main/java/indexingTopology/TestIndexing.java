@@ -16,11 +16,14 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Created by acelzj on 9/26/16.
@@ -51,6 +54,7 @@ public class TestIndexing {
     private AtomicLong totalTime;
     private ReentrantLock lock;
 
+
     private BulkLoader bulkLoader;
     private BTree<Double, Integer> copyOfIndexedData;
     private BufferedReader bufferedReader;
@@ -68,8 +72,19 @@ public class TestIndexing {
     private Semaphore s1;
     private Semaphore s2;
 
+    private IndexingRunnable indexingRunnable;
+    private int numberOfIndexingThreads = 2;
+    private List<Thread> indexingThreads = new ArrayList<Thread>();
+
+    private QueryRunnable queryRunnable;
+    private int numberOfQueryThreads = 2;
+    private List<Thread> queryThreads = new ArrayList<Thread>();
+
+
 
     public TestIndexing() {
+
+
         queue = new LinkedBlockingQueue<Pair>();
 
         btreeOrder = 4;
@@ -77,18 +92,19 @@ public class TestIndexing {
         total = new AtomicLong(0);
         numTuples = 0;
         numTuplesBeforeWritting = 1;
+//        bytesLimit = 650000;
         bytesLimit = 65000000;
         count = 0;
 
-        inputFile = new File("/home/dmir/IndexTopology_experiment/NormalDistribution/input_data");
-        outputFile = new File("/home/dmir/IndexTopology_experiment/NormalDistribution/total_time_thread_4");
-        queryOutputFile = new File("/home/dmir/IndexTopology_experiment/NormalDistribution/query_latency_with_rebuild_4");
+        inputFile = new File("src/input_data_new");
+        outputFile = new File("src/total_time_thread_4");
+        queryOutputFile = new File("src/query_latency_with_rebuild_4");
 
         chunk = MemChunk.createNew(bytesLimit);
         tm = TimingModule.createNew();
         sm = SplitCounterModule.createNew();
 
-        indexedData = new BTree<Double,Integer>(btreeOrder, tm, sm);
+        indexedData = new BTree<Double, Integer>(btreeOrder, tm, sm);
         bulkLoader = new BulkLoader(btreeOrder, tm, sm);
 
         s2 = new Semaphore(2);
@@ -147,13 +163,16 @@ public class TestIndexing {
                         text = bufferedReader.readLine();
                         if (text == null) {
                             try {
+                                if (bufferedReader != null) {
+                                    bufferedReader.close();
+                                }
                                 bufferedReader = new BufferedReader(new FileReader(inputFile));
                                 text = bufferedReader.readLine();
                             } catch (FileNotFoundException e) {
                                 e.printStackTrace();
                             }
                         }
-                        String [] tokens = text.split(" ");
+                        String[] tokens = text.split(" ");
                         values = getValuesObject(tokens);
                         indexValue = values.get(0);
                         ++numTuples;
@@ -190,7 +209,8 @@ public class TestIndexing {
                             s2.acquire();
 //                            createNewTree(percentage);
 //                            indexedData.clearPayload();
-                            createEmptyTree();
+
+
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         } finally {
@@ -220,6 +240,35 @@ public class TestIndexing {
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
+
+
+                        try {
+                            // synchronizing indexing threads
+                            indexingRunnable.setInputExhausted();
+                            for (Thread thread : indexingThreads) {
+                                thread.join();
+                            }
+                            indexingThreads.clear();
+                            indexingRunnable = new IndexingRunnable();
+                            System.out.println("All the indexing threads are terminated!");
+
+                            // synchronizing query threads
+                            queryRunnable.terminate();
+                            for (Thread thread : queryThreads) {
+                                thread.join();
+                            }
+                            queryThreads.clear();
+                            queryRunnable = new QueryRunnable();
+                            System.out.println("All the query threads are terminated!");
+
+
+                            createEmptyTree();
+                            createIndexingThread();
+                            createQueryThread();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+
                         Pair pair = new Pair(indexValue, offset);
                         bulkLoader.addRecord(pair);
                         sm.resetCounter();
@@ -238,31 +287,7 @@ public class TestIndexing {
         });
         emitThread.start();
 
-        Thread indexThread = new Thread(new Runnable() {
-            public void run() {
-                while (true) {
-                    if (!queue.isEmpty()) {
-                        try {
-                            Pair pair = queue.take();
-                            Double indexValue = (Double) pair.getKey();
-                            Integer offset = (Integer) pair.getValue();
-                            s2.acquire();
-                            long start = System.nanoTime();
-//                            System.out.println("insert");
-                            indexedData.insert(indexValue, offset);
-                            total.addAndGet(System.nanoTime() - start);
-                            s2.release();
-                        } catch (UnsupportedGenericException e) {
-                            e.printStackTrace();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-            }
-        });
-        indexThread.start();
-
+  /*
         Thread queryThread = new Thread(new Runnable() {
             public void run() {
                 int count = 0;
@@ -277,31 +302,103 @@ public class TestIndexing {
 //                        indexedData.search(indexValue);
                         indexedData.searchRange(leftKey, rightKey);
                         long time = System.nanoTime() - start;
-                        s2.release();
-//                        indexedData.searchRange(leftKey, rightKey);
-                        totalTime.addAndGet(time);
-                        ++numberOfQueries;
-                        if (numberOfQueries == 10000) {
-                            double aveQueryTime = (double) totalTime.get() / (double) numberOfQueries;
-                            System.out.println(aveQueryTime);
-                            String content = "" + aveQueryTime;
-                            String newline = System.getProperty("line.separator");
-                            byte[] contentInBytes = content.getBytes();
-                            byte[] nextLineInBytes = newline.getBytes();
-                            queryFileOutput.write(contentInBytes);
-                            queryFileOutput.write(nextLineInBytes);
-                            numberOfQueries = 0;
-                            totalTime = new AtomicLong(0);
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        s2.release();*/
+
+        createIndexingThread();
+
+        createQueryThread();
+
+
+//        Thread queryThread = new Thread(new Runnable() {
+//            public void run() {
+//                int count = 0;
+//                while (true) {
+//                    try {
+//                        Thread.sleep(1);
+//                        Double leftKey = (double) 100;
+//                        Double rightKey = (double) 200;
+//                        Double indexValue = random.nextDouble() * 700 + 300;
+////                        s2.acquire();
+//                        long start = System.nanoTime();
+//                        indexedData.search(indexValue);
+////                        indexedData.searchRange(leftKey, rightKey);
+//                        long time = System.nanoTime() - start;
+////                        s2.release();
+////                        indexedData.searchRange(leftKey, rightKey);
+//                        totalTime.addAndGet(time);
+//                        ++numberOfQueries;
+//                        if (numberOfQueries == 100) {
+//                            double aveQueryTime = (double) totalTime.get() / (double) numberOfQueries;
+//                            System.out.println(aveQueryTime);
+//                            String content = "" + aveQueryTime;
+//                            String newline = System.getProperty("line.separator");
+//                            byte[] contentInBytes = content.getBytes();
+//                            byte[] nextLineInBytes = newline.getBytes();
+//                            queryFileOutput.write(contentInBytes);
+//                            queryFileOutput.write(nextLineInBytes);
+//                            System.out.println(String.format("%d queries executed!", numberOfQueries));
+//                            numberOfQueries = 0;
+//                            totalTime = new AtomicLong(0);
+//                        }
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            }
+//        });
+//        queryThread.start();
+    }
+
+    class QueryRunnable implements Runnable {
+
+        boolean terminating = false;
+
+        public void terminate() {
+            terminating = true;
+        }
+        public void run() {
+            int count = 0;
+            while (true) {
+                try {
+                    if(terminating) {
+                        break;
                     }
+                    Thread.sleep(1);
+                    Double leftKey = (double) 100;
+                    Double rightKey = (double) 200;
+                    Double indexValue = random.nextDouble() * 700 + 300;
+//                        s2.acquire();
+                    long start = System.nanoTime();
+                    indexedData.search(indexValue);
+//                        indexedData.searchRange(leftKey, rightKey);
+                    long time = System.nanoTime() - start;
+//                        s2.release();
+//                        indexedData.searchRange(leftKey, rightKey);
+                    totalTime.addAndGet(time);
+                    ++numberOfQueries;
+                    if (numberOfQueries == 1000) {
+                        double aveQueryTime = (double) totalTime.get() / (double) numberOfQueries;
+                        System.out.println(aveQueryTime);
+                        String content = "" + aveQueryTime;
+                        String newline = System.getProperty("line.separator");
+                        byte[] contentInBytes = content.getBytes();
+                        byte[] nextLineInBytes = newline.getBytes();
+                        queryFileOutput.write(contentInBytes);
+                        queryFileOutput.write(nextLineInBytes);
+                        System.out.println(String.format("%d queries executed!", numberOfQueries));
+                        numberOfQueries = 0;
+                        totalTime = new AtomicLong(0);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
-        });
-        queryThread.start();
+            System.out.println(String.format("Query thread %d is terminated!", Thread.currentThread().getId()));
+        }
     }
 
     public byte[] serializeIndexValue(List<Double> values) throws IOException{
@@ -345,6 +442,143 @@ public class TestIndexing {
 
     private void createEmptyTree() {
         indexedData = new BTree<Double,Integer>(btreeOrder, tm, sm);
+        System.out.println("height of the new tree is " + indexedData.getHeight());
+    }
+
+    private void createIndexingThread() {
+        createIndexingThread(numberOfIndexingThreads);
+    }
+
+    private void createQueryThread() {
+        createQueryThread(numberOfQueryThreads);
+    }
+
+    private void createQueryThread(int n) {
+        if(queryRunnable == null) {
+            queryRunnable = new QueryRunnable();
+        }
+        for(int i = 0; i < n; i++) {
+            Thread thread = new Thread(queryRunnable);
+            thread.start();
+            System.out.println(String.format("Query thread %d is created!", thread.getId()));
+            queryThreads.add(thread);
+        }
+    }
+
+
+    class IndexingRunnable implements Runnable {
+
+        boolean inputExhausted = false;
+
+        public void setInputExhausted() {
+            inputExhausted = true;
+        }
+
+        AtomicLong executed;
+        long startTime;
+        public void run() {
+            long count = 0;
+            startTime = System.currentTimeMillis();
+            executed = new AtomicLong(0);
+            while (true) {
+                    try {
+                        Pair pair = queue.poll(1, TimeUnit.MILLISECONDS);
+                        if(pair == null) {
+                            if(inputExhausted)
+                                break;
+                            else
+                            continue;
+                        }
+                        Double indexValue = (Double) pair.getKey();
+                        Integer offset = (Integer) pair.getValue();
+//                            s2.acquire();
+                        long start = System.nanoTime();
+//                            System.out.println("insert");
+                        indexedData.insert(indexValue, offset);
+                        executed.incrementAndGet();
+//                        if(!indexedData.validateParanetReference()) {
+//                            System.out.println("Problem is detected!");
+//                        }
+//                        if(!indexedData.validateNoDuplicatedChildReference()) {
+//                            System.out.println("Problem is detected!");
+//                        }
+                        total.addAndGet(System.nanoTime() - start);
+//                            s2.release();
+//                        if (count++ % 10000 == 0) {
+//                            System.out.println(String.format("%d tuples inserted! by thread %d", count, Thread.currentThread().getId()));
+//                        }
+//                        if(count == 173 || count == 78 || count == 43) {
+//                            System.out.println("");
+//                        }
+//                        }
+                    } catch (UnsupportedGenericException e) {
+                        e.printStackTrace();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+            }
+            System.out.println("Indexing thread" + Thread.currentThread().getId() + " is terminated!");
+            System.out.println(String.format("Index throughput = %f tuple / s", executed.get() / (double)(System.currentTimeMillis() - startTime) * 1000));
+        }
+    }
+
+    private void createIndexingThread(int n) {
+        if(indexingRunnable == null) {
+            indexingRunnable = new IndexingRunnable();
+        }
+        for(int i = 0; i < n; i++) {
+            Thread indexThread = new Thread(indexingRunnable);
+            indexThread.start();
+            System.out.println(String.format("Thread %d is created!", indexThread.getId()));
+            indexingThreads.add(indexThread);
+        }
+//
+//
+//
+//        for(int i = 0; i < n; i++) {
+//            Thread indexThread = new Thread(new Runnable() {
+//                public void run() {
+//                    long count = 0;
+//                    while (true) {
+//                        if (!queue.isEmpty()) {
+//                            try {
+//                                Pair pair = queue.take();
+//                                Double indexValue = (Double) pair.getKey();
+//                                Integer offset = (Integer) pair.getValue();
+////                            s2.acquire();
+//                                long start = System.nanoTime();
+////                            System.out.println("insert");
+//                                indexedData.insert(indexValue, offset);
+//                                total.addAndGet(System.nanoTime() - start);
+////                            s2.release();
+//                                if (count++ % 10000 == 0) {
+//                                    System.out.println(String.format("%d tuples inserted! by thread %d", count++, Thread.currentThread().getId()));
+//                                }
+//                            } catch (UnsupportedGenericException e) {
+//                                e.printStackTrace();
+//                            } catch (InterruptedException e) {
+//                                e.printStackTrace();
+//                            }
+//                        }
+//                    }
+//                }
+//            });
+//            indexThread.start();
+//        }
+    }
+
+    private void populateInputQueueWithMoreTuples(int generationTimeInMillis) {
+        try {
+            while(generationTimeInMillis > 0) {
+                Thread.sleep(1000);
+                System.out.println("Waiting for generating a large number of tuples.");
+                generationTimeInMillis -= 1000;
+            }
+        } catch (InterruptedException e) {
+
+        }
     }
 
     public static void main(String[] args) {
