@@ -54,7 +54,6 @@ public class TestIndexing {
     private AtomicLong totalTime;
     private ReentrantLock lock;
 
-
     private BulkLoader bulkLoader;
     private BTree<Double, Integer> copyOfIndexedData;
     private BufferedReader bufferedReader;
@@ -371,8 +370,9 @@ public class TestIndexing {
                     Double indexValue = random.nextDouble() * 700 + 300;
 //                        s2.acquire();
                     long start = System.nanoTime();
-                    indexedData.search(indexValue);
-//                        indexedData.searchRange(leftKey, rightKey);
+                    indexedData.printBtree();
+//                    indexedData.search(indexValue);
+                        indexedData.searchRange(leftKey, rightKey);
                     long time = System.nanoTime() - start;
 //                        s2.release();
 //                        indexedData.searchRange(leftKey, rightKey);
@@ -493,6 +493,7 @@ public class TestIndexing {
                         Integer offset = (Integer) pair.getValue();
 //                            s2.acquire();
                         long start = System.nanoTime();
+//                        indexedData.printBtree();
 //                            System.out.println("insert");
                         indexedData.insert(indexValue, offset);
                         executed.incrementAndGet();

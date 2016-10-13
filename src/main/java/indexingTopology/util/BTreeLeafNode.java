@@ -421,23 +421,22 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
             if (cmp >= 0)
                 break;
         }
-
+//        List<BTreeNode> nodes = new ArrayList<BTreeNode>();
         List<TValue> retList = new ArrayList<TValue>();
         BTreeLeafNode<TKey,TValue> currLeaf = this;
+//        nodes.add(this);
         int currIndex = firstIndex;
 
         // case when all keys in the node are smaller than leftKey - shift to next rightSibling
         if (firstIndex >= this.getKeyCount()) {
             currLeaf = (BTreeLeafNode<TKey,TValue>) this.rightSibling;
-
+//            nodes.add(currLeaf);
             if (currLeaf != null) {
                 currLeaf.acquireReadLock();
-                releaseReadLock();
             }
-
+            releaseReadLock();
             currIndex = 0;
         }
-
         while (currLeaf != null && currLeaf.getKey(currIndex).compareTo(rightKey)<=0) {
             retList.addAll(currLeaf.getValueList(currIndex));
             currIndex++;
@@ -445,18 +444,25 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 
                 if (currLeaf.rightSibling != null) {
                     currLeaf.rightSibling.acquireReadLock();
-                    currLeaf.releaseReadLock();
+//                    nodes.add((currLeaf.rightSibling));
                 }
-
+                currLeaf.releaseReadLock();
                 currLeaf = (BTreeLeafNode<TKey,TValue>) currLeaf.rightSibling;
                 currIndex = 0;
             }
         }
-
         if (currLeaf != null) {
             currLeaf.releaseReadLock();
+        } else if (currLeaf == this) {
+            currLeaf.releaseReadLock();
         }
-
+//        for (BTreeNode node : nodes) {
+//            System.out.println(node.lock.getReadLockCount());
+//            assert node.lock.getReadLockCount() == 0;
+//        }
+//        currLeaf.print();
+//        System.out.println("The number of lock is " + this.lock.getReadLockCount());
+//        assert this.lock.getReadLockCount() == 0;
         return retList;
     }
 
@@ -545,23 +551,23 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 //		} finally {
 //			releaseReadLock();  //Added to check the paper
 //		}
-		acquireReadLock();
 //		releaseWriteLock();
 		ArrayList<TValue> values;
-		int index = search(key);
-		values = (index == -1 ? null : getValueList(index));
-		releaseReadLock();  //Added to check the paper
+        int index = search(key);
+        values = (index == -1 ? null : getValueList(index));
+//            releaseReadLock();  //Added to check the paper
+//        }
 		return values;
 	}
 
 	public void insertKeyValueInTemplateMode(TKey key, TValue value) throws UnsupportedGenericException{
-//		acquireWriteLock();
+		acquireWriteLock();
 		try {
 			keys.add(key);
 			values.add(new ArrayList<TValue>(Arrays.asList(value)));
 			++keyCount;
 		} finally {
-//			releaseWriteLock();
+			releaseWriteLock();
 		}
 	}
 

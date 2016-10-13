@@ -226,6 +226,7 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
 //        bt.printBtree();
 //        System.out.println(bt.searchRange((double) 50, (double) 60));
         bt = new BTree(4, tm, sm);
+        bt.printBtree();
 //        bt.clearPayload();
         final int offset = 0;
 //            new Thread(new Runnable() {
@@ -237,24 +238,28 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
 //                            e.printStackTrace();
 //                        }
 //                        bt.search((double) 0);
-        System.out.println(bt.search((double) 1000));
+//        System.out.println(bt.search((double) 1000));
 //                    }
 //                }
 //            }).start();
 //            new Thread(new Runnable() {
 //                public void run() {
 //                    while (true) {
-        for (int i = 0; i <= 60; ++i) {
-            try {
-                bt.insert((double) i, (double) i);
-                System.out.println("After insert, the btree is : ");
-                bt.printBtree();
-                System.out.println();
-            } catch (UnsupportedGenericException e) {
-                e.printStackTrace();
-            }
+//        for (int i = 0; i < 6; ++i) {
+//            try {
+//                bt.insert((double) i, (double) i);
+//                System.out.println("After insert, the btree is : ");
+//                bt.printBtree();
+//                System.out.println();
+//            } catch (UnsupportedGenericException e) {
+//                e.printStackTrace();
+//            }
+//        }
+        System.out.println("Hello");
+        for (int i = 0; i < 8; ++i) {
+            System.out.println(bt.searchRange((double) 0, (double) i));
         }
-        System.out.println(bt.searchRange((double) 1, (double) 60));
+        System.out.println("Hello");
         System.out.println(bt.searchRange((double) 2, (double) 50));
 //        for (int i = 60; i >= 0; --i) {
 //            try {

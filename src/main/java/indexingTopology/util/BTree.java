@@ -174,22 +174,24 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
         BTreeLeafNode<TKey, TValue> leaf = null;
         if (templateMode) {
             leaf = findLeafNodeShouldContainKeyInTemplate(key);
-            leaf.insertKeyValueInTemplateMode(key, value);
-            if (leaf.isOverflow()) {
-                sm.addCounter();
+            leaf.acquireWriteLock();
+            try {
+                leaf.insertKeyValueInTemplateMode(key, value);
+                if (leaf.isOverflow()) {
+                    sm.addCounter();
+                }
+            } finally {
+                leaf.releaseWriteLock();
             }
         } else {
             if (this.getHeight() > 1) {
                 leaf = findLeafNodeShouldContainKeyInUpdaterWithProtocolTwo(key);
-                //if the root is null means that we need to give up using protocol 2 and use protocol 1.
+                //if the root is null, it means that we have to use protocol 1 instead of protocol 2.
                 if (leaf == null) {
 //					System.out.println("protocol 1");
                     ArrayList<BTreeNode> ancestors = new ArrayList<BTreeNode>();
                     leaf = findLeafNodeShouldContainKeyInUpdaterWithProtocolOne(key, ancestors);
                     BTreeNode root = leaf.insertKeyValue(key, value);
-//					if (root != null && root.keys.size() != 0) {
-//						System.out.println("The keys of the root is " + root.keys);
-//					}
                     if (root != null) {
                         this.setRoot(root);
                     }
@@ -199,7 +201,6 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
                     }
                     ancestors.clear();
                 } else {
-//					System.out.println("protocol 2");
                     leaf.insertKeyValueWithoutOverflow(key, value);
                     leaf.releaseWriteLock();
                 }
@@ -273,10 +274,13 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 			leaf.releaseReadLock();
 		} else {
 			leaf = this.findLeafNodeShouldContainKeyInTemplate(key);
-			leaf.acquireReadLock();
-			values = leaf.searchAndGetValuesInTemplate(key);
-			leaf.releaseReadLock();
-		}
+            leaf.acquireReadLock();
+            try {
+                values = leaf.searchAndGetValuesInTemplate(key);
+            } finally {
+                leaf.releaseReadLock();
+            }
+        }
 		return values;
 	}
 
@@ -435,7 +439,13 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	 */
 
 	private BTreeLeafNode<TKey,TValue> findLeafNodeShouldContainKeyInUpdaterWithProtocolTwo(TKey key) {
+        BTreeNode tmpRoot = root;
         root.acquireReadLock();
+        while (tmpRoot != root) {
+            tmpRoot.releaseReadLock();
+            tmpRoot = root;
+            root.acquireReadLock();
+        }
         BTreeNode<TKey> currentNode = this.root;
         while (currentNode.getNodeType() == TreeNodeType.InnerNode) {
             BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChildWithSpecificIndex(key);
@@ -462,7 +472,14 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	 */
 
 	private BTreeLeafNode<TKey,TValue> findLeafNodeShouldContainKeyInUpdaterWithProtocolOne(TKey key, List<BTreeNode> ancestorsOfCurrentNode) {
+        BTreeNode tmpRoot = root;
         root.acquireWriteLock();
+        while (tmpRoot != root) {
+            tmpRoot.releaseWriteLock();
+            tmpRoot = root;
+            root.acquireWriteLock();
+        }
+//        root.acquireWriteLock();
         assert root.lock.isWriteLocked() == true;
 //		System.out.println("The btree is ");
 //		this.printBtree();
