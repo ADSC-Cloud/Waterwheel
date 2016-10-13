@@ -573,7 +573,7 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 
 	public BTreeNode insertKeyValue(TKey key, TValue value) throws UnsupportedGenericException{
 //		acquireWriteLock();
-		BTreeNode node = this;
+		BTreeNode node = null;
 //		try {
 			keys.add(key);
 			values.add(new ArrayList<TValue>(Arrays.asList(value)));

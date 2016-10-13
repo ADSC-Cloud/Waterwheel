@@ -226,9 +226,24 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
 //        bt.printBtree();
 //        System.out.println(bt.searchRange((double) 50, (double) 60));
         bt = new BTree(4, tm, sm);
-        bt.printBtree();
+//        bt.printBtree();
 //        bt.clearPayload();
         final int offset = 0;
+        for (int i = 0; i < 2; ++i) {
+            new Thread(new Runnable() {
+                public void run() {
+                    int i = 0;
+                    while (true) {
+//                        System.out.println(bt.getHeight());
+                        try {
+                            bt.insert((double) i++, offset);
+                        } catch (UnsupportedGenericException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }).start();
+        }
 //            new Thread(new Runnable() {
 //                public void run() {
 //                    while (true) {
@@ -255,12 +270,12 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
 //                e.printStackTrace();
 //            }
 //        }
-        System.out.println("Hello");
-        for (int i = 0; i < 8; ++i) {
-            System.out.println(bt.searchRange((double) 0, (double) i));
-        }
-        System.out.println("Hello");
-        System.out.println(bt.searchRange((double) 2, (double) 50));
+//        System.out.println("Hello");
+//        for (int i = 0; i < 8; ++i) {
+//            System.out.println(bt.searchRange((double) 0, (double) i));
+//        }
+//        System.out.println("Hello");
+//        System.out.println(bt.searchRange((double) 2, (double) 50));
 //        for (int i = 60; i >= 0; --i) {
 //            try {
 //                bt.delete((double) i);

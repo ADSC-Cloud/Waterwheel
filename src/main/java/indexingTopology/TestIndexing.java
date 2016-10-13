@@ -76,7 +76,7 @@ public class TestIndexing {
     private List<Thread> indexingThreads = new ArrayList<Thread>();
 
     private QueryRunnable queryRunnable;
-    private int numberOfQueryThreads = 2;
+    private int numberOfQueryThreads = 10;
     private List<Thread> queryThreads = new ArrayList<Thread>();
 
 
@@ -370,7 +370,7 @@ public class TestIndexing {
                     Double indexValue = random.nextDouble() * 700 + 300;
 //                        s2.acquire();
                     long start = System.nanoTime();
-                    indexedData.printBtree();
+//                    indexedData.printBtree();
 //                    indexedData.search(indexValue);
                         indexedData.searchRange(leftKey, rightKey);
                     long time = System.nanoTime() - start;
@@ -380,14 +380,14 @@ public class TestIndexing {
                     ++numberOfQueries;
                     if (numberOfQueries == 1000) {
                         double aveQueryTime = (double) totalTime.get() / (double) numberOfQueries;
-                        System.out.println(aveQueryTime);
+//                        System.out.println(aveQueryTime);
                         String content = "" + aveQueryTime;
                         String newline = System.getProperty("line.separator");
                         byte[] contentInBytes = content.getBytes();
                         byte[] nextLineInBytes = newline.getBytes();
                         queryFileOutput.write(contentInBytes);
                         queryFileOutput.write(nextLineInBytes);
-                        System.out.println(String.format("%d queries executed!", numberOfQueries));
+//                        System.out.println(String.format("%d queries executed!", numberOfQueries));
                         numberOfQueries = 0;
                         totalTime = new AtomicLong(0);
                     }
