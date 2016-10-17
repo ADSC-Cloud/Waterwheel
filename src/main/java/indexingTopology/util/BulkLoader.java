@@ -1,12 +1,15 @@
 package indexingTopology.util;
 
 import backtype.storm.tuple.Tuple;
+import clojure.lang.Ref;
 import indexingTopology.DataSchema;
 import indexingTopology.exception.UnsupportedGenericException;
 import javafx.util.Pair;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Semaphore;
 
 
 /**
@@ -30,6 +33,7 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
 
     private boolean templateMode;
 
+
     public BulkLoader(int btreeOrder, TimingModule tm, SplitCounterModule sm) {
         order = btreeOrder;
         this.tm = tm;
@@ -41,8 +45,18 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
         counter.increaseHeightCount();
     }
 
-    public void addRecord(Pair pair) {
+    public synchronized void addRecord(Pair pair) {
         record.add(pair);
+    }
+
+    public synchronized List<TValue> pointSearch(TKey key) {
+        List<TValue> list = new ArrayList<TValue>();
+        for(Pair<TKey, TValue> pair: record) {
+            if(pair.getKey().equals(key)) {
+                list.add(pair.getValue());
+            }
+        }
+        return list;
     }
 
     public int getNumberOfRecord() {
@@ -178,4 +192,10 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
     public int getNumberOfLeaves() {
         return numberOfLeaves;
     }
+
+
+    public List<Pair<TKey, TValue>> getRecords() {
+        return record;
+    }
+
 }

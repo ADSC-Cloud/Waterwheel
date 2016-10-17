@@ -188,7 +188,7 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 		// push up a key to parent internal node
 //		synchronized (this.getParent()) {
 		if (this.getParent() == null) {
-			System.out.println("parent is null");
+//			System.out.println("parent is null");
 		}
 		BTreeNode<TKey> ret = this.getParent().pushUpKey(upKey, this, newRNode);
 		if(parentLock!=null) {
@@ -430,13 +430,12 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 
 //
 //		final long tid = Thread.currentThread().getId();
-//
 //		final boolean condition = tid == readLockThreadId || tid == writeLockThreadId;
+//		assert condition: String.format("Thread %d does not get any lock on node %d", Thread.currentThread().getId(), getId());
 //
 //		if(!condition) {
 //			System.out.println("Hello world!");
 //		}
-//		assert condition: String.format("Thread %d does not get any lock on node %d", Thread.currentThread().getId(), getId());
 	}
 
 

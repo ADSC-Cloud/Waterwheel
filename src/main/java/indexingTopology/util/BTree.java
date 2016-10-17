@@ -34,7 +34,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		counter = new BytesCounter();
 		this.root = new BTreeLeafNode<TKey,TValue>(order,counter);
 		counter.increaseHeightCount();
-		templateMode = true;
+		templateMode = false;
 		sem = new Semaphore(1);
 //		this.lock = new ReentrantReadWriteLock();
 //		this.wLock = lock.writeLock();
@@ -222,7 +222,6 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 				for (BTreeNode.NodeLock ancestor : ancestors) {
 					ancestor.unlock();
 				}
-				ancestors.clear();
 			}
 
 /**
@@ -484,7 +483,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 //		printBtree();
 		while (currentNode.getNodeType() == TreeNodeType.InnerNode) {
 			BTreeNode<TKey> son = ((BTreeInnerNode<TKey>) currentNode).getChildWithSpecificIndex(key);
-			Lock lock;
+			final Lock lock;
 			if (son.getNodeType() == TreeNodeType.InnerNode) {
 				son.acquireReadLock();
 				lock = son.getrLock();
