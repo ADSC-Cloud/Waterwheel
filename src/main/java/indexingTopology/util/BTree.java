@@ -173,6 +173,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	public void insert(TKey key, TValue value) throws UnsupportedGenericException {
         BTreeLeafNode<TKey, TValue> leaf = null;
         if (templateMode) {
+//            System.out.println("templateMode");
             leaf = findLeafNodeShouldContainKeyInTemplate(key);
             leaf.acquireWriteLock();
             try {
@@ -266,8 +267,25 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	//The method below are changed to check the paper which is about concurrency in B tree
 	public List<TValue> searchRange(TKey leftKey, TKey rightKey) {
 		assert leftKey.compareTo(rightKey) <= 0 : "leftKey provided is greater than the right key";
-		BTreeLeafNode<TKey,TValue> leafLeft = this.findLeafNodeShouldContainKeyInReader(leftKey);
-		List<TValue> values = leafLeft.searchRange(leftKey, rightKey);
+        List<TValue> values = null;
+        if (!templateMode) {
+            BTreeLeafNode<TKey, TValue> leafLeft = this.findLeafNodeShouldContainKeyInReader(leftKey);
+            try {
+//            List<TValue> values = leafLeft.searchRange(leftKey, rightKey);
+                values = leafLeft.searchRange(leftKey, rightKey);
+            } catch (IndexOutOfBoundsException e) {
+//            System.out.println("Debug: " + Thread.currentThread().getId() + "Out of bounds exception");
+            }
+        } else {
+            BTreeLeafNode<TKey, TValue> leafLeft = this.findLeafNodeShouldContainKeyInTemplate(leftKey);
+            leafLeft.acquireReadLock();
+            try {
+//            List<TValue> values = leafLeft.searchRange(leftKey, rightKey);
+                values = leafLeft.searchRange(leftKey, rightKey);
+            } catch (IndexOutOfBoundsException e) {
+//            System.out.println("Debug: " + Thread.currentThread().getId() + "Out of bounds exception");
+            }
+        }
 		return values;
 	}
 
@@ -372,6 +390,16 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
             tmpRoot = root;
             root.acquireReadLock();
         }
+
+//        BTreeNode<TKey> currentRoot;
+//        Lock lastLock = null;
+//        do {
+//            if(lastLock!=null)
+//                lastLock.unlock();
+//            currentRoot = root;
+//            currentRoot.acquireReadLock();
+//            lastLock = currentRoot.getrLock();
+//        } while(currentRoot!=root);
 
         if (getHeight() == 1) {
             tmpRoot.releaseReadLock();

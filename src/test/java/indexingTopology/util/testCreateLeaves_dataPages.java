@@ -219,31 +219,43 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
 
         TimingModule tm = TimingModule.createNew();
         SplitCounterModule sm = SplitCounterModule.createNew();
-        final BTree bt;
+//        final BTree bt = createTreeWithBulkLoading(leaves);
         long startTime;
 
-//        bt = testCase.createTreeWithBulkLoading(leaves, tm, sm);
-//        bt.printBtree();
-//        System.out.println(bt.searchRange((double) 50, (double) 60));
-        bt = new BTree(4, tm, sm);
-//        bt.printBtree();
-//        bt.clearPayload();
-        final int offset = 0;
+        final BTree bt = testCase.createTreeWithBulkLoading(leaves, tm, sm);
+        bt.clearPayload();
+        bt.printBtree();
+//        System.out.println(bt.searchRange((double) 0, (double) 50));
         for (int i = 0; i < 2; ++i) {
             new Thread(new Runnable() {
                 public void run() {
-                    int i = 0;
                     while (true) {
-//                        System.out.println(bt.getHeight());
-                        try {
-                            bt.insert((double) i++, offset);
-                        } catch (UnsupportedGenericException e) {
-                            e.printStackTrace();
-                        }
+                        System.out.println(bt.searchRange((double) 0, (double) 50));
                     }
                 }
             }).start();
         }
+//        bt.printBtree();
+//        System.out.println(bt.searchRange((double) 50, (double) 60));
+//        bt = new BTree(4, tm, sm);
+//        bt.printBtree();
+//        bt.clearPayload();
+//        final int offset = 0;
+//        for (int i = 0; i < 2; ++i) {
+//            new Thread(new Runnable() {
+//                public void run() {
+//                    int i = 0;
+//                    while (true) {
+//                        System.out.println(bt.getHeight());
+//                        try {
+//                            bt.insert((double) i++, offset);
+//                        } catch (UnsupportedGenericException e) {
+//                            e.printStackTrace();
+//                        }
+//                    }
+//                }
+//            }).start();
+//        }
 //            new Thread(new Runnable() {
 //                public void run() {
 //                    while (true) {
