@@ -13,8 +13,8 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 
 	public BTreeLeafNode(int order, BytesCounter counter) {
 		super(order,counter);
-		this.keys = new ArrayList<TKey>();
-		this.values = new ArrayList<ArrayList<TValue>>();
+		this.keys = new ArrayList<TKey>(order);
+		this.values = new ArrayList<ArrayList<TValue>>(order + 1);
 	}
 
 	public boolean validateParentReference() {
@@ -25,7 +25,19 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
         return true;
     }
 
-    public BTreeLeafNode(BTreeNode oldNode) throws CloneNotSupportedException{
+	public boolean validateAllLockReleased() {
+		if(lock.isWriteLocked() || lock.getReadLockCount() > 0) {
+			return false;
+		} else {
+			return true;
+		}
+	}
+
+	public int getDepth() {
+		return 1;
+	}
+
+	public BTreeLeafNode(BTreeNode oldNode) throws CloneNotSupportedException{
 		super(oldNode.ORDER, (BytesCounter) oldNode.counter.clone());
 		this.keys = new ArrayList<TKey>();
 		this.keys.addAll(oldNode.keys);
@@ -502,7 +514,7 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 
 	public BTreeNode insertKeyValue(TKey key, TValue value) throws UnsupportedGenericException{
 //		acquireWriteLock();
-		checkIfCurrentHoldAnyLock();
+//		checkIfCurrentHoldAnyLock();
 		BTreeNode node = null;
 		try {
 			keys.add(key);

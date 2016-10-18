@@ -73,13 +73,12 @@ public class TestIndexing {
     private Semaphore s2;
 
     private IndexingRunnable indexingRunnable;
-    private int numberOfIndexingThreads = 4;
+    private int numberOfIndexingThreads = 2;
 
-            ;
     private List<Thread> indexingThreads = new ArrayList<Thread>();
 
     private QueryRunnable queryRunnable;
-    private int numberOfQueryThreads = 1;
+    private int numberOfQueryThreads = 0;
     private List<Thread> queryThreads = new ArrayList<Thread>();
 
 
@@ -91,7 +90,7 @@ public class TestIndexing {
 
         queue = new LinkedBlockingQueue<Pair>();
 
-        btreeOrder = 64;
+        btreeOrder = 16;
         chunkId = 0;
         total = new AtomicLong(0);
         numTuples = 0;
@@ -161,6 +160,8 @@ public class TestIndexing {
 
         Thread emitThread = new Thread(new Runnable() {
             public void run() {
+
+
                 while (true) {
                     String text = null;
                     try {
@@ -179,6 +180,7 @@ public class TestIndexing {
                         String [] tokens = text.split(" ");
                         values = getValuesObject(tokens);
                         indexValue = values.get(0);
+                        indexValue = (double)random.nextInt(10000);
                         ++numTuples;
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -267,7 +269,7 @@ public class TestIndexing {
                             System.out.println("All the query threads are terminated!");
 
 
-
+                            indexedData.printStatistics();
                             createEmptyTree();
                             createIndexingThread();
                             createQueryThread();
@@ -477,8 +479,14 @@ public class TestIndexing {
 
         AtomicLong executed;
         Long startTime;
+        AtomicInteger threadIndex = new AtomicInteger(0);
         public void run() {
+
             long count = 0;
+            boolean first = true;
+            if(threadIndex.getAndIncrement()!=0) {
+                first = false;
+            }
             if(startTime == null)
                 startTime = System.currentTimeMillis();
             if(executed == null)
@@ -486,6 +494,8 @@ public class TestIndexing {
             long localCount = 0;
             while (true) {
                     try {
+//                        if(!first)
+//                            Thread.sleep(100);
                         Pair pair = queue.poll(1, TimeUnit.MILLISECONDS);
                         if(pair == null) {
                             if(inputExhausted)
@@ -494,13 +504,18 @@ public class TestIndexing {
                             continue;
                         }
                         localCount++;
-                        Double indexValue = (Double) pair.getKey();
-                        Integer offset = (Integer) pair.getValue();
+                        final Double indexValue = (Double) pair.getKey();
+                        final Integer offset = (Integer) pair.getValue();
 //                            s2.acquire();
 //                        long start = System.nanoTime();
 //                            System.out.println("insert");
 //                        if (false)
                             indexedData.insert(indexValue, offset);
+//                        if(!indexedData.validateAllLockReleased()) {
+//                            System.out.println("validateAllLockReleased Failed!!!!!!");
+//                        } else {
+//                            System.out.println(":)");
+//                        }
                         executed.incrementAndGet();
 //                        if(!indexedData.validateParanetReference()) {
 //                            System.out.println("Problem is detected!");

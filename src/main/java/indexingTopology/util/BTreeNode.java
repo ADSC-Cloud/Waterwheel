@@ -45,8 +45,10 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 		this.counter=counter;
 		this.counter.countNewNode();
 		this.lock = new ReentrantReadWriteLock();
-		this.wLock = new MyWriteLock(lock.writeLock());
-		this.rLock = new MyReadLock(lock.readLock());
+//		this.wLock = new MyWriteLock(lock.writeLock());
+//		this.rLock = new MyReadLock(lock.readLock());
+		this.wLock = lock.writeLock();
+		this.rLock = lock.readLock();
 		id = idGenerator.getAndIncrement();
 
 	}
@@ -55,17 +57,12 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 
 	public abstract boolean validateNoDuplicatedChildReference();
 
+	public abstract boolean validateAllLockReleased();
+
+	public abstract int getDepth();
+
 	public int getKeyCount() {
-//		return this.keyCount;
-		int count = 0;
-//		acquireReadLock();
-		try {
-			count = this.keys.size();
-		} finally {
-//			releaseReadLock();
-		}
-//		return this.keys.size();  //change to keys.size();
-		return count;
+		return keys.size();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -150,7 +147,7 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 	}
 
 	public BTreeNode<TKey> dealOverflow() {
-		checkIfCurrentHoldAnyLock();
+//		checkIfCurrentHoldAnyLock();
 //		acquireWriteLock();
 		TKey upKey;
 		BTreeNode<TKey> newRNode;
@@ -437,6 +434,8 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 //			System.out.println("Hello world!");
 //		}
 	}
+
+
 
 
 	static public class NodeLock {

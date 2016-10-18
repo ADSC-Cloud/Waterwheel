@@ -172,7 +172,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	 * @throws UnsupportedGenericException
 	 */
 	public void insert(TKey key, TValue value) throws UnsupportedGenericException {
-		BTreeLeafNode<TKey, TValue> leaf = null;
+		BTreeLeafNode<TKey, TValue> leaf;
 		if (templateMode) {
 			leaf = findLeafNodeShouldContainKeyInTemplate(key);
 			leaf.acquireWriteLock();
@@ -183,14 +183,18 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 			leaf.releaseWriteLock();
 		} else {
 
-			ArrayList<BTreeNode.NodeLock> ancestors = new ArrayList<BTreeNode.NodeLock>();
+			final ArrayList<BTreeNode.NodeLock> ancestors = new ArrayList<BTreeNode.NodeLock>();
 			leaf = findLeafNodeShouldContainKeyInUpdaterWithProtocolTwo(key);
 			if(leaf == null) {
 				leaf = findLeafNodeShouldContainKeyInUpdaterWithProtocolOne(key, ancestors);
+//				System.out.println("Solution 1 " + leaf.hashCode());
+			} else {
+//				System.out.println("Solution 2 " + leaf.hashCode());
 			}
 			BTreeNode root = null;
 				try {
-					root = leaf.insertKeyValue(key, value);
+//					if(getHeight()< 3)
+						root = leaf.insertKeyValue(key, value);
 				} catch (ArrayIndexOutOfBoundsException e) {
 					System.out.println("Debug thread " + Thread.currentThread().getId());
 					e.printStackTrace();
@@ -218,10 +222,10 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 						this.setRoot(root);
 					}
 				}
-				leaf.releaseWriteLock();
-				for (BTreeNode.NodeLock ancestor : ancestors) {
-					ancestor.unlock();
-				}
+			for (BTreeNode.NodeLock ancestor : ancestors) {
+				ancestor.unlock();
+			}
+			leaf.releaseWriteLock();
 			}
 
 /**
@@ -681,6 +685,14 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 
 	public boolean validateNoDuplicatedChildReference() {
 		return root.validateNoDuplicatedChildReference();
+	}
+
+	public boolean validateAllLockReleased() {
+		return root.validateAllLockReleased();
+	};
+
+	public void printStatistics() {
+		System.out.println("Depth: " + root.getDepth());
 	}
 }
 
