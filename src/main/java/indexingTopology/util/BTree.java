@@ -46,6 +46,11 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		this.sm = sm;
 	}
 
+	public BTree(int order, TimingModule tm, SplitCounterModule sm, boolean templateMode) {
+		this(order, tm, sm);
+		this.templateMode = templateMode;
+	}
+
 	public BTreeNode getRoot() {
 		return root;
 	}
@@ -191,33 +196,10 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 			} else {
 //				System.out.println("Solution 2 " + leaf.hashCode());
 			}
-			BTreeNode root = null;
-				try {
-//					if(getHeight()< 3)
-						root = leaf.insertKeyValue(key, value);
-				} catch (ArrayIndexOutOfBoundsException e) {
-					System.out.println("Debug thread " + Thread.currentThread().getId());
-					e.printStackTrace();
-					throw e;
-				} catch (NullPointerException e) {
-					System.out.println("Debug thread " + Thread.currentThread().getId());
-					e.printStackTrace();
-					throw e;
-				}
-//				if (root != null && root.keys.size() != 0) {
-//					System.out.println("The keys of the root is " + root.keys);
-//				}
+			BTreeNode root = leaf.insertKeyValue(key, value);
 				if (root != null) {
 					if (root != this.root) {
-//						if (sem.hasQueuedThreads()) {
-//							sem.release();
-//						}
-//						System.out.println(root.keys);
-//						System.out.println(String.format("root %d->%d by thread %d", this.root.hashCode()%10, root.hashCode()%10, Thread.currentThread().getId()));
 						this.setRoot(root);
-//						this.printBtree();
-//						sem.release();
-//						System.out.println("insert released");
 					} else {
 						this.setRoot(root);
 					}
@@ -480,6 +462,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 			currentRoot.releaseReadLock();
 			return null;
 		}
+//		System.out.println("root read lock count: " + (root.lock.getReadLockCount()));
 
 //		System.out.println("Hello 2" + root.keys);
 		BTreeNode<TKey> currentNode = this.root;

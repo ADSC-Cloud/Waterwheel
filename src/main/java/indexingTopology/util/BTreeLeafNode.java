@@ -26,11 +26,12 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
     }
 
 	public boolean validateAllLockReleased() {
-		if(lock.isWriteLocked() || lock.getReadLockCount() > 0) {
-			return false;
-		} else {
-			return true;
-		}
+//		if(lock.writeLock(). || lock.getReadLockCount() > 0) {
+//			return false;
+//		} else {
+//			return true;
+//		}
+		return true;
 	}
 
 	public int getDepth() {
@@ -504,9 +505,20 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 	public void insertKeyValueInTemplateMode(TKey key, TValue value) throws UnsupportedGenericException{
 //		acquireWriteLock();
 		try {
-			keys.add(key);
-			values.add(new ArrayList<TValue>(Arrays.asList(value)));
-			++keyCount;
+//			keys.add(key);
+//			values.add(new ArrayList<TValue>(Arrays.asList(value)));
+//			++keyCount;
+
+			int index = searchIndex(key);
+			if (index < this.keys.size() && this.getKey(index).compareTo(key) == 0) {
+				this.values.get(index).add(value);
+			} else {
+				this.keys.add(index, key);
+				this.values.add(index, new ArrayList<TValue>());
+				this.values.get(index).add(value);
+				++this.keyCount;
+			}
+
 		} finally {
 //			releaseWriteLock();
 		}
@@ -517,9 +529,21 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 //		checkIfCurrentHoldAnyLock();
 		BTreeNode node = null;
 		try {
-			keys.add(key);
-			values.add(new ArrayList<TValue>(Arrays.asList(value)));
-			++keyCount;
+//			keys.add(key);
+//			values.add(new ArrayList<TValue>(Arrays.asList(value)));
+//			++keyCount;
+
+			int index = searchIndex(key);
+			if (index < this.keys.size() && this.getKey(index).compareTo(key) == 0) {
+				this.values.get(index).add(value);
+			} else {
+				this.keys.add(index, key);
+				this.values.add(index, new ArrayList<TValue>());
+				this.values.get(index).add(value);
+				++this.keyCount;
+			}
+
+
 			if (isOverflow()) {
 				node = dealOverflow();
 			}

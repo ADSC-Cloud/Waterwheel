@@ -53,13 +53,13 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 	}
 
 	public boolean validateAllLockReleased() {
-		if(lock.isWriteLocked() || lock.getReadLockCount() > 0) {
-			return false;
-		}
-		for(BTreeNode<TKey> node: children) {
-			if(!node.validateAllLockReleased())
-				return false;
-		}
+//		if(lock.isWriteLocked() || lock.getReadLockCount() > 0) {
+//			return false;
+//		}
+//		for(BTreeNode<TKey> node: children) {
+//			if(!node.validateAllLockReleased())
+//				return false;
+//		}
 		return true;
 	}
 

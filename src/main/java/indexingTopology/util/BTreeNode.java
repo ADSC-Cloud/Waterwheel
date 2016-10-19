@@ -165,8 +165,8 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 //			}
 			if (this.getParent() == null) {
 				this.setParent(new BTreeInnerNode<TKey>(this.ORDER, this.counter));
-				parentLock = this.getParent().getwLock();
-				parentLock.lock();
+//				parentLock = this.getParent().getwLock();
+//				parentLock.lock();
 				counter.increaseHeightCount();
 			}
 			newRNode.setParent(this.getParent());
@@ -188,9 +188,9 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 //			System.out.println("parent is null");
 		}
 		BTreeNode<TKey> ret = this.getParent().pushUpKey(upKey, this, newRNode);
-		if(parentLock!=null) {
-			parentLock.unlock();
-		}
+//		if(parentLock!=null) {
+//			parentLock.unlock();
+//		}
 		return ret;
 //		}
 
