@@ -45,8 +45,10 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 		this.counter=counter;
 		this.counter.countNewNode();
 		this.lock = new ReentrantReadWriteLock();
-		this.wLock = new MyWriteLock(lock.writeLock());
-		this.rLock = new MyReadLock(lock.readLock());
+//		this.wLock = new MyWriteLock(lock.writeLock());
+//		this.rLock = new MyReadLock(lock.readLock());
+		this.wLock = lock.writeLock();
+		this.rLock = lock.readLock();
 		id = idGenerator.getAndIncrement();
 
 	}
@@ -55,12 +57,17 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 
 	public abstract boolean validateNoDuplicatedChildReference();
 
+	public abstract boolean validateAllLockReleased();
+
+	public abstract int getDepth();
+
 	public int getKeyCount() {
 //		return this.keyCount;
-		int count = 0;
-		count = this.keys.size();
+//		int count = 0;
+//		count = this.keys.size();
 //		return this.keys.size();  //change to keys.size();
-		return count;
+//		return count;
+		return keys.size();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -148,6 +155,7 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 	}
 
 	public BTreeNode<TKey> dealOverflow() {
+//		checkIfCurrentHoldAnyLock();
 //		acquireWriteLock();
 		TKey upKey;
 		BTreeNode<TKey> newRNode;
@@ -167,8 +175,8 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 //			}
 			if (this.getParent() == null) {
 				this.setParent(new BTreeInnerNode<TKey>(this.ORDER, this.counter));
-				parentLock = this.getParent().getwLock();
-				parentLock.lock();
+//				parentLock = this.getParent().getwLock();
+//				parentLock.lock();
 				counter.increaseHeightCount();
 			}
 			newRNode.setParent(this.getParent());
@@ -190,12 +198,12 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 		// push up a key to parent internal node
 //		synchronized (this.getParent()) {
 		if (this.getParent() == null) {
-			System.out.println("parent is null");
+//			System.out.println("parent is null");
 		}
 		BTreeNode<TKey> ret = this.getParent().pushUpKey(upKey, this, newRNode);
-		if(parentLock!=null) {
-			parentLock.unlock();
-		}
+//		if(parentLock!=null) {
+//			parentLock.unlock();
+//		}
 		return ret;
 //		}
 
@@ -438,14 +446,15 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 
 //
 //		final long tid = Thread.currentThread().getId();
-//
 //		final boolean condition = tid == readLockThreadId || tid == writeLockThreadId;
+//		assert condition: String.format("Thread %d does not get any lock on node %d", Thread.currentThread().getId(), getId());
 //
 //		if(!condition) {
 //			System.out.println("Hello world!");
 //		}
-//		assert condition: String.format("Thread %d does not get any lock on node %d", Thread.currentThread().getId(), getId());
 	}
+
+
 
 
 	static public class NodeLock {

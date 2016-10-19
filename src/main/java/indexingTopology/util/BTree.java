@@ -45,6 +45,11 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		this.sm = sm;
 	}
 
+	public BTree(int order, TimingModule tm, SplitCounterModule sm, boolean templateMode) {
+		this(order, tm, sm);
+		this.templateMode = templateMode;
+	}
+
 	public BTreeNode getRoot() {
 		return root;
 	}
@@ -564,6 +569,14 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 
 	public boolean validateNoDuplicatedChildReference() {
 		return root.validateNoDuplicatedChildReference();
+	}
+
+	public boolean validateAllLockReleased() {
+		return root.validateAllLockReleased();
+	};
+
+	public void printStatistics() {
+		System.out.println("Depth: " + root.getDepth());
 	}
 }
 

@@ -52,6 +52,25 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 		return true;
 	}
 
+	public boolean validateAllLockReleased() {
+//		if(lock.isWriteLocked() || lock.getReadLockCount() > 0) {
+//			return false;
+//		}
+//		for(BTreeNode<TKey> node: children) {
+//			if(!node.validateAllLockReleased())
+//				return false;
+//		}
+		return true;
+	}
+
+	public int getDepth() {
+		int ret = 1;
+		for(BTreeNode<TKey> node: children) {
+			ret = Math.max(ret, node.getDepth() + 1);
+		}
+		return ret;
+	}
+
 	@SuppressWarnings("unchecked")
 	public BTreeNode<TKey> getChild(int index) {
 //		acquireReadLock();
