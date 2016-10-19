@@ -3,6 +3,7 @@ package indexingTopology;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
+import com.google.common.util.concurrent.AtomicDouble;
 import indexingTopology.Config.Config;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.util.*;
@@ -51,7 +52,8 @@ public class TestIndexing {
     private int chunkId;
     private double indexValue;
     private int numTuplesBeforeWritting;
-    private int numberOfQueries;
+//    private int numberOfQueries;
+    private long numberOfQueries;
     private AtomicLong totalTime;
 
     private BulkLoader bulkLoader;
@@ -76,13 +78,20 @@ public class TestIndexing {
     private List<Thread> indexingThreads = new ArrayList<Thread>();
 
     private QueryRunnable queryRunnable;
-    private int numberOfQueryThreads = 2;
+    private int numberOfQueryThreads = 1;
     private List<Thread> queryThreads = new ArrayList<Thread>();
 
     private EmitRunnable emitRunnable;
     private Thread emitThread;
 
-    private boolean finshed;
+    private AtomicLong queryLantency;
+
+    private boolean finished;
+
+    private long startTime;
+
+    private double averageThroughput;
+    private double totalThroughput;
 
     public TestIndexing() {
         new TestIndexing(4, 0);
@@ -92,31 +101,32 @@ public class TestIndexing {
 
 
         queue = new LinkedBlockingQueue<Pair>();
-
         this.btreeOrder = btreeOrder;
         chunkId = 0;
-        total = new AtomicLong(0);
+        total = new AtomicLong(System.nanoTime());
         numTuples = 0;
         numTuplesBeforeWritting = 1;
         this.choiceOfMethod = choiceOfMethod;
 //        bytesLimit = 650000;
         bytesLimit = 65000000;
         count = 0;
-        finshed = false;
-
+        finished = false;
+        startTime = System.nanoTime();
+        totalThroughput = 0;
+        numberOfQueries = 0;
         inputFile = new File("/home/dmir/IndexTopology_experiment/NormalDistribution/input_data");
 //        outputFile = new File("src/total_time_thread_4");
-        if (choiceOfMethod == 0) {
-            outputFile = new File("src/total_time_thread_baseline" + btreeOrder + "with_indexing_query"
-                    + numberOfIndexingThreads + "and" + numberOfQueryThreads);
-            queryOutputFile = new File("src/total_time_thread_baseline" + btreeOrder + "with_indexing_query"
-                    + numberOfIndexingThreads + "and" + numberOfQueryThreads);
-        } else {
-            outputFile = new File("src/total_time_thread_our_method" + btreeOrder + "with_indexing_query"
-                    + numberOfIndexingThreads + "and" + numberOfQueryThreads);
-            queryOutputFile = new File("src/total_time_thread_our_method" + btreeOrder + "with_indexing_query"
-                    + numberOfIndexingThreads + "and" + numberOfQueryThreads);
-        }
+//        if (choiceOfMethod == 0) {
+//            outputFile = new File("src/total_time_thread_baseline" + btreeOrder + "with_indexing_query"
+//                    + numberOfIndexingThreads + "and" + numberOfQueryThreads);
+//            queryOutputFile = new File("src/query_baseline" + btreeOrder + "with_indexing_query"
+//                    + numberOfIndexingThreads + "and" + numberOfQueryThreads);
+//        } else {
+//            outputFile = new File("src/total_time_thread_our_method" + btreeOrder + "with_indexing_query"
+//                    + numberOfIndexingThreads + "and" + numberOfQueryThreads);
+//            queryOutputFile = new File("src/query_our_method" + btreeOrder + "with_indexing_query"
+//                    + numberOfIndexingThreads + "and" + numberOfQueryThreads);
+//        }
 //        queryOutputFile = new File("src/query_latency_with_rebuild_4");
 
         chunk = MemChunk.createNew(bytesLimit);
@@ -137,6 +147,8 @@ public class TestIndexing {
 
         totalTime = new AtomicLong(0);
 
+        queryLantency = new AtomicLong(0);
+
         try {
             bufferedReader = new BufferedReader(new FileReader(inputFile));
         } catch (FileNotFoundException e) {
@@ -144,35 +156,36 @@ public class TestIndexing {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        try {
-            if (!outputFile.exists()) {
-                outputFile.createNewFile();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            fop = new FileOutputStream(outputFile);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            if (!queryOutputFile.exists()) {
-                queryOutputFile.createNewFile();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            queryFileOutput = new FileOutputStream(queryOutputFile);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            if (!outputFile.exists()) {
+//                outputFile.createNewFile();
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//        try {
+//            fop = new FileOutputStream(outputFile);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//        try {
+//            if (!queryOutputFile.exists()) {
+//                queryOutputFile.createNewFile();
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//        try {
+//            queryFileOutput = new FileOutputStream(queryOutputFile);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
     }
 //        createEmitThread();
+//    }
 //        Thread emitThread = new Thread(new Runnable() {
 //            public void run() {
 //                while (true) {
@@ -325,7 +338,6 @@ public class TestIndexing {
 //            emitThread.join();
 //        } catch (InterruptedException e) {
 //            e.printStackTrace();
-//        }
 
   /*
         Thread queryThread = new Thread(new Runnable() {
@@ -469,27 +481,34 @@ public class TestIndexing {
 //                        indexedData.clearPayload();
 //                        indexedData.printBtree();
                     numTuplesBeforeWritting = numTuples;
-                    long totalTime = total.get();
-
-                    double averageTime = ((double) totalTime / ((double) processedTuples));
-
-                    String content = "" + averageTime;
-                    String newline = System.getProperty("line.separator");
-                    byte[] contentInBytes = content.getBytes();
-                    byte[] nextLineInBytes = newline.getBytes();
-                    chunk = MemChunk.createNew(bytesLimit);
-                    try {
-                        fop.write(contentInBytes);
-                        fop.write(nextLineInBytes);
-                        offset = chunk.write(serializeIndexValue(values));
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
 
 
 //                        try {
                     terminateIndexingThreads();
                     terminateQueryThreads();
+                    long totalTime = System.nanoTime() - startTime;
+
+//                    double averageTime = ((double) totalTime / ((double) processedTuples));
+//                    System.out.println(processedTuples);
+//                    System.out.println(totalTime);
+                    double throughput = (double) processedTuples / (double) totalTime * 1000000000;
+//                    totalThroughput += throughput;
+//                    System.out.println(totalThroughput);
+//                    String content = "" + (long) totalThroughput.get();
+//                    String content = "" + throughput;
+//                    System.out.println(content);
+//                    String newline = System.getProperty("line.separator");
+//                    byte[] contentInBytes = content.getBytes();
+//                    byte[] nextLineInBytes = newline.getBytes();
+                    chunk = MemChunk.createNew(bytesLimit);
+                    try {
+//                        fop.write(contentInBytes);
+//                        fop.write(nextLineInBytes);
+                        offset = chunk.write(serializeIndexValue(values));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
                     // synchronizing indexing threads
 //                            indexingRunnable.setInputExhausted();
 //                            for (Thread thread : indexingThreads) {
@@ -538,11 +557,31 @@ public class TestIndexing {
                     ++chunkId;
                     System.out.println("In the emit thread, the chunkId is " + chunkId);
 //                        tm.reset();
+                    startTime = System.nanoTime();
                     total = new AtomicLong(0);
                 }
             }
             System.out.println("Emit thread is terminated");
-            setIsFinshed();
+//            averageThroughput = totalThroughput / (double) chunkId;
+//            double averageLatency = (double) totalTime.get() / (double) numberOfQueries.get();
+//            String throughput = "" + averageThroughput;
+//            String latency = "" + averageLatency;
+//            System.out.println(throughput);
+//            System.out.println(latency);
+//            String newline = System.getProperty("line.separator");
+//            byte[] throughputInBytes = throughput.getBytes();
+//            byte[] nextLineInBytes = newline.getBytes();
+//            byte[] latencyInBytes = latency.getBytes();
+//            try {
+//                fop.write(throughputInBytes);
+//                fop.write(nextLineInBytes);
+//                queryFileOutput.write(latencyInBytes);
+//                queryFileOutput.write(nextLineInBytes);
+//                offset = chunk.write(serializeIndexValue(values));
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+            setIsFinished();
         }
     }
 
@@ -563,32 +602,32 @@ public class TestIndexing {
                     Thread.sleep(1);
                     Double leftKey = (double) 100;
                     Double rightKey = (double) 200;
-                    Double indexValue = random.nextDouble() * 700 + 300;
+//                    Double indexValue = random.nextDouble() * 700 + 300;
 //                        s2.acquire();
                     long start = System.nanoTime();
 //                    indexedData.printBtree();
-                    indexedData.search(indexValue);
-//                        indexedData.searchRange(leftKey, rightKey);
+//                    indexedData.search(indexValue);
+                    indexedData.searchRange(leftKey, rightKey);
                     long time = System.nanoTime() - start;
 //                        s2.release();
 //                        indexedData.searchRange(leftKey, rightKey);
                     totalTime.addAndGet(time);
+//                    ++numberOfQueries;
                     ++numberOfQueries;
                     if (numberOfQueries == 1000) {
                         double aveQueryTime = (double) totalTime.get() / (double) numberOfQueries;
-//                        System.out.println(aveQueryTime);
                         String content = "" + aveQueryTime;
                         String newline = System.getProperty("line.separator");
                         byte[] contentInBytes = content.getBytes();
                         byte[] nextLineInBytes = newline.getBytes();
-                        queryFileOutput.write(contentInBytes);
-                        queryFileOutput.write(nextLineInBytes);
+//                        queryFileOutput.write(contentInBytes);
+//                        queryFileOutput.write(nextLineInBytes);
 //                        System.out.println(String.format("%d queries executed!", numberOfQueries));
                         numberOfQueries = 0;
                         totalTime = new AtomicLong(0);
                     }
-                } catch (IOException e) {
-                    e.printStackTrace();
+//                } catch (IOException e) {
+//                    e.printStackTrace();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -680,7 +719,7 @@ public class TestIndexing {
             while (true) {
                     try {
                         Pair pair = queue.poll(1, TimeUnit.MILLISECONDS);
-                        if(pair == null) {
+                        if (pair == null) {
                             if(inputExhausted)
                                 break;
                             else
@@ -689,7 +728,7 @@ public class TestIndexing {
                         Double indexValue = (Double) pair.getKey();
                         Integer offset = (Integer) pair.getValue();
 //                            s2.acquire();
-                        long start = System.nanoTime();
+//                        long start = System.nanoTime();
 //                        indexedData.printBtree();
 //                            System.out.println("insert");
                         indexedData.insert(indexValue, offset);
@@ -700,7 +739,7 @@ public class TestIndexing {
 //                        if(!indexedData.validateNoDuplicatedChildReference()) {
 //                            System.out.println("Problem is detected!");
 //                        }
-                        total.addAndGet(System.nanoTime() - start);
+//                        total.addAndGet(System.nanoTime() - start);
 //                            s2.release();
 //                        if (count++ % 10000 == 0) {
 //                            System.out.println(String.format("%d tuples inserted! by thread %d", count, Thread.currentThread().getId()));
@@ -811,12 +850,12 @@ public class TestIndexing {
         }
     }
 
-    private boolean isFinshed() {
-        return finshed;
+    private boolean isFinished() {
+        return finished;
     }
 
-    private void setIsFinshed() {
-        finshed = true;
+    private void setIsFinished() {
+        finished = true;
     }
 
 
@@ -825,16 +864,17 @@ public class TestIndexing {
         final int NUM_CHOICE_OF_METHODS = 1;
 //        int numberOfIndexingThreads = 1;
 //        int numberOfQueryThreads = 1;
-        for (int i = 0; i < 8; ++i) {
+        for (int i = 0; i < 1; ++i) {
             for (int j = 0; j < NUM_CHOICE_OF_METHODS; ++j) {
                 TestIndexing test = new TestIndexing(bTreeOder, j);
                 test.createEmitThread();
                 test.createIndexingThread();
                 test.createQueryThread();
-                while (!test.isFinshed()) {
+                while (!test.isFinished()) {
                     Thread.sleep(1);
                 }
             }
+            bTreeOder *= 4;
         }
 //        new TestIndexing();
     }

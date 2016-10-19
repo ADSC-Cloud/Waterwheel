@@ -223,18 +223,22 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
         long startTime;
 
         final BTree bt = testCase.createTreeWithBulkLoading(leaves, tm, sm);
-        bt.clearPayload();
+//        bt.clearPayload();
+//        bt.insert((double) 0, (double) 0);
+//        bt.insert((double) 30, (double) 30);
         bt.printBtree();
+        int count = 0;
 //        System.out.println(bt.searchRange((double) 0, (double) 50));
-        for (int i = 0; i < 2; ++i) {
-            new Thread(new Runnable() {
-                public void run() {
+//        for (int i = 0; i < 2; ++i) {
+//            new Thread(new Runnable() {
+//                public void run() {
                     while (true) {
-                        System.out.println(bt.searchRange((double) 0, (double) 50));
+//                        System.out.println("The number of count is " + ++count);
+                        bt.searchRange((double) 0, (double) 50);
                     }
-                }
-            }).start();
-        }
+//                }
+//            }).start();
+//        }
 //        bt.printBtree();
 //        System.out.println(bt.searchRange((double) 50, (double) 60));
 //        bt = new BTree(4, tm, sm);

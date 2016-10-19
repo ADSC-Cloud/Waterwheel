@@ -7,6 +7,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
 
 class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKey> implements Serializable {
 	protected ArrayList<ArrayList<TValue>> values;
@@ -413,51 +414,75 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 		return retList;
 	} */
 
-    public List<TValue> searchRange(TKey leftKey, TKey rightKey) throws IndexOutOfBoundsException{
+    public List<TValue> searchRange(TKey leftKey, TKey rightKey){
         // find first index satisfying range
-        if (this.keyCount == 0) {
-            releaseReadLock();
-            return null;
-        }
-        int firstIndex;
-        for (firstIndex = 0; firstIndex < this.getKeyCount(); firstIndex++) {
-            int cmp = this.getKey(firstIndex).compareTo(leftKey);
-            if (cmp >= 0)
-                break;
-        }
+		int firstIndex;
+		Lock lastLock = this.getrLock();
+		for (firstIndex = 0; firstIndex < this.getKeyCount(); firstIndex++) {
+			int cmp = this.getKey(firstIndex).compareTo(leftKey);
+			if (cmp >= 0)
+				break;
+		}
 //        List<BTreeNode> nodes = new ArrayList<BTreeNode>();
-        List<TValue> retList = new ArrayList<TValue>();
-        BTreeLeafNode<TKey,TValue> currLeaf = this;
+		List<TValue> retList = new ArrayList<TValue>();
+		BTreeLeafNode<TKey,TValue> currLeaf = this;
+		assert currLeaf.lock.getReadLockCount() > 0;
 //        nodes.add(this);
-        int currIndex = firstIndex;
+		int currIndex = firstIndex;
 
-        // case when all keys in the node are smaller than leftKey - shift to next rightSibling
-        if (firstIndex >= this.getKeyCount()) {
-            currLeaf = (BTreeLeafNode<TKey,TValue>) this.rightSibling;
+		// case when all keys in the node are smaller than leftKey - shift to next rightSibling
+		if (firstIndex >= this.getKeyCount()) {
+			currLeaf = (BTreeLeafNode<TKey,TValue>) this.rightSibling;
 //            nodes.add(currLeaf);
-            if (currLeaf != null) {
-                currLeaf.acquireReadLock();
-            }
-            releaseReadLock();
-            currIndex = 0;
-        }
-        while (currLeaf != null && currLeaf.getKey(currIndex).compareTo(rightKey)<=0) {
-            retList.addAll(currLeaf.getValueList(currIndex));
-            currIndex++;
-            if (currIndex >= currLeaf.getKeyCount()) {
+			if (currLeaf != null) {
+				currLeaf.acquireReadLock();
+				if (lastLock != null) {
+					lastLock.unlock();
+				}
+				lastLock = currLeaf.getrLock();
+			}
+//			releaseReadLock();
+//			if (lastLock != null) {
+//				lastLock.unlock();
+//			}
+			currIndex = 0;
+		}
+		while (currLeaf != null && currLeaf.getKey(currIndex).compareTo(rightKey) <= 0) {
+//			assert currLeaf != null;
+//			if (currLeaf.lock.getReadLockCount() == 0) {
+//				System.out.println(currIndex);
+//				currLeaf.leftSibling.print();
+//				currLeaf.print();
+//				currLeaf.rightSibling.print();
+//			}
+//			assert currLeaf.lock.getReadLockCount() > 0;
+			retList.addAll(currLeaf.getValueList(currIndex));
+			currIndex++;
+			if (currIndex >= currLeaf.getKeyCount()) {
 
-                if (currLeaf.rightSibling != null) {
-                    currLeaf.rightSibling.acquireReadLock();
+				if (currLeaf.rightSibling != null) {
+					currLeaf.rightSibling.acquireReadLock();
 //                    nodes.add((currLeaf.rightSibling));
-                }
-                currLeaf.releaseReadLock();
-                currLeaf = (BTreeLeafNode<TKey,TValue>) currLeaf.rightSibling;
-                currIndex = 0;
-            }
-        }
-        if (currLeaf != null || currLeaf == this) {
-            currLeaf.releaseReadLock();
-        }
+					if (lastLock != null) {
+//						System.out.println(currIndex);
+//						System.out.println(this.writeLockThreadId);
+						lastLock.unlock();
+					}
+					lastLock = currLeaf.rightSibling.getrLock();
+				}
+//				currLeaf.releaseReadLock();
+				currLeaf = (BTreeLeafNode<TKey,TValue>) currLeaf.rightSibling;
+				currIndex = 0;
+			}
+		}
+//		if (currLeaf != null) {
+//			currLeaf.releaseReadLock();
+//		} else if (currLeaf == this) {
+//			currLeaf.releaseReadLock();
+//		}
+		if (lastLock != null) {
+			lastLock.unlock();
+		}
 //        for (BTreeNode node : nodes) {
 //            System.out.println(node.lock.getReadLockCount());
 //            assert node.lock.getReadLockCount() == 0;
@@ -465,7 +490,7 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 //        currLeaf.print();
 //        System.out.println("The number of lock is " + this.lock.getReadLockCount());
 //        assert this.lock.getReadLockCount() == 0;
-        return retList;
+		return retList;
     }
 
 	protected void clearNode() {
