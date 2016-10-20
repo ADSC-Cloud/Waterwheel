@@ -180,15 +180,15 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
         if (templateMode) {
 //            System.out.println("templateMode");
             leaf = findLeafNodeShouldContainKeyInTemplate(key);
-            leaf.acquireWriteLock();
-            try {
+//            leaf.acquireWriteLock();
+//            try {
                 leaf.insertKeyValueInTemplateMode(key, value);
                 if (leaf.isOverflow()) {
                     sm.addCounter();
                 }
-            } finally {
-                leaf.releaseWriteLock();
-            }
+//            } finally {
+//                leaf.releaseWriteLock();
+//            }
         } else {
             leaf = findLeafNodeShouldContainKeyInUpdaterWithProtocolTwo(key);
             ArrayList<BTreeNode> ancestors = new ArrayList<BTreeNode>();
@@ -286,7 +286,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
             leafLeft.acquireReadLock();
             try {
 //            List<TValue> values = leafLeft.searchRange(leftKey, rightKey);
-                values = leafLeft.searchRange(leftKey, rightKey);
+                values = leafLeft.searchRangeInTemplate(leftKey, rightKey);
             } catch (IndexOutOfBoundsException e) {
 //            System.out.println("Debug: " + Thread.currentThread().getId() + "Out of bounds exception");
             }
@@ -341,7 +341,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 
 	} */
 
-	private BTreeLeafNode<TKey,TValue> findLeafNodeShouldContainKeyInTemplate(TKey key) {
+	public BTreeLeafNode<TKey,TValue> findLeafNodeShouldContainKeyInTemplate(TKey key) {
 		BTreeNode<TKey> currentNode = this.root;
 		while (currentNode.getNodeType() == TreeNodeType.InnerNode) {
 			BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChild(currentNode.search(key));

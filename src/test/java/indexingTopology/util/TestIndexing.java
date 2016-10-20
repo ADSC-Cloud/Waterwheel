@@ -299,6 +299,6 @@ public class TestIndexing {
     }
 
     public static void main(String[] args) {
-        indexingTopology.TestIndexing test = new indexingTopology.TestIndexing(4, 0, false);
+//        indexingTopology.TestIndexing test = new indexingTopology.TestIndexing(4, 0, false);
     }
 }

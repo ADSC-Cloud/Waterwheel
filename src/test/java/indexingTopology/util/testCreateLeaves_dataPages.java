@@ -8,6 +8,7 @@ import javafx.util.Pair;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.*;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Created by acelzj on 7/18/16.
@@ -220,21 +221,38 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
         TimingModule tm = TimingModule.createNew();
         SplitCounterModule sm = SplitCounterModule.createNew();
 //        final BTree bt = createTreeWithBulkLoading(leaves);
+//        final BTree bt = new BTree(4, tm, sm);
         long startTime;
-
         final BTree bt = testCase.createTreeWithBulkLoading(leaves, tm, sm);
 //        bt.clearPayload();
 //        bt.insert((double) 0, (double) 0);
 //        bt.insert((double) 30, (double) 30);
+//        for (int i = 0; i <= 100; ++i) {
+//            bt.insert((double)i, (double) i);
+//        }
+//        bt.printBtree();
+        bt.clearPayload();
+        bt.insert((double) 0, (double) 0);
+        bt.insert((double)50, (double) 50);
+        bt.insert((double) 2, (double) 2);
         bt.printBtree();
-        int count = 0;
-//        System.out.println(bt.searchRange((double) 0, (double) 50));
+        BTreeNode leftLeaf = bt.findLeafNodeShouldContainKeyInTemplate((double) 2);
+        leftLeaf.rightSibling.print();
+//        leftLeaf.print();
+//        BTreeNode rightLeaf = bt.findLeafNodeShouldContainKeyInTemplate((double) 100);
+//        while (leftLeaf != rightLeaf) {
+//            leftLeaf = leftLeaf.rightSibling;
+//        }
+//        System.out.println("finished");
+        for (int i = 0; i < 50; ++i) {
+            System.out.println(bt.searchRange((double) i, (double) 50));
+        }
 //        for (int i = 0; i < 2; ++i) {
 //            new Thread(new Runnable() {
 //                public void run() {
-                    while (true) {
+//                    while (true) {
 //                        System.out.println("The number of count is " + ++count);
-                        bt.searchRange((double) 0, (double) 50);
+//                        bt.searchRange((double) 0, (double) 50);
                     }
 //                }
 //            }).start();
@@ -243,7 +261,7 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
 //        System.out.println(bt.searchRange((double) 50, (double) 60));
 //        bt = new BTree(4, tm, sm);
 //        bt.printBtree();
-//        bt.clearPayload();
+
 //        final int offset = 0;
 //        for (int i = 0; i < 2; ++i) {
 //            new Thread(new Runnable() {
@@ -308,5 +326,5 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
 //            }).start();
 
 //    }
-    }
+//    }
 }

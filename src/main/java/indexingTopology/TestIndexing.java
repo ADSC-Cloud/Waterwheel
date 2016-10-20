@@ -74,7 +74,7 @@ public class TestIndexing {
     private Semaphore s2;
 
     private IndexingRunnable indexingRunnable;
-    private int numberOfIndexingThreads = 1;
+    private int numberOfIndexingThreads = 4;
     private List<Thread> indexingThreads = new ArrayList<Thread>();
 
     private QueryRunnable queryRunnable;
@@ -82,7 +82,9 @@ public class TestIndexing {
     private List<Thread> queryThreads = new ArrayList<Thread>();
 
     private EmitRunnable emitRunnable;
-    private Thread emitThread;
+    private Thread emitThread = null;
+
+    private Thread createThread;
 
     private Semaphore chuckFilled = new Semaphore(0);
 
@@ -94,6 +96,8 @@ public class TestIndexing {
 
     private double averageThroughput;
     private double totalThroughput;
+
+    private long totalBuildTime = 0;
 
     public TestIndexing() {
         new TestIndexing(4, 0);
@@ -118,14 +122,14 @@ public class TestIndexing {
         inputFile = new File("/home/dmir/IndexTopology_experiment/NormalDistribution/input_data");
 
         if (choiceOfMethod == 0) {
-            outputFile = new File("src/total_time_thread_baseline" + btreeOrder + "with_indexing_query"
+            outputFile = new File("src/test_total_time_thread_baseline" + btreeOrder + "with_indexing_query"
                     + numberOfIndexingThreads + "and" + numberOfQueryThreads);
-            queryOutputFile = new File("src/query_baseline" + btreeOrder + "with_indexing_query"
+            queryOutputFile = new File("src/test_query_baseline" + btreeOrder + "with_indexing_query"
                     + numberOfIndexingThreads + "and" + numberOfQueryThreads);
         } else {
-            outputFile = new File("src/total_time_thread_our_method" + btreeOrder + "with_indexing_query"
+            outputFile = new File("src/test_total_time_thread_our_method" + btreeOrder + "with_indexing_query"
                     + numberOfIndexingThreads + "and" + numberOfQueryThreads);
-            queryOutputFile = new File("src/query_our_method" + btreeOrder + "with_indexing_query"
+            queryOutputFile = new File("src/test_query_our_method" + btreeOrder + "with_indexing_query"
                     + numberOfIndexingThreads + "and" + numberOfQueryThreads);
         }
 
@@ -228,6 +232,7 @@ public class TestIndexing {
                 } else {
                     System.out.println("A chunk is filled!");
                     chuckFilled.release();
+                    startTime = System.nanoTime();
                     while (!queue.isEmpty()) {
                         try {
                             Thread.sleep(1);
@@ -235,16 +240,19 @@ public class TestIndexing {
                             e.printStackTrace();
                         }
                     }
+                    long totalTime = System.nanoTime() - startTime;
+                    // synchronizing indexing threads
+                    terminateIndexingThreads();
+                    terminateQueryThreads();
+
                     int processedTuples = numTuples - numTuplesBeforeWritting;
                     double percentage = (double) sm.getCounter() * 100 / (double) processedTuples;
                     System.out.println(percentage);
                     numTuplesBeforeWritting = numTuples;
-                    long totalTime = total.get();
-                    bulkLoader.resetRecord();
 
-                    double averageTime = ((double) totalTime / ((double) processedTuples));
-
-                    String content = "" + averageTime;
+//                    double averageTime = ((double) totalTime / ((double) processedTuples));
+                    double throughput = (double) processedTuples / (double) totalTime * 1000000000;
+                    String content = "" + throughput;
                     String newline = System.getProperty("line.separator");
                     byte[] contentInBytes = content.getBytes();
                     byte[] nextLineInBytes = newline.getBytes();
@@ -257,28 +265,43 @@ public class TestIndexing {
                         e.printStackTrace();
                     }
 
-
-                    // synchronizing indexing threads
-                    terminateIndexingThreads();
-                    terminateQueryThreads();
-
                     indexedData.printStatistics();
 //                        createEmptyTree();
                     if (choiceOfMethod == 0) {
                         createEmptyTree();
                     } else {
                         createNewTree(percentage);
+                        indexedData.clearPayload();
                     }
-                    new Thread(new Runnable() {
+
+//                    populateInputQueueWithMoreTuples(5000);
+
+//                    new Thread(new Runnable() {
+//                        public void run() {
+//                                    populateInputQueueWithMoreTuples(5000);
+//                            waitForInputQueueFilled();
+//                            createIndexingThread();
+//                            createQueryThread();
+//                        }
+//                    }).start();
+                    if (createThread != null) {
+                        try {
+                            createThread.join();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    createThread = new Thread(new Runnable() {
                         public void run() {
 //                                    populateInputQueueWithMoreTuples(5000);
                             waitForInputQueueFilled();
                             createIndexingThread();
                             createQueryThread();
                         }
-                    }).start();
+                    });
+                    createThread.start();
 
-
+                    bulkLoader.resetRecord();
                     Pair pair = new Pair(indexValue, offset);
                     bulkLoader.addRecord(pair);
                     sm.resetCounter();
@@ -294,6 +317,12 @@ public class TestIndexing {
                 }
             }
             System.out.println("Emit thread is terminated");
+//            try {
+//                createThread.join();
+//                System.out.println("create thread is terminated");
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
 //            averageThroughput = totalThroughput / (double) chunkId;
 //            double averageLatency = (double) totalTime.get() / (double) numberOfQueries.get();
 //            String throughput = "" + averageThroughput;
@@ -313,6 +342,7 @@ public class TestIndexing {
 //            } catch (IOException e) {
 //                e.printStackTrace();
 //            }
+            System.out.println((double) totalBuildTime / (double) chunkId);
             setIsFinished();
         }
     }
@@ -403,7 +433,11 @@ public class TestIndexing {
         if (percentage > Config.REBUILD_TEMPLATE_PERCENTAGE) {
                 System.out.println(Thread.currentThread().getId() + " has been created a new tree");
                 System.out.println("New Template has been built");
+            long startTime = System.currentTimeMillis();
                 indexedData = bulkLoader.createTreeWithBulkLoading();
+            long duration = System.currentTimeMillis() - startTime;
+            System.out.println("The time used to build the tree is " + duration);
+            totalBuildTime += duration;
 //            indexedData.printBtree();
         }
     }
@@ -618,12 +652,12 @@ public class TestIndexing {
 
 
     public static void main(String[] args) throws Throwable {
-        int bTreeOder = 4;
-        final int NUM_CHOICE_OF_METHODS = 1;
+        int bTreeOder = 256;
+        final int NUM_CHOICE_OF_METHODS = 2;
 //        int numberOfIndexingThreads = 1;
 //        int numberOfQueryThreads = 1;
         for (int i = 0; i < 1; ++i) {
-            for (int j = 0; j < NUM_CHOICE_OF_METHODS; ++j) {
+            for (int j = 1; j < NUM_CHOICE_OF_METHODS; ++j) {
                 TestIndexing test = new TestIndexing(bTreeOder, j);
                 test.createEmitThread();
                 test.waitForInputQueueFilled();
@@ -632,6 +666,7 @@ public class TestIndexing {
                 while (!test.isFinished()) {
                     Thread.sleep(1);
                 }
+                System.out.println("Hello");
             }
             bTreeOder *= 4;
         }
