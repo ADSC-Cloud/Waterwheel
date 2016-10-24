@@ -184,7 +184,7 @@ public class throughputTest {
 
     private void createNewTree(double percentage, int processedTuples) {
         if (percentage > Config.REBUILD_TEMPLATE_PERCENTAGE) {
-            indexedData = bulkLoader.createTreeWithBulkLoading();
+            indexedData = bulkLoader.createTreeWithBulkLoading(indexedData);
         }
     }
 

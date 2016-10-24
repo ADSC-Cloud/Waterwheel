@@ -80,37 +80,38 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 		return TreeNodeType.LeafNode;
 	}
 
-	@Override
-	// TODO optimize to binary search
-	public int search(TKey key) {
-		for (int i = 0; i < this.getKeyCount(); ++i) {
-			 int cmp = this.getKey(i).compareTo(key);
-			 if (cmp == 0) {
-				 return i;
-			 }
-			 else if (cmp > 0) {
-				 return -1;
-			 }
-		}
-		return -1;
-	}
-
+//	@Override
+//	 TODO optimize to binary search
 //	public int search(TKey key) {
-//		int low = 0;
-//		int high = this.getKeyCount() - 1;
-//		while (low <= high) {
-//			int mid = (low + high) >> 1;
-//			int cmp = this.getKey(mid).compareTo(key);
-//			if (cmp == 0) {
-//				return mid;
-//			} else if (cmp > 0) {
-//				high = mid - 1;
-//			} else {
-//				low = mid + 1;
-//			}
+//		for (int i = 0; i < this.getKeyCount(); ++i) {
+//			 int cmp = this.getKey(i).compareTo(key);
+//			 if (cmp == 0) {
+//				 return i;
+//			 }
+//			 else if (cmp > 0) {
+//				 return -1;
+//			 }
 //		}
 //		return -1;
 //	}
+
+	@Override
+	public int search(TKey key) {
+		int low = 0;
+		int high = this.getKeyCount() - 1;
+		while (low <= high) {
+			int mid = (low + high) >> 1;
+			int cmp = this.getKey(mid).compareTo(key);
+			if (cmp == 0) {
+				return mid;
+			} else if (cmp > 0) {
+				high = mid - 1;
+			} else {
+				low = mid + 1;
+			}
+		}
+		return -1;
+	}
 
 
 
@@ -681,9 +682,6 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 		keys.add(key);
 		values.add(new ArrayList<TValue>(Arrays.asList(value)));
 		++keyCount;
-		if (isOverflow()) {
-			dealOverflow();
-		}
 	}
 
     public List<TValue> searchRangeInTemplate(TKey leftKey, TKey rightKey) {

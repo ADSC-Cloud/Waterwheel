@@ -277,9 +277,9 @@ public class TestIndexing {
     }
 
     private void createNewTree(double percentage) {
-        int numberOfLeaves = bulkLoader.getNumberOfLeaves();
+//        int numberOfLeaves = bulkLoader.getNumberOfLeaves();
         if (percentage > Config.REBUILD_TEMPLATE_PERCENTAGE) {
-            indexedData = bulkLoader.createTreeWithBulkLoading();
+            indexedData = bulkLoader.createTreeWithBulkLoading(indexedData);
         }
     }
 

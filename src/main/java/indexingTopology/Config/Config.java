@@ -6,5 +6,5 @@ package indexingTopology.Config;
 public class Config {
     public static final double REBUILD_TEMPLATE_PERCENTAGE = 20;
 
-    public static final double TEMPLATE_OVERFLOW_PERCENTAGE = 0.75;
+    public static final double TEMPLATE_OVERFLOW_PERCENTAGE = 1;
 }

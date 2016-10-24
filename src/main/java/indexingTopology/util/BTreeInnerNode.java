@@ -103,10 +103,31 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 //				System.out.println("yes");
 //			}
 			//	root.print();
-			while (root.getChild(0).getNodeType() != TreeNodeType.LeafNode) {
+			while (root.children.size() > 0 && root.getChild(0).getNodeType() == TreeNodeType.InnerNode) {
 				int index = root.children.size();
 				root = (BTreeInnerNode) root.getChild(index - 1);
 			}
+//			if (root == null) {
+//				System.out.println("yes");
+//			}
+//		} finally {
+//			releaseReadLock();
+//		}
+		return (BTreeInnerNode) root.parentNode;
+	}
+
+	public BTreeInnerNode<TKey> getRightMostChildTest() {
+//		acquireReadLock();
+		BTreeInnerNode root = this;
+//		try {
+//			if (root == null) {
+//				System.out.println("yes");
+//			}
+		//	root.print();
+		while (root.getChild(0).getNodeType() == TreeNodeType.InnerNode) {
+			int index = root.children.size();
+			root = (BTreeInnerNode) root.getChild(index - 1);
+		}
 //			if (root == null) {
 //				System.out.println("yes");
 //			}
@@ -507,5 +528,10 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 			e.printStackTrace();
 			return null;
 		}
+	}
+
+	public void insertKey(TKey key) {
+		this.keys.add(key);
+		keyCount += 1;
 	}
 }

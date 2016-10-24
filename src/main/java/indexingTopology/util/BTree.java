@@ -578,5 +578,18 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	public void printStatistics() {
 		System.out.println("Depth: " + root.getDepth());
 	}
+
+	public BTreeLeafNode getLeftMostLeaf() {
+		BTreeNode<TKey> currentNode = this.root;
+		while (currentNode.getNodeType() == TreeNodeType.InnerNode) {
+			BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChild(0);
+			currentNode = node;
+		}
+		return (BTreeLeafNode<TKey,TValue>) currentNode;
+	}
+
+	public void setTemplateMode() {
+		templateMode = true;
+	}
 }
 

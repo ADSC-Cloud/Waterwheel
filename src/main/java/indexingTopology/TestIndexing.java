@@ -74,7 +74,7 @@ public class TestIndexing {
     private Semaphore s2;
 
     private IndexingRunnable indexingRunnable;
-    private int numberOfIndexingThreads = 4;
+    private int numberOfIndexingThreads = 1;
     private List<Thread> indexingThreads = new ArrayList<Thread>();
 
     private QueryRunnable queryRunnable;
@@ -434,9 +434,9 @@ public class TestIndexing {
                 System.out.println(Thread.currentThread().getId() + " has been created a new tree");
                 System.out.println("New Template has been built");
             long startTime = System.currentTimeMillis();
-                indexedData = bulkLoader.createTreeWithBulkLoading();
+                indexedData = bulkLoader.createTreeWithBulkLoading(indexedData);
             long duration = System.currentTimeMillis() - startTime;
-            System.out.println("The time used to build the tree is " + duration);
+            System.out.println(String.format("The time used to build the tree is %d ms", duration));
             totalBuildTime += duration;
 //            indexedData.printBtree();
         }
@@ -526,6 +526,7 @@ public class TestIndexing {
                             localCount++;
                             final Double indexValue = (Double) pair.getKey();
                             final Integer offset = (Integer) pair.getValue();
+//                            System.out.println("insert");
                             indexedData.insert(indexValue, offset);
                         }
                         executed.getAndAdd(drainer.size());

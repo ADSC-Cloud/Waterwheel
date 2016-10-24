@@ -298,7 +298,7 @@ public class IndexerBolt extends BaseRichBolt {
 
     private void createNewTree(double percentage) {
         if (percentage > Config.REBUILD_TEMPLATE_PERCENTAGE) {
-            indexedData = bulkLoader.createTreeWithBulkLoading();
+            indexedData = bulkLoader.createTreeWithBulkLoading(indexedData);
         }
     }
 

@@ -114,7 +114,7 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
         }
         return leaves;
     }
-
+/*
     public BTree createTreeWithBulkLoading() {
         LinkedList<BTreeLeafNode> leaves = createLeaves();
         //    for (BTreeLeafNode leaf : leaves) {
@@ -157,43 +157,95 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
         }
         bt.setRoot(root);
         return bt;
+    }*/
+
+    private List<BTreeInnerNode> createInnerNodes(BTree oldBTree) {
+        BTreeLeafNode currentLeave = oldBTree.getLeftMostLeaf();
+        List<BTreeInnerNode> innerNodes = new ArrayList<BTreeInnerNode>();
+        BTreeInnerNode node = new BTreeInnerNode(order, counter);
+        int minIndexOfCurrentNode = 0;
+        int count = 1;
+        BTreeLeafNode child = null;
+        BTreeLeafNode prechild = child;
+        while (currentLeave != null) {
+            int index = order * count - minIndexOfCurrentNode;
+            while (index < currentLeave.getKeyCount()) {
+                if (node.isSafe()) {
+                    node.insertKey(currentLeave.getKey(index));
+                    child = new BTreeLeafNode(order, counter);
+                    node.setChild(node.getKeyCount() - 1, child);
+                    if (prechild != null) {
+                        setSiblingsOfChild(prechild, child);
+                    }
+                    prechild = child;
+                    index += order;
+                    ++count;
+                } else {
+                    child = new BTreeLeafNode(order, counter);
+                    setSiblingsOfChild(prechild, child);
+                    prechild = child;
+                    node.setChild(node.getKeyCount(), child);
+                    innerNodes.add(node);
+                    node = new BTreeInnerNode(order, counter);
+                    node.insertKey(currentLeave.getKey(index));
+                    child = new BTreeLeafNode(order, counter);
+                    setSiblingsOfChild(prechild, child);
+                    prechild = child;
+                    node.setChild(node.getKeyCount() - 1, child);
+                    index += order;
+                    count += 1;
+                }
+            }
+            minIndexOfCurrentNode += currentLeave.getKeyCount();
+            currentLeave = (BTreeLeafNode) currentLeave.rightSibling;
+        }
+        child = new BTreeLeafNode(order, counter);
+        setSiblingsOfChild(prechild, child);
+        node.setChild(node.getKeyCount(), child);
+        innerNodes.add(node);
+        return innerNodes;
     }
 
-
-    /*  public double checkNewTree(BTree<TKey, TValue> indexedData, SplitCounterModule sm) {
-          double numberOfRecord = 0;
-          for (TKey rec : record.keySet()) {
-              TValue value = record.get(rec);
-              ++numberOfRecord;
-              try {
-                  indexedData.insert(rec, value);
-              } catch (UnsupportedGenericException e) {
-                  e.printStackTrace();
-              }
-          }
-          System.out.println("insert failure is " + sm.getCounter() + "number of record is " + numberOfRecord);
-          return ((double) sm.getCounter() / numberOfRecord);
-      }*/
-    public boolean checkInsertion(BTree indexedData, int processedTuple) {
+    private void setSiblingsOfChild(BTreeLeafNode prechild, BTreeLeafNode child) {
+        child.leftSibling = prechild;
+        prechild.rightSibling = child;
+    }
+    public BTree createTreeWithBulkLoading(BTree oldBTree) {
+        List<BTreeInnerNode> innerNodes = createInnerNodes(oldBTree);
         int count = 0;
-//        System.out.println("The size of record is " + record.size());
-        for (Pair pair : record) {
-            TKey key = (TKey) pair.getKey();
-            if (indexedData.search(key) != null) {
-                ++count;
+        bt = new BTree(this.order, tm, sm);
+        BTreeInnerNode preNode = new BTreeInnerNode(this.order, counter);
+        BTreeInnerNode root = new BTreeInnerNode(this.order, counter);
+        for (BTreeInnerNode node : innerNodes) {
+            ++count;
+            if (count == 1) {
+                BTreeInnerNode parent = root;
+                parent.setChild(0, node);
+                node.setParent(parent);
+                preNode = node;
+                counter.increaseHeightCount();
+                bt.setRoot(root);
+            } else {
+                try {
+                    BTreeInnerNode parent = root.getRightMostChild();
+                    int index = parent.getKeyCount();
+                    // System.out.println("count: = " + count + "index: = " + index + " ");
+                    parent.setKey(index, node.getKey(0));
+                    parent.setChild(index+1, node);
+                    //  parent.print();
+                    if (parent.isOverflow()) {
+                        root = (BTreeInnerNode) parent.dealOverflow();
+                    }
+                    bt.setHeight(counter.getHeightCount());
+                    bt.setRoot(root);
+                } catch (UnsupportedGenericException e) {
+                    e.printStackTrace();
+                }
             }
         }
-        System.out.println("count = " + count);
-        System.out.println("processedTuple = " + processedTuple);
-        return count == processedTuple;
-
+        bt.setRoot(root);
+        return bt;
     }
-
-    public int getNumberOfLeaves() {
-        return numberOfLeaves;
-    }
-
-
     public List<Pair<TKey, TValue>> getRecords() {
         return record;
     }
