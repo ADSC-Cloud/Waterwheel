@@ -3,7 +3,6 @@ import indexingTopology.util.BTree;
 import indexingTopology.util.SplitCounterModule;
 import indexingTopology.util.TimingModule;
 import org.apache.commons.exec.Executor;
-import org.apache.hadoop.hdfs.server.namenode.SafeMode;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;

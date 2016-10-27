@@ -41,6 +41,10 @@ public class MemChunk {
         return ret;
     }
 
+    public ByteBuffer getData() {
+        return data;
+    }
+
     public int getOffset() {
         return data.position();
     }

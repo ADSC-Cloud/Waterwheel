@@ -111,6 +111,9 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
         bt = new BTree(this.order, tm, sm);
         BTreeNode preNode = new BTreeLeafNode(this.order, counter);
         BTreeInnerNode root = new BTreeInnerNode(this.order, counter);
+
+        BTreeInnerNode rightMostChild = root;
+
         for (BTreeLeafNode leaf : leaves) {
             ++count;
             if (count == 1) {
@@ -119,11 +122,23 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
                 parent.setChild(0, leaf);
                 leaf.setParent(parent);
                 preNode = leaf;
+
+                rightMostChild = root;
+
             } else {
                 leaf.leftSibling = preNode;
                 preNode.rightSibling = leaf;
                 try {
-                    BTreeInnerNode parent = root.getRightMostChildTest();
+//                    BTreeInnerNode parent = root.getRightMostChildTest();
+                    BTreeInnerNode parent;
+                    if (rightMostChild.rightSibling == null) {
+                        parent = rightMostChild;
+                    } else {
+                        parent = (BTreeInnerNode) rightMostChild.rightSibling;
+                        rightMostChild = (BTreeInnerNode) rightMostChild.rightSibling;
+                    }
+
+
                     System.out.println(parent == null);
                     int index = parent.getKeyCount();
                     // System.out.println("count: = " + count + "index: = " + index + " ");
@@ -149,7 +164,7 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
 
     public static void main(String[] args) throws CloneNotSupportedException, UnsupportedGenericException {
         List<Double> Keys = new LinkedList<Double>();
-        for (int i = 0; i < 120; i++) {
+        for (int i = 0; i < 120; ++i) {
             Keys.add((double) i);
         }
 
@@ -187,16 +202,23 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
 //        bt.printBtree();
         newBTree.printBtree();
         newBTree.setTemplateMode();
-        for (int i = 0; i < 60; ++i) {
+        for (double i = 0; i < 240; i += 2) {
             newBTree.insert((double) i, (double) i);
             newBTree.printBtree();
         }
-        newBTree.printBtree();
-        BTreeLeafNode leftMostLeave = newBTree.getLeftMostLeaf();
-        while (leftMostLeave != null) {
-            leftMostLeave.print();
-            leftMostLeave = (BTreeLeafNode) leftMostLeave.rightSibling;
-        }
+        System.out.println(newBTree.searchRange((double)0, (double) 60));
+//        newBTree.printBtree();
+//        BTreeLeafNode leftMostLeave = newBTree.getLeftMostLeaf();
+//        while (leftMostLeave != null) {
+//            leftMostLeave.print();
+//            leftMostLeave = (BTreeLeafNode) leftMostLeave.rightSibling;
+//        }
+//        final BTree newBTree1 = bulkLoader.createTreeWithBulkLoading(newBTree);
+//        newBTree1.printBtree();
+//        for (double i = 0; i < 60; i += 0.5) {
+//            newBTree1.insert((double) i, (double) i);
+//            newBTree1.printBtree();
+//        }
 //        BTreeNode leftLeaf = bt.findLeafNodeShouldContainKeyInTemplate((double) 2);
 //        leftLeaf.rightSibling.print();
 //        leftLeaf.print();

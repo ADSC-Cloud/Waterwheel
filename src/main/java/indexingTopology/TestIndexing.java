@@ -99,6 +99,8 @@ public class TestIndexing {
 
     private long totalBuildTime = 0;
 
+    private boolean treeRebuilt = false;
+
     public TestIndexing() {
         new TestIndexing(4, 0);
     }
@@ -271,7 +273,10 @@ public class TestIndexing {
                         createEmptyTree();
                     } else {
                         createNewTree(percentage);
-                        indexedData.clearPayload();
+                        if (!treeRebuilt) {
+                            indexedData.clearPayload();
+                            treeRebuilt = false;
+                        }
                     }
 
 //                    populateInputQueueWithMoreTuples(5000);
@@ -435,9 +440,12 @@ public class TestIndexing {
                 System.out.println("New Template has been built");
             long startTime = System.currentTimeMillis();
                 indexedData = bulkLoader.createTreeWithBulkLoading(indexedData);
+            indexedData.setTemplateMode();
+//            indexedData = bulkLoader.createTreeWithBulkLoading();
             long duration = System.currentTimeMillis() - startTime;
             System.out.println(String.format("The time used to build the tree is %d ms", duration));
             totalBuildTime += duration;
+            treeRebuilt = true;
 //            indexedData.printBtree();
         }
     }

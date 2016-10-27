@@ -114,7 +114,7 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
         }
         return leaves;
     }
-/*
+
     public BTree createTreeWithBulkLoading() {
         LinkedList<BTreeLeafNode> leaves = createLeaves();
         //    for (BTreeLeafNode leaf : leaves) {
@@ -137,7 +137,7 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
                 leaf.leftSibling = preNode;
                 preNode.rightSibling = leaf;
                 try {
-                    BTreeInnerNode parent = root.getRightMostChild();
+                    BTreeInnerNode parent = root.getRightMostChildTest();
                     int index = parent.getKeyCount();
                     // System.out.println("count: = " + count + "index: = " + index + " ");
                     //  parent.print();
@@ -157,7 +157,7 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
         }
         bt.setRoot(root);
         return bt;
-    }*/
+    }
 
     private List<BTreeInnerNode> createInnerNodes(BTree oldBTree) {
         BTreeLeafNode currentLeave = oldBTree.getLeftMostLeaf();
@@ -179,7 +179,7 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
                     }
                     prechild = child;
                     index += order;
-                    ++count;
+                    count += 1;
                 } else {
                     child = new BTreeLeafNode(order, counter);
                     setSiblingsOfChild(prechild, child);
