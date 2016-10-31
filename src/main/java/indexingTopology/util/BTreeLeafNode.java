@@ -11,6 +11,7 @@ import java.util.concurrent.locks.Lock;
 
 class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKey> implements Serializable {
 	protected ArrayList<ArrayList<TValue>> values;
+	protected ArrayList<ArrayList<byte []>> tuples;
 
 	public BTreeLeafNode(int order, BytesCounter counter) {
 		super(order,counter);
@@ -132,6 +133,32 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 //
 		return null;
 	}
+
+	public byte[] serialize() {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        byte [] b = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE).putInt(this.keys.size()).array();
+        writeToByteArrayOutputStream(bos, b);
+        for (int i = 0;i < this.keys.size(); i++) {
+            b = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE).putInt(this.keys.size()).array();
+            writeToByteArrayOutputStream(bos, b);
+        }
+        b = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE).putInt(this.tuples.size()).array();
+        writeToByteArrayOutputStream(bos, b);
+        for (int i = 0;i < this.keys.size(); i++) {
+            for (int j = 0; j < this.tuples.get(i).size(); ++j) {
+                writeToByteArrayOutputStream(bos, this.tuples.get(i).get(j));
+            }
+        }
+        return bos.toByteArray();
+    }
+
+    private void writeToByteArrayOutputStream(ByteArrayOutputStream bos, byte[] b) {
+        try {
+            bos.write(b);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
 	/* The codes below are used to support insertion operation */
 
@@ -630,7 +657,32 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 		}
 	}
 
-	public BTreeNode insertKeyValue(TKey key, TValue value) throws UnsupportedGenericException{
+	public void insertKeyValueInTemplateMode(TKey key, byte[] serilizedTuple) throws UnsupportedGenericException{
+		acquireWriteLock();
+		try {
+//			keys.add(key);
+//			values.add(new ArrayList<TValue>(Arrays.asList(value)));
+//			++keyCount;
+
+			int index = searchIndex(key);
+			if (index < this.keys.size() && this.getKey(index).compareTo(key) == 0) {
+				this.tuples.get(index).add(serilizedTuple);
+			} else {
+				this.keys.add(index, key);
+				this.tuples.add(index, new ArrayList<byte[]>());
+				this.tuples.get(index).add(serilizedTuple);
+				++this.keyCount;
+			}
+
+		} finally {
+			releaseWriteLock();
+		}
+	}
+
+
+
+
+	public BTreeNode insertKeyValue(TKey key, byte[] serilizedTuple) throws UnsupportedGenericException{
 //		acquireWriteLock();
 
 //		BTreeNode node = null;
@@ -648,11 +700,11 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 
 			int index = searchIndex(key);
 			if (index < this.keys.size() && this.getKey(index).compareTo(key) == 0) {
-				this.values.get(index).add(value);
+				this.tuples.get(index).add(serilizedTuple);
 			} else {
 				this.keys.add(index, key);
-				this.values.add(index, new ArrayList<TValue>());
-				this.values.get(index).add(value);
+				this.tuples.add(index, new ArrayList<byte[]>());
+				this.tuples.get(index).add(serilizedTuple);
 				++this.keyCount;
 			}
 
@@ -665,6 +717,45 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 //		}
 		return node;
 	}
+
+	public BTreeNode insertKeyValue(TKey key, TValue value) throws UnsupportedGenericException{
+//		acquireWriteLock();
+
+//		BTreeNode node = null;
+//		try {
+//			keys.add(key);
+//			values.add(new ArrayList<TValue>(Arrays.asList(value)));
+//			++keyCount;
+
+//		checkIfCurrentHoldAnyLock();
+		BTreeNode node = null;
+//		try {
+//			keys.add(key);
+//			values.add(new ArrayList<TValue>(Arrays.asList(value)));
+//			++keyCount;
+
+		int index = searchIndex(key);
+		if (index < this.keys.size() && this.getKey(index).compareTo(key) == 0) {
+			this.values.get(index).add(value);
+		} else {
+			this.keys.add(index, key);
+			this.values.add(index, new ArrayList<TValue>());
+			this.values.get(index).add(value);
+			++this.keyCount;
+		}
+
+
+		if (isOverflow()) {
+			node = dealOverflow();
+		}
+//		} finally {
+//			releaseWriteLock();
+//		}
+		return node;
+	}
+
+
+
 
 	public void insertKeyValueWithoutOverflow(TKey key, TValue value) throws UnsupportedGenericException{
 //		acquireWriteLock();

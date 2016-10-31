@@ -16,6 +16,9 @@ public class LocalFileSystemHandler implements FileSystemHandler{
         this.path = path;
     }
     public void writeToFileSystem(MemChunk chunk, String relativePath, String fileName) throws IOException {
+
+        createNewFile(relativePath, fileName);
+
         try {
             fop = new FileOutputStream(file);
             ByteBuffer buffer = chunk.getData();

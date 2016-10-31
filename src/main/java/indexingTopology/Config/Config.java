@@ -9,4 +9,8 @@ public class Config {
     public static final double TEMPLATE_OVERFLOW_PERCENTAGE = 1;
 
     public static final String HDFS_HOST = "hdfs://localhost:54310/";
+
+    public static final int TEMPLATE_SIZE = 64000;
+
+    public static final int NUMBER_TUPLES_OF_A_CHUNK = 810000;
 }

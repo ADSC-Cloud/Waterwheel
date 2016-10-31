@@ -28,6 +28,9 @@ public class HdfsFileSystemHandler implements FileSystemHandler{
     }
 
     public void writeToFileSystem(MemChunk chunk, String relativePath, String fileName) throws IOException{
+
+        createNewFile(relativePath, fileName);
+
         ByteBuffer buffer = chunk.getData();
         int offset = chunk.getOffset();
         byte[] bytes = new byte[offset];

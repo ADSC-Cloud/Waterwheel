@@ -12,6 +12,8 @@ import java.util.Set;
 class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> implements Serializable {
 	protected ArrayList<BTreeNode<TKey>> children;
 
+	protected ArrayList<Integer> offsets;
+
 
 	public BTreeInnerNode(int order, BytesCounter counter) {
 		super(order,counter);
@@ -533,5 +535,36 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 	public void insertKey(TKey key) {
 		this.keys.add(key);
 		keyCount += 1;
+	}
+
+	public void putOffset(int offset) {
+		offsets.add(offset);
+	}
+
+	public byte[] serialize() {
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		byte [] b = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE).putInt(this.keys.size()).array();
+		writeToByteArrayOutputStream(bos, b);
+		for (int i = 0; i < this.keys.size(); i++) {
+			b = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE).putInt(this.keys.size()).array();
+			writeToByteArrayOutputStream(bos, b);
+		}
+		if (this.offsets.size() != 0) {
+			b = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE).putInt(this.offsets.size()).array();
+			writeToByteArrayOutputStream(bos, b);
+			for (int i = 0; i < this.offsets.size(); i++) {
+				b = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE).putInt(this.offsets.get(i)).array();
+				writeToByteArrayOutputStream(bos, b);
+			}
+		}
+		return bos.toByteArray();
+	}
+
+	private void writeToByteArrayOutputStream(ByteArrayOutputStream bos, byte[] b) {
+		try {
+			bos.write(b);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 }

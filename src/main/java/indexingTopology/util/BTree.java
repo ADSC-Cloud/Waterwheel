@@ -90,10 +90,10 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		else
 			return counter.getBytesEstimateForInsertInTemplate(UtilGenerics.sizeOf(key.getClass()), value.length);
 	}
-
+    /*
 	public byte[] serializeTree() {
 		ByteBuffer b=ByteBuffer.allocate(getTotalBytes());
-		Queue<BTreeNode<TKey>> q=new LinkedList<BTreeNode<TKey>>();
+		Queue<BTreeNode<TKey>> q = new LinkedList<BTreeNode<TKey>>();
 		q.add(root);
 		while (!q.isEmpty()) {
 			BTreeNode<TKey> curr=q.remove();
@@ -103,7 +103,20 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		}
 
 		return b.array();
-	}
+	}*/
+
+    public byte[] serializeTree() {
+        ByteBuffer b = ByteBuffer.allocate(getTotalBytes());
+        Queue<BTreeNode<TKey>> q = new LinkedList<BTreeNode<TKey>>();
+        q.add(root);
+        while (!q.isEmpty()) {
+            BTreeInnerNode<TKey> curr = (BTreeInnerNode) q.remove();
+            b.put(curr.serialize());
+            if (curr.children.size() > 0 && curr.getChild(0).getNodeType() == TreeNodeType.InnerNode)
+                q.addAll(curr.children);
+        }
+        return b.array();
+    }
 
 	/**
 	 * Insert a new key and its associated value into the B+ tree.
@@ -172,9 +185,10 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	 * insert the key and value to the B+ tree
 	 * based on the mode of the tree, the function will choose the corresponding protocol
 	 * @param key the index value
-	 * @param value  the offset
+	 * @param serializedTuple  the offset
 	 * @throws UnsupportedGenericException
 	 */
+	/*
 	public void insert(TKey key, TValue value) throws UnsupportedGenericException {
         BTreeLeafNode<TKey, TValue> leaf = null;
         if (templateMode) {
@@ -206,7 +220,42 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
             }
             ancestors.clear();
         }
+	}*/
+
+
+	public void insert(TKey key, byte[] serializedTuple) throws UnsupportedGenericException {
+		BTreeLeafNode<TKey, TValue> leaf = null;
+		if (templateMode) {
+//            System.out.println("templateMode");
+			leaf = findLeafNodeShouldContainKeyInTemplate(key);
+//            leaf.acquireWriteLock();
+//            try {
+			leaf.insertKeyValueInTemplateMode(key, serializedTuple);
+			if (leaf.isOverflow()) {
+				sm.addCounter();
+			}
+//            } finally {
+//                leaf.releaseWriteLock();
+//            }
+		} else {
+			leaf = findLeafNodeShouldContainKeyInUpdaterWithProtocolTwo(key);
+			ArrayList<BTreeNode> ancestors = new ArrayList<BTreeNode>();
+			//if the root is null, it means that we have to use protocol 1 instead of protocol 2.
+			if (leaf == null) {
+				leaf = findLeafNodeShouldContainKeyInUpdaterWithProtocolOne(key, ancestors);
+			}
+			BTreeNode root = leaf.insertKeyValue(key, serializedTuple);
+			if (root != null) {
+				this.setRoot(root);
+			}
+			leaf.releaseWriteLock();
+			for (BTreeNode ancestor : ancestors) {
+				ancestor.releaseWriteLock();
+			}
+			ancestors.clear();
+		}
 	}
+
 
 
 	/**
@@ -590,6 +639,16 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 
 	public void setTemplateMode() {
 		templateMode = true;
+	}
+
+	public void writeLeavesIntoChunk(MemChunk chunk) {
+		BTreeLeafNode leave = getLeftMostLeaf();
+		while (leave != null) {
+			byte[] serializedLeave = leave.serialize();
+            int offset = chunk.write(serializedLeave);
+            ((BTreeInnerNode)leave.getParent()).putOffset(offset);
+            leave = (BTreeLeafNode) leave.rightSibling;
+		}
 	}
 }
 

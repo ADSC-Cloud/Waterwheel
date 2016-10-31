@@ -1,5 +1,7 @@
 package indexingTopology.util;
 
+import indexingTopology.Config.Config;
+
 import java.nio.ByteBuffer;
 
 /**
@@ -47,5 +49,12 @@ public class MemChunk {
 
     public int getOffset() {
         return data.position();
+    }
+
+    public void changeToLeaveNodesStartPosition() {
+        data.position(Config.TEMPLATE_SIZE);
+    }
+    public void changeToStartPosition() {
+        data.position(0);
     }
 }

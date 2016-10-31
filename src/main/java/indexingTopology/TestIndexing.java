@@ -136,6 +136,8 @@ public class TestIndexing {
         }
 
         chunk = MemChunk.createNew(bytesLimit);
+        chunk.changeToLeaveNodesStartPosition();
+
         tm = TimingModule.createNew();
         sm = SplitCounterModule.createNew();
 
@@ -217,6 +219,131 @@ public class TestIndexing {
                     e.printStackTrace();
                 }
 
+                int numberOfProcessedTuples = 0;
+                byte[] serializedTuple = null;
+                try {
+                    serializedTuple = serializeIndexValue(values);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                if (numberOfProcessedTuples <= Config.NUMBER_TUPLES_OF_A_CHUNK) {
+                    Pair pair = new Pair(indexValue, serializedTuple);
+                    try {
+                        queue.put(pair);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    ++numberOfProcessedTuples;
+                } else {
+                    System.out.println("A chunk is filled!");
+                    chuckFilled.release();
+                    startTime = System.nanoTime();
+                    while (!queue.isEmpty()) {
+                        try {
+                            Thread.sleep(1);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    long totalTime = System.nanoTime() - startTime;
+                    // synchronizing indexing threads
+                    terminateIndexingThreads();
+                    terminateQueryThreads();
+
+                    int processedTuples = numTuples - numTuplesBeforeWritting;
+                    double percentage = (double) sm.getCounter() * 100 / (double) processedTuples;
+                    System.out.println(percentage);
+                    numTuplesBeforeWritting = numTuples;
+
+//                    double averageTime = ((double) totalTime / ((double) processedTuples));
+                    double throughput = (double) processedTuples / (double) totalTime * 1000000000;
+                    String content = "" + throughput;
+                    String newline = System.getProperty("line.separator");
+                    byte[] contentInBytes = content.getBytes();
+                    byte[] nextLineInBytes = newline.getBytes();
+                    chunk = MemChunk.createNew(bytesLimit);
+                    try {
+                        fop.write(contentInBytes);
+                        fop.write(nextLineInBytes);
+                        serializedTuple = serializeIndexValue(values);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    indexedData.printStatistics();
+//                        createEmptyTree();
+                    indexedData.writeLeavesIntoChunk(chunk);
+                    chunk.changeToStartPosition();
+                    byte[] serializedTree = indexedData.serializeTree();
+                    chunk.write(serializedTree);
+
+                    FileSystemHandler fileSystemHandler = null;
+                    try {
+                        fileSystemHandler = new HdfsFileSystemHandler("/");
+                        fileSystemHandler.writeToFileSystem(chunk, "home/acelzj", "chunk" + chunkId);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                    if (choiceOfMethod == 0) {
+                        createEmptyTree();
+                    } else {
+                        createNewTree(percentage);
+                        if (!treeRebuilt) {
+                            indexedData.clearPayload();
+                            treeRebuilt = false;
+                        }
+                    }
+
+//                    populateInputQueueWithMoreTuples(5000);
+
+//                    new Thread(new Runnable() {
+//                        public void run() {
+//                                    populateInputQueueWithMoreTuples(5000);
+//                            waitForInputQueueFilled();
+//                            createIndexingThread();
+//                            createQueryThread();
+//                        }
+//                    }).start();
+                    if (createThread != null) {
+                        try {
+                            createThread.join();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    createThread = new Thread(new Runnable() {
+                        public void run() {
+//                                    populateInputQueueWithMoreTuples(5000);
+                            waitForInputQueueFilled();
+                            createIndexingThread();
+                            createQueryThread();
+                        }
+                    });
+                    createThread.start();
+
+                    bulkLoader.resetRecord();
+                    Pair pair = new Pair(indexValue, serializedTuple);
+                    bulkLoader.addRecord(pair);
+                    sm.resetCounter();
+                    try {
+                        queue.put(pair);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    ++chunkId;
+                    System.out.println("In the emit thread, the chunkId is " + chunkId);
+//                        tm.reset();
+                    total = new AtomicLong(0);
+                }
+            }
+            System.out.println("Emit thread is terminated");
+            System.out.println((double) totalBuildTime / (double) chunkId);
+            setIsFinished();
+        }
+
+
+
+                /*
                 int offset = 0;
                 try {
                     offset = chunk.write(serializeIndexValue(values));
@@ -349,7 +476,7 @@ public class TestIndexing {
 //            }
             System.out.println((double) totalBuildTime / (double) chunkId);
             setIsFinished();
-        }
+        }*/
     }
 
     class QueryRunnable implements Runnable {
@@ -533,9 +660,11 @@ public class TestIndexing {
                         for(Pair pair: drainer) {
                             localCount++;
                             final Double indexValue = (Double) pair.getKey();
-                            final Integer offset = (Integer) pair.getValue();
+//                            final Integer offset = (Integer) pair.getValue();
+                            final byte[] serializedTuple = (byte[]) pair.getValue();
 //                            System.out.println("insert");
-                            indexedData.insert(indexValue, offset);
+                            indexedData.insert(indexValue, serializedTuple);
+//                            indexedData.insert(indexValue, offset);
                         }
                         executed.getAndAdd(drainer.size());
                         drainer.clear();
