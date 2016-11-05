@@ -67,28 +67,26 @@ public class DataSchema implements Serializable {
     }
 
     public Values deserialize(byte [] b) throws IOException {
-        Values values=new Values();
+        Values values = new Values();
         int offset = 0;
-        for (int i=0;i<valueTypes.size();i++) {
+        for (int i = 0; i < valueTypes.size(); i++) {
             if (valueTypes.get(i).equals(Double.class)) {
                 int len = Double.SIZE/Byte.SIZE;
-                double val = ByteBuffer.wrap(b,offset,len).getDouble();
+                double val = ByteBuffer.wrap(b, offset, len).getDouble();
                 values.add(val);
-                offset+=len;
+                offset += len;
             } else if (valueTypes.get(i).equals(String.class)) {
                 int len = Integer.SIZE/Byte.SIZE;
-                int sizeHeader = ByteBuffer.wrap(b,offset,len).getInt();
-                offset+=len;
+                int sizeHeader = ByteBuffer.wrap(b, offset, len).getInt();
+                offset += len;
                 len = sizeHeader;
-                String val = new String(b,offset,len);
+                String val = new String(b, offset, len);
                 values.add(val);
-                offset+=len;
-
+                offset += len;
             } else {
                 throw new IOException("Only classes supported till now are string and double");
             }
         }
-
         return values;
     }
 

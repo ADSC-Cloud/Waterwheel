@@ -54,7 +54,12 @@ public class MemChunk {
     public void changeToLeaveNodesStartPosition() {
         data.position(Config.TEMPLATE_SIZE);
     }
+
     public void changeToStartPosition() {
         data.position(0);
+    }
+
+    public void changeToSpecificPosition(int position) {
+        data.position(position);
     }
 }

@@ -172,16 +172,16 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
         SplitCounterModule sm = SplitCounterModule.createNew();
         testCreateLeaves_dataPages testCase = new testCreateLeaves_dataPages();
         LinkedList<BTreeLeafNode> leaves = testCase.createLeaves(Keys);
-        final BTree bt = testCase.createTreeWithBulkLoading(leaves, tm, sm);
+//        final BTree bt = testCase.createTreeWithBulkLoading(leaves, tm, sm);
 //        System.out.println("The btree is");
 //        bt.printBtree();
-//        final BTree bt = new BTree(4, tm, sm);
+        final BTree bt = new BTree(4, tm, sm);
         long startTime;
 //        final BTree bt = testCase.createTreeWithBulkLoading(leaves, tm, sm);
 //        final BTree bt = new BTree(4, tm, sm);
-//        for (int i = 0; i < 100; ++i) {
-//            bt.insert((double) i, (double) i);
-//        }
+        for (int i = 1; i <= 24; ++i) {
+            bt.insert((double) i, (double) i);
+        }
         bt.printBtree();
         BulkLoader bulkLoader = new BulkLoader(4, tm, sm);
 //        for (int i = 0; i < 60; ++i) {

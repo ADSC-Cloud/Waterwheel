@@ -43,7 +43,9 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 		this.leftSibling = null;
 		this.rightSibling = null;
 		this.counter=counter;
-		this.counter.countNewNode();
+		if (this instanceof BTreeInnerNode) {
+			this.counter.countNewNode();
+		}
 		this.lock = new ReentrantReadWriteLock();
 //		this.wLock = new MyWriteLock(lock.writeLock());
 //		this.rLock = new MyReadLock(lock.readLock());
@@ -88,7 +90,9 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 			if (index < this.keys.size())
 				this.keys.set(index, key);
 			else if (index == this.keys.size()) {
-				this.counter.countKeyAddition(UtilGenerics.sizeOf(key.getClass()));
+				if (this instanceof BTreeInnerNode) {
+					this.counter.countKeyAdditionOfTemplate(UtilGenerics.sizeOf(key.getClass()));
+				}
 				this.keys.add(index, key);
 				keyCount += 1;
 			} else {

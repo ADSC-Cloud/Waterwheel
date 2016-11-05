@@ -1,6 +1,8 @@
 package indexingTopology.util;
 
+import indexingTopology.Config.Config;
 import indexingTopology.exception.UnsupportedGenericException;
+import org.omg.Messaging.SYNC_WITH_TRANSPORT;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -88,7 +90,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		if (!templateMode)
 			return counter.getBytesEstimateForInsert(UtilGenerics.sizeOf(key.getClass()), value.length);
 		else
-			return counter.getBytesEstimateForInsertInTemplate(UtilGenerics.sizeOf(key.getClass()), value.length);
+			return counter.getBytesEstimateForInsertInTemplate();
 	}
     /*
 	public byte[] serializeTree() {
@@ -106,23 +108,59 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	}*/
 
     public byte[] serializeTree() {
-        ByteBuffer b = ByteBuffer.allocate(getTotalBytes());
+        ByteBuffer b = ByteBuffer.allocate(Config.TEMPLATE_SIZE);
+//		byte[] lengthOfSerializedTreeInByte = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE).
+//				putInt(counter.getBytesEstimateForInsertInTemplate()).array();
+//		b.put(lengthOfSerializedTreeInByte);
+//		ByteBuffer b = ByteBuffer.allocate(640000);
         Queue<BTreeNode<TKey>> q = new LinkedList<BTreeNode<TKey>>();
         q.add(root);
         while (!q.isEmpty()) {
             BTreeInnerNode<TKey> curr = (BTreeInnerNode) q.remove();
             b.put(curr.serialize());
-            if (curr.children.size() > 0 && curr.getChild(0).getNodeType() == TreeNodeType.InnerNode)
-                q.addAll(curr.children);
+            if (curr.children.size() > 0 && curr.getChild(0).getNodeType() == TreeNodeType.InnerNode) {
+				q.addAll(curr.children);
+			}
         }
         return b.array();
     }
+
+    public BTree deserializeTree(byte[] serializedTree, int BTreeOrder, BytesCounter counter) {
+		BTreeInnerNode root = null;
+		if (serializedTree.length > 0) {
+			Queue<BTreeNode<TKey>> q = new LinkedList<BTreeNode<TKey>>();
+			int relativeOffset = 0;
+			int len = Integer.SIZE / Byte.SIZE;
+			root = new BTreeInnerNode(BTreeOrder, counter);
+			relativeOffset = root.deserialize(serializedTree, root, relativeOffset);
+			root.print();
+			q.add(root);
+			while (!q.isEmpty()) {
+				BTreeInnerNode<TKey> curr = (BTreeInnerNode) q.remove();
+				for (int i = 0; i < curr.getKeyCount() + 1; ++i) {
+					BTreeInnerNode node = new BTreeInnerNode(BTreeOrder, counter);
+					relativeOffset = root.deserialize(serializedTree, node, relativeOffset);
+					node.print();
+					curr.setChild(i, node);
+					if (curr.offsets.size() != 0) {
+						q.add(node);
+					}
+				}
+			}
+		}
+		TimingModule tm = TimingModule.createNew();
+		SplitCounterModule sm = SplitCounterModule.createNew();
+		BTree bTree = new BTree(BTreeOrder, tm, sm);
+		bTree.setRoot(root);
+		return bTree;
+	}
 
 	/**
 	 * Insert a new key and its associated value into the B+ tree.
 	 * return true if
 	 */
-/*	public void insert(TKey key, TValue value) throws UnsupportedGenericException {
+	/*
+	public void insert(TKey key, TValue value) throws UnsupportedGenericException {
 		BTreeLeafNode<TKey, TValue> leaf = null;
 //		rLock.lock();
 //		try {
@@ -142,7 +180,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 //		wLock.lock();
 //		try {
 			start = System.nanoTime();
-			leaf.insertKeyValue(key, value, tm);
+			leaf.insertKeyValue(key, value);
 			time = System.nanoTime() - start;
 //			tm.putDuration(Constants.TIME_LEAF_INSERTION.str, time);
 
@@ -167,7 +205,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 
 			} else {
 				start = System.nanoTime();
-				BTreeNode<TKey> n = leaf.dealOverflow(sm, leaf);
+				BTreeNode<TKey> n = leaf.dealOverflow();
 				if (n != null) {
 					this.root = n;
 					time = System.nanoTime() - start;
@@ -179,16 +217,17 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 //		} finally {
 //			wLock.unlock();
 //		}
-	}*/
+	}
+	*/
 
 	/**
 	 * insert the key and value to the B+ tree
 	 * based on the mode of the tree, the function will choose the corresponding protocol
 	 * @param key the index value
-	 * @param serializedTuple  the offset
+	 * @param value  the offset
 	 * @throws UnsupportedGenericException
 	 */
-	/*
+
 	public void insert(TKey key, TValue value) throws UnsupportedGenericException {
         BTreeLeafNode<TKey, TValue> leaf = null;
         if (templateMode) {
@@ -220,7 +259,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
             }
             ancestors.clear();
         }
-	}*/
+	}
 
 
 	public void insert(TKey key, byte[] serializedTuple) throws UnsupportedGenericException {
@@ -315,6 +354,28 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
         }
 		return values;
 	}
+
+	public ArrayList<byte[]> searchTuples(TKey key) {
+		ArrayList<byte[]> tuples = null;
+		BTreeLeafNode<TKey, TValue> leaf = null;
+		if (!templateMode) {
+			leaf = this.findLeafNodeShouldContainKeyInReader(key);
+			tuples = leaf.searchAndGetTuples(key);
+			leaf.releaseReadLock();
+		} else {
+			leaf = this.findLeafNodeShouldContainKeyInTemplate(key);
+			leaf.acquireReadLock();
+			try {
+				tuples = leaf.searchAndGetTuplesInTemplate(key);
+			} finally {
+				leaf.releaseReadLock();
+			}
+		}
+		return tuples;
+	}
+
+
+
 
 
 
@@ -643,12 +704,30 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 
 	public void writeLeavesIntoChunk(MemChunk chunk) {
 		BTreeLeafNode leave = getLeftMostLeaf();
+		int count = 0;
+		int offset = 0;
 		while (leave != null) {
+			++count;
 			byte[] serializedLeave = leave.serialize();
-            int offset = chunk.write(serializedLeave);
+			leave.print();
+            offset = chunk.write(serializedLeave);
             ((BTreeInnerNode)leave.getParent()).putOffset(offset);
             leave = (BTreeLeafNode) leave.rightSibling;
 		}
+//		System.out.println("Offset :" + chunk.getData().position());
+	}
+
+	public BytesCounter getCounter() {
+		return counter;
+	}
+
+	public int getOffsetOfLeaveNodeShouldContainKey(TKey key) {
+		BTreeInnerNode<TKey> currentNode = (BTreeInnerNode) this.root;
+		while (currentNode.children.size() > 0) {
+			BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChildWithSpecificIndex(key);
+			currentNode = (BTreeInnerNode) node;
+		}
+		return currentNode.offsets.get(currentNode.search(key));
 	}
 }
 

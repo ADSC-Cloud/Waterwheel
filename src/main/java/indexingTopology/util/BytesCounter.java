@@ -12,48 +12,67 @@ public class BytesCounter implements Serializable{
      */
     public static final int NUM_NODE_BOOKKEEPING_BYTES =5;
     public static final int NUM_VAL_BOOKKEEPING_BYTES=4;
-    private int bytesCount;
+    public static final int SIZE_OF_INTERGER = 4;
+    public static final int SIZE_OF_DOUBLE = 8;
+    public static final char SIZE_OF_CHAR = 2;
+    private int bytesCountOfTemplate;
+    private int bytesCountOfLeaves;
     private int height;
+    private int numberOfNodes;
+    private int numberOfLeaves;
     public BytesCounter() {
-        bytesCount =0;
-        height=0;
+        bytesCountOfTemplate = 0;
+        height = 0;
+        numberOfNodes = 0;
+        numberOfLeaves = 0;
+        bytesCountOfLeaves = 0;
     }
 
     // TODO check
     public int getBytesEstimateForInsert(int keyLen,int valLen) {
-        return bytesCount +(height+1)*NUM_NODE_BOOKKEEPING_BYTES+2*keyLen+valLen+NUM_VAL_BOOKKEEPING_BYTES;
+        return bytesCountOfTemplate +(height+1)*NUM_NODE_BOOKKEEPING_BYTES+2*keyLen+valLen+NUM_VAL_BOOKKEEPING_BYTES;
     }
 
-    public int getBytesEstimateForInsertInTemplate(int keyLen,int valLen) {
-        return bytesCount+keyLen+valLen+NUM_VAL_BOOKKEEPING_BYTES;
+    public int getBytesEstimateForLeaveNodes() {
+        return 0;
+    }
+
+    public int getBytesEstimateForInsertInTemplate() {
+//        return bytesCount+keyLen+valLen+NUM_VAL_BOOKKEEPING_BYTES;
+        return bytesCountOfTemplate + numberOfNodes * (SIZE_OF_INTERGER + SIZE_OF_CHAR) + numberOfLeaves * SIZE_OF_INTERGER;
     }
 
     public void countNewNode() {
-        bytesCount += NUM_NODE_BOOKKEEPING_BYTES;
+//        bytesCount += NUM_NODE_BOOKKEEPING_BYTES;
+        ++numberOfNodes;
+    }
+
+    public void countNumberOfLeaves(int keyCount) {
+        numberOfLeaves += keyCount;
     }
 
     public void increaseHeightCount() {
         height+=1;
     }
 
-    public void countKeyAddition(int keyLen) {
-        bytesCount +=keyLen;
+    public void countKeyAdditionOfTemplate(int keyLen) {
+        bytesCountOfTemplate +=keyLen;
     }
 
     public void countValueAddition(int valLen) {
-        bytesCount +=valLen+NUM_VAL_BOOKKEEPING_BYTES;
+        bytesCountOfTemplate +=valLen+NUM_VAL_BOOKKEEPING_BYTES;
     }
 
     public int getBytesCount() {
-        return bytesCount;
+        return bytesCountOfTemplate;
     }
 
-    public void countKeyRemoval(int keyLen) {
-        bytesCount -=keyLen;
+    public void countKeyRemovalOfTemplate(int keyLen) {
+        bytesCountOfTemplate -=keyLen;
     }
 
     public void countValueRemoval(int valLen) {
-        bytesCount -=valLen+NUM_VAL_BOOKKEEPING_BYTES;
+        bytesCountOfTemplate -=valLen+NUM_VAL_BOOKKEEPING_BYTES;
     }
 
     public int getHeightCount() {
@@ -62,7 +81,7 @@ public class BytesCounter implements Serializable{
 
     public Object clone() throws CloneNotSupportedException {
         BytesCounter newCounter = new BytesCounter();
-        newCounter.bytesCount = bytesCount;
+        newCounter.bytesCountOfTemplate = bytesCountOfTemplate;
         newCounter.height = height;
         return newCounter;
     }
@@ -84,5 +103,13 @@ public class BytesCounter implements Serializable{
 
     public void setHeight(int height) {
         this.height = height;
+    }
+
+    public int getNumberOfNodes() {
+        return numberOfNodes;
+    }
+
+    public int getNumberOfLeaves() {
+        return numberOfLeaves;
     }
 }

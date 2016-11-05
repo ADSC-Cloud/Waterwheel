@@ -284,6 +284,9 @@ public class TestIndexing {
                         e.printStackTrace();
                     }
 
+                    ++chunkId;
+                    System.out.println("In the emit thread, the chunkId is " + chunkId);
+
                     if (choiceOfMethod == 0) {
                         createEmptyTree();
                     } else {
@@ -330,8 +333,6 @@ public class TestIndexing {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    ++chunkId;
-                    System.out.println("In the emit thread, the chunkId is " + chunkId);
 //                        tm.reset();
                     total = new AtomicLong(0);
                 }

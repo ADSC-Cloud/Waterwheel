@@ -1,8 +1,16 @@
 package indexingTopology.util;
 
+import indexingTopology.Config.Config;
+import indexingTopology.DataSchema;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.util.BTree;
 import org.junit.Before;
+import org.junit.Test;
+
+import java.io.*;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -96,4 +104,197 @@ public void testDelete() throws Exception {
 customDelete(btree,range,4,1);
 }
 */
+       /*
+       @Test
+       public void testGetTupleFromAChunk() throws IOException {
+           SplitCounterModule sm = SplitCounterModule.createNew();
+           TimingModule tm = TimingModule.createNew();
+           int bTreeOder = 4;
+           BTree bTree = new BTree(bTreeOder, tm, sm);
+           File inputFile = new File("src/input_data_new");
+           BufferedReader bufferedReader = new BufferedReader(new FileReader(inputFile));
+           String text = null;
+           BytesCounter counter = new BytesCounter();
+           BTreeLeafNode leaf = new BTreeLeafNode(4, counter);
+           List<Double> values = null;
+           Double indexValue = 0.0;
+           List<String> fieldNames = new ArrayList<String>(Arrays.asList("user_id", "id_1", "id_2", "ts_epoch",
+                   "date", "time", "latitude", "longitude"));
+           ArrayList valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
+                   Double.class, Double.class, Double.class, Double.class, Double.class));
+           DataSchema schema = new DataSchema(fieldNames, valueTypes);
+           MemChunk chunk = MemChunk.createNew(640000);
+//        LinkedBlockingQueue<Pair> queue = new LinkedBlockingQueue<Pair>();
+           for (int i = 0; i < 100; ++i) {
+               try {
+                   text = bufferedReader.readLine();
+                   String[] tokens = text.split(" ");
+                   values = getValuesObject(tokens);
+                   indexValue = values.get(0);
+               } catch (IOException e) {
+                   e.printStackTrace();
+               }
+               byte[] serializedTuple = serializeIndexValue(values);
+               try {
+                   bTree.insert(indexValue, serializedTuple);
+               } catch (UnsupportedGenericException e) {
+                   e.printStackTrace();
+               }
+           }
+           bTree.printBtree();
+           chunk.changeToLeaveNodesStartPosition();
+           bTree.writeLeavesIntoChunk(chunk);
+           DeserializationHelper deserializationHelper = new DeserializationHelper();
+           int len1 = Integer.SIZE / Byte.SIZE;
+           int offset1 = 0;
+           byte[] serializedTree = bTree.serializeTree();
+           BTree deserializedTree = deserializationHelper.deserializeBTree(serializedTree, bTreeOder, counter);
+           deserializedTree.printBtree();
+           int len = Integer.SIZE / Byte.SIZE;
+           int offset = 0;
+           chunk.changeToStartPosition();
+           chunk.write(serializedTree);
+           chunk.changeToStartPosition();
+           ByteBuffer byteBuffer = chunk.getData();
+           byte[] dataInByte = new byte[640000];
+           byteBuffer.get(dataInByte);
+           int lengthOfTreeInByte = ByteBuffer.wrap(dataInByte, offset, len).getInt();
+           System.out.println(String.format("Tree in byte has %d bytes: ", lengthOfTreeInByte));
+           offset += len;
+           serializedTree = ByteBuffer.wrap(dataInByte, offset, lengthOfTreeInByte).array();
+           deserializedTree = deserializationHelper.deserializeBTree(serializedTree, bTreeOder, counter);
+           deserializedTree.printBtree();
+//           System.out.println(deserializedTree.getOffsetOfLeaveNodeShouldContainKey(457.6042636844468));
+           chunk.changeToSpecificPosition(deserializedTree.getOffsetOfLeaveNodeShouldContainKey(501.78658781297844));
+           ByteBuffer byteBufferOfLeave = byteBuffer.slice();
+           byte[] leaveInByte = new byte[64000];
+           byteBufferOfLeave.get(leaveInByte);
+           BTreeLeafNode deserializedLeave = deserializationHelper.deserializeLeaf(leaveInByte, bTreeOder, counter);
+           System.out.println(schema.deserialize((byte[]) deserializedLeave.getTuples(0).get(0)));
+           deserializedLeave.print();
+       } */
+
+       @Test
+       public void testRangeSearchGetTupleFromAChunk() throws IOException {
+           SplitCounterModule sm = SplitCounterModule.createNew();
+           TimingModule tm = TimingModule.createNew();
+           int bTreeOder = 4;
+           BTree bTree = new BTree(bTreeOder, tm, sm);
+           File inputFile = new File("src/input_data_new");
+           BufferedReader bufferedReader = new BufferedReader(new FileReader(inputFile));
+           String text = null;
+           BytesCounter counter = new BytesCounter();
+           BTreeLeafNode leaf = new BTreeLeafNode(4, counter);
+           List<Double> values = null;
+           Double indexValue = 0.0;
+           List<String> fieldNames = new ArrayList<String>(Arrays.asList("user_id", "id_1", "id_2", "ts_epoch",
+                   "date", "time", "latitude", "longitude"));
+           ArrayList valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
+                   Double.class, Double.class, Double.class, Double.class, Double.class));
+           DataSchema schema = new DataSchema(fieldNames, valueTypes);
+           MemChunk chunk = MemChunk.createNew(640000);
+//        LinkedBlockingQueue<Pair> queue = new LinkedBlockingQueue<Pair>();
+           for (int i = 0; i < 90; ++i) {
+               try {
+                   text = bufferedReader.readLine();
+                   String[] tokens = text.split(" ");
+                   values = getValuesObject(tokens);
+                   indexValue = values.get(0);
+               } catch (IOException e) {
+                   e.printStackTrace();
+               }
+               byte[] serializedTuple = serializeIndexValue(values);
+               try {
+                   bTree.insert(indexValue, serializedTuple);
+               } catch (UnsupportedGenericException e) {
+                   e.printStackTrace();
+               }
+           }
+           bTree.printBtree();
+           chunk.changeToLeaveNodesStartPosition();
+           bTree.writeLeavesIntoChunk(chunk);
+           DeserializationHelper deserializationHelper = new DeserializationHelper();
+           int len1 = Integer.SIZE / Byte.SIZE;
+           int offset1 = 0;
+           byte[] serializedTree = bTree.serializeTree();
+           BTree deserializedTree = deserializationHelper.deserializeBTree(serializedTree, bTreeOder, counter);
+           deserializedTree.printBtree();
+           int len = Integer.SIZE / Byte.SIZE;
+           int offset = 0;
+           chunk.changeToStartPosition();
+           chunk.write(serializedTree);
+           chunk.changeToStartPosition();
+           ByteBuffer byteBuffer = chunk.getData();
+           byte[] dataInByte = new byte[640000];
+           byteBuffer.get(dataInByte);
+           int lengthOfTreeInByte = ByteBuffer.wrap(dataInByte, offset, len).getInt();
+           System.out.println(String.format("Tree in byte has %d bytes: ", lengthOfTreeInByte));
+           offset += len;
+           serializedTree = ByteBuffer.wrap(dataInByte, offset, lengthOfTreeInByte).array();
+           deserializedTree = deserializationHelper.deserializeBTree(serializedTree, bTreeOder, counter);
+           deserializedTree.printBtree();
+//           System.out.println(deserializedTree.getOffsetOfLeaveNodeShouldContainKey(457.6042636844468));
+           Double leftKey = 448.68542379255587;
+           Double rightKey = 542.6783409687173;
+           int startPosition = deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey);
+           System.out.println("start postion " + startPosition);
+           int nextPosition = deserializedTree.getOffsetOfLeaveNodeShouldContainKey(542.6783409687173);
+           System.out.println("next position " + nextPosition);
+           System.out.println("The offset is " + (nextPosition - startPosition));
+           chunk.changeToSpecificPosition(deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey));
+//           chunk.changeToSpecificPosition(Config.TEMPLATE_SIZE);
+           int lengthOfLeaveInBytes = ByteBuffer.wrap(dataInByte, deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey), len).getInt();
+//           System.out.println(lengthOfLeaveInBytes);
+           chunk.changeToSpecificPosition(deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey) + len);
+           ByteBuffer byteBufferOfLeave = byteBuffer.slice();
+           byte[] leaveInByte = new byte[64000];
+           byteBufferOfLeave.get(leaveInByte);
+           BTreeLeafNode deserializedLeave = deserializationHelper.deserializeLeaf(leaveInByte, bTreeOder, counter);
+           System.out.println(schema.deserialize((byte[]) deserializedLeave.getTuples(0).get(0)));
+           deserializedLeave.print();
+
+
+
+//           lengthOfLeaveInBytes = ByteBuffer.wrap(dataInByte, deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey) + lengthOfLeaveInBytes, len).getInt();
+           System.out.println(lengthOfLeaveInBytes);
+//           chunk.changeToSpecificPosition(deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey) + len + 1 * Config.LEAVE_NODE_IN_BYTES);
+//           chunk.changeToSpecificPosition(deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey) +  1 * Config.LEAVE_NODE_IN_BYTES);
+//           System.out.println(deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey) + lengthOfLeaveInBytes + len);
+           chunk.changeToSpecificPosition(deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey) + lengthOfLeaveInBytes + len + len);
+           int nextLengthOfLeaveInBytes = ByteBuffer.wrap(dataInByte, deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey) + lengthOfLeaveInBytes, len).getInt();
+           byteBufferOfLeave = byteBuffer.slice();
+           leaveInByte = new byte[64000];
+           byteBufferOfLeave.get(leaveInByte);
+           deserializedLeave = deserializationHelper.deserializeLeaf(leaveInByte, bTreeOder, counter);
+//           System.out.println("Deserialized leave: ");
+           deserializedLeave.print();
+           System.out.println(schema.deserialize((byte[]) deserializedLeave.getTuples(0).get(0)));
+//           deserializedLeave.print();
+       }
+
+    public List<Double> getValuesObject(String [] valuesAsString) throws IOException {
+
+        List<Double> values = new ArrayList<Double>();
+        ArrayList valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
+                Double.class, Double.class, Double.class, Double.class, Double.class));
+        for (int i=0;i < valueTypes.size();i++) {
+            if (valueTypes.get(i).equals(Double.class)) {
+                values.add(Double.parseDouble(valuesAsString[i]));
+            }
+        }
+        return values;
+    }
+
+    public byte[] serializeIndexValue(List<Double> values) throws IOException{
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        ArrayList valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
+                Double.class, Double.class, Double.class, Double.class, Double.class));
+        for (int i = 0;i < valueTypes.size(); ++i) {
+            if (valueTypes.get(i).equals(Double.class)) {
+                byte [] b = ByteBuffer.allocate(Double.SIZE / Byte.SIZE).putDouble((Double) values.get(i)).array();
+                bos.write(b);
+            }
+        }
+        return bos.toByteArray();
+    }
 }

@@ -8,6 +8,6 @@ public class testDiv {
         double a = 100.0;
         double b = 2.0;
         double result = a / b;
-        System.out.println(result);
+        System.out.println(Character.SIZE / Byte.SIZE);
     }
 }

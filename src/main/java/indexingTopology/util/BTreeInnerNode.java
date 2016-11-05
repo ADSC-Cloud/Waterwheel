@@ -1,6 +1,7 @@
 package indexingTopology.util;
 
 import indexingTopology.exception.UnsupportedGenericException;
+import org.omg.Messaging.SYNC_WITH_TRANSPORT;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -19,7 +20,7 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 		super(order,counter);
 		this.keys = new ArrayList<TKey>();
 		this.children = new ArrayList<BTreeNode<TKey>>();
-
+		this.offsets = new ArrayList<Integer>();
 	}
 
 	public boolean validateParentReference() {
@@ -217,7 +218,7 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 //		acquireWriteLock();
 //		try {
 			try {
-				counter.countKeyAddition(UtilGenerics.sizeOf(key.getClass()));
+				counter.countKeyAdditionOfTemplate(UtilGenerics.sizeOf(key.getClass()));
 			} catch (UnsupportedGenericException e) {
 				e.printStackTrace();
 			}
@@ -299,7 +300,7 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 				}
 			}
 			try {
-				counter.countKeyAddition(UtilGenerics.sizeOf(key.getClass()));
+				counter.countKeyAdditionOfTemplate(UtilGenerics.sizeOf(key.getClass()));
 			} catch (UnsupportedGenericException e) {
 				e.printStackTrace();
 			}
@@ -338,7 +339,7 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 //		acquireWriteLock();
 //		try {
 			try {
-				counter.countKeyRemoval(UtilGenerics.sizeOf(this.keys.get(index).getClass()));
+				counter.countKeyRemovalOfTemplate(UtilGenerics.sizeOf(this.keys.get(index).getClass()));
 			} catch (UnsupportedGenericException e) {
 				e.printStackTrace();
 			}
@@ -534,30 +535,82 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 
 	public void insertKey(TKey key) {
 		this.keys.add(key);
+		try {
+			this.counter.countKeyAdditionOfTemplate(UtilGenerics.sizeOf(key.getClass()));
+		} catch (UnsupportedGenericException e) {
+			e.printStackTrace();
+		}
 		keyCount += 1;
 	}
 
 	public void putOffset(int offset) {
 		offsets.add(offset);
+		counter.countKeyAdditionOfTemplate(Integer.SIZE / Byte.SIZE);
 	}
 
+
+	/**
+	 * The content of the byte array is as following
+	 * [key count of the inner node  [key1, key2 ...] ['y' or 'n] [offset of its node] (not necessary)]
+	 * if this node is in the last but one layer, the content will be 'y' else the content will be 'n'.
+	 * if the content is 'y' it will have the offset in the chunk of its children
+	 * @return the serialized inner node in a byte array
+	 */
 	public byte[] serialize() {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		byte [] b = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE).putInt(this.keys.size()).array();
 		writeToByteArrayOutputStream(bos, b);
 		for (int i = 0; i < this.keys.size(); i++) {
-			b = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE).putInt(this.keys.size()).array();
+			b = ByteBuffer.allocate(Double.SIZE / Byte.SIZE).putDouble((Double) this.keys.get(i)).array();
 			writeToByteArrayOutputStream(bos, b);
 		}
 		if (this.offsets.size() != 0) {
+			b = ByteBuffer.allocate(Character.SIZE / Byte.SIZE).putChar('y').array();
+			writeToByteArrayOutputStream(bos, b);
 			b = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE).putInt(this.offsets.size()).array();
 			writeToByteArrayOutputStream(bos, b);
 			for (int i = 0; i < this.offsets.size(); i++) {
 				b = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE).putInt(this.offsets.get(i)).array();
 				writeToByteArrayOutputStream(bos, b);
 			}
+		} else {
+			b = ByteBuffer.allocate(Character.SIZE / Byte.SIZE).putChar('n').array();
+			writeToByteArrayOutputStream(bos, b);
 		}
 		return bos.toByteArray();
+	}
+
+	public int deserialize(byte [] b, BTreeInnerNode node, int relativeOffset) {
+		int len = Integer.SIZE / Byte.SIZE;
+		int offset = relativeOffset;
+		int keyCount = ByteBuffer.wrap(b, offset, len).getInt();
+//		System.out.println(keyCount);
+		offset += len;
+		ArrayList<Double> keys = new ArrayList<Double>();
+		for (int i = 0; i < keyCount;i++) {
+			len = Double.SIZE / Byte.SIZE;
+			Double key = ByteBuffer.wrap(b, offset, len).getDouble();
+			keys.add(key);
+			offset += len;
+		}
+		node.keys = keys;
+		ArrayList<Integer> offsets = new ArrayList<Integer>();
+		len = Character.SIZE / Byte.SIZE;
+		char haveOffsets = ByteBuffer.wrap(b, offset, len).getChar();
+		offset += len;
+		if (haveOffsets == 'y') {
+			len = Integer.SIZE / Byte.SIZE;
+			int numberOfOffset = ByteBuffer.wrap(b, offset, len).getInt();
+			offset += len;
+			for (int i = 0; i < numberOfOffset; i++) {
+				int offsetOfChild = ByteBuffer.wrap(b, offset, len).getInt();
+				offsets.add(offsetOfChild);
+				offset += len;
+			}
+		}
+		node.offsets = offsets;
+		node.print();
+		return offset;
 	}
 
 	private void writeToByteArrayOutputStream(ByteArrayOutputStream bos, byte[] b) {
