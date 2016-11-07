@@ -101,6 +101,8 @@ public class TestIndexing {
 
     private boolean treeRebuilt = false;
 
+    private KeyRangeRecorder keyRangeRecorder = new KeyRangeRecorder();
+
     public TestIndexing() {
         new TestIndexing(4, 0);
     }
@@ -226,7 +228,15 @@ public class TestIndexing {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+                Double minIndexValue = Double.MAX_VALUE;
+                Double maxIndexValue = Double.MIN_VALUE;
                 if (numberOfProcessedTuples <= Config.NUMBER_TUPLES_OF_A_CHUNK) {
+                    if (indexValue < minIndexValue) {
+                        minIndexValue = indexValue;
+                    }
+                    if (indexValue > maxIndexValue) {
+                        maxIndexValue = indexValue;
+                    }
                     Pair pair = new Pair(indexValue, serializedTuple);
                     try {
                         queue.put(pair);
@@ -283,6 +293,8 @@ public class TestIndexing {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
+
+                    keyRangeRecorder.addKeyRangeToFile("chunk" + chunkId, minIndexValue, maxIndexValue);
 
                     ++chunkId;
                     System.out.println("In the emit thread, the chunkId is " + chunkId);

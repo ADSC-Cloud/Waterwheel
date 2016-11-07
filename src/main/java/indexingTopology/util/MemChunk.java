@@ -62,4 +62,8 @@ public class MemChunk {
     public void changeToSpecificPosition(int position) {
         data.position(position);
     }
+
+    public int getAllocatedSize() {
+        return allocatedSize;
+    }
 }

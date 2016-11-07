@@ -22,8 +22,8 @@ public class LocalFileSystemHandler implements FileSystemHandler{
         try {
             fop = new FileOutputStream(file);
             ByteBuffer buffer = chunk.getData();
-            int offset = chunk.getOffset();
-            byte[] bytes = new byte[offset];
+            int size = chunk.getAllocatedSize();
+            byte[] bytes = new byte[size];
             buffer.position(0);
             buffer.get(bytes);
             fop.write(bytes);

@@ -32,8 +32,8 @@ public class HdfsFileSystemHandler implements FileSystemHandler{
         createNewFile(relativePath, fileName);
 
         ByteBuffer buffer = chunk.getData();
-        int offset = chunk.getOffset();
-        byte[] bytes = new byte[offset];
+        int size = chunk.getAllocatedSize();
+        byte[] bytes = new byte[size];
         buffer.position(0);
         buffer.get(bytes);
         Path path = new Path(this.path + relativePath + fileName);

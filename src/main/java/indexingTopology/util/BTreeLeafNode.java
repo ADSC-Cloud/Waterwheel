@@ -192,12 +192,12 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 
 
 	public byte[] serialize() {
-		System.out.println("The size of keys is " + getKeyCount());
-		System.out.println("The size of tuples are " + tuples.size());
-		System.out.println("The size of offsets are " + offsets.size());
+//		System.out.println("The size of keys is " + getKeyCount());
+//		System.out.println("The size of tuples are " + tuples.size());
+//		System.out.println("The size of offsets are " + offsets.size());
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		int totalBytes = bytesCount + (1 + this.tuples.size()) * (Integer.SIZE / Byte.SIZE);
-		System.out.println("Total byttes " + totalBytes);
+//		System.out.println("Total byttes " + totalBytes);
 		byte[] b = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE).putInt(totalBytes).array();
 		writeToByteArrayOutputStream(bos, b);
 //        byte[] b = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE).putInt(this.keys.size()).array();

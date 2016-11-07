@@ -709,7 +709,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		while (leave != null) {
 			++count;
 			byte[] serializedLeave = leave.serialize();
-			leave.print();
+//			leave.print();
             offset = chunk.write(serializedLeave);
             ((BTreeInnerNode)leave.getParent()).putOffset(offset);
             leave = (BTreeLeafNode) leave.rightSibling;
