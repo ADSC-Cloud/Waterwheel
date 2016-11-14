@@ -3,24 +3,42 @@ package indexingTopology;
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
+import backtype.storm.generated.GlobalStreamId;
+import backtype.storm.grouping.CustomStreamGrouping;
+import backtype.storm.task.WorkerTopologyContext;
 import backtype.storm.topology.TopologyBuilder;
-import indexingTopology.bolt.IndexerBolt;
-import indexingTopology.bolt.InputTestBolt;
-import indexingTopology.bolt.NormalDistributionIndexerBolt;
+import backtype.storm.tuple.Fields;
+import indexingTopology.bolt.*;
 import indexingTopology.spout.CSVReaderSpout;
 import indexingTopology.spout.NormalDistributionGenerator;
 import indexingTopology.util.Constants;
+import indexingTopology.util.RangePartitionGrouping;
+import javafx.util.Pair;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 /**
  * Created by acelzj on 7/22/16.
  */
 public class NormalDistributionIndexingTopology {
+    public static final String FileSystemQueryStream = "FileSystemQueryStream";
+    public static final String BPlusTreeQueryStream = "BPlusTreeQueryStream";
+    public static final String FileInformationUpdateStream = "FileInformationUpdateStream";
+    public static final String IndexStream = "IndexStream";
+
+    static final String TupleGenerator = "TupleGenerator";
+    static final String DispatcherBolt = "DispatcherBolt";
+    static final String QueryBolt = "QueryBolt";
+    static final String IndexerBolt = "IndexerBolt";
+    static final String QueryFileBolt = "QueryFileBolt";
+    static final String ResultMergeBolt = "ResultMergeBolt";
+
+
     public static void main(String[] args) throws Exception {
         TopologyBuilder builder = new TopologyBuilder();
      /*   List<String> fieldNames=new ArrayList<String>(Arrays.asList("user_id","id_1","id_2","ts_epoch",
@@ -40,12 +58,27 @@ public class NormalDistributionIndexingTopology {
         List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
                 Double.class, Double.class, Double.class, Double.class, Double.class));
         DataSchema schema = new DataSchema(fieldNames, valueTypes);
-        builder.setSpout("TupleGenerator", new NormalDistributionGenerator(schema), 1).setNumTasks(1);
+        builder.setSpout(TupleGenerator, new NormalDistributionGenerator(schema), 1).setNumTasks(1);
 //        builder.setBolt("Dispatcher",new DispatcherBolt("Indexer","longitude",schema),1).shuffleGrouping("TupleGenerator");
 
-        builder.setBolt("IndexerBolt", new NormalDistributionIndexerBolt("user_id", schema, 256, 65000000),1)
-                .setNumTasks(1)
-                .shuffleGrouping("TupleGenerator");
+        builder.setBolt(DispatcherBolt, new DispatcherBolt(schema)).setNumTasks(1)
+                .shuffleGrouping(TupleGenerator, IndexStream)
+                .shuffleGrouping(QueryBolt, BPlusTreeQueryStream);
+
+        builder.setBolt(IndexerBolt, new NormalDistributionIndexerBolt("user_id", schema, 4, 65000000),1)
+                .setNumTasks(2)
+                .customGrouping(DispatcherBolt, IndexStream, new RangePartitionGrouping())
+                .customGrouping(DispatcherBolt, BPlusTreeQueryStream, new RangePartitionGrouping());
+
+        builder.setBolt(QueryBolt, new QueryBolt()).setNumTasks(1).
+                allGrouping(IndexerBolt, FileInformationUpdateStream);
+
+        builder.setBolt(QueryFileBolt, new QueryFileBolt()).setNumTasks(2)
+                .fieldsGrouping(QueryBolt, FileSystemQueryStream, new Fields("key"));
+
+        builder.setBolt(ResultMergeBolt, new ResultMergeBolt(schema)).setNumTasks(1)
+                .allGrouping(QueryFileBolt, FileSystemQueryStream)
+                .allGrouping(IndexerBolt, BPlusTreeQueryStream);
 
         Config conf = new Config();
         conf.setDebug(false);
@@ -59,9 +92,9 @@ public class NormalDistributionIndexingTopology {
 //        LocalCluster cluster = new LocalCluster();
 //        cluster.submitTopology("generatorTest", conf, builder.createTopology());
         StormSubmitter.submitTopologyWithProgressBar(args[0], conf, builder.createTopology());
-        BufferedReader in=new BufferedReader(new InputStreamReader(System.in));
+//        BufferedReader in=new BufferedReader(new InputStreamReader(System.in));
 //        System.out.println("Type anything to stop the cluster");
-        in.readLine();
+//        in.readLine();
         //   cluster.shutdown();
         //    cluster.shutdown();
     }

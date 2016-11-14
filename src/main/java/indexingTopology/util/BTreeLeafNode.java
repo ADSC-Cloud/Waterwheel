@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 
-class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKey> implements Serializable {
+public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKey> implements Serializable {
 	protected ArrayList<ArrayList<TValue>> values;
 	protected ArrayList<ArrayList<byte []>> tuples;
 	protected ArrayList<ArrayList<Integer>> offsets;
@@ -210,6 +210,8 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 //        b = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE).putInt(this.tuples.size()).array();
 //        writeToByteArrayOutputStream(bos, b);
         for (int i = 0;i < this.keys.size(); i++) {
+//			System.out.println("Key count " + this.keys.size());
+//			System.out.println("Number of tuple of corresponding key " + this.keys.get(i) + " " + this.tuples.get(i).size());
 			b = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE).putInt(this.tuples.get(i).size()).array();
 			writeToByteArrayOutputStream(bos, b);
             for (int j = 0; j < this.tuples.get(i).size(); ++j) {
@@ -698,6 +700,7 @@ class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeNode<TKe
 		    this.tuples.clear();
 		    this.offsets.clear();
 			this.keyCount = 0;
+//		System.out.println(bytesCount);
 //		} finally {
 //			wLock.unlock();
 //		}

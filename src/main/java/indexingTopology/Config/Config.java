@@ -12,7 +12,7 @@ public class Config {
 
     public static final int TEMPLATE_SIZE = 64000;
 
-    public static final int NUMBER_TUPLES_OF_A_CHUNK = 810000;
+    public static final int NUMBER_TUPLES_OF_A_CHUNK = 6400;
 
     public static final int LEAVE_NODE_IN_BYTES = 1000;
 }

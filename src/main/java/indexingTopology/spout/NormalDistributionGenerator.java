@@ -9,6 +9,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 import indexingTopology.DataSchema;
+import indexingTopology.NormalDistributionIndexingTopology;
 import org.apache.commons.math3.distribution.NormalDistribution;
 
 import java.io.*;
@@ -43,18 +44,19 @@ public class NormalDistributionGenerator extends BaseRichSpout {
 //        distribution = new NormalDistribution(mean, sd);
 //        seed = 1000;
 //        random = new Random(seed);
-        file = new File("/home/lzj/IndexTopology_experiment/NormalDistribution/input_data_new");
+//        file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/input_data_new");
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
 //        declarer.declare(new Fields("indexValue", "value1", "value2", "value3", "value4", "value5", "value6", "value7"));
-        declarer.declare(schema.getFieldsObject());
+        declarer.declareStream(NormalDistributionIndexingTopology.IndexStream, schema.getFieldsObject());
     }
 
     public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
         collector_ = collector;
         counter = new AtomicInteger(0);
         try {
+            file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/input_data");
             bufferedReader = new BufferedReader(new FileReader(file));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -98,13 +100,19 @@ public class NormalDistributionGenerator extends BaseRichSpout {
     }
 
     public void nextTuple() {
-        String text = null;
         try {
+            String text = null;
             text = bufferedReader.readLine();
+            if (text == null) {
+//                bufferedReader.close();
+                bufferedReader = new BufferedReader(new FileReader(file));
+                text = bufferedReader.readLine();
+            }
             int msgId = this.counter.getAndIncrement();
-            String [] tokens = text.split(" ");
+            String [] tuple = text.split(" ");
+//            System.out.println("The tuple is " + schema.getValuesObject(tuple));
 //            double indexValue = Double.parseDouble(text);
-            collector_.emit(schema.getValuesObject(tokens), msgId);
+            collector_.emit(NormalDistributionIndexingTopology.IndexStream, schema.getValuesObject(tuple), msgId);
             if (counter.get() == Integer.MAX_VALUE) {
                 counter.set(0);
             }

@@ -16,6 +16,7 @@ public class DeserializationHelper <TKey extends Comparable<TKey>,TValue>{
         int len = Integer.SIZE / Byte.SIZE;
         int offset = 0;
         int keyCount = ByteBuffer.wrap(b, offset, len).getInt();
+//        System.out.println("Key count" + keyCount);
         offset += len;
         ArrayList<Double> keys = new ArrayList<Double>();
         for (int i = 0; i < keyCount;i++) {
@@ -31,8 +32,10 @@ public class DeserializationHelper <TKey extends Comparable<TKey>,TValue>{
             int tupleCount = ByteBuffer.wrap(b, offset, len).getInt();
             tuples.add(new ArrayList<byte[]>());
             offset += len;
+//            System.out.println("Tuple Count " + tupleCount);
             for (int j = 0; j < tupleCount; ++j) {
                 int lengthOfTuple = ByteBuffer.wrap(b, offset, len).getInt();
+//                System.out.println("length " + lengthOfTuple);
                 offset += len;
                 byte[] tuple = new byte[lengthOfTuple];
                 ByteBuffer.wrap(b, offset, lengthOfTuple).get(tuple);

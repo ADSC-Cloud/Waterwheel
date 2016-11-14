@@ -600,6 +600,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		while (!q.isEmpty()) {
 			BTreeNode<TKey> curr = q.remove();
 			if (curr.getNodeType().equals(TreeNodeType.LeafNode)) {
+				((BTreeInnerNode) curr.getParent()).offsets.clear();
 				((BTreeLeafNode) curr).clearNode();
 
 			} else {
