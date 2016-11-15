@@ -44,8 +44,10 @@ public class DispatcherBolt extends BaseRichBolt {
     public void execute(Tuple tuple) {
 //        double partitionValue = tuple.getDoubleByField(rangePartitionField);
         if (tuple.getSourceStreamId() == NormalDistributionIndexingTopology.BPlusTreeQueryStream) {
+//            collector.emit(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
+//                    new Values(tuple.getValue(0)));
             collector.emit(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
-                    new Values(tuple.getValue(0)));
+                    new Values(tuple.getValue(0), tuple.getValue(1)));
         } else {
             try {
                 collector.emit(NormalDistributionIndexingTopology.IndexStream, schema.getValuesObject(tuple));
@@ -78,7 +80,9 @@ break;
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
 //        declarer.declare(schema.getFieldsObject());
-        declarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryStream, new Fields("key"));
+//        declarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryStream, new Fields("key"));
+        declarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryStream, new Fields("leftKey"
+                , "rightKey"));
         declarer.declareStream(NormalDistributionIndexingTopology.IndexStream, schema.getFieldsObject());
 //        declarer.declare(new Fields("key"));
     }

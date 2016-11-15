@@ -303,8 +303,8 @@ customDelete(btree,range,4,1);
                file.read(leafInByte);
                BTreeLeafNode deserializedLeaf = deserializationHelper.deserializeLeaf(leafInByte, bTreeOder, counter);
                System.out.println(schema.deserialize((byte[]) deserializedLeaf.getTuples(0).get(0)));
-           file.close();
-           /*
+//           file.close();
+/*
            startPosition = (startPosition + lengthOfLeaveInBytes + 4);
            lengthInByte = new byte[4];
                file.seek(startPosition);

@@ -179,7 +179,7 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
         long startTime;
 //        final BTree bt = testCase.createTreeWithBulkLoading(leaves, tm, sm);
 //        final BTree bt = new BTree(4, tm, sm);
-        for (int i = 1; i <= 24; ++i) {
+        for (int i = 1; i <= 60; ++i) {
             bt.insert((double) i, (double) i);
         }
         bt.printBtree();
@@ -187,7 +187,7 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
 //        for (int i = 0; i < 60; ++i) {
 //            bt.insert((double) i, (double) i);
 //        }
-        final BTree newBTree = bulkLoader.createTreeWithBulkLoading(bt);
+//        final BTree newBTree = bulkLoader.createTreeWithBulkLoading(bt);
 //        bt.clearPayload();
 //        bt.insert((double) 0, (double) 0);
 //        bt.insert((double) 30, (double) 30);
@@ -200,13 +200,13 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
 //        bt.insert((double)50, (double) 50);
 //        bt.insert((double) 2, (double) 2);
 //        bt.printBtree();
-        newBTree.printBtree();
-        newBTree.setTemplateMode();
-        for (double i = 0; i < 240; i += 2) {
-            newBTree.insert((double) i, (double) i);
-            newBTree.printBtree();
-        }
-        System.out.println(newBTree.searchRange((double)0, (double) 60));
+//        newBTree.printBtree();
+//        newBTree.setTemplateMode();
+//        for (double i = 0; i < 240; i += 2) {
+//            newBTree.insert((double) i, (double) i);
+//            newBTree.printBtree();
+//        }
+//        System.out.println(newBTree.searchRange((double)0, (double) 60));
 //        newBTree.printBtree();
 //        BTreeLeafNode leftMostLeave = newBTree.getLeftMostLeaf();
 //        while (leftMostLeave != null) {
@@ -227,9 +227,9 @@ public class testCreateLeaves_dataPages <TKey extends Comparable<TKey>, TValue>{
 //            leftLeaf = leftLeaf.rightSibling;
 //        }
 //        System.out.println("finished");
-//        for (int i = 0; i < 50; ++i) {
-//            System.out.println(bt.searchRange((double) i, (double) 50));
-//        }
+        for (int i = 0; i < 50; ++i) {
+            System.out.println(bt.searchRange((double) i, (double) 50));
+        }
 //        for (int i = 0; i < 2; ++i) {
 //            new Thread(new Runnable() {
 //                public void run() {

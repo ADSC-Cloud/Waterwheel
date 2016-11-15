@@ -36,17 +36,19 @@ public class ResultMergeBolt extends BaseRichBolt {
     }
 
     public void execute(Tuple tuple) {
-//        System.out.println("The stream is " + tuple.getSourceStreamId());
+        System.out.println("The stream is " + tuple.getSourceStreamId());
         Double key = tuple.getDouble(0);
-        List<byte[]> serializedTuples = (List) tuple.getValue(1);
+//        List<byte[]> serializedTuples = (List) tuple.getValue(1);
+        ArrayList<byte[]> serializedTuples = (ArrayList) tuple.getValue(2);
         for (int i = 0; i < serializedTuples.size(); ++i) {
             Values deserializedTuple = null;
+//            System.out.println("Serialized Tuples " + serializedTuples);
             try {
-                deserializedTuple = schema.deserialize(serializedTuples.get(i));
+            deserializedTuple = schema.deserialize(serializedTuples.get(i));
             } catch (IOException e) {
                 e.printStackTrace();
             }
-//            System.out.println(deserializedTuple);
+            System.out.println(deserializedTuple);
         }
         Integer numberOfTuples = keyToNumberOfTuples.get(key);
         if (numberOfTuples == null)

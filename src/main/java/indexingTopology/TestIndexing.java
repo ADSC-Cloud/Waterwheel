@@ -129,7 +129,7 @@ public class TestIndexing {
         startTime = System.nanoTime();
         totalThroughput = 0;
         numberOfQueries = 0;
-        inputFile = new File("src/input_data_new");
+        inputFile = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/input_data");
 
         if (choiceOfMethod == 0) {
             outputFile = new File("src/test_total_time_thread_baseline" + btreeOrder + "with_indexing_query"
@@ -227,12 +227,12 @@ public class TestIndexing {
                     values = getValuesObject(tokens);
                     indexValue = values.get(0);
 
-                    while (indexValue > 500) {
-                        text = bufferedReader.readLine();
-                        tokens = text.split(" ");
-                        values = getValuesObject(tokens);
-                        indexValue = values.get(0);
-                    }
+//                    while (indexValue > 500) {
+//                        text = bufferedReader.readLine();
+//                        tokens = text.split(" ");
+//                        values = getValuesObject(tokens);
+//                        indexValue = values.get(0);
+//                    }
                     ++numTuples;
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -263,6 +263,7 @@ public class TestIndexing {
                     ++numberOfProcessedTuples;
                 } else {
                     System.out.println("A chunk full, number of processed tuples are " + numberOfProcessedTuples);
+                    System.out.println("The chunk id is " + chunkId);
 //                    System.out.println("A chunk is filled!");
                     chuckFilled.release();
                     startTime = System.nanoTime();
@@ -276,7 +277,7 @@ public class TestIndexing {
                     long totalTime = System.nanoTime() - startTime;
                     // synchronizing indexing threads
                     terminateIndexingThreads();
-//                    terminateQueryThreads();
+                    terminateQueryThreads();
 
                     int processedTuples = numTuples - numTuplesBeforeWritting;
                     double percentage = (double) sm.getCounter() * 100 / (double) processedTuples;
@@ -305,15 +306,15 @@ public class TestIndexing {
                     byte[] serializedTree = indexedData.serializeTree();
                     chunk.write(serializedTree);
 
-                    FileSystemHandler fileSystemHandler = null;
-                    try {
-                        fileSystemHandler = new LocalFileSystemHandler("/home/acelzj");
-                        fileSystemHandler.writeToFileSystem(chunk, "/", "chunk" + chunkId);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                    keyRangeRecorder.addKeyRangeToFile("chunk" + chunkId, minIndexValue, maxIndexValue);
+//                    FileSystemHandler fileSystemHandler = null;
+//                    try {
+//                        fileSystemHandler = new LocalFileSystemHandler("/home/acelzj");
+//                        fileSystemHandler.writeToFileSystem(chunk, "/", "chunk" + chunkId);
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
+//
+//                    keyRangeRecorder.addKeyRangeToFile("chunk" + chunkId, minIndexValue, maxIndexValue);
                     numberOfProcessedTuples = 0;
                     ++chunkId;
 //                    System.out.println("In the emit thread, the chunkId is " + chunkId);
@@ -352,7 +353,7 @@ public class TestIndexing {
 //                                    populateInputQueueWithMoreTuples(5000);
                             waitForInputQueueFilled();
                             createIndexingThread();
-//                            createQueryThread();
+                            createQueryThread();
                         }
                     });
                     createThread.start();
@@ -537,15 +538,17 @@ public class TestIndexing {
                     if(terminating) {
                         break;
                     }
-                    Thread.sleep(10);
-//                    Double leftKey = (double) 100;
-//                    Double rightKey = (double) 200;
+                    Thread.sleep(1);
+                    Double leftKey = (double) 0;
+                    Double rightKey = (double) 1000;
 //                    Double indexValue = random.nextDouble() * 700 + 300;
 //                        s2.acquire();
                     long start = System.nanoTime();
 //                    indexedData.printBtree();
 //                    indexedData.search(indexValue);
-//                    indexedData.searchRange(leftKey, rightKey);
+                    indexedData.searchRange(leftKey, rightKey);
+//                    System.out.println(indexedData.searchRange(leftKey, rightKey));
+//                    System.out.println(indexedData.searchRange(leftKey, rightKey));
 //                    indexedData.search(indexValue);
 
 //                    bulkLoader.pointSearch(indexValue);
@@ -565,7 +568,7 @@ public class TestIndexing {
 //                    String [] tuple = text.split(" ");
 
 //                    Double key = Double.parseDouble(tuple[0]);
-                    Double key = 499.34001632016685;
+//                    Double key = 499.34001632016685;
 //                    while (key > 500) {
 //                        try {
 //                            text = bufferedReaderInQueryThread.readLine();
@@ -577,11 +580,12 @@ public class TestIndexing {
 //                    }
 //                    Double key = 493.78181209251983;
 
-                    List<String> fileNames = keyRangeRecorder.getFileContainingKey(key);
+//                    List<String> fileNames = keyRangeRecorder.getFileContainingKey(key);
 
 //                    System.out.println("The size of fileNames is " + fileNames.size());
 
 //                    System.out.println("The size of file is " + fileNames.size());
+                    /*
                     for (String fileName : fileNames) {
                         try {
                             System.out.println("The key is " + key);
@@ -616,7 +620,7 @@ public class TestIndexing {
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
-                    }
+                    }*/
 
 
 
@@ -908,11 +912,11 @@ public class TestIndexing {
 
     public static void main(String[] args) throws Throwable {
         int bTreeOder = 4;
-        final int NUM_CHOICE_OF_METHODS = 2;
+        final int NUM_CHOICE_OF_METHODS = 1;
 //        int numberOfIndexingThreads = 1;
 //        int numberOfQueryThreads = 1;
         for (int i = 0; i < 1; ++i) {
-            for (int j = 1; j < NUM_CHOICE_OF_METHODS; ++j) {
+            for (int j = 0; j < NUM_CHOICE_OF_METHODS; ++j) {
                 TestIndexing test = new TestIndexing(bTreeOder, j);
                 test.createEmitThread();
                 test.waitForInputQueueFilled();

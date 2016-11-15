@@ -581,7 +581,7 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
 		return retList;
 	} */
 
-    public List<TValue> searchRange(TKey leftKey, TKey rightKey){
+    public List<byte[]> searchRange(TKey leftKey, TKey rightKey){
         // find first index satisfying range
 		int firstIndex;
 		Lock lastLock = this.getrLock();
@@ -590,18 +590,24 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
 			if (cmp >= 0)
 				break;
 		}
+//		System.out.println("The most left leave is ");
+//		this.print();
 //        List<BTreeNode> nodes = new ArrayList<BTreeNode>();
-		List<TValue> retList = new ArrayList<TValue>();
+		List<byte[]> retList = new ArrayList<byte[]>();
 		BTreeLeafNode<TKey,TValue> currLeaf = this;
 		BTreeNode<TKey> currRightSibling = this;
+		BTreeNode<TKey> tmpNode = this;
 //        nodes.add(this);
 		int currIndex = firstIndex;
+
+		assert currLeaf.lock.getReadLockCount() > 0;
 
 		// case when all keys in the node are smaller than leftKey - shift to next rightSibling
 		if (firstIndex >= this.getKeyCount()) {
 			currLeaf = (BTreeLeafNode<TKey,TValue>) this.rightSibling;
 //            nodes.add(currLeaf);
 			if (currLeaf != null) {
+				tmpNode = this;
 				currRightSibling = this.rightSibling;
 				currLeaf.acquireReadLock();
 				if (lastLock != null) {
@@ -626,26 +632,68 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
 //				currLeaf.print();
 //				currLeaf.rightSibling.print();
 //			}
-//			assert currLeaf.lock.getReadLockCount() > 0;
-			assert (currRightSibling == currLeaf || currRightSibling == this);
-			retList.addAll(currLeaf.getValueList(currIndex));
+//			currLeaf.print();
+			assert currLeaf.lock.getReadLockCount() > 0;
+//			assert (currRightSibling == currLeaf || currRightSibling == this);
+			retList.addAll(currLeaf.getTuples(currIndex));
 			currIndex++;
 			if (currIndex >= currLeaf.getKeyCount()) {
 
 				if (currLeaf.rightSibling != null) {
-//					currRightSibling = currLeaf.rightSibling;
+					tmpNode = currLeaf;
+
+
+//					System.out.println("Tmp Node is ");
+
+
+//					tmpNode.print();
 					currRightSibling = currLeaf.rightSibling;
-					currLeaf.rightSibling.acquireReadLock();
-//                    nodes.add((currLeaf.rightSibling));
+
+
+//					System.out.println("Right sibling is");
+
+
+					currRightSibling.acquireReadLock();
 					if (lastLock != null) {
 //						System.out.println(currIndex);
 //						System.out.println(this.writeLockThreadId);
 						lastLock.unlock();
 					}
-					lastLock = currLeaf.rightSibling.getrLock();
-				}
+					lastLock = currRightSibling.getrLock();
+//					currLeaf.rightSibling.print();
+
+
+//					System.out.println("Current leaf is");
+
+
+//					currLeaf.print();
+//                    nodes.add((currLeaf.rightSibling));
+					currLeaf = (BTreeLeafNode<TKey,TValue>) currLeaf.rightSibling;
+					while (currRightSibling != currLeaf) {
+						currRightSibling = tmpNode.rightSibling;
+
+
+//						System.out.println("***** Right sibling is");
+//						currRightSibling.print();
+
+						lastLock.unlock();
+						currLeaf = (BTreeLeafNode) tmpNode.rightSibling;
+
+//						System.out.println("***** Current leaf is");
+//						currLeaf.print();
+
+						currLeaf.acquireReadLock();
+						lastLock = currLeaf.getrLock();
+					}
+				} else {
 //				currLeaf.releaseReadLock();
-				currLeaf = (BTreeLeafNode<TKey,TValue>) currLeaf.rightSibling;
+					currLeaf = (BTreeLeafNode<TKey, TValue>) currLeaf.rightSibling;
+				}
+				if (currLeaf != null) {
+//					System.out.println("Current leaf is ");
+//					currLeaf.print();
+					assert currLeaf.lock.getReadLockCount() > 0;
+				}
 				currIndex = 0;
 			}
 		}
@@ -958,6 +1006,8 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
 		++keyCount;
 	}
 
+	/*
+
     public List<TValue> searchRangeInTemplate(TKey leftKey, TKey rightKey) {
 		int firstIndex;
 		BTreeLeafNode<TKey,TValue> currLeaf = this;
@@ -1047,6 +1097,106 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
 		}
 		return retList;
     }
+
+    */
+
+
+
+
+	public List<byte[]> searchRangeInTemplate(TKey leftKey, TKey rightKey) {
+		int firstIndex;
+		BTreeLeafNode<TKey,TValue> currLeaf = this;
+		Lock lastLock = this.getrLock();
+
+		while (currLeaf.rightSibling != null && currLeaf.getKeyCount() == 0) {
+			if (currLeaf.rightSibling != null) {
+				currLeaf.rightSibling.acquireReadLock();
+				lastLock.unlock();
+				lastLock = currLeaf.rightSibling.getrLock();
+			}
+			currLeaf = (BTreeLeafNode<TKey,TValue>) currLeaf.rightSibling;
+		}
+//		shiftToLeftMostNotEmptyRightSibling(currLeaf, lastLock);
+		for (firstIndex = 0; firstIndex < currLeaf.getKeyCount(); firstIndex++) {
+			int cmp = currLeaf.getKey(firstIndex).compareTo(leftKey);
+			if (cmp >= 0)
+				break;
+		}
+		List<byte[]> retList = new ArrayList<byte[]>();
+		int currIndex = firstIndex;
+		// case when all keys in the node are smaller than leftKey - shift to next rightSibling
+		if (firstIndex >= currLeaf.getKeyCount()) {
+			currLeaf = (BTreeLeafNode<TKey,TValue>) currLeaf.rightSibling;
+			if (currLeaf != null) {
+				currLeaf.acquireReadLock();
+				if (lastLock != null) {
+					lastLock.unlock();
+				}
+				lastLock = currLeaf.getrLock();
+			}
+
+			while (currLeaf != null && currLeaf.getKeyCount() == 0) {
+				if (currLeaf.rightSibling != null) {
+					currLeaf.rightSibling.acquireReadLock();
+					lastLock.unlock();
+					lastLock = currLeaf.rightSibling.getrLock();
+				}
+				currLeaf = (BTreeLeafNode<TKey,TValue>) currLeaf.rightSibling;
+			}
+//			shiftToLeftMostNotEmptyRightSibling(currLeaf, lastLock);
+			currIndex = 0;
+		}
+		while (currLeaf != null && currLeaf.getKey(currIndex).compareTo(rightKey) <= 0) {
+//			currLeaf.print();
+//			if (currRightSibling != currLeaf) {
+//				System.out.println(false);
+//			}
+//			assert currLeaf != null;
+//			if (currLeaf.lock.getReadLockCount() == 0) {
+//				System.out.println(currIndex);
+//				currLeaf.leftSibling.print();
+//				currLeaf.print();
+//				currLeaf.rightSibling.print();
+//			}
+//			assert currLeaf.lock.getReadLockCount() > 0;
+			retList.addAll(currLeaf.getTuples(currIndex));
+			currIndex++;
+			if (currIndex >= currLeaf.getKeyCount()) {
+
+				if (currLeaf.rightSibling != null) {
+//					currRightSibling = currLeaf.rightSibling;
+					currLeaf.rightSibling.acquireReadLock();
+//                    nodes.add((currLeaf.rightSibling));
+					if (lastLock != null) {
+//						System.out.println(currIndex);
+//						System.out.println(this.writeLockThreadId);
+						lastLock.unlock();
+					}
+					lastLock = currLeaf.rightSibling.getrLock();
+				}
+				currLeaf = (BTreeLeafNode<TKey,TValue>) currLeaf.rightSibling;
+				while (currLeaf != null && currLeaf.getKeyCount() == 0) {
+					if (currLeaf.rightSibling != null) {
+						currLeaf.rightSibling.acquireReadLock();
+						lastLock.unlock();
+						lastLock = currLeaf.rightSibling.getrLock();
+					}
+					currLeaf = (BTreeLeafNode<TKey,TValue>) currLeaf.rightSibling;
+				}
+//				shiftToLeftMostNotEmptyRightSibling(currLeaf, lastLock);
+				currIndex = 0;
+			}
+		}
+		if (lastLock != null) {
+			lastLock.unlock();
+		}
+		return retList;
+	}
+
+
+
+
+
     private void shiftToLeftMostNotEmptyRightSibling(BTreeLeafNode currLeaf, Lock lastLock) {
 		while (currLeaf != null && currLeaf.getKeyCount() == 0) {
 			if (currLeaf.rightSibling != null) {
@@ -1064,6 +1214,16 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
 
 	public void substactBytesCount(int len) {
 		bytesCount -= len;
+	}
+
+	public ArrayList<byte[]> rangeSearchAndGetTuples(TKey leftKey, TKey rightKey) {
+		ArrayList<byte[]> tuples = new ArrayList<byte[]>();
+		for (int i = 0; i < keys.size(); ++i) {
+			if (keys.get(i).compareTo(leftKey) >= 0 && keys.get(i).compareTo(rightKey) <= 0) {
+				tuples.addAll(getTuples(i));
+			}
+		}
+		return tuples;
 	}
 
 }

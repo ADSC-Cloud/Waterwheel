@@ -378,7 +378,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 
 
 
-
+    /*
 	//The method below are changed to check the paper which is about concurrency in B tree
 	public List<TValue> searchRange(TKey leftKey, TKey rightKey) {
 		assert leftKey.compareTo(rightKey) <= 0 : "leftKey provided is greater than the right key";
@@ -403,6 +403,36 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
         }
 		return values;
 	}
+	*/
+
+
+	public List<byte[]> searchRange(TKey leftKey, TKey rightKey) {
+		assert leftKey.compareTo(rightKey) <= 0 : "leftKey provided is greater than the right key";
+		List<byte[]> tuples = null;
+		if (!templateMode) {
+			BTreeLeafNode<TKey, TValue> leafLeft = this.findLeafNodeShouldContainKeyInReader(leftKey);
+			try {
+//            List<TValue> values = leafLeft.searchRange(leftKey, rightKey);
+				tuples = leafLeft.searchRange(leftKey, rightKey);
+			} catch (IndexOutOfBoundsException e) {
+//            System.out.println("Debug: " + Thread.currentThread().getId() + "Out of bounds exception");
+			}
+		} else {
+			BTreeLeafNode<TKey, TValue> leafLeft = this.findLeafNodeShouldContainKeyInTemplate(leftKey);
+			leafLeft.acquireReadLock();
+			try {
+//            List<TValue> values = leafLeft.searchRange(leftKey, rightKey);
+				tuples = leafLeft.searchRangeInTemplate(leftKey, rightKey);
+			} catch (IndexOutOfBoundsException e) {
+//            System.out.println("Debug: " + Thread.currentThread().getId() + "Out of bounds exception");
+			}
+		}
+		return tuples;
+	}
+
+
+
+
 
 	/**
 	 * Delete a key and its associated value from the tree. TODO Fix.might have a bug.

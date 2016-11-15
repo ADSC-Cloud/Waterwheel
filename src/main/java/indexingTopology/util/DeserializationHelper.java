@@ -26,6 +26,7 @@ public class DeserializationHelper <TKey extends Comparable<TKey>,TValue>{
             offset += len;
         }
         leaf.keys = keys;
+        leaf.keyCount = keyCount;
         ArrayList<ArrayList<byte[]>> tuples = new ArrayList<ArrayList<byte[]>>();
         for (int i = 0; i < keys.size();i++) {
             len = Integer.SIZE / Byte.SIZE;
