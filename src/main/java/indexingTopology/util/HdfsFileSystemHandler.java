@@ -2,6 +2,7 @@ package indexingTopology.util;
 
 import indexingTopology.Config.Config;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -19,6 +20,8 @@ public class HdfsFileSystemHandler implements FileSystemHandler{
     URI uri;
     Configuration configuration;
     String path;
+    FSDataInputStream fsDataInputStream;
+
     public HdfsFileSystemHandler(String path) throws IOException {
         configuration = new Configuration();
         configuration.setBoolean("dfs.support.append", true);
@@ -57,4 +60,47 @@ public class HdfsFileSystemHandler implements FileSystemHandler{
         }
 
     }
+
+    public void openFile(String relativePath, String fileName) {
+        try {
+            fsDataInputStream = fileSystem.open(new Path(this.path + relativePath + fileName));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void readBytesFromFile(byte[] bytes) {
+        try {
+            fsDataInputStream.read(bytes);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void seek(int offset) throws IOException {
+        try {
+            fsDataInputStream.seek(offset);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void closeFile() {
+        try {
+            fsDataInputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public long getLengthOfFile(String relativePath, String fileName) {
+        long length = 0;
+        try {
+            length = fileSystem.getFileStatus(new Path(this.path + relativePath + fileName)).getLen();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return length;
+    }
+
 }

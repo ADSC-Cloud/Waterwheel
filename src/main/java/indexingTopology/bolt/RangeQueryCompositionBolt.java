@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Created by acelzj on 11/15/16.
  */
-public class RangeQueryBolt extends BaseRichBolt {
+public class RangeQueryCompositionBolt extends BaseRichBolt {
 
     private OutputCollector collector;
 
@@ -58,7 +58,7 @@ public class RangeQueryBolt extends BaseRichBolt {
     }
 
     public void execute(Tuple tuple) {
-        if (tuple.getSourceStreamId() == NormalDistributionIndexingTopology.FileInformationUpdateStream) {
+        if (tuple.getSourceStreamId().equals(NormalDistributionIndexingTopology.FileInformationUpdateStream)) {
             String fileName = tuple.getString(0);
             Pair keyRange = (Pair) tuple.getValue(1);
             fileInformation.put(fileName, keyRange);
@@ -109,6 +109,10 @@ public class RangeQueryBolt extends BaseRichBolt {
                     if (leftKey.compareTo((Double) keyRange.getKey()) <= 0
                             && rightKey.compareTo((Double) keyRange.getValue()) >= 0) {
 //                        System.out.println(key);
+//                        System.out.println(leftKey);
+//                        System.out.println("min key is " + keyRange.getKey());
+//                        System.out.println(rightKey);
+//                        System.out.println("max key is " + keyRange.getValue());
                         fileNames.add(fileName);
                     }
                 }

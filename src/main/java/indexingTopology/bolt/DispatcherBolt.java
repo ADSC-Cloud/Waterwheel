@@ -43,7 +43,7 @@ public class DispatcherBolt extends BaseRichBolt {
 
     public void execute(Tuple tuple) {
 //        double partitionValue = tuple.getDoubleByField(rangePartitionField);
-        if (tuple.getSourceStreamId() == NormalDistributionIndexingTopology.BPlusTreeQueryStream) {
+        if (tuple.getSourceStreamId().equals(NormalDistributionIndexingTopology.BPlusTreeQueryStream)) {
 //            collector.emit(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
 //                    new Values(tuple.getValue(0)));
             collector.emit(NormalDistributionIndexingTopology.BPlusTreeQueryStream,

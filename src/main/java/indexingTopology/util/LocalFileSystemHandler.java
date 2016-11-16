@@ -12,9 +12,12 @@ public class LocalFileSystemHandler implements FileSystemHandler{
     File file;
     FileOutputStream fop;
     String path;
+    RandomAccessFile randomAccessFile;
+
     public LocalFileSystemHandler(String path) {
         this.path = path;
     }
+
     public void writeToFileSystem(MemChunk chunk, String relativePath, String fileName) throws IOException {
 
         createNewFile(relativePath, fileName);
@@ -43,5 +46,47 @@ public class LocalFileSystemHandler implements FileSystemHandler{
                 e.printStackTrace();
             }
         }
+    }
+
+    public void openFile(String relativePath, String fileName) {
+        try {
+            randomAccessFile = new RandomAccessFile(path + relativePath + fileName, "r");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void readBytesFromFile(byte[] bytes) {
+        try {
+            randomAccessFile.read(bytes);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void seek(int offset) {
+        try {
+            randomAccessFile.seek(offset);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void closeFile() {
+        try {
+            randomAccessFile.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public long getLengthOfFile(String relativePath, String fileName) {
+        long length = 0;
+        try {
+            length = randomAccessFile.length();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return length;
     }
 }

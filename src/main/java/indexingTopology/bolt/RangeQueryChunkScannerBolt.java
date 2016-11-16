@@ -9,10 +9,7 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import indexingTopology.Config.Config;
 import indexingTopology.NormalDistributionIndexingTopology;
-import indexingTopology.util.BTree;
-import indexingTopology.util.BTreeLeafNode;
-import indexingTopology.util.BytesCounter;
-import indexingTopology.util.DeserializationHelper;
+import indexingTopology.util.*;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -25,7 +22,7 @@ import java.util.Map;
 /**
  * Created by acelzj on 11/15/16.
  */
-public class RangeQueryFileBolt extends BaseRichBolt{
+public class RangeQueryChunkScannerBolt extends BaseRichBolt{
 
     OutputCollector collector;
 
@@ -44,6 +41,48 @@ public class RangeQueryFileBolt extends BaseRichBolt{
         ArrayList<byte[]> serializedTuples = new ArrayList<byte[]>();
         for (String fileName : fileNames) {
             try {
+                FileSystemHandler fileSystemHandler = new LocalFileSystemHandler("/home/acelzj");
+                fileSystemHandler.openFile("/", fileName);
+                byte[] serializedTree = new byte[Config.TEMPLATE_SIZE];
+                DeserializationHelper deserializationHelper = new DeserializationHelper();
+                BytesCounter counter = new BytesCounter();
+
+                fileSystemHandler.readBytesFromFile(serializedTree);
+                BTree deserializedTree = deserializationHelper.deserializeBTree(serializedTree, bTreeOder, counter);
+                int offset = deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey);
+                long length = fileSystemHandler.getLengthOfFile("/", fileName);
+                while (offset < length) {
+                    byte[] lengthInByte = new byte[4];
+                    fileSystemHandler.seek(offset);
+                    fileSystemHandler.readBytesFromFile(lengthInByte);
+                    int lengthOfLeaveInBytes = ByteBuffer.wrap(lengthInByte, 0, 4).getInt();
+                    if (lengthOfLeaveInBytes == 0) {
+                        break;
+                    }
+                    byte[] leafInByte = new byte[lengthOfLeaveInBytes];
+                    fileSystemHandler.seek(offset + 4);
+                    fileSystemHandler.readBytesFromFile(leafInByte);
+                    BTreeLeafNode deserializedLeaf = deserializationHelper.deserializeLeaf(leafInByte,
+                            bTreeOder, counter);
+                    ArrayList<byte[]> tuples = deserializedLeaf.rangeSearchAndGetTuples(leftKey, rightKey);
+                    if (tuples.size() == 0) {
+                        break;
+                    } else {
+                        serializedTuples.addAll(tuples);
+                    }
+                    offset = offset + lengthOfLeaveInBytes + 4;
+                }
+                fileSystemHandler.closeFile();
+
+
+
+
+
+
+
+
+
+                /*
                 file = new RandomAccessFile("/home/acelzj/" + fileName, "r");
                 byte[] serializedTree = new byte[Config.TEMPLATE_SIZE];
                 DeserializationHelper deserializationHelper = new DeserializationHelper();
@@ -73,7 +112,8 @@ public class RangeQueryFileBolt extends BaseRichBolt{
                         serializedTuples.addAll(tuples);
                     }
                     offset = offset + lengthOfLeaveInBytes + 4;
-                }
+
+                }*/
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             } catch (IOException e) {

@@ -155,7 +155,7 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
     }
 
     public void execute(Tuple tuple) {
-        if (tuple.getSourceStreamId() == NormalDistributionIndexingTopology.IndexStream) {
+        if (tuple.getSourceStreamId().equals(NormalDistributionIndexingTopology.IndexStream)) {
             Double indexValue = tuple.getDoubleByField(indexField);
 //            Double indexValue = tuple.getDouble(0);
 //            System.out.println("The stream is " + NormalDistributionIndexingTopology.IndexStream);
@@ -175,7 +175,6 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
                     queue.put(pair);
 
                     ++numTuples;
-                    collector.ack(tuple);
                 } else {
 
                     while (!queue.isEmpty()) {
@@ -245,7 +244,7 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
             }
         } else {
 //            System.out.println("The stream is " + NormalDistributionIndexingTopology.BPlusTreeQueryStream);
-//            System.out.println("The bolt id is " + context.getThisTaskId());
+            System.out.println("The bolt id is " + context.getThisTaskId());
             Double leftKey = tuple.getDouble(0);
             Double rightKey = tuple.getDouble(1);
 //            System.out.println("The key is " + key);

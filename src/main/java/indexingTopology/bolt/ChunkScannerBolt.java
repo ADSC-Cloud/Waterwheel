@@ -22,7 +22,7 @@ import java.util.Map;
 /**
  * Created by acelzj on 11/9/16.
  */
-public class QueryFileBolt extends BaseRichBolt {
+public class ChunkScannerBolt extends BaseRichBolt {
 
     OutputCollector collector;
 
@@ -36,9 +36,37 @@ public class QueryFileBolt extends BaseRichBolt {
     public void execute(Tuple tuple) {
         Double key = tuple.getDouble(0);
         ArrayList<String> fileNames = (ArrayList) tuple.getValue(1);
-        RandomAccessFile file = null;
+//        RandomAccessFile file = null;
         for (String fileName : fileNames) {
             try {
+                FileSystemHandler fileSystemHandler = new LocalFileSystemHandler("/home/acelzj");
+                fileSystemHandler.openFile("/", fileName);
+                byte[] serializedTree = new byte[Config.TEMPLATE_SIZE];
+                DeserializationHelper deserializationHelper = new DeserializationHelper();
+                BytesCounter counter = new BytesCounter();
+
+                fileSystemHandler.readBytesFromFile(serializedTree);
+                BTree deserializedTree = deserializationHelper.deserializeBTree(serializedTree, bTreeOder, counter);
+                int offset = deserializedTree.getOffsetOfLeaveNodeShouldContainKey(key);
+
+                byte[] lengthInByte = new byte[4];
+                fileSystemHandler.seek(offset);
+                fileSystemHandler.readBytesFromFile(lengthInByte);
+                int lengthOfLeaveInBytes = ByteBuffer.wrap(lengthInByte, 0, 4).getInt();
+
+                byte[] leafInByte = new byte[lengthOfLeaveInBytes];
+                fileSystemHandler.seek(offset + 4);
+                fileSystemHandler.readBytesFromFile(leafInByte);
+                BTreeLeafNode deserializedLeaf = deserializationHelper.deserializeLeaf(leafInByte, bTreeOder, counter);
+                ArrayList<byte[]> serializedTuples = deserializedLeaf.searchAndGetTuples(key);
+                if (serializedTuples != null) {
+                    collector.emit(NormalDistributionIndexingTopology.FileSystemQueryStream,
+                            new Values(key, serializedTuples));
+                }
+                fileSystemHandler.closeFile();
+
+
+                /*
                 file = new RandomAccessFile("/home/acelzj/" + fileName, "r");
                 byte[] serializedTree = new byte[Config.TEMPLATE_SIZE];
                 DeserializationHelper deserializationHelper = new DeserializationHelper();
@@ -65,7 +93,7 @@ public class QueryFileBolt extends BaseRichBolt {
                     collector.emit(NormalDistributionIndexingTopology.FileSystemQueryStream,
                             new Values(key, serializedTuples));
                 }
-                file.close();
+                file.close();*/
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             } catch (IOException e) {

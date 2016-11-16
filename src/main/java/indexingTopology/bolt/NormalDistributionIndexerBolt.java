@@ -157,7 +157,7 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
     }
 
     public void execute(Tuple tuple) {
-        if (tuple.getSourceStreamId() == NormalDistributionIndexingTopology.IndexStream) {
+        if (tuple.getSourceStreamId().equals(NormalDistributionIndexingTopology.IndexStream)) {
             Double indexValue = tuple.getDoubleByField(indexField);
 //            Double indexValue = tuple.getDouble(0);
 //            System.out.println("The stream is " + NormalDistributionIndexingTopology.IndexStream);

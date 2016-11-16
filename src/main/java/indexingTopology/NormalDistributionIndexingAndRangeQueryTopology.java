@@ -8,6 +8,7 @@ import indexingTopology.bolt.*;
 import indexingTopology.spout.NormalDistributionGenerator;
 import indexingTopology.util.Constants;
 import indexingTopology.util.RangePartitionGrouping;
+import indexingTopology.util.RangeQueryPartitionGrouping;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,9 +26,9 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
 
     static final String TupleGenerator = "TupleGenerator";
     static final String DispatcherBolt = "DispatcherBolt";
-    static final String QueryBolt = "QueryBolt";
+    static final String RangeQueryCompositionBolt = "RangeQueryCompositionBolt";
     static final String IndexerBolt = "IndexerBolt";
-    static final String QueryFileBolt = "QueryFileBolt";
+    static final String RangeQueryChunkScannerBolt = "RangeQueryChunkScannerBolt";
     static final String ResultMergeBolt = "ResultMergeBolt";
 
 
@@ -55,21 +56,21 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
 
         builder.setBolt(DispatcherBolt, new DispatcherBolt(schema)).setNumTasks(1)
                 .shuffleGrouping(TupleGenerator, IndexStream)
-                .shuffleGrouping(QueryBolt, BPlusTreeQueryStream);
+                .shuffleGrouping(RangeQueryCompositionBolt, BPlusTreeQueryStream);
 
         builder.setBolt(IndexerBolt, new NormalDistributionIndexAndRangeQueryBolt("user_id", schema, 4, 65000000),1)
                 .setNumTasks(2)
                 .customGrouping(DispatcherBolt, IndexStream, new RangePartitionGrouping())
-                .customGrouping(DispatcherBolt, BPlusTreeQueryStream, new RangePartitionGrouping());
+                .customGrouping(DispatcherBolt, BPlusTreeQueryStream, new RangeQueryPartitionGrouping());
 
-        builder.setBolt(QueryBolt, new RangeQueryBolt()).setNumTasks(1).
+        builder.setBolt(RangeQueryCompositionBolt, new RangeQueryCompositionBolt()).setNumTasks(1).
                 allGrouping(IndexerBolt, FileInformationUpdateStream);
 
-        builder.setBolt(QueryFileBolt, new RangeQueryFileBolt()).setNumTasks(2)
-                .fieldsGrouping(QueryBolt, FileSystemQueryStream, new Fields("leftKey", "rightKey"));
+        builder.setBolt(RangeQueryChunkScannerBolt, new RangeQueryChunkScannerBolt()).setNumTasks(2)
+                .fieldsGrouping(RangeQueryCompositionBolt, FileSystemQueryStream, new Fields("leftKey", "rightKey"));
 
         builder.setBolt(ResultMergeBolt, new ResultMergeBolt(schema)).setNumTasks(1)
-                .allGrouping(QueryFileBolt, FileSystemQueryStream)
+                .allGrouping(RangeQueryChunkScannerBolt, FileSystemQueryStream)
                 .allGrouping(IndexerBolt, BPlusTreeQueryStream);
 
         Config conf = new Config();

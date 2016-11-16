@@ -1,25 +1,16 @@
 package indexingTopology;
 
 import backtype.storm.Config;
-import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
-import backtype.storm.generated.GlobalStreamId;
-import backtype.storm.grouping.CustomStreamGrouping;
-import backtype.storm.task.WorkerTopologyContext;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import indexingTopology.bolt.*;
-import indexingTopology.spout.CSVReaderSpout;
 import indexingTopology.spout.NormalDistributionGenerator;
 import indexingTopology.util.Constants;
 import indexingTopology.util.RangePartitionGrouping;
-import javafx.util.Pair;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -30,12 +21,14 @@ public class NormalDistributionIndexingTopology {
     public static final String BPlusTreeQueryStream = "BPlusTreeQueryStream";
     public static final String FileInformationUpdateStream = "FileInformationUpdateStream";
     public static final String IndexStream = "IndexStream";
+    public static final String QueryInformationStream = "QueryInformationStream";
+    public static final String NewQueryStream = "NewQueryStream";
 
     static final String TupleGenerator = "TupleGenerator";
     static final String DispatcherBolt = "DispatcherBolt";
-    static final String QueryBolt = "QueryBolt";
+    static final String QueryDecompositionBolt = "QueryDecompositionBolt";
     static final String IndexerBolt = "IndexerBolt";
-    static final String QueryFileBolt = "QueryFileBolt";
+    static final String ChunkScannerBolt = "ChunkScannerBolt";
     static final String ResultMergeBolt = "ResultMergeBolt";
 
 
@@ -63,22 +56,24 @@ public class NormalDistributionIndexingTopology {
 
         builder.setBolt(DispatcherBolt, new DispatcherBolt(schema)).setNumTasks(1)
                 .shuffleGrouping(TupleGenerator, IndexStream)
-                .shuffleGrouping(QueryBolt, BPlusTreeQueryStream);
+                .shuffleGrouping(QueryDecompositionBolt, BPlusTreeQueryStream);
 
         builder.setBolt(IndexerBolt, new NormalDistributionIndexerBolt("user_id", schema, 4, 65000000),1)
                 .setNumTasks(2)
                 .customGrouping(DispatcherBolt, IndexStream, new RangePartitionGrouping())
                 .customGrouping(DispatcherBolt, BPlusTreeQueryStream, new RangePartitionGrouping());
 
-        builder.setBolt(QueryBolt, new QueryBolt()).setNumTasks(1).
-                allGrouping(IndexerBolt, FileInformationUpdateStream);
+        builder.setBolt(QueryDecompositionBolt, new QueryDecompositionBolt()).setNumTasks(1).
+                allGrouping(IndexerBolt, FileInformationUpdateStream)
+                .shuffleGrouping(ResultMergeBolt, NewQueryStream);
 
-        builder.setBolt(QueryFileBolt, new QueryFileBolt()).setNumTasks(2)
-                .fieldsGrouping(QueryBolt, FileSystemQueryStream, new Fields("key"));
+        builder.setBolt(ChunkScannerBolt, new ChunkScannerBolt()).setNumTasks(2)
+                .fieldsGrouping(QueryDecompositionBolt, FileSystemQueryStream, new Fields("key"));
 
         builder.setBolt(ResultMergeBolt, new ResultMergeBolt(schema)).setNumTasks(1)
-                .allGrouping(QueryFileBolt, FileSystemQueryStream)
-                .allGrouping(IndexerBolt, BPlusTreeQueryStream);
+                .allGrouping(ChunkScannerBolt, FileSystemQueryStream)
+                .allGrouping(IndexerBolt, BPlusTreeQueryStream)
+                .shuffleGrouping(QueryDecompositionBolt, QueryInformationStream);
 
         Config conf = new Config();
         conf.setDebug(false);
