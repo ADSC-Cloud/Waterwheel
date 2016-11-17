@@ -10,16 +10,18 @@ import backtype.storm.tuple.Values;
 import indexingTopology.DataSchema;
 import indexingTopology.NormalDistributionIndexingAndRangeQueryTopology;
 import indexingTopology.NormalDistributionIndexingTopology;
+import indexingTopology.util.DeserializationHelper;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
- * Created by acelzj on 11/17/16.
+ * Created by acelzj on 11/9/16.
  */
-public class ResultMergeBolt extends BaseRichBolt {
+public class RangeQueryResultMergeBolt extends BaseRichBolt {
 
     Map<Long, Integer> queryIdToNumberOfTuples;
 
@@ -35,7 +37,7 @@ public class ResultMergeBolt extends BaseRichBolt {
 
     private int counter;
 
-    public ResultMergeBolt(DataSchema schema) {
+    public RangeQueryResultMergeBolt(DataSchema schema) {
         this.schema = schema;
         numberOfFilesToScan = 0;
         numberOfTasksToSearch = 0;
@@ -52,11 +54,11 @@ public class ResultMergeBolt extends BaseRichBolt {
         if (tuple.getSourceStreamId()
                 == NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryInformationStream) {
             numberOfFilesToScan = tuple.getInteger(1);
-//            System.out.println("Number of tasks have been updated " + numberOfFilesToScan + " query id " + tuple.getLong(0));
+//            System.out.println("Number of tasks have been updated " + numberOfFilesToScan + " query id" + tuple.getLong(0));
         } else if (tuple.getSourceStreamId()
                 == NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryInformationStream) {
             numberOfTasksToSearch = tuple.getInteger(1);
-//            System.out.println("Number of files have been updated " + numberOfTasksToSearch + " query id " + tuple.getLong(0));
+//            System.out.println("Number of files have been updated " + numberOfTasksToSearch + " query id" + tuple.getLong(0));
         } else if (tuple.getSourceStreamId() == NormalDistributionIndexingTopology.BPlusTreeQueryStream ||
                 tuple.getSourceStreamId() == NormalDistributionIndexingTopology.FileSystemQueryStream) {
             long queryId = tuple.getLong(0);
@@ -66,7 +68,6 @@ public class ResultMergeBolt extends BaseRichBolt {
             } else {
                 counter += 1;
             }
-//            System.out.println("The counter is " + counter + "The query id is " + queryId);
             ArrayList<byte[]> serializedTuples = (ArrayList) tuple.getValue(1);
             for (int i = 0; i < serializedTuples.size(); ++i) {
                 Values deserializedTuple = null;
@@ -81,8 +82,8 @@ public class ResultMergeBolt extends BaseRichBolt {
             if (numberOfTuples == null)
                 numberOfTuples = 0;
             numberOfTuples += serializedTuples.size();
-            queryIdToCounter.put(queryId, counter);
             queryIdToNumberOfTuples.put(queryId, numberOfTuples);
+            queryIdToCounter.put(queryId, counter);
 //            System.out.println("The query id is " + queryId);
             if (counter == numberOfFilesToScan + numberOfTasksToSearch) {
                 collector.emit(NormalDistributionIndexingAndRangeQueryTopology.NewQueryStream,

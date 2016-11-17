@@ -244,16 +244,17 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
             }
         } else {
 //            System.out.println("The stream is " + NormalDistributionIndexingTopology.BPlusTreeQueryStream);
-            System.out.println("The bolt id is " + context.getThisTaskId());
-            Double leftKey = tuple.getDouble(0);
-            Double rightKey = tuple.getDouble(1);
+//            System.out.println("The bolt id is " + context.getThisTaskId());
+            Long queryId = tuple.getLong(0);
+            Double leftKey = tuple.getDouble(1);
+            Double rightKey = tuple.getDouble(2);
 //            System.out.println("The key is " + key);
             List<byte[]> serializedTuples = indexedData.searchRange(leftKey, rightKey);
 //            System.out.println("The tuple is " + serializedTuples);
-            if (serializedTuples != null) {
+//            if (serializedTuples != null) {
                 collector.emit(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
-                        new Values(leftKey, rightKey, serializedTuples));
-            }
+                        new Values(queryId, serializedTuples));
+//            }
         }
     }
 
@@ -321,8 +322,10 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
 //        outputFieldsDeclarer.declare(new Fields("num_tuples","wo_template_time","template_time","wo_template_written","template_written"));
         outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.FileInformationUpdateStream,
                 new Fields("fileName", "keyRange"));
+//        outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
+//                new Fields("leftKey", "rightKey", "serializedTuples"));
         outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
-                new Fields("leftKey", "rightKey", "serializedTuples"));
+                new Fields("queryId", "serializedTuples"));
     }
 
     class IndexingRunnable implements Runnable {

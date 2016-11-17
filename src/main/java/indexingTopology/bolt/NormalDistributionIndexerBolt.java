@@ -248,14 +248,15 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
         } else {
 //            System.out.println("The stream is " + NormalDistributionIndexingTopology.BPlusTreeQueryStream);
 //            System.out.println("The bolt id is " + context.getThisTaskId());
-            Double key = tuple.getDouble(0);
+            Long queryId = tuple.getLong(0);
+            Double key = tuple.getDouble(1);
 //            System.out.println("The key is " + key);
             List<byte[]> serializedTuples = indexedData.searchTuples(key);
 //            System.out.println("The tuple is " + serializedTuples);
-            if (serializedTuples != null) {
+//            if (serializedTuples != null) {
                 collector.emit(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
-                        new Values(key, serializedTuples));
-            }
+                        new Values(queryId, serializedTuples));
+//            }
         }
     }
 
@@ -324,7 +325,7 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
         outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.FileInformationUpdateStream,
                 new Fields("fileName", "keyRange"));
         outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
-                new Fields("key", "serializedTuples"));
+                new Fields("queryId", "serializedTuples"));
     }
 
     class IndexingRunnable implements Runnable {

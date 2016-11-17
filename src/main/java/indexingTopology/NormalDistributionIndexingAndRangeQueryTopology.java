@@ -8,7 +8,6 @@ import indexingTopology.bolt.*;
 import indexingTopology.spout.NormalDistributionGenerator;
 import indexingTopology.util.Constants;
 import indexingTopology.util.RangePartitionGrouping;
-import indexingTopology.util.RangeQueryPartitionGrouping;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,13 +22,16 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
     public static final String BPlusTreeQueryStream = "BPlusTreeQueryStream";
     public static final String FileInformationUpdateStream = "FileInformationUpdateStream";
     public static final String IndexStream = "IndexStream";
+    public static final String BPlusTreeQueryInformationStream = "BPlusTreeQueryInformationStream";
+    public static final String FileSystemQueryInformationStream = "FileSystemQueryInformationStream";
+    public static final String NewQueryStream = "NewQueryStream";
 
     static final String TupleGenerator = "TupleGenerator";
-    static final String DispatcherBolt = "DispatcherBolt";
-    static final String RangeQueryCompositionBolt = "RangeQueryCompositionBolt";
+    static final String RangeQueryDispatcherBolt = "RangeQueryDispatcherBolt";
+    static final String RangeQueryCompositionBolt = "RangeQueryDeCompositionBolt";
     static final String IndexerBolt = "IndexerBolt";
     static final String RangeQueryChunkScannerBolt = "RangeQueryChunkScannerBolt";
-    static final String ResultMergeBolt = "ResultMergeBolt";
+    static final String ResultMergeBolt = "RangeQueryResultMergeBolt";
 
 
     public static void main(String[] args) throws Exception {
@@ -52,26 +54,29 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
                 Double.class, Double.class, Double.class, Double.class, Double.class));
         DataSchema schema = new DataSchema(fieldNames, valueTypes);
         builder.setSpout(TupleGenerator, new NormalDistributionGenerator(schema), 1).setNumTasks(1);
-//        builder.setBolt("Dispatcher",new DispatcherBolt("Indexer","longitude",schema),1).shuffleGrouping("TupleGenerator");
+//        builder.setBolt("Dispatcher",new RangeQueryDispatcherBolt("Indexer","longitude",schema),1).shuffleGrouping("TupleGenerator");
 
-        builder.setBolt(DispatcherBolt, new DispatcherBolt(schema)).setNumTasks(1)
+        builder.setBolt(RangeQueryDispatcherBolt, new RangeQueryDispatcherBolt(schema)).setNumTasks(1)
                 .shuffleGrouping(TupleGenerator, IndexStream)
                 .shuffleGrouping(RangeQueryCompositionBolt, BPlusTreeQueryStream);
 
         builder.setBolt(IndexerBolt, new NormalDistributionIndexAndRangeQueryBolt("user_id", schema, 4, 65000000),1)
                 .setNumTasks(2)
-                .customGrouping(DispatcherBolt, IndexStream, new RangePartitionGrouping())
-                .customGrouping(DispatcherBolt, BPlusTreeQueryStream, new RangeQueryPartitionGrouping());
+                .customGrouping(RangeQueryDispatcherBolt, IndexStream, new RangePartitionGrouping())
+                .directGrouping(RangeQueryDispatcherBolt, BPlusTreeQueryStream);
 
-        builder.setBolt(RangeQueryCompositionBolt, new RangeQueryCompositionBolt()).setNumTasks(1).
-                allGrouping(IndexerBolt, FileInformationUpdateStream);
+        builder.setBolt(RangeQueryCompositionBolt, new RangeQueryDeCompositionBolt()).setNumTasks(1)
+                .allGrouping(IndexerBolt, FileInformationUpdateStream)
+                .shuffleGrouping(ResultMergeBolt, NewQueryStream);
 
         builder.setBolt(RangeQueryChunkScannerBolt, new RangeQueryChunkScannerBolt()).setNumTasks(2)
-                .fieldsGrouping(RangeQueryCompositionBolt, FileSystemQueryStream, new Fields("leftKey", "rightKey"));
+                .fieldsGrouping(RangeQueryCompositionBolt, FileSystemQueryStream, new Fields("fileName"));
 
-        builder.setBolt(ResultMergeBolt, new ResultMergeBolt(schema)).setNumTasks(1)
+        builder.setBolt(ResultMergeBolt, new RangeQueryResultMergeBolt(schema)).setNumTasks(1)
                 .allGrouping(RangeQueryChunkScannerBolt, FileSystemQueryStream)
-                .allGrouping(IndexerBolt, BPlusTreeQueryStream);
+                .allGrouping(IndexerBolt, BPlusTreeQueryStream)
+                .shuffleGrouping(RangeQueryDispatcherBolt, BPlusTreeQueryInformationStream)
+                .shuffleGrouping(RangeQueryCompositionBolt, FileSystemQueryInformationStream);
 
         Config conf = new Config();
         conf.setDebug(false);

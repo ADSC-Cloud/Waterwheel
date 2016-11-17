@@ -805,7 +805,7 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
 	public ArrayList<byte []> searchAndGetTuples(TKey key) {
 		ArrayList<byte[]> tuples;
 		int index = search(key);
-		tuples = (index == -1 ? null : getTuples(index));
+		tuples = (index == -1 ? new ArrayList<byte[]>() : getTuples(index));
 //            releaseReadLock();  //Added to check the paper
 //        }
 		return tuples;
@@ -834,7 +834,7 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
 	public ArrayList<byte []> searchAndGetTuplesInTemplate(TKey key) {
 		ArrayList<byte[]> tuples;
 		int index = search(key);
-		tuples = (index == -1 ? null : getTuples(index));
+		tuples = (index == -1 ? new ArrayList<byte[]>() : getTuples(index));
 //            releaseReadLock();  //Added to check the paper
 //        }
 		return tuples;

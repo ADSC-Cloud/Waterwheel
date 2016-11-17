@@ -1,5 +1,6 @@
 package indexingTopology.bolt;
 
+import backtype.storm.generated.Grouping;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
@@ -16,10 +17,9 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * Created by acelzj on 11/17/16.
+ * Created by parijatmazumdar on 14/09/15.
  */
-public class DispatcherBolt extends BaseRichBolt{
-
+public class RangeQueryDispatcherBolt extends BaseRichBolt {
     OutputCollector collector;
     /*
     private final String nextComponentID;
@@ -37,7 +37,7 @@ public class DispatcherBolt extends BaseRichBolt{
     private Map<Integer, Pair> taskIdToKeyRange;
 
 
-    public DispatcherBolt(DataSchema schema) {
+    public RangeQueryDispatcherBolt(DataSchema schema) {
         this.schema = schema;
     }
 
@@ -53,6 +53,8 @@ public class DispatcherBolt extends BaseRichBolt{
             targetTasks.addAll(topologyContext.getComponentTasks(componentId));
         }
 
+        System.out.println("The task id ");
+        System.out.println(targetTasks);
         scheduleKeyRangeToTask(targetTasks);
     }
 
@@ -63,25 +65,26 @@ public class DispatcherBolt extends BaseRichBolt{
 //                    new Values(tuple.getValue(0)));
             int numberOfTasksToSearch = 0;
             Long queryId = tuple.getLong(0);
-            Double key = tuple.getDouble(1);
+            Double leftKey = tuple.getDouble(1);
+            Double rightKey = tuple.getDouble(2);
             for (Integer taskId : taskIdToKeyRange.keySet()) {
                 Double minKey = (Double) taskIdToKeyRange.get(taskId).getKey();
                 Double maxKey = (Double) taskIdToKeyRange.get(taskId).getValue();
-                if (minKey <= key && maxKey >= key) {
+                if (minKey >= leftKey && maxKey <= rightKey) {
                     collector.emitDirect(taskId, NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryStream,
-                            new Values(queryId, key));
+                    new Values(queryId, leftKey, rightKey));
                     ++numberOfTasksToSearch;
                 }
             }
 
-            collector.emit(NormalDistributionIndexingTopology.BPlusTreeQueryInformationStream
+            collector.emit(NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryInformationStream
                     , new Values(queryId, numberOfTasksToSearch));
 
 //            collector.emit(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
 //                    new Values(tuple.getValue(0), tuple.getValue(1)));
         } else {
             try {
-                collector.emit(NormalDistributionIndexingTopology.IndexStream, schema.getValuesObject(tuple));
+                collector.emit(NormalDistributionIndexingAndRangeQueryTopology.IndexStream, schema.getValuesObject(tuple));
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -124,7 +127,8 @@ break;
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
 //        declarer.declare(schema.getFieldsObject());
 //        declarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryStream, new Fields("key"));
-        declarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryStream, new Fields("queryId", "key"));
+        declarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryStream, new Fields("queryId", "leftKey"
+                , "rightKey"));
 
         declarer.declareStream(NormalDistributionIndexingTopology.IndexStream, schema.getFieldsObject());
 
@@ -132,5 +136,4 @@ break;
                 , new Fields("queryId", "numberOfTasksToSearch"));
 //        declarer.declare(new Fields("key"));
     }
-
 }

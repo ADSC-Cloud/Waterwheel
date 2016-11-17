@@ -34,10 +34,12 @@ public class ChunkScannerBolt extends BaseRichBolt {
     }
 
     public void execute(Tuple tuple) {
-        Double key = tuple.getDouble(0);
-        ArrayList<String> fileNames = (ArrayList) tuple.getValue(1);
+        Long queryId = tuple.getLong(0);
+        Double key = tuple.getDouble(1);
+//        ArrayList<String> fileNames = (ArrayList) tuple.getValue(2);
+        String fileName = (String) tuple.getValue(2);
 //        RandomAccessFile file = null;
-        for (String fileName : fileNames) {
+//        for (String fileName : fileNames) {
             try {
                 FileSystemHandler fileSystemHandler = new LocalFileSystemHandler("/home/acelzj");
                 fileSystemHandler.openFile("/", fileName);
@@ -59,10 +61,10 @@ public class ChunkScannerBolt extends BaseRichBolt {
                 fileSystemHandler.readBytesFromFile(leafInByte);
                 BTreeLeafNode deserializedLeaf = deserializationHelper.deserializeLeaf(leafInByte, bTreeOder, counter);
                 ArrayList<byte[]> serializedTuples = deserializedLeaf.searchAndGetTuples(key);
-                if (serializedTuples != null) {
+//                if (serializedTuples != null) {
                     collector.emit(NormalDistributionIndexingTopology.FileSystemQueryStream,
-                            new Values(key, serializedTuples));
-                }
+                            new Values(queryId, serializedTuples));
+//                }
                 fileSystemHandler.closeFile();
 
 
@@ -99,12 +101,14 @@ public class ChunkScannerBolt extends BaseRichBolt {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }
+//        }
         collector.ack(tuple);
     }
 
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
+//        outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.FileSystemQueryStream,
+//                new Fields("key", "serializedTuples"));
         outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.FileSystemQueryStream,
-                new Fields("key", "serializedTuples"));
+                new Fields("queryId", "serializedTuples"));
     }
 }

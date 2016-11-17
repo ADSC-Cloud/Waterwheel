@@ -21,7 +21,8 @@ public class NormalDistributionIndexingTopology {
     public static final String BPlusTreeQueryStream = "BPlusTreeQueryStream";
     public static final String FileInformationUpdateStream = "FileInformationUpdateStream";
     public static final String IndexStream = "IndexStream";
-    public static final String QueryInformationStream = "QueryInformationStream";
+    public static final String BPlusTreeQueryInformationStream = "BPlusTreeQueryInformationStream";
+    public static final String FileSystemQueryInformationStream = "FileSystemQueryInformationStream";
     public static final String NewQueryStream = "NewQueryStream";
 
     static final String TupleGenerator = "TupleGenerator";
@@ -52,7 +53,7 @@ public class NormalDistributionIndexingTopology {
                 Double.class, Double.class, Double.class, Double.class, Double.class));
         DataSchema schema = new DataSchema(fieldNames, valueTypes);
         builder.setSpout(TupleGenerator, new NormalDistributionGenerator(schema), 1).setNumTasks(1);
-//        builder.setBolt("Dispatcher",new DispatcherBolt("Indexer","longitude",schema),1).shuffleGrouping("TupleGenerator");
+//        builder.setBolt("Dispatcher",new RangeQueryDispatcherBolt("Indexer","longitude",schema),1).shuffleGrouping("TupleGenerator");
 
         builder.setBolt(DispatcherBolt, new DispatcherBolt(schema)).setNumTasks(1)
                 .shuffleGrouping(TupleGenerator, IndexStream)
@@ -61,19 +62,20 @@ public class NormalDistributionIndexingTopology {
         builder.setBolt(IndexerBolt, new NormalDistributionIndexerBolt("user_id", schema, 4, 65000000),1)
                 .setNumTasks(2)
                 .customGrouping(DispatcherBolt, IndexStream, new RangePartitionGrouping())
-                .customGrouping(DispatcherBolt, BPlusTreeQueryStream, new RangePartitionGrouping());
+                .directGrouping(DispatcherBolt, BPlusTreeQueryStream);
 
         builder.setBolt(QueryDecompositionBolt, new QueryDecompositionBolt()).setNumTasks(1).
                 allGrouping(IndexerBolt, FileInformationUpdateStream)
                 .shuffleGrouping(ResultMergeBolt, NewQueryStream);
 
         builder.setBolt(ChunkScannerBolt, new ChunkScannerBolt()).setNumTasks(2)
-                .fieldsGrouping(QueryDecompositionBolt, FileSystemQueryStream, new Fields("key"));
+                .fieldsGrouping(QueryDecompositionBolt, FileSystemQueryStream, new Fields("fileName"));
 
         builder.setBolt(ResultMergeBolt, new ResultMergeBolt(schema)).setNumTasks(1)
                 .allGrouping(ChunkScannerBolt, FileSystemQueryStream)
                 .allGrouping(IndexerBolt, BPlusTreeQueryStream)
-                .shuffleGrouping(QueryDecompositionBolt, QueryInformationStream);
+                .shuffleGrouping(DispatcherBolt, BPlusTreeQueryInformationStream)
+                .shuffleGrouping(QueryDecompositionBolt, FileSystemQueryInformationStream);
 
         Config conf = new Config();
         conf.setDebug(false);

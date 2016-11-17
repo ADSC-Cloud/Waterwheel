@@ -8,6 +8,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import indexingTopology.Config.Config;
+import indexingTopology.NormalDistributionIndexingAndRangeQueryTopology;
 import indexingTopology.NormalDistributionIndexingTopology;
 import indexingTopology.util.*;
 
@@ -34,12 +35,14 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
     }
 
     public void execute(Tuple tuple) {
-        Double leftKey = tuple.getDouble(0);
-        Double rightKey = tuple.getDouble(1);
-        ArrayList<String> fileNames = (ArrayList) tuple.getValue(2);
+        Long queryId = tuple.getLong(0);
+        Double leftKey = tuple.getDouble(1);
+        Double rightKey = tuple.getDouble(2);
+//        ArrayList<String> fileNames = (ArrayList) tuple.getValue(2);
+        String fileName = (String) tuple.getValue(3);
         RandomAccessFile file = null;
         ArrayList<byte[]> serializedTuples = new ArrayList<byte[]>();
-        for (String fileName : fileNames) {
+//        for (String fileName : fileNames) {
             try {
                 FileSystemHandler fileSystemHandler = new LocalFileSystemHandler("/home/acelzj");
                 fileSystemHandler.openFile("/", fileName);
@@ -119,20 +122,22 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }
+//        }
 //        System.out.println("The tuples are");
 //        System.out.println(serializedTuples);
-        System.out.println("Size " + serializedTuples.size());
-        if (serializedTuples.size() != 0) {
+//        System.out.println("Size " + serializedTuples.size());
+//        if (serializedTuples.size() != 0) {
             collector.emit(NormalDistributionIndexingTopology.FileSystemQueryStream,
-                    new Values(leftKey, rightKey, serializedTuples));
-        }
+                    new Values(queryId, serializedTuples));
+//        }
 //        collector.ack(tuple);
     }
 
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
-        outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.FileSystemQueryStream,
-                new Fields("leftKey", "rightKey", "serializedTuples"));
+//        outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.FileSystemQueryStream,
+//                new Fields("leftKey", "rightKey", "serializedTuples"));
+        outputFieldsDeclarer.declareStream(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryStream,
+                new Fields("queryId", "serializedTuples"));
     }
 
 }
