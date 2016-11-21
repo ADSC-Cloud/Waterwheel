@@ -89,11 +89,11 @@ public class DispatcherBolt extends BaseRichBolt{
     }
 
     private void scheduleKeyRangeToTask(List<Integer> targetTasks) {
-        int numberOfBolts = targetTasks.size();
+        int numberOfTasks = targetTasks.size();
         Double minKey = 0.0;
         Double maxKey = 500.0;
         taskIdToKeyRange = new HashMap<Integer, Pair>();
-        for (int i = 0; i < numberOfBolts; ++i) {
+        for (int i = 0; i < numberOfTasks; ++i) {
             taskIdToKeyRange.put(targetTasks.get(i), new Pair(minKey, maxKey));
             minKey = maxKey + 0.00000000000001;
             maxKey += 500.0;

@@ -13,10 +13,7 @@ import indexingTopology.NormalDistributionIndexingTopology;
 import javafx.util.Pair;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
@@ -33,7 +30,7 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 
     private Thread QueryThread;
 
-    private ConcurrentHashMap<String, Pair> fileInformation;
+    private ConcurrentHashMap<String, Pair> fileNameToKeyRangeOfFile;
 
     private File file;
 
@@ -43,14 +40,17 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 
     private long queryId;
 
+    private Map<Long, Long> queryIdToTimeCostInMillis;
+
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
         seed = 1000;
         random = new Random(seed);
-        fileInformation = new ConcurrentHashMap<String, Pair>();
+        fileNameToKeyRangeOfFile = new ConcurrentHashMap<String, Pair>();
         file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/input_data");
         numberOfQueries = new Semaphore(5);
         queryId = 0;
+        queryIdToTimeCostInMillis = new HashMap<Long, Long>();
 
         try {
             bufferedReader = new BufferedReader(new FileReader(file));
@@ -69,9 +69,11 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
         if (tuple.getSourceStreamId().equals(NormalDistributionIndexingTopology.FileInformationUpdateStream)) {
             String fileName = tuple.getString(0);
             Pair keyRange = (Pair) tuple.getValue(1);
-            fileInformation.put(fileName, keyRange);
+            fileNameToKeyRangeOfFile.put(fileName, keyRange);
         } else {
-            System.out.println(tuple.getString(0));
+            System.out.println(tuple.getString(1));
+            Long queryId = tuple.getLong(0);
+            Long timeCostInMillis = System.currentTimeMillis() - queryIdToTimeCostInMillis.get(queryId);
             numberOfQueries.release();
         }
     }
@@ -141,8 +143,8 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 
 //                System.out.println("The size of file names is " + fileNames.size());
                 int numberOfFilesToScan = 0;
-                for (String fileName : fileInformation.keySet()) {
-                    Pair keyRange = fileInformation.get(fileName);
+                for (String fileName : fileNameToKeyRangeOfFile.keySet()) {
+                    Pair keyRange = fileNameToKeyRangeOfFile.get(fileName);
                     if (leftKey.compareTo((Double) keyRange.getKey()) <= 0
                             && rightKey.compareTo((Double) keyRange.getValue()) >= 0) {
 //                        System.out.println(key);
@@ -155,6 +157,8 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
                                 new Values(queryId, leftKey, rightKey, fileName));
                     }
                 }
+
+                queryIdToTimeCostInMillis.put(queryId, System.currentTimeMillis());
 
                 collector.emit(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryInformationStream,
                         new Values(queryId, numberOfFilesToScan));
