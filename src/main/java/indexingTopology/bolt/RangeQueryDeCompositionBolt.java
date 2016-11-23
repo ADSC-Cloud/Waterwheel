@@ -32,11 +32,15 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 
     private ConcurrentHashMap<String, Pair> fileNameToKeyRangeOfFile;
 
+    private ConcurrentHashMap<String, Pair> fileNameToTimeStampRangeOfFile;
+
     private File file;
 
     private BufferedReader bufferedReader;
 
-    private Semaphore numberOfQueries;
+    private Semaphore newQueryRequest;
+
+    private static final int MAX_NUMBER_OF_CONCURRENT_QUERIES = 5;
 
     private long queryId;
 
@@ -47,8 +51,9 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
         seed = 1000;
         random = new Random(seed);
         fileNameToKeyRangeOfFile = new ConcurrentHashMap<String, Pair>();
+        fileNameToTimeStampRangeOfFile= new ConcurrentHashMap<String, Pair>();
         file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/input_data");
-        numberOfQueries = new Semaphore(5);
+        newQueryRequest = new Semaphore(MAX_NUMBER_OF_CONCURRENT_QUERIES);
         queryId = 0;
         queryIdToTimeCostInMillis = new HashMap<Long, Long>();
 
@@ -69,12 +74,14 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
         if (tuple.getSourceStreamId().equals(NormalDistributionIndexingTopology.FileInformationUpdateStream)) {
             String fileName = tuple.getString(0);
             Pair keyRange = (Pair) tuple.getValue(1);
+            Pair timeStampRange = (Pair) tuple.getValue(2);
             fileNameToKeyRangeOfFile.put(fileName, keyRange);
+            fileNameToTimeStampRangeOfFile.put(fileName, timeStampRange);
         } else {
             System.out.println(tuple.getString(1));
             Long queryId = tuple.getLong(0);
             Long timeCostInMillis = System.currentTimeMillis() - queryIdToTimeCostInMillis.get(queryId);
-            numberOfQueries.release();
+            newQueryRequest.release();
         }
     }
 
@@ -84,7 +91,7 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
                 new Fields("queryId", "leftKey", "rightKey", "fileName"));
 
         outputFieldsDeclarer.declareStream(NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryStream,
-                new Fields("queryId", "leftKey", "rightKey"));
+                new Fields("queryId", "leftKey", "rightKey", "startTimeStamp", "endTimeStamp"));
 
         outputFieldsDeclarer.declareStream(
                 NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryInformationStream,
@@ -102,7 +109,7 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
                 }
 
                 try {
-                    numberOfQueries.acquire();
+                    newQueryRequest.acquire();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -125,6 +132,9 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
                 Double leftKey = 0.0;
                 Double rightKey = 1000.0;
 
+                Long startTimeStamp = System.currentTimeMillis() - 10000;
+                Long endTimeStamp = System.currentTimeMillis();
+
 //                Double key = 457.6042636844468;
 /*
                 List<String> fileNames = new ArrayList<String>();
@@ -144,9 +154,14 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 //                System.out.println("The size of file names is " + fileNames.size());
                 int numberOfFilesToScan = 0;
                 for (String fileName : fileNameToKeyRangeOfFile.keySet()) {
+
                     Pair keyRange = fileNameToKeyRangeOfFile.get(fileName);
+                    Pair timeStampRange = fileNameToTimeStampRangeOfFile.get(fileName);
+
                     if (leftKey.compareTo((Double) keyRange.getKey()) <= 0
-                            && rightKey.compareTo((Double) keyRange.getValue()) >= 0) {
+                            && rightKey.compareTo((Double) keyRange.getValue()) >= 0
+                            && startTimeStamp.compareTo((Long) timeStampRange.getKey()) <= 0
+                            && endTimeStamp.compareTo((Long) timeStampRange.getValue()) >= 0) {
 //                        System.out.println(key);
 //                        System.out.println(leftKey);
 //                        System.out.println("min key is " + keyRange.getKey());
@@ -164,7 +179,7 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
                         new Values(queryId, numberOfFilesToScan));
 
                 collector.emit(NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryStream,
-                        new Values(queryId, leftKey, rightKey));
+                        new Values(queryId, leftKey, rightKey, startTimeStamp, endTimeStamp));
 
                 ++queryId;
 

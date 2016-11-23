@@ -24,6 +24,7 @@ public class NormalDistributionIndexingTopology {
     public static final String BPlusTreeQueryInformationStream = "BPlusTreeQueryInformationStream";
     public static final String FileSystemQueryInformationStream = "FileSystemQueryInformationStream";
     public static final String NewQueryStream = "NewQueryStream";
+    public static final String TimeStampUpdateStream = "TimeStampUpdateStream";
 
     static final String TupleGenerator = "TupleGenerator";
     static final String DispatcherBolt = "DispatcherBolt";
@@ -57,7 +58,8 @@ public class NormalDistributionIndexingTopology {
 
         builder.setBolt(DispatcherBolt, new DispatcherBolt(schema)).setNumTasks(1)
                 .shuffleGrouping(TupleGenerator, IndexStream)
-                .shuffleGrouping(QueryDecompositionBolt, BPlusTreeQueryStream);
+                .shuffleGrouping(QueryDecompositionBolt, BPlusTreeQueryStream)
+                .shuffleGrouping(IndexerBolt, TimeStampUpdateStream);
 
         builder.setBolt(IndexerBolt, new NormalDistributionIndexerBolt("user_id", schema, 4, 65000000),1)
                 .setNumTasks(2)

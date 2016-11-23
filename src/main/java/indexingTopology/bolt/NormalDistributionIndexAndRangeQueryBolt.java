@@ -9,6 +9,7 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import indexingTopology.Config.Config;
 import indexingTopology.DataSchema;
+import indexingTopology.NormalDistributionIndexingAndRangeQueryTopology;
 import indexingTopology.NormalDistributionIndexingTopology;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.util.*;
@@ -66,6 +67,9 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
 
     private Double minIndexValue = Double.MAX_VALUE;
     private Double maxIndexValue = Double.MIN_VALUE;
+
+    private Long minTimeStamp = Long.MAX_VALUE;
+    private Long maxTimeStamp = Long.MIN_VALUE;
 
     private File file;
     private File inputFile;
@@ -157,6 +161,7 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
     public void execute(Tuple tuple) {
         if (tuple.getSourceStreamId().equals(NormalDistributionIndexingTopology.IndexStream)) {
             Double indexValue = tuple.getDoubleByField(indexField);
+            Long timeStamp = tuple.getLong(8);
 //            Double indexValue = tuple.getDouble(0);
 //            System.out.println("The stream is " + NormalDistributionIndexingTopology.IndexStream);
             try {
@@ -170,6 +175,14 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
                     if (indexValue > maxIndexValue) {
                         maxIndexValue = indexValue;
                     }
+
+                    if (timeStamp < minTimeStamp) {
+                        minTimeStamp = timeStamp;
+                    }
+                    if (timeStamp > maxTimeStamp) {
+                        maxTimeStamp = timeStamp;
+                    }
+
                     byte[] serializedTuple = schema.serializeTuple(tuple);
                     Pair pair = new Pair(indexValue, serializedTuple);
                     queue.put(pair);
@@ -215,8 +228,13 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
                     }
 
                     Pair keyRange = new Pair(minIndexValue, maxIndexValue);
+                    Pair timeStampRange = new Pair(minTimeStamp, maxTimeStamp);
+
                     collector.emit(NormalDistributionIndexingTopology.FileInformationUpdateStream,
-                            new Values(fileName, keyRange));
+                            new Values(fileName, keyRange, timeStampRange));
+
+                    collector.emit(NormalDistributionIndexingAndRangeQueryTopology.TimeStampUpdateStream,
+                            new Values(maxTimeStamp));
 
                     numTuples = 0;
 
@@ -228,6 +246,7 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
                     createIndexingThread();
                     ++numTuples;
                     ++chunkId;
+
                     minIndexValue = Double.MAX_VALUE;
                     maxIndexValue = Double.MIN_VALUE;
                     if (indexValue < minIndexValue) {
@@ -235,6 +254,15 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
                     }
                     if (indexValue > maxIndexValue) {
                         maxIndexValue = indexValue;
+                    }
+
+                    minTimeStamp = Long.MAX_VALUE;
+                    maxTimeStamp = Long.MIN_VALUE;
+                    if (timeStamp < minTimeStamp) {
+                        minTimeStamp = timeStamp;
+                    }
+                    if (timeStamp > maxTimeStamp) {
+                        maxTimeStamp = timeStamp;
                     }
                 }
             } catch (IOException e) {
@@ -320,12 +348,14 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
 
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
 //        outputFieldsDeclarer.declare(new Fields("num_tuples","wo_template_time","template_time","wo_template_written","template_written"));
-        outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.FileInformationUpdateStream,
-                new Fields("fileName", "keyRange"));
+        outputFieldsDeclarer.declareStream(NormalDistributionIndexingAndRangeQueryTopology.FileInformationUpdateStream,
+                new Fields("fileName", "keyRange", "timeStampRange"));
 //        outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
 //                new Fields("leftKey", "rightKey", "serializedTuples"));
-        outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
+        outputFieldsDeclarer.declareStream(NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryStream,
                 new Fields("queryId", "serializedTuples"));
+        outputFieldsDeclarer.declareStream(NormalDistributionIndexingAndRangeQueryTopology.TimeStampUpdateStream,
+                new Fields("TimeStamp"));
     }
 
     class IndexingRunnable implements Runnable {

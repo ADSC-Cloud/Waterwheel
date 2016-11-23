@@ -31,11 +31,15 @@ public class QueryDecompositionBolt extends BaseRichBolt {
 
     private ConcurrentHashMap<String, Pair> fileNameToKeyRangeOfFile;
 
+    private ConcurrentHashMap<String, Pair> fileNameToTimeStampRangeOfFile;
+
     private File file;
 
     private BufferedReader bufferedReader;
 
-    private Semaphore numberOfQueries;
+    private Semaphore newQueryRequest;
+
+    private static final int MAX_NUMBER_OF_CONCURRENT_QUERIES = 5;
 
     private long queryId;
 
@@ -46,8 +50,9 @@ public class QueryDecompositionBolt extends BaseRichBolt {
         seed = 1000;
         random = new Random(seed);
         fileNameToKeyRangeOfFile = new ConcurrentHashMap<String, Pair>();
+        fileNameToTimeStampRangeOfFile= new ConcurrentHashMap<String, Pair>();
         file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/input_data");
-        numberOfQueries = new Semaphore(5);
+        newQueryRequest = new Semaphore(MAX_NUMBER_OF_CONCURRENT_QUERIES);
         queryId = 0;
         queryIdToTimeCostInMillis = new HashMap<Long, Long>();
 
@@ -68,11 +73,13 @@ public class QueryDecompositionBolt extends BaseRichBolt {
         if (tuple.getSourceStreamId().equals(NormalDistributionIndexingTopology.FileInformationUpdateStream)) {
             String fileName = tuple.getString(0);
             Pair keyRange = (Pair) tuple.getValue(1);
+            Pair timeStampRange = (Pair) tuple.getValue(2);
             fileNameToKeyRangeOfFile.put(fileName, keyRange);
+            fileNameToTimeStampRangeOfFile.put(fileName, timeStampRange);
         } else {
             Long queryId = tuple.getLong(0);
             Long timeCostInMillis = System.currentTimeMillis() - queryIdToTimeCostInMillis.get(queryId);
-            numberOfQueries.release();
+            newQueryRequest.release();
         }
     }
 
@@ -82,7 +89,7 @@ public class QueryDecompositionBolt extends BaseRichBolt {
                 new Fields("queryId", "key", "fileName"));
 
         outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
-                new Fields("queryId", "key"));
+                new Fields("queryId", "key", "startTimeStamp", "endTimeStamp"));
 
         outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.FileSystemQueryInformationStream,
                 new Fields("queryId", "numberOfFilesToScan"));
@@ -99,7 +106,7 @@ public class QueryDecompositionBolt extends BaseRichBolt {
                 }
 
                 try {
-                    numberOfQueries.acquire();
+                    newQueryRequest.acquire();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -118,6 +125,9 @@ public class QueryDecompositionBolt extends BaseRichBolt {
                 String [] tuple = text.split(" ");
 //
                 Double key = Double.parseDouble(tuple[0]);
+
+                Long startTimeStamp = System.currentTimeMillis() - 10000;
+                Long endTimeStamp = System.currentTimeMillis();
 //                Double key = 457.6042636844468;
 /*
                 List<String> fileNames = new ArrayList<String>();
@@ -137,8 +147,12 @@ public class QueryDecompositionBolt extends BaseRichBolt {
                 int numberOfFilesToScan = 0;
                 for (String fileName : fileNameToKeyRangeOfFile.keySet()) {
                     Pair keyRange = fileNameToKeyRangeOfFile.get(fileName);
+                    Pair timeStampRange = fileNameToTimeStampRangeOfFile.get(fileName);
+
                     if (key.compareTo((Double) keyRange.getKey()) >= 0
-                            && key.compareTo((Double) keyRange.getValue()) <= 0) {
+                            && key.compareTo((Double) keyRange.getValue()) <= 0
+                            && startTimeStamp.compareTo((Long) timeStampRange.getKey()) <= 0
+                            && endTimeStamp.compareTo((Long) timeStampRange.getValue()) >= 0) {
 //                        System.out.println(key);
 //                        System.out.println("min key is " + keyRange.getKey());
 //                        System.out.println("max key is " + keyRange.getValue());
@@ -157,7 +171,8 @@ public class QueryDecompositionBolt extends BaseRichBolt {
 //                collector.emit(NormalDistributionIndexingTopology.FileSystemQueryStream,
 //                        new Values(key, fileNames));
 
-                collector.emit(NormalDistributionIndexingTopology.BPlusTreeQueryStream, new Values(queryId, key));
+                collector.emit(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
+                        new Values(queryId, key, startTimeStamp, endTimeStamp));
 
                 ++queryId;
             }

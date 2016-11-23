@@ -84,7 +84,7 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-//                System.out.println(deserializedTuple);
+                System.out.println(deserializedTuple);
             }
             Integer numberOfTuples = queryIdToNumberOfTuples.get(queryId);
             if (numberOfTuples == null)

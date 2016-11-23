@@ -10,6 +10,7 @@ import backtype.storm.tuple.Values;
 import indexingTopology.DataSchema;
 import indexingTopology.NormalDistributionIndexingAndRangeQueryTopology;
 import indexingTopology.NormalDistributionIndexingTopology;
+import javafx.fxml.Initializable;
 import javafx.util.Pair;
 
 import java.io.IOException;
@@ -36,6 +37,8 @@ public class DispatcherBolt extends BaseRichBolt{
 
     private Map<Integer, Pair> taskIdToKeyRange;
 
+    private Map<Integer, Long> taskIdToTimeStamp;
+
 
     public DispatcherBolt(DataSchema schema) {
         this.schema = schema;
@@ -54,6 +57,8 @@ public class DispatcherBolt extends BaseRichBolt{
         }
 
         scheduleKeyRangeToTask(targetTasks);
+
+        InitializeTimeStamp(targetTasks);
     }
 
     public void execute(Tuple tuple) {
@@ -64,10 +69,15 @@ public class DispatcherBolt extends BaseRichBolt{
             int numberOfTasksToSearch = 0;
             Long queryId = tuple.getLong(0);
             Double key = tuple.getDouble(1);
+            Long startTime = tuple.getLong(2);
             for (Integer taskId : taskIdToKeyRange.keySet()) {
+//                Double minKey = (Double) taskIdToKeyRangeAndTimeRange.get(taskId).getKey();
                 Double minKey = (Double) taskIdToKeyRange.get(taskId).getKey();
+//                Double maxKey = (Double) taskIdToKeyRangeAndTimeRange.get(taskId).getValue();
                 Double maxKey = (Double) taskIdToKeyRange.get(taskId).getValue();
-                if (minKey <= key && maxKey >= key) {
+
+                Long timeStamp = taskIdToTimeStamp.get(taskId);
+                if (minKey <= key && maxKey >= key && timeStamp >= startTime) {
                     collector.emitDirect(taskId, NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryStream,
                             new Values(queryId, key));
                     ++numberOfTasksToSearch;
@@ -79,12 +89,20 @@ public class DispatcherBolt extends BaseRichBolt{
 
 //            collector.emit(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
 //                    new Values(tuple.getValue(0), tuple.getValue(1)));
-        } else {
+        } else if (tuple.getSourceStreamId().equals(NormalDistributionIndexingTopology.IndexStream)) {
             try {
-                collector.emit(NormalDistributionIndexingTopology.IndexStream, schema.getValuesObject(tuple));
+                Long timeStamp = System.currentTimeMillis();
+                Values values = schema.getValuesObject(tuple);
+                values.add(timeStamp);
+//                collector.emit(NormalDistributionIndexingTopology.IndexStream, schema.getValuesObject(tuple));
+                collector.emit(NormalDistributionIndexingTopology.IndexStream, values);
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        } else {
+            Long timeStamp = tuple.getLong(0);
+            int taskId = tuple.getSourceTask();
+            taskIdToTimeStamp.put(taskId, timeStamp);
         }
     }
 
@@ -97,6 +115,15 @@ public class DispatcherBolt extends BaseRichBolt{
             taskIdToKeyRange.put(targetTasks.get(i), new Pair(minKey, maxKey));
             minKey = maxKey + 0.00000000000001;
             maxKey += 500.0;
+        }
+    }
+
+    private void InitializeTimeStamp(List<Integer> targetTasks) {
+        taskIdToTimeStamp = new HashMap<Integer, Long>();
+        int numberOfTasks = targetTasks.size();
+        Long currentTimeStamp = System.currentTimeMillis();
+        for (int i = 0; i < numberOfTasks; ++i) {
+            taskIdToTimeStamp.put(targetTasks.get(i), currentTimeStamp);
         }
     }
 
@@ -126,7 +153,11 @@ break;
 //        declarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryStream, new Fields("key"));
         declarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryStream, new Fields("queryId", "key"));
 
-        declarer.declareStream(NormalDistributionIndexingTopology.IndexStream, schema.getFieldsObject());
+        List<String> fields = schema.getFieldsObject().toList();
+        fields.add("timeStamp");
+
+//        declarer.declareStream(NormalDistributionIndexingTopology.IndexStream, schema.getFieldsObject());
+        declarer.declareStream(NormalDistributionIndexingTopology.IndexStream, new Fields(fields));
 
         declarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryInformationStream
                 , new Fields("queryId", "numberOfTasksToSearch"));

@@ -69,6 +69,9 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
     private Double minIndexValue = Double.MAX_VALUE;
     private Double maxIndexValue = Double.MIN_VALUE;
 
+    private Long minTimeStamp = Long.MAX_VALUE;
+    private Long maxTimeStamp = Long.MIN_VALUE;
+
     private File file;
     private File inputFile;
     private File outputFile;
@@ -159,6 +162,7 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
     public void execute(Tuple tuple) {
         if (tuple.getSourceStreamId().equals(NormalDistributionIndexingTopology.IndexStream)) {
             Double indexValue = tuple.getDoubleByField(indexField);
+            Long timeStamp = tuple.getLong(8);
 //            Double indexValue = tuple.getDouble(0);
 //            System.out.println("The stream is " + NormalDistributionIndexingTopology.IndexStream);
             try {
@@ -172,6 +176,14 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
                     if (indexValue > maxIndexValue) {
                         maxIndexValue = indexValue;
                     }
+
+                    if (timeStamp < minTimeStamp) {
+                        minTimeStamp = timeStamp;
+                    }
+                    if (timeStamp > maxTimeStamp) {
+                        maxTimeStamp = timeStamp;
+                    }
+
                     byte[] serializedTuple = schema.serializeTuple(tuple);
                     Pair pair = new Pair(indexValue, serializedTuple);
                     queue.put(pair);
@@ -218,8 +230,12 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
                     }
 
                     Pair keyRange = new Pair(minIndexValue, maxIndexValue);
+                    Pair timeStampRange = new Pair(minTimeStamp, maxTimeStamp);
+
                     collector.emit(NormalDistributionIndexingTopology.FileInformationUpdateStream,
-                            new Values(fileName, keyRange));
+                            new Values(fileName, keyRange, timeStampRange));
+
+                    collector.emit(NormalDistributionIndexingTopology.TimeStampUpdateStream, new Values(maxTimeStamp));
 
                     numTuples = 0;
 
@@ -231,6 +247,7 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
                     createIndexingThread();
                     ++numTuples;
                     ++chunkId;
+
                     minIndexValue = Double.MAX_VALUE;
                     maxIndexValue = Double.MIN_VALUE;
                     if (indexValue < minIndexValue) {
@@ -238,6 +255,15 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
                     }
                     if (indexValue > maxIndexValue) {
                         maxIndexValue = indexValue;
+                    }
+
+                    minTimeStamp = Long.MAX_VALUE;
+                    maxTimeStamp = Long.MIN_VALUE;
+                    if (timeStamp < minTimeStamp) {
+                        minTimeStamp = timeStamp;
+                    }
+                    if (timeStamp > maxTimeStamp) {
+                        maxTimeStamp = timeStamp;
                     }
                 }
             } catch (IOException e) {
@@ -323,9 +349,11 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
 //        outputFieldsDeclarer.declare(new Fields("num_tuples","wo_template_time","template_time","wo_template_written","template_written"));
         outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.FileInformationUpdateStream,
-                new Fields("fileName", "keyRange"));
+                new Fields("fileName", "keyRange", "timeStampRange"));
         outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
                 new Fields("queryId", "serializedTuples"));
+        outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.TimeStampUpdateStream,
+                new Fields("TimeStamp"));
     }
 
     class IndexingRunnable implements Runnable {

@@ -36,6 +36,8 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
 
     private Map<Integer, Pair> taskIdToKeyRange;
 
+    private Map<Integer, Long> taskIdToTimeStamp;
+
 
     public RangeQueryDispatcherBolt(DataSchema schema) {
         this.schema = schema;
@@ -56,6 +58,8 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
         System.out.println("The task id ");
         System.out.println(targetTasks);
         scheduleKeyRangeToTask(targetTasks);
+
+        InitializeTimeStamp(targetTasks);
     }
 
     public void execute(Tuple tuple) {
@@ -67,10 +71,13 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
             Long queryId = tuple.getLong(0);
             Double leftKey = tuple.getDouble(1);
             Double rightKey = tuple.getDouble(2);
+            Long startTime = tuple.getLong(3);
             for (Integer taskId : taskIdToKeyRange.keySet()) {
                 Double minKey = (Double) taskIdToKeyRange.get(taskId).getKey();
                 Double maxKey = (Double) taskIdToKeyRange.get(taskId).getValue();
-                if (minKey >= leftKey && maxKey <= rightKey) {
+                Long timeStamp = taskIdToTimeStamp.get(taskId);
+
+                if (minKey >= leftKey && maxKey <= rightKey && timeStamp >= startTime) {
                     collector.emitDirect(taskId, NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryStream,
                     new Values(queryId, leftKey, rightKey));
                     ++numberOfTasksToSearch;
@@ -82,12 +89,20 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
 
 //            collector.emit(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
 //                    new Values(tuple.getValue(0), tuple.getValue(1)));
-        } else {
+        } else if (tuple.getSourceStreamId().equals(NormalDistributionIndexingAndRangeQueryTopology.IndexStream)){
             try {
-                collector.emit(NormalDistributionIndexingAndRangeQueryTopology.IndexStream, schema.getValuesObject(tuple));
+                Long timeStamp = System.currentTimeMillis();
+                Values values = schema.getValuesObject(tuple);
+                values.add(timeStamp);
+//                collector.emit(NormalDistributionIndexingAndRangeQueryTopology.IndexStream, schema.getValuesObject(tuple));
+                collector.emit(NormalDistributionIndexingTopology.IndexStream, values);
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        } else {
+            Long timeStamp = tuple.getLong(0);
+            int taskId = tuple.getSourceTask();
+            taskIdToTimeStamp.put(taskId, timeStamp);
         }
     }
 
@@ -100,6 +115,15 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
             taskIdToKeyRange.put(targetTasks.get(i), new Pair(minKey, maxKey));
             minKey = maxKey + 0.00000000000001;
             maxKey += 500.0;
+        }
+    }
+
+    private void InitializeTimeStamp(List<Integer> targetTasks) {
+        taskIdToTimeStamp = new HashMap<Integer, Long>();
+        int numberOfTasks = targetTasks.size();
+        Long currentTimeStamp = System.currentTimeMillis();
+        for (int i = 0; i < numberOfTasks; ++i) {
+            taskIdToTimeStamp.put(targetTasks.get(i), currentTimeStamp);
         }
     }
 
@@ -130,7 +154,11 @@ break;
         declarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryStream, new Fields("queryId", "leftKey"
                 , "rightKey"));
 
-        declarer.declareStream(NormalDistributionIndexingTopology.IndexStream, schema.getFieldsObject());
+        List<String> fields = schema.getFieldsObject().toList();
+        fields.add("timeStamp");
+
+//        declarer.declareStream(NormalDistributionIndexingTopology.IndexStream, schema.getFieldsObject());
+        declarer.declareStream(NormalDistributionIndexingTopology.IndexStream, new Fields(fields));
 
         declarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryInformationStream
                 , new Fields("queryId", "numberOfTasksToSearch"));

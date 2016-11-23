@@ -56,17 +56,17 @@ public class ResultMergeBolt extends BaseRichBolt {
 
     public void execute(Tuple tuple) {
         if (tuple.getSourceStreamId()
-                == NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryInformationStream) {
+                .equals(NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryInformationStream)) {
             numberOfTasksToSearch = tuple.getInteger(1);
             queryIdToNumberOfTasksToSearch.put(tuple.getLong(0), numberOfTasksToSearch);
 //            System.out.println("Number of tasks have been updated " + numberOfFilesToScan + " query id " + tuple.getLong(0));
         } else if (tuple.getSourceStreamId()
-                == NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryInformationStream) {
+                .equals(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryInformationStream)) {
             numberOfFilesToScan = tuple.getInteger(1);
             queryIdToNumberOfFilesToScan.put(tuple.getLong(0), numberOfFilesToScan);
 //            System.out.println("Number of files have been updated " + numberOfTasksToSearch + " query id " + tuple.getLong(0));
-        } else if (tuple.getSourceStreamId() == NormalDistributionIndexingTopology.BPlusTreeQueryStream ||
-                tuple.getSourceStreamId() == NormalDistributionIndexingTopology.FileSystemQueryStream) {
+        } else if (tuple.getSourceStreamId().equals(NormalDistributionIndexingTopology.BPlusTreeQueryStream) ||
+                tuple.getSourceStreamId().equals(NormalDistributionIndexingTopology.FileSystemQueryStream)) {
             long queryId = tuple.getLong(0);
             Integer counter = queryIdToCounter.get(queryId);
             if (counter == null) {
