@@ -3,13 +3,14 @@ package indexingTopology.bolt;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.topology.base.BaseBasicBolt;
 import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import indexingTopology.NormalDistributionIndexingAndRangeQueryTopology;
 import indexingTopology.NormalDistributionIndexingTopology;
+import indexingTopology.util.FilePartitionSchemaManager;
+import indexingTopology.util.FileMetaData;
 import javafx.util.Pair;
 
 import java.io.*;
@@ -34,6 +35,8 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 
     private ConcurrentHashMap<String, Pair> fileNameToTimeStampRangeOfFile;
 
+    private FilePartitionSchemaManager filePartitionSchemaManager;
+
     private File file;
 
     private BufferedReader bufferedReader;
@@ -56,6 +59,7 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
         newQueryRequest = new Semaphore(MAX_NUMBER_OF_CONCURRENT_QUERIES);
         queryId = 0;
         queryIdToTimeCostInMillis = new HashMap<Long, Long>();
+        filePartitionSchemaManager = new FilePartitionSchemaManager();
 
         try {
             bufferedReader = new BufferedReader(new FileReader(file));
@@ -75,8 +79,10 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
             String fileName = tuple.getString(0);
             Pair keyRange = (Pair) tuple.getValue(1);
             Pair timeStampRange = (Pair) tuple.getValue(2);
-            fileNameToKeyRangeOfFile.put(fileName, keyRange);
-            fileNameToTimeStampRangeOfFile.put(fileName, timeStampRange);
+            filePartitionSchemaManager.add(new FileMetaData(fileName, (Double) keyRange.getKey(),
+                    (Double)keyRange.getValue(), (Long) timeStampRange.getKey(), (Long) timeStampRange.getValue()));
+//            fileNameToKeyRangeOfFile.put(fileName, keyRange);
+//            fileNameToTimeStampRangeOfFile.put(fileName, timeStampRange);
         } else {
             System.out.println(tuple.getString(1));
             Long queryId = tuple.getLong(0);
@@ -151,8 +157,10 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
                     }
                 }*/
 
+
 //                System.out.println("The size of file names is " + fileNames.size());
-                int numberOfFilesToScan = 0;
+//                int numberOfFilesToScan = 0;
+                /*
                 for (String fileName : fileNameToKeyRangeOfFile.keySet()) {
 
                     Pair keyRange = fileNameToKeyRangeOfFile.get(fileName);
@@ -171,6 +179,17 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
                         collector.emit(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryStream,
                                 new Values(queryId, leftKey, rightKey, fileName));
                     }
+                }
+                */
+
+                List<String> fileNames = filePartitionSchemaManager.search(leftKey, rightKey,
+                        startTimeStamp, endTimeStamp);
+
+                int numberOfFilesToScan = fileNames.size();
+
+                for (String fileName : fileNames) {
+                    collector.emit(NormalDistributionIndexingTopology.FileSystemQueryStream,
+                            new Values(queryId, leftKey, rightKey, fileName));
                 }
 
                 queryIdToTimeCostInMillis.put(queryId, System.currentTimeMillis());

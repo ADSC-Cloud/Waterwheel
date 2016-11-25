@@ -189,7 +189,6 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
                     queue.put(pair);
 
                     ++numTuples;
-                    collector.ack(tuple);
                 } else {
 
                     while (!queue.isEmpty()) {

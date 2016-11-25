@@ -1,6 +1,5 @@
 package indexingTopology.bolt;
 
-import backtype.storm.metric.SystemBolt;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
@@ -9,6 +8,8 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import indexingTopology.NormalDistributionIndexingTopology;
+import indexingTopology.util.FilePartitionSchemaManager;
+import indexingTopology.util.FileMetaData;
 import javafx.util.Pair;
 
 import java.io.*;
@@ -33,6 +34,8 @@ public class QueryDecompositionBolt extends BaseRichBolt {
 
     private ConcurrentHashMap<String, Pair> fileNameToTimeStampRangeOfFile;
 
+    private FilePartitionSchemaManager filePartitionSchemaManager;
+
     private File file;
 
     private BufferedReader bufferedReader;
@@ -55,6 +58,7 @@ public class QueryDecompositionBolt extends BaseRichBolt {
         newQueryRequest = new Semaphore(MAX_NUMBER_OF_CONCURRENT_QUERIES);
         queryId = 0;
         queryIdToTimeCostInMillis = new HashMap<Long, Long>();
+        filePartitionSchemaManager = new FilePartitionSchemaManager();
 
         try {
             bufferedReader = new BufferedReader(new FileReader(file));
@@ -74,10 +78,13 @@ public class QueryDecompositionBolt extends BaseRichBolt {
             String fileName = tuple.getString(0);
             Pair keyRange = (Pair) tuple.getValue(1);
             Pair timeStampRange = (Pair) tuple.getValue(2);
-            fileNameToKeyRangeOfFile.put(fileName, keyRange);
-            fileNameToTimeStampRangeOfFile.put(fileName, timeStampRange);
+//            fileNameToKeyRangeOfFile.put(fileName, keyRange);
+//            fileNameToTimeStampRangeOfFile.put(fileName, timeStampRange);
+            filePartitionSchemaManager.add(new FileMetaData(fileName, (Double) keyRange.getKey(),
+                    (Double)keyRange.getValue(), (Long) timeStampRange.getKey(), (Long) timeStampRange.getValue()));
         } else {
             Long queryId = tuple.getLong(0);
+//            System.out.println(tuple.getString(1));
             Long timeCostInMillis = System.currentTimeMillis() - queryIdToTimeCostInMillis.get(queryId);
             newQueryRequest.release();
         }
@@ -100,7 +107,7 @@ public class QueryDecompositionBolt extends BaseRichBolt {
         public void run() {
             while (true) {
                 try {
-                    Thread.sleep(1);
+                    Thread.sleep(100);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -126,9 +133,11 @@ public class QueryDecompositionBolt extends BaseRichBolt {
 //
                 Double key = Double.parseDouble(tuple[0]);
 
-                Long startTimeStamp = System.currentTimeMillis() - 10000;
-                Long endTimeStamp = System.currentTimeMillis();
-//                Double key = 457.6042636844468;
+//                Long startTimeStamp = System.currentTimeMillis() - 10000;
+                Long startTimeStamp = (long) 0;
+//                Long endTimeStamp = System.currentTimeMillis();
+                Long endTimeStamp = Long.MAX_VALUE;
+//                Double key = 499.34001632016685;
 /*
                 List<String> fileNames = new ArrayList<String>();
                 for (String fileName : fileInformation.keySet()) {
@@ -144,7 +153,8 @@ public class QueryDecompositionBolt extends BaseRichBolt {
                 */
 
 //                System.out.println("The size of file names is " + fileNames.size());
-                int numberOfFilesToScan = 0;
+//                int numberOfFilesToScan = 0;
+                /*
                 for (String fileName : fileNameToKeyRangeOfFile.keySet()) {
                     Pair keyRange = fileNameToKeyRangeOfFile.get(fileName);
                     Pair timeStampRange = fileNameToTimeStampRangeOfFile.get(fileName);
@@ -160,6 +170,17 @@ public class QueryDecompositionBolt extends BaseRichBolt {
                         collector.emit(NormalDistributionIndexingTopology.FileSystemQueryStream,
                                 new Values(queryId, key, fileName));
                     }
+                }
+                */
+                List<String> fileNames = filePartitionSchemaManager.search(key, key, startTimeStamp, endTimeStamp);
+
+                int numberOfFilesToScan = fileNames.size();
+
+                System.out.println("Number of files to scan is " + numberOfFilesToScan);
+
+                for (String fileName : fileNames) {
+                    collector.emit(NormalDistributionIndexingTopology.FileSystemQueryStream,
+                            new Values(queryId, key, fileName));
                 }
 
                 queryIdToTimeCostInMillis.put(queryId, System.currentTimeMillis());

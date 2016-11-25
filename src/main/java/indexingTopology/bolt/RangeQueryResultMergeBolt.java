@@ -60,11 +60,13 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
         if (tuple.getSourceStreamId()
                 .equals(NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryInformationStream)) {
 //            numberOfTasksToSearch = tuple.getInteger(1);
+            System.out.println("The number of tasks to search of " + tuple.getLong(0) + " " + numberOfTasksToSearch);
             queryIdToNumberOfTasksToSearch.put(tuple.getLong(0), tuple.getInteger(1));
 //            System.out.println("Number of tasks have been updated " + numberOfFilesToScan + " query id" + tuple.getLong(0));
         } else if (tuple.getSourceStreamId()
                 .equals(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryInformationStream)) {
 //            numberOfFilesToScan = tuple.getInteger(1);
+            System.out.println("The number files to scan " + tuple.getLong(0) + " " + numberOfFilesToScan);
             queryIdToNumberOfFilesToScan.put(tuple.getLong(0), tuple.getInteger(1));
 //            System.out.println("Number of files have been updated " + numberOfTasksToSearch + " query id" + tuple.getLong(0));
         } else if (tuple.getSourceStreamId().equals(NormalDistributionIndexingTopology.BPlusTreeQueryStream) ||

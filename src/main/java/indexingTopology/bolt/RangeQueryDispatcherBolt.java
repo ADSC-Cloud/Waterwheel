@@ -11,6 +11,8 @@ import backtype.storm.tuple.Values;
 import indexingTopology.DataSchema;
 import indexingTopology.NormalDistributionIndexingAndRangeQueryTopology;
 import indexingTopology.NormalDistributionIndexingTopology;
+import indexingTopology.util.TaskMetaData;
+import indexingTopology.util.TaskPartitionSchemaManager;
 import javafx.util.Pair;
 
 import java.io.IOException;
@@ -38,6 +40,10 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
 
     private Map<Integer, Long> taskIdToTimeStamp;
 
+    private TaskPartitionSchemaManager taskPartitionSchemaManager;
+
+    private Map<Integer, TaskMetaData> taskIdToTaskMetaData;
+
 
     public RangeQueryDispatcherBolt(DataSchema schema) {
         this.schema = schema;
@@ -55,11 +61,12 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
             targetTasks.addAll(topologyContext.getComponentTasks(componentId));
         }
 
-        System.out.println("The task id ");
-        System.out.println(targetTasks);
-        scheduleKeyRangeToTask(targetTasks);
-
-        InitializeTimeStamp(targetTasks);
+//        System.out.println("The task id ");
+//        System.out.println(targetTasks);
+//        scheduleKeyRangeToTask(targetTasks);
+//
+//        InitializeTimeStamp(targetTasks);
+        setInitialKeyRangeAndTimeStampToTasks(targetTasks);
     }
 
     public void execute(Tuple tuple) {
@@ -67,11 +74,12 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
         if (tuple.getSourceStreamId().equals(NormalDistributionIndexingTopology.BPlusTreeQueryStream)) {
 //            collector.emit(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
 //                    new Values(tuple.getValue(0)));
-            int numberOfTasksToSearch = 0;
+//            int numberOfTasksToSearch = 0;
             Long queryId = tuple.getLong(0);
             Double leftKey = tuple.getDouble(1);
             Double rightKey = tuple.getDouble(2);
             Long startTime = tuple.getLong(3);
+            /*
             for (Integer taskId : taskIdToKeyRange.keySet()) {
                 Double minKey = (Double) taskIdToKeyRange.get(taskId).getKey();
                 Double maxKey = (Double) taskIdToKeyRange.get(taskId).getValue();
@@ -82,6 +90,14 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
                     new Values(queryId, leftKey, rightKey));
                     ++numberOfTasksToSearch;
                 }
+            }
+            */
+
+            List<Integer> targetTasks = taskPartitionSchemaManager.search(leftKey, rightKey, startTime, Long.MAX_VALUE);
+            int numberOfTasksToSearch = targetTasks.size();
+            for (Integer taskId : targetTasks) {
+                collector.emitDirect(taskId, NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryStream,
+                        new Values(queryId, leftKey, rightKey));
             }
 
             collector.emit(NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryInformationStream
@@ -102,7 +118,9 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
         } else {
             Long timeStamp = tuple.getLong(0);
             int taskId = tuple.getSourceTask();
-            taskIdToTimeStamp.put(taskId, timeStamp);
+//            taskIdToTimeStamp.put(taskId, timeStamp);
+            TaskMetaData taskMetaData = taskIdToTaskMetaData.get(taskId);
+            taskPartitionSchemaManager.setStartTimeOfTask(taskMetaData, timeStamp);
         }
     }
 
@@ -163,5 +181,26 @@ break;
         declarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryInformationStream
                 , new Fields("queryId", "numberOfTasksToSearch"));
 //        declarer.declare(new Fields("key"));
+    }
+
+    private void setInitialKeyRangeAndTimeStampToTasks(List<Integer> targetTasks) {
+        taskPartitionSchemaManager = new TaskPartitionSchemaManager();
+        taskIdToTaskMetaData = new HashMap<Integer, TaskMetaData>();
+        int numberOfTasks = targetTasks.size();
+        Double keyRangeLowerBound = 0.0;
+        Double keyRangeUpperBound = 500.0;
+        for (int i = 0; i < numberOfTasks; ++i) {
+            Long startTime = System.currentTimeMillis();
+            Long endTime = Long.MAX_VALUE;
+            int taskId = targetTasks.get(i);
+            TaskMetaData taskMetaData = new TaskMetaData(taskId, keyRangeLowerBound, keyRangeUpperBound,
+                    startTime, endTime);
+
+            keyRangeLowerBound = keyRangeUpperBound + 0.00000000000001;
+            keyRangeUpperBound += 500.0;
+
+            taskPartitionSchemaManager.add(taskMetaData);
+            taskIdToTaskMetaData.put(taskId, taskMetaData);
+        }
     }
 }

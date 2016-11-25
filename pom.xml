@@ -62,6 +62,11 @@
             <artifactId>hadoop-hdfs</artifactId>
             <version>2.7.3</version>
         </dependency>
+        <dependency>
+            <groupId>com.github.davidmoten</groupId>
+            <artifactId>rtree</artifactId>
+            <version>0.8-RC10</version>
+        </dependency>
     </dependencies>
 
 
