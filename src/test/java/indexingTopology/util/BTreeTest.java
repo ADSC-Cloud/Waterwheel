@@ -1,10 +1,12 @@
 package indexingTopology.util;
 
+import backtype.storm.tuple.Values;
 import indexingTopology.Config.Config;
 import indexingTopology.DataSchema;
+import indexingTopology.FileSystemHandler.FileSystemHandler;
+import indexingTopology.FileSystemHandler.HdfsFileSystemHandler;
+import indexingTopology.FileSystemHandler.LocalFileSystemHandler;
 import indexingTopology.exception.UnsupportedGenericException;
-import indexingTopology.util.BTree;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.io.*;
@@ -13,8 +15,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import static org.junit.Assert.*;
 
 /**
  * Created by parijatmazumdar on 23/09/15.
@@ -181,7 +181,8 @@ customDelete(btree,range,4,1);
            TimingModule tm = TimingModule.createNew();
            int bTreeOder = 4;
            BTree bTree = new BTree(bTreeOder, tm, sm);
-           File inputFile = new File("src/input_data_new");
+//           File inputFile = new File("src/input_data_new");
+           File inputFile = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/input_data");
            BufferedReader bufferedReader = new BufferedReader(new FileReader(inputFile));
            String text = null;
            BytesCounter counter = new BytesCounter();
@@ -193,44 +194,49 @@ customDelete(btree,range,4,1);
            ArrayList valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
                    Double.class, Double.class, Double.class, Double.class, Double.class));
            DataSchema schema = new DataSchema(fieldNames, valueTypes);
-           MemChunk chunk = MemChunk.createNew(640000);
+           MemChunk chunk = MemChunk.createNew(65000000);
 //        LinkedBlockingQueue<Pair> queue = new LinkedBlockingQueue<Pair>();
            List<Double> indexValueList = new ArrayList<Double>();
-           for (int i = 0; i < Config.NUMBER_TUPLES_OF_A_CHUNK; ++i) {
-               try {
-                   text = bufferedReader.readLine();
-                   if (text == null) {
-                       bufferedReader.close();
-                       bufferedReader = new BufferedReader(new FileReader(inputFile));
+           int count = 0;
+//           while (true) {
+               for (int i = 0; i < Config.NUMBER_TUPLES_OF_A_CHUNK; ++i) {
+                   try {
                        text = bufferedReader.readLine();
+                       if (text == null) {
+//                           bufferedReader.close();
+                           bufferedReader = new BufferedReader(new FileReader(inputFile));
+                           text = bufferedReader.readLine();
+                       }
+                       String[] tokens = text.split(" ");
+                       values = getValuesObject(tokens);
+                       values.add(System.currentTimeMillis() / 1.0);
+                       indexValue = values.get(0);
+                       indexValueList.add(indexValue);
+                   } catch (IOException e) {
+                       e.printStackTrace();
                    }
-                   String[] tokens = text.split(" ");
-                   values = getValuesObject(tokens);
-                   indexValue = values.get(0);
-                   indexValueList.add(indexValue);
-               } catch (IOException e) {
-                   e.printStackTrace();
+                   byte[] serializedTuple = serializeIndexValue(values);
+                   try {
+                       bTree.insert(indexValue, serializedTuple);
+                   } catch (UnsupportedGenericException e) {
+                       e.printStackTrace();
+                   }
                }
-               byte[] serializedTuple = serializeIndexValue(values);
-               try {
-                   bTree.insert(indexValue, serializedTuple);
-               } catch (UnsupportedGenericException e) {
-                   e.printStackTrace();
-               }
-           }
-           bTree.printBtree();
-           chunk.changeToLeaveNodesStartPosition();
-           bTree.writeLeavesIntoChunk(chunk);
-           DeserializationHelper deserializationHelper = new DeserializationHelper();
-           int len1 = Integer.SIZE / Byte.SIZE;
-           int offset1 = 0;
-           byte[] serializedTree = bTree.serializeTree();
+               System.out.println("BTree");
+               bTree.printBtree();
+               chunk.changeToLeaveNodesStartPosition();
+               bTree.writeLeavesIntoChunk(chunk);
+//               DeserializationHelper deserializationHelper = new DeserializationHelper();
+               int len1 = Integer.SIZE / Byte.SIZE;
+               int offset1 = 0;
+//           byte[] serializedTree = bTree.serializeTree();
+               byte[] serializedTree = SerializationHelper.serializeTree(bTree);
 //           BTree deserializedTree = deserializationHelper.deserializeBTree(serializedTree, bTreeOder, counter);
 //           deserializedTree.printBtree();
-           int len = Integer.SIZE / Byte.SIZE;
-           int offset = 0;
-           chunk.changeToStartPosition();
-           chunk.write(serializedTree);
+               int len = Integer.SIZE / Byte.SIZE;
+               int offset = 0;
+               chunk.changeToStartPosition();
+               chunk.write(serializedTree);
 //           chunk.changeToStartPosition();
            /*
            ByteBuffer byteBuffer = chunk.getData();
@@ -279,30 +285,101 @@ customDelete(btree,range,4,1);
            deserializedLeave.print();
            System.out.println(schema.deserialize((byte[]) deserializedLeave.getTuples(0).get(0)));
 //           deserializedLeave.print();*/
-           Collections.sort(indexValueList);
+               Collections.sort(indexValueList);
 
 //           for (Double leftKey : indexValueList) {
-           Double leftKey = 542.6783409687173;
-               System.out.println("Key " + leftKey);
-               FileSystemHandler fileSystemHandler = new LocalFileSystemHandler("src");
-               fileSystemHandler.writeToFileSystem(chunk, "/", "chunk_test");
-               RandomAccessFile file = new RandomAccessFile("src/chunk_test", "r");
-               serializedTree = new byte[Config.TEMPLATE_SIZE];
-               file.read(serializedTree, 0, Config.TEMPLATE_SIZE);
+               Double leftKey = 423.3767079381322;
+               Double rightKey = 577.6394503498576;
+//               System.out.println("Key " + leftKey);
+//               FileSystemHandler fileSystemHandler = new LocalFileSystemHandler("src");
+               FileSystemHandler fileSystemHandler = new HdfsFileSystemHandler("src");
+               fileSystemHandler.writeToFileSystem(chunk, "/", "chunk_test" + count);
+               fileSystemHandler.openFile("/", "chunk_test" + count);
+               ++count;
+
+//               fileSystemHandler.seek(65536);
+//               byte[] bytes = new byte[4];
+//               fileSystemHandler.readBytesFromFile(bytes);
+//               Integer number = ByteBuffer.wrap(bytes).getInt();
+//               System.out.println("number " + number);
+
+//               fileSystemHandler.seek(0);
+
+//           byte[] bytes = new byte[4];
+//           fileSystemHandler.readBytesFromFile(bytes);
+//               fileSystemHandler = new HdfsFileSystemHandler("/home/acelzj");
+//               fileSystemHandler = new LocalFileSystemHandler("/home/acelzj");
+//               fileSystemHandler.openFile("/", "taskId4chunk0");
+//               RandomAccessFile file = new RandomAccessFile("src/chunk_test", "r");
+
+
+//               serializedTree = new byte[lengthOfSizeOfBTreeInBytes];
+//               file.read(serializedTree, 0, Config.TEMPLATE_SIZE);
+//               fileSystemHandler.seek(4);
+
+               DeserializationHelper deserializationHelper = new DeserializationHelper();
+
+
+
+               Long startTime = System.nanoTime();
+//               serializedTree = new byte[Config.TEMPLATE_SIZE];
+           fileSystemHandler.readBytesFromFile(serializedTree);
+           Integer number = ByteBuffer.wrap(serializedTree, 65536, 4).getInt();
+           System.out.println("number " + number);
                BTree deserializedTree = deserializationHelper.deserializeBTree(serializedTree, bTreeOder, counter);
-               deserializedTree.printBtree();
-               int startPosition = deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey);
-               System.out.println("offset " + startPosition);
-               byte[] lengthInByte = new byte[4];
-               file.seek(startPosition);
-               file.read(lengthInByte);
-               int lengthOfLeaveInBytes = ByteBuffer.wrap(lengthInByte, 0, 4).getInt();
-               System.out.println("Length of leave in bytes " + lengthOfLeaveInBytes);
-               byte[] leafInByte = new byte[lengthOfLeaveInBytes];
-               file.seek(startPosition + 4);
-               file.read(leafInByte);
-               BTreeLeafNode deserializedLeaf = deserializationHelper.deserializeLeaf(leafInByte, bTreeOder, counter);
-               System.out.println(schema.deserialize((byte[]) deserializedLeaf.getTuples(0).get(0)));
+//               BTree deserializedTree = deserializationHelper.deserializeBTree(fileSystemHandler, bTreeOder, counter);
+
+//               BTree deserializedTree = DeserializationHelper.deserializeBTree(fileSystemHandler, bTreeOder, counter);
+               Long cost = System.nanoTime() - startTime;
+               System.out.println(cost);
+//               deserializedTree.printBtree();
+
+               BTreeNode leftNode = deserializedTree.findLeafNodeShouldContainKeyInDeserializedTemplate(leftKey);
+//               leftNode.print();
+               leftNode.rightSibling.print();
+               BTreeNode rightNode = deserializedTree.findLeafNodeShouldContainKeyInDeserializedTemplate(rightKey);
+//               rightNode.print();
+
+//               System.out.println("finished");
+
+//           while (leftNode != rightNode) {
+//               leftNode.print();
+//               leftNode = leftNode.rightSibling;
+//           }
+
+//               int startPosition = deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey);
+//               int endPosition = deserializedTree.getOffsetOfLeaveNodeShouldContainKey(rightKey);
+               List<Integer> offsets = deserializedTree.getOffsetsOfLeaveNodesShoulsContainKeys(leftNode, rightNode);
+//               for (Integer o : offsets) {
+//                   System.out.println(o);
+//               }
+               for (Integer startPosition : offsets) {
+//           while (startPosition <= endPosition) {
+//                   System.out.println("offset " + startPosition);
+                   byte[] lengthInByte = new byte[4];
+//               file.seek(startPosition);
+                   fileSystemHandler.seek(startPosition);
+//               file.read(lengthInByte);
+                   fileSystemHandler.readBytesFromFile(startPosition, lengthInByte);
+                   int lengthOfLeaveInBytes = ByteBuffer.wrap(lengthInByte, 0, 4).getInt();
+//                   System.out.println("Length of leave in bytes " + lengthOfLeaveInBytes);
+                   byte[] leafInByte = new byte[lengthOfLeaveInBytes];
+//               file.seek(startPosition + 4);
+//                   fileSystemHandler.seek(startPosition + 4);
+//               file.read(leafInByte);
+                   fileSystemHandler.readBytesFromFile(startPosition + 4, leafInByte);
+                   BTreeLeafNode deserializedLeaf = DeserializationHelper.deserializeLeaf(leafInByte, bTreeOder, counter);
+                   System.out.println(deserialize((byte[]) deserializedLeaf.getTuples(0).get(0)));
+//                   Double key = (Double) deserializedLeaf.getKey(deserializedLeaf.getKeyCount() - 1);
+//                   System.out.println(key);
+//               startPosition = deserializedTree.getOffsetOfLeaveNodeShouldContainKey(key + 3.0);
+//               startPosition = startPosition + lengthOfLeaveInBytes + 4;
+               }
+
+
+
+               bTree.clearPayload();
+           }
 //           file.close();
 /*
            startPosition = (startPosition + lengthOfLeaveInBytes + 4);
@@ -316,8 +393,8 @@ customDelete(btree,range,4,1);
                file.read(leafInByte);
                deserializedLeaf = deserializationHelper.deserializeLeaf(leafInByte, bTreeOder, counter);
                System.out.println(schema.deserialize((byte[]) deserializedLeaf.getTuples(0).get(0)));*/
-//           }
-       }
+//           }*/
+//       }
 
     public List<Double> getValuesObject(String [] valuesAsString) throws IOException {
 
@@ -329,6 +406,8 @@ customDelete(btree,range,4,1);
                 values.add(Double.parseDouble(valuesAsString[i]));
             }
         }
+
+
         return values;
     }
 
@@ -342,6 +421,34 @@ customDelete(btree,range,4,1);
                 bos.write(b);
             }
         }
+
+        byte [] b = ByteBuffer.allocate(Double.SIZE / Byte.SIZE).putDouble(values.get(valueTypes.size())).array();
+        bos.write(b);
+
         return bos.toByteArray();
     }
+
+    public Values deserialize(byte [] b) throws IOException {
+        Values values = new Values();
+        int offset = 0;
+        ArrayList valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
+                Double.class, Double.class, Double.class, Double.class, Double.class));
+
+        for (int i = 0; i < valueTypes.size(); i++) {
+            if (valueTypes.get(i).equals(Double.class)) {
+                int len = Double.SIZE/Byte.SIZE;
+                double val = ByteBuffer.wrap(b, offset, len).getDouble();
+                values.add(val);
+                offset += len;
+            }
+        }
+
+        int len = Double.SIZE / Byte.SIZE;
+        Double val = ByteBuffer.wrap(b, offset, len).getDouble();
+        values.add(val);
+
+        return values;
+    }
+
+
 }

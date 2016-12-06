@@ -16,7 +16,6 @@ import java.util.Map;
 public class RangePartitionGrouping implements CustomStreamGrouping {
 
     Map<Integer, Pair> boltIdToKeyRange = new HashMap<Integer, Pair>();
-//    BoltsToKeyRangeRecorder boltsToKeyRangeRecorder;
 
     public void prepare(WorkerTopologyContext context, GlobalStreamId stream, List<Integer> targetTasks) {
         int numberOfBolts = targetTasks.size();

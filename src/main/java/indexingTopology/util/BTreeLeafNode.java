@@ -1,5 +1,6 @@
 package indexingTopology.util;
 
+import backtype.storm.tuple.Values;
 import indexingTopology.exception.UnsupportedGenericException;
 import org.omg.Messaging.SYNC_WITH_TRANSPORT;
 
@@ -803,9 +804,37 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
 	}
 
 	public ArrayList<byte []> searchAndGetTuples(TKey key) {
-		ArrayList<byte[]> tuples;
+		ArrayList<byte[]> tuples = new ArrayList<byte[]>();
 		int index = search(key);
 		tuples = (index == -1 ? new ArrayList<byte[]>() : getTuples(index));
+//            releaseReadLock();  //Added to check the paper
+//        }
+		return tuples;
+	}
+
+
+
+
+
+	public ArrayList<byte []> searchAndGetTuplesWithinTimestampRange(
+			TKey key, Long timestampLowerBound, Long timestampUpperBound) {
+		ArrayList<byte[]> tuples = new ArrayList<byte[]>();
+		int index = search(key);
+		if (index != -1) {
+			ArrayList<byte[]> serializedTuples = getTuples(index);
+			for (int i = 0; i < serializedTuples.size(); ++i) {
+				try {
+					Values deserializedTuple = DeserializationHelper.deserialize(serializedTuples.get(i));
+					if (timestampLowerBound <= (Long) deserializedTuple.get(8) &&
+							timestampUpperBound >= (Long) deserializedTuple.get(8)) {
+						tuples.add(serializedTuples.get(i));
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+//		tuples = (index == -1 ? new ArrayList<byte[]>() : getTuples(index));
 //            releaseReadLock();  //Added to check the paper
 //        }
 		return tuples;
@@ -1216,11 +1245,32 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
 		bytesCount -= len;
 	}
 
+	/*
 	public ArrayList<byte[]> rangeSearchAndGetTuples(TKey leftKey, TKey rightKey) {
 		ArrayList<byte[]> tuples = new ArrayList<byte[]>();
 		for (int i = 0; i < keys.size(); ++i) {
 			if (keys.get(i).compareTo(leftKey) >= 0 && keys.get(i).compareTo(rightKey) <= 0) {
 				tuples.addAll(getTuples(i));
+			}
+		}
+		return tuples;
+	}
+	*/
+
+	public ArrayList<byte[]> rangeSearchAndGetTuples(Long timestampLowerBound, Long timestampUpperBound) {
+		ArrayList<byte[]> tuples = new ArrayList<byte[]>();
+		for (int i = 0; i < keys.size(); ++i) {
+			ArrayList<byte[]> serializedTuples = getTuples(i);
+			for (int j = 0; j < serializedTuples.size(); ++j) {
+				try {
+					Values deserializedTuple = DeserializationHelper.deserialize(serializedTuples.get(j));
+					if (timestampLowerBound <= (Long) deserializedTuple.get(8) &&
+							timestampUpperBound >= (Long) deserializedTuple.get(8)) {
+						tuples.add(serializedTuples.get(j));
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 		return tuples;

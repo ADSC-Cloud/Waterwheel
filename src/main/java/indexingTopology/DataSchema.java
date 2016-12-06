@@ -87,6 +87,11 @@ public class DataSchema implements Serializable {
                 throw new IOException("Only classes supported till now are string and double");
             }
         }
+
+        int len = Long.SIZE / Byte.SIZE;
+        Long val = ByteBuffer.wrap(b, offset, len).getLong();
+        values.add(val);
+
         return values;
     }
 
@@ -105,6 +110,10 @@ public class DataSchema implements Serializable {
                 throw new IOException("Only classes supported till now are string and double");
             }
         }
+
+        //As we add timestamp for a field, so we need to serialize the timestamp
+        byte [] b = ByteBuffer.allocate(Long.SIZE / Byte.SIZE).putDouble(t.getLong(valueTypes.size())).array();
+        bos.write(b);
 
         return bos.toByteArray();
     }

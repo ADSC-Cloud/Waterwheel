@@ -1,4 +1,6 @@
-package indexingTopology.util;
+package indexingTopology.FileSystemHandler;
+
+import indexingTopology.util.MemChunk;
 
 import java.io.IOException;
 
@@ -13,6 +15,8 @@ public interface FileSystemHandler {
 
     void openFile(String relativePath, String fileName);
 
+    void readBytesFromFile(int position, byte[] bytes);
+
     void readBytesFromFile(byte[] bytes);
 
     void seek(int offset) throws IOException;
@@ -20,4 +24,14 @@ public interface FileSystemHandler {
     void closeFile();
 
     long getLengthOfFile(String relativePath, String fileName);
+
+    char readChar() throws IOException;
+
+    int readInt() throws IOException;
+
+    double readDouble() throws IOException;
+
+
+    Long readLong() throws IOException;
+
 }

@@ -1,7 +1,9 @@
 package indexingTopology.util;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -25,6 +27,7 @@ public class testDiv {
         }*/
         final String s1 = new String("Hello");
         final String s2 = new String("Hello");
+        /*
         System.out.println(s1.equals(s2));
         System.out.println(s1 == s2);
         final Map<Integer, Integer> map = new ConcurrentHashMap<Integer, Integer>();
@@ -48,7 +51,12 @@ public class testDiv {
             }
         });
         testThread.start();
-        System.out.println("Finished");
+        System.out.println("Finished");*/
+        System.out.println(System.currentTimeMillis() / 1.0);
 
+        List<Integer> list = new ArrayList<Integer>();
+        System.out.println(list.size());
+
+        System.out.println(Character.SIZE / Byte.SIZE);
     }
 }

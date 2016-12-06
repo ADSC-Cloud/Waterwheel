@@ -5,25 +5,21 @@ import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
-import backtype.storm.tuple.MessageId;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-import backtype.storm.utils.Utils;
 import indexingTopology.Config.Config;
 import indexingTopology.DataSchema;
+import indexingTopology.FileSystemHandler.FileSystemHandler;
+import indexingTopology.FileSystemHandler.HdfsFileSystemHandler;
+import indexingTopology.FileSystemHandler.LocalFileSystemHandler;
 import indexingTopology.NormalDistributionIndexingTopology;
-import indexingTopology.TestIndexing;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.util.*;
 import javafx.util.Pair;
 
-import javax.sound.midi.SysexMessage;
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -206,7 +202,8 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
                     chunk.changeToLeaveNodesStartPosition();
                     indexedData.writeLeavesIntoChunk(chunk);
                     chunk.changeToStartPosition();
-                    byte[] serializedTree = indexedData.serializeTree();
+//                    byte[] serializedTree = indexedData.serializeTree();
+                    byte[] serializedTree = SerializationHelper.serializeTree(indexedData);
                     chunk.write(serializedTree);
 
                     createNewTemplate(percentage);
@@ -220,7 +217,8 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
                     FileSystemHandler fileSystemHandler = null;
                     String fileName = null;
                     try {
-                        fileSystemHandler = new LocalFileSystemHandler("/home/acelzj");
+//                        fileSystemHandler = new LocalFileSystemHandler("/home/acelzj");
+                        fileSystemHandler = new HdfsFileSystemHandler("/home/acelzj");
                         int taskId = context.getThisTaskId();
                         fileName = "taskId" + taskId + "chunk" + chunkId;
                         fileSystemHandler.writeToFileSystem(chunk, "/", fileName);

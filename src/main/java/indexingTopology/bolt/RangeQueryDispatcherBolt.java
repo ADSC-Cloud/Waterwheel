@@ -1,6 +1,5 @@
 package indexingTopology.bolt;
 
-import backtype.storm.generated.Grouping;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
@@ -11,8 +10,8 @@ import backtype.storm.tuple.Values;
 import indexingTopology.DataSchema;
 import indexingTopology.NormalDistributionIndexingAndRangeQueryTopology;
 import indexingTopology.NormalDistributionIndexingTopology;
-import indexingTopology.util.TaskMetaData;
-import indexingTopology.util.TaskPartitionSchemaManager;
+import indexingTopology.MetaData.TaskMetaData;
+import indexingTopology.MetaData.TaskPartitionSchemaManager;
 import javafx.util.Pair;
 
 import java.io.IOException;

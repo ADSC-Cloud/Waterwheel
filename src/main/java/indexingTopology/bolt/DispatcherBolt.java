@@ -10,13 +10,13 @@ import backtype.storm.tuple.Values;
 import indexingTopology.DataSchema;
 import indexingTopology.NormalDistributionIndexingAndRangeQueryTopology;
 import indexingTopology.NormalDistributionIndexingTopology;
-import indexingTopology.util.TaskMetaData;
-import indexingTopology.util.TaskPartitionSchemaManager;
-import javafx.fxml.Initializable;
+import indexingTopology.MetaData.TaskMetaData;
+import indexingTopology.MetaData.TaskPartitionSchemaManager;
 import javafx.util.Pair;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.*;
 
 /**
@@ -46,6 +46,10 @@ public class DispatcherBolt extends BaseRichBolt{
 
     private Map<Integer, TaskMetaData> taskIdToTaskMetaData;
 
+    private File outputFile;
+
+    private FileOutputStream fop;
+
 
     public DispatcherBolt(DataSchema schema) {
         this.schema = schema;
@@ -53,6 +57,7 @@ public class DispatcherBolt extends BaseRichBolt{
 
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
+        outputFile = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/number_of_tasks.txt");
 //        this.nextComponentTasks=topologyContext.getComponentTasks(nextComponentID);
 //        assert this.nextComponentTasks.size()==RANGE_BREAKPOINTS.length : "its hardcoded for now. lengths should match";
         Set<String> componentIds = topologyContext.getThisTargets()
@@ -61,6 +66,12 @@ public class DispatcherBolt extends BaseRichBolt{
 
         for (String componentId : componentIds) {
             targetTasks.addAll(topologyContext.getComponentTasks(componentId));
+        }
+
+        try {
+            fop = new FileOutputStream(outputFile);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
 //        scheduleKeyRangeToTask(targetTasks);
@@ -95,12 +106,26 @@ public class DispatcherBolt extends BaseRichBolt{
             List<Integer> targetTasks = taskPartitionSchemaManager.search(key, key, startTime, Long.MAX_VALUE);
             int numberOfTasksToSearch = targetTasks.size();
             for (Integer taskId : targetTasks) {
-                collector.emitDirect(taskId, NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryStream,
+                collector.emitDirect(taskId, NormalDistributionIndexingTopology.BPlusTreeQueryStream,
                         new Values(queryId, key));
             }
 
             collector.emit(NormalDistributionIndexingTopology.BPlusTreeQueryInformationStream
                     , new Values(queryId, numberOfTasksToSearch));
+
+
+            String content = "Query ID " + queryId + " " + numberOfTasksToSearch;
+            String newline = System.getProperty("line.separator");
+            byte[] contentInBytes = content.getBytes();
+            byte[] nextLineInBytes = newline.getBytes();
+            try {
+                fop.write(contentInBytes);
+                fop.write(nextLineInBytes);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
 
 //            collector.emit(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
 //                    new Values(tuple.getValue(0), tuple.getValue(1)));

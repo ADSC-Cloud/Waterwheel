@@ -1,13 +1,15 @@
-package indexingTopology.util;
+package indexingTopology.FileSystemHandler;
+
+import indexingTopology.FileSystemHandler.FileSystemHandler;
+import indexingTopology.util.MemChunk;
 
 import java.io.*;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 
 /**
  * Created by dmir on 10/26/16.
  */
-public class LocalFileSystemHandler implements FileSystemHandler{
+public class LocalFileSystemHandler implements FileSystemHandler {
 
     File file;
     FileOutputStream fop;
@@ -56,6 +58,14 @@ public class LocalFileSystemHandler implements FileSystemHandler{
         }
     }
 
+    public void readBytesFromFile(int position, byte[] bytes) {
+        try {
+            randomAccessFile.read(bytes);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void readBytesFromFile(byte[] bytes) {
         try {
             randomAccessFile.read(bytes);
@@ -88,5 +98,21 @@ public class LocalFileSystemHandler implements FileSystemHandler{
             e.printStackTrace();
         }
         return length;
+    }
+
+    public char readChar() throws IOException {
+        return randomAccessFile.readChar();
+    }
+
+    public int readInt() throws IOException {
+        return randomAccessFile.readInt();
+    }
+
+    public double readDouble() throws IOException {
+        return randomAccessFile.readDouble();
+    }
+
+    public Long readLong() throws IOException {
+        return randomAccessFile.readLong();
     }
 }

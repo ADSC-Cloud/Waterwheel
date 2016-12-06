@@ -1,6 +1,8 @@
-package indexingTopology.util;
+package indexingTopology.FileSystemHandler;
 
 import indexingTopology.Config.Config;
+import indexingTopology.FileSystemHandler.FileSystemHandler;
+import indexingTopology.util.MemChunk;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -8,13 +10,14 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.net.URI;
 import java.nio.ByteBuffer;
 
 /**
  * Created by dmir on 10/26/16.
  */
-public class HdfsFileSystemHandler implements FileSystemHandler{
+public class HdfsFileSystemHandler implements FileSystemHandler {
 
     FileSystem fileSystem;
     URI uri;
@@ -69,13 +72,19 @@ public class HdfsFileSystemHandler implements FileSystemHandler{
         }
     }
 
-    public void readBytesFromFile(byte[] bytes) {
+    public void readBytesFromFile(int position, byte[] bytes) {
         try {
-            fsDataInputStream.read(bytes);
+            fsDataInputStream.readFully(position, bytes);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
+
+    public void readBytesFromFile(byte[] bytes) {
+            readBytesFromFile(0, bytes);
+    }
+
 
     public void seek(int offset) throws IOException {
         try {
@@ -103,4 +112,19 @@ public class HdfsFileSystemHandler implements FileSystemHandler{
         return length;
     }
 
+    public char readChar() throws IOException {
+        return fsDataInputStream.readChar();
+    }
+
+    public int readInt() throws IOException {
+        return fsDataInputStream.readInt();
+    }
+
+    public double readDouble() throws IOException {
+        return fsDataInputStream.readDouble();
+    }
+
+    public Long readLong() throws IOException {
+        return fsDataInputStream.readLong();
+    }
 }

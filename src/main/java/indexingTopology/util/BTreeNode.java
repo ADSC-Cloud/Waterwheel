@@ -245,6 +245,11 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 		return leftSibling;
 	}
 
+	public ArrayList<TKey> getKeys() {
+		return new ArrayList<TKey>(keys);
+	}
+
+
 	public void setLeftSibling(BTreeNode<TKey> sibling) {
 		this.leftSibling = sibling;
 	}

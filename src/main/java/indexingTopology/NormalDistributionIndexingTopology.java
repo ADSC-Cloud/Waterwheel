@@ -25,6 +25,12 @@ public class NormalDistributionIndexingTopology {
     public static final String FileSystemQueryInformationStream = "FileSystemQueryInformationStream";
     public static final String NewQueryStream = "NewQueryStream";
     public static final String TimeStampUpdateStream = "TimeStampUpdateStream";
+    public static final String QueryGenerateStream = "QueryGenerateStream";
+    public static final String FileSubQueryFinishStream = "FileSubQueryFinishStream";
+
+
+    public static final String TimeCostInformationStream = "TimeCostInformationStream";
+
 
     static final String TupleGenerator = "TupleGenerator";
     static final String DispatcherBolt = "DispatcherBolt";
@@ -68,15 +74,18 @@ public class NormalDistributionIndexingTopology {
 
         builder.setBolt(QueryDecompositionBolt, new QueryDecompositionBolt()).setNumTasks(1).
                 allGrouping(IndexerBolt, FileInformationUpdateStream)
-                .shuffleGrouping(ResultMergeBolt, NewQueryStream);
+                .shuffleGrouping(ResultMergeBolt, NewQueryStream)
+                .shuffleGrouping(ChunkScannerBolt, FileSubQueryFinishStream);
 
         builder.setBolt(ChunkScannerBolt, new ChunkScannerBolt()).setNumTasks(2)
-                .fieldsGrouping(QueryDecompositionBolt, FileSystemQueryStream, new Fields("fileName"));
+//                .fieldsGrouping(QueryDecompositionBolt, FileSystemQueryStream, new Fields("fileName"));
+                .directGrouping(QueryDecompositionBolt, FileSystemQueryStream);
 
         builder.setBolt(ResultMergeBolt, new ResultMergeBolt(schema)).setNumTasks(1)
                 .allGrouping(ChunkScannerBolt, FileSystemQueryStream)
                 .allGrouping(IndexerBolt, BPlusTreeQueryStream)
                 .shuffleGrouping(DispatcherBolt, BPlusTreeQueryInformationStream)
+//                .shuffleGrouping(ChunkScannerBolt, TimeCostInformationStream)
                 .shuffleGrouping(QueryDecompositionBolt, FileSystemQueryInformationStream);
 
         Config conf = new Config();

@@ -10,9 +10,17 @@ public class Config {
 
     public static final String HDFS_HOST = "hdfs://localhost:54310/";
 
-    public static final int TEMPLATE_SIZE = 64000*4;
+    public static final int TEMPLATE_SIZE = 64000 * 4;
+//    public static final int TEMPLATE_SIZE = 64000 ;
 
     public static final int NUMBER_TUPLES_OF_A_CHUNK = 20000;
+//    public static final int NUMBER_TUPLES_OF_A_CHUNK = 2000;
 
     public static final int LEAVE_NODE_IN_BYTES = 1000;
+
+    public static final double KER_RANGE_COVERAGE = 1;
+
+    public static final int CACHE_SIZE = 10;
+
+    public static final int FILE_QUERY_TASK_WATINING_QUEUE_CAPACITY = 100;
 }

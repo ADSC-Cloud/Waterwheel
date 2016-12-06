@@ -9,6 +9,9 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import indexingTopology.Config.Config;
 import indexingTopology.DataSchema;
+import indexingTopology.FileSystemHandler.FileSystemHandler;
+import indexingTopology.FileSystemHandler.HdfsFileSystemHandler;
+import indexingTopology.FileSystemHandler.LocalFileSystemHandler;
 import indexingTopology.NormalDistributionIndexingAndRangeQueryTopology;
 import indexingTopology.NormalDistributionIndexingTopology;
 import indexingTopology.exception.UnsupportedGenericException;
@@ -205,7 +208,8 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
                     chunk.changeToLeaveNodesStartPosition();
                     indexedData.writeLeavesIntoChunk(chunk);
                     chunk.changeToStartPosition();
-                    byte[] serializedTree = indexedData.serializeTree();
+//                    byte[] serializedTree = indexedData.serializeTree();
+                    byte[] serializedTree = SerializationHelper.serializeTree(indexedData);
                     chunk.write(serializedTree);
 
                     createNewTemplate(percentage);
@@ -219,7 +223,8 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
                     FileSystemHandler fileSystemHandler = null;
                     String fileName = null;
                     try {
-                        fileSystemHandler = new LocalFileSystemHandler("/home/acelzj");
+//                        fileSystemHandler = new LocalFileSystemHandler("/home/acelzj");
+                        fileSystemHandler = new HdfsFileSystemHandler("/home/acelzj");
                         int taskId = context.getThisTaskId();
                         fileName = "taskId" + taskId + "chunk" + chunkId;
                         fileSystemHandler.writeToFileSystem(chunk, "/", fileName);

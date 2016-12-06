@@ -620,4 +620,8 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 			e.printStackTrace();
 		}
 	}
+
+	public ArrayList<Integer> getOffsets() {
+		return new ArrayList<Integer>(offsets);
+	}
 }
