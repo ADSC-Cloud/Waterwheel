@@ -52,8 +52,6 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
 //        String fileName = (String) tuple.getValue(3);
 //        Long timestampLowerBound = tuple.getLong(4);
 //        Long timestampUpperBound = tuple.getLong(5);
-
-
         Long queryId = subQuery.getQueryId();
         Double leftKey = subQuery.getlefKey();
         Double rightKey = subQuery.getRightKey();
@@ -68,11 +66,9 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
 
         Long startTime = System.currentTimeMillis();
 
-
         Long startTimeOfReadFile;
         Long timeCostOfReadFile = ((long) 0);
 
-//        DeserializationHelper deserializationHelper = new DeserializationHelper();
         BytesCounter counter = new BytesCounter();
 
 
@@ -82,208 +78,61 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
 
         Long timeCostOfDeserializationALeaf = ((long) 0);
 
+        try {
+            FileSystemHandler fileSystemHandler = new LocalFileSystemHandler("/home/acelzj");
+//                FileSystemHandler fileSystemHandler = new HdfsFileSystemHandler("/home/acelzj");
+            CacheMappingKey mappingKey = new CacheMappingKey(fileName, 0);
+            BTree deserializedTree = (BTree) getFromCache(mappingKey);
+            if (deserializedTree == null) {
+                deserializedTree = getTemplateFromExternalStorage(fileSystemHandler, fileName);
 
-//        for (String fileName : fileNames) {
-            try {
-//                FileSystemHandler fileSystemHandler = new LocalFileSystemHandler("/home/acelzj");
-                FileSystemHandler fileSystemHandler = new HdfsFileSystemHandler("/home/acelzj");
-                CacheMappingKey mappingKey = new CacheMappingKey(fileName, 0);
-                BTree deserializedTree = null;
-                if (cacheMapping.get(mappingKey) != null) {
-                    deserializedTree = (BTree) cacheMapping.get(mappingKey).getCacheData().getData();
-                } else {
+                CacheData cacheData = new TemplateCacheData(deserializedTree);
 
-                    startTimeOfReadFile = System.currentTimeMillis();
-                    fileSystemHandler.openFile("/", fileName);
-                    timeCostOfReadFile = System.currentTimeMillis() - startTimeOfReadFile;
-
-                    byte[] serializedTree = new byte[Config.TEMPLATE_SIZE];
-//                DeserializationHelper deserializationHelper = new DeserializationHelper();
-//                BytesCounter counter = new BytesCounter();
-
-                    startTimeOfReadFile = System.currentTimeMillis();
-                    fileSystemHandler.readBytesFromFile(0, serializedTree);
-                    timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
-
-                    Long startTimeOfDeserializationATree = System.currentTimeMillis();
-//                    deserializedTree = deserializationHelper.deserializeBTree(serializedTree, bTreeOder, counter);
-                    deserializedTree = DeserializationHelper.deserializeBTree(fileSystemHandler, bTreeOder, counter);
-                    timeCostOfDeserializationATree = System.currentTimeMillis() - startTimeOfDeserializationATree;
-
-                    CacheData cacheData = new TemplateCacheData(deserializedTree);
-                    CacheUnit cacheUnit = new CacheUnit();
-                    cacheUnit.setCacheData(cacheData);
-                    cacheMapping.put(mappingKey, cacheUnit);
-
-                    startTimeOfReadFile = System.currentTimeMillis();
-                    fileSystemHandler.closeFile();
-                    timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
-
-                }
+                putCacheData(cacheData, mappingKey);
+            }
 
 
-                BTreeNode mostLeftNode = deserializedTree.findLeafNodeShouldContainKeyInDeserializedTemplate(leftKey);
-                BTreeNode mostRightNode = deserializedTree.findLeafNodeShouldContainKeyInDeserializedTemplate(rightKey);
+            BTreeNode mostLeftNode = deserializedTree.findLeafNodeShouldContainKeyInDeserializedTemplate(leftKey);
+            BTreeNode mostRightNode = deserializedTree.findLeafNodeShouldContainKeyInDeserializedTemplate(rightKey);
 
-                Long searchStartTime = System.currentTimeMillis();
-                List<Integer> offsets = deserializedTree.getOffsetsOfLeaveNodesShoulsContainKeys(mostLeftNode
+            Long searchStartTime = System.currentTimeMillis();
+            List<Integer> offsets = deserializedTree.getOffsetsOfLeaveNodesShoulsContainKeys(mostLeftNode
                         , mostRightNode);
-                timeCostOfSearching += (System.currentTimeMillis() - searchStartTime);
+            timeCostOfSearching += (System.currentTimeMillis() - searchStartTime);
 
-//                int offset = deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey);
-//                int endPosition = deserializedTree.getOffsetOfLeaveNodeShouldContainKey(rightKey);
-//                long length = fileSystemHandler.getLengthOfFile("/", fileName);
+            BTreeLeafNode leaf;
 
-
-                BTreeLeafNode leaf;
-
-                for (Integer offset : offsets) {
-//                while (offset < endPosition) {
-
-                    mappingKey = new CacheMappingKey(fileName, offset);
-                    if (cacheMapping.get(mappingKey) != null) {
-                        leaf = (BTreeLeafNode) cacheMapping.get(mappingKey).getCacheData().getData();
-                    } else {
-                        byte[] lengthInByte = new byte[4];
-
-                        startTimeOfReadFile = System.currentTimeMillis();
-                        fileSystemHandler.openFile("/", fileName);
-                        timeCostOfReadFile = System.currentTimeMillis() - startTimeOfReadFile;
-
-//                        startTimeOfReadFile = System.currentTimeMillis();
-//                        fileSystemHandler.seek(offset);
-//                        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
-
-
-                        startTimeOfReadFile = System.currentTimeMillis();
-                        fileSystemHandler.readBytesFromFile(offset, lengthInByte);
-                        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
-
-
-                        int lengthOfLeaveInBytes = ByteBuffer.wrap(lengthInByte, 0, 4).getInt();
-                        if (lengthOfLeaveInBytes == 0) {
-                            break;
-                        }
-                        byte[] leafInByte = new byte[lengthOfLeaveInBytes];
-
-
-//                        startTimeOfReadFile = System.currentTimeMillis();
-//                        fileSystemHandler.seek(offset + 4);
-//                        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
-
-
-                        startTimeOfReadFile = System.currentTimeMillis();
-                        fileSystemHandler.readBytesFromFile(offset + 4, leafInByte);
-                        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
-
-                        Long startTimeOfDeserializationALeaf = System.currentTimeMillis();
-                        leaf = DeserializationHelper.deserializeLeaf(leafInByte,
-                                bTreeOder, counter);
-                        timeCostOfDeserializationALeaf += (System.currentTimeMillis() - startTimeOfDeserializationALeaf);
-
-                        CacheData cacheData = new LeafNodeCacheData(leaf);
-                        CacheUnit cacheUnit = new CacheUnit();
-                        cacheUnit.setCacheData(cacheData);
-                        cacheMapping.put(mappingKey, cacheUnit);
-
-                        startTimeOfReadFile = System.currentTimeMillis();
-                        fileSystemHandler.closeFile();
-                        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
-
-
-                    }
-
-                    searchStartTime = System.currentTimeMillis();
-                    ArrayList<byte[]> tuples = leaf.rangeSearchAndGetTuples(timestampLowerBound, timestampUpperBound);
-                    timeCostOfSearching += (System.currentTimeMillis() - searchStartTime);
-                    /*
-                    if (tuples.size() == 0) {
-                        break;
-                    } else {
-                        serializedTuples.addAll(tuples);
-                    } */
-                    if (tuples.size() != 0) {
-                        serializedTuples.addAll(tuples);
-                    }
-
-//                    Double key = (Double) leaf.getKey(leaf.getKeyCount() - 1);
-//                    offset = deserializedTree.getOffsetOfLeaveNodeShouldContainKey(key + 0.000001);
-//                    offset = offset + lengthOfLeaveInBytes + 4;
+            for (Integer offset : offsets) {
+                mappingKey = new CacheMappingKey(fileName, offset);
+                leaf = (BTreeLeafNode) getFromCache(mappingKey);
+                if (leaf == null) {
+                    leaf = getLeafFromExternalStorage(fileSystemHandler, fileName, offset);
+                } else {
+                    CacheData cacheData = new LeafNodeCacheData(leaf);
+                    putCacheData(cacheData, mappingKey);
                 }
-
-                /*
-                startTimeOfReadFile = System.currentTimeMillis();
-                fileSystemHandler.closeFile();
-                timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
-                */
-
-
-                metrics.setTotalTime(System.currentTimeMillis() - startTime);
-                metrics.setFileReadingTime(timeCostOfReadFile);
-                metrics.setLeafDeserializationTime(timeCostOfDeserializationALeaf);
-                metrics.setTreeDeserializationTime(timeCostOfDeserializationATree);
-                metrics.setSearchTime(timeCostOfSearching);
-
-//                collector.emit(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryStream,
-//                        new Values(queryId, serializedTuples, timeCostOfReadFile, timeCostOfDeserializationALeaf,
-//                                timeCostOfDeserializationATree));
-
-                collector.emit(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryStream,
+                searchStartTime = System.currentTimeMillis();
+                ArrayList<byte[]> tuples = leaf.rangeSearchAndGetTuples(timestampLowerBound, timestampUpperBound);
+                timeCostOfSearching += (System.currentTimeMillis() - searchStartTime);
+                if (tuples.size() != 0) {
+                    serializedTuples.addAll(tuples);
+                }
+            }
+            metrics.setTotalTime(System.currentTimeMillis() - startTime);
+            metrics.setFileReadingTime(timeCostOfReadFile);
+            metrics.setLeafDeserializationTime(timeCostOfDeserializationALeaf);
+            metrics.setTreeDeserializationTime(timeCostOfDeserializationATree);
+            metrics.setSearchTime(timeCostOfSearching);
+            collector.emit(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryStream,
                         new Values(queryId, serializedTuples, metrics));
 
-
-
-
-
-
-
-
-                /*
-                file = new RandomAccessFile("/home/acelzj/" + fileName, "r");
-                byte[] serializedTree = new byte[Config.TEMPLATE_SIZE];
-                DeserializationHelper deserializationHelper = new DeserializationHelper();
-                BytesCounter counter = new BytesCounter();
-
-                file.read(serializedTree, 0, Config.TEMPLATE_SIZE);
-                BTree deserializedTree = deserializationHelper.deserializeBTree(serializedTree, bTreeOder, counter);
-                int offset = deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey);
-                while (offset < file.length()) {
-//                    System.out.println("Offset " + offset);
-                    byte[] lengthInByte = new byte[4];
-                    file.seek(offset);
-                    file.read(lengthInByte);
-                    int lengthOfLeaveInBytes = ByteBuffer.wrap(lengthInByte, 0, 4).getInt();
-                    if (lengthOfLeaveInBytes == 0) {
-                        break;
-                    }
-                    byte[] leafInByte = new byte[lengthOfLeaveInBytes];
-                    file.seek(offset + 4);
-                    file.read(leafInByte);
-                    BTreeLeafNode deserializedLeaf = deserializationHelper.deserializeLeaf(leafInByte,
-                            bTreeOder, counter);
-                    ArrayList<byte[]> tuples = deserializedLeaf.rangeSearchAndGetTuples(leftKey, rightKey);
-                    if (tuples.size() == 0) {
-                        break;
-                    } else {
-                        serializedTuples.addAll(tuples);
-                    }
-                    offset = offset + lengthOfLeaveInBytes + 4;
-
-                }*/
+            collector.emit(NormalDistributionIndexingAndRangeQueryTopology.FileSubQueryFinishStream,
+                      new Values("finished"));
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             }
-//        }
-//        System.out.println("The tuples are");
-//        System.out.println(serializedTuples);
-//        System.out.println("Size " + serializedTuples.size());
-//        if (serializedTuples.size() != 0) {
-//            collector.emit(NormalDistributionIndexingTopology.FileSystemQueryStream,
-//                    new Values(queryId, serializedTuples));
-//        }
-//        collector.ack(tuple);
     }
 
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
@@ -304,4 +153,70 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
 
     }
 
+    private Object getFromCache(CacheMappingKey mappingKey) {
+        if (cacheMapping.get(mappingKey) == null) {
+            return null;
+        }
+        return cacheMapping.get(mappingKey).getCacheData().getData();
+    }
+
+    private BTree getTemplateFromExternalStorage(FileSystemHandler fileSystemHandler, String fileName) {
+//        startTimeOfReadFile = System.currentTimeMillis();
+        fileSystemHandler.openFile("/", fileName);
+//        timeCostOfReadFile = System.currentTimeMillis() - startTimeOfReadFile;
+
+        byte[] serializedTree = new byte[Config.TEMPLATE_SIZE];
+//                DeserializationHelper deserializationHelper = new DeserializationHelper();
+        BytesCounter counter = new BytesCounter();
+
+//        startTimeOfReadFile = System.currentTimeMillis();
+        fileSystemHandler.readBytesFromFile(0, serializedTree);
+//        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
+
+//        Long startTimeOfDeserializationATree = System.currentTimeMillis();
+          BTree deserializedTree = DeserializationHelper.deserializeBTree(serializedTree, bTreeOder, counter);
+//        timeCostOfDeserializationATree = System.currentTimeMillis() - startTimeOfDeserializationATree;
+//        startTimeOfReadFile = System.currentTimeMillis();
+        fileSystemHandler.closeFile();
+//        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
+
+        return deserializedTree;
+    }
+
+    private void putCacheData(CacheData cacheData, CacheMappingKey mappingKey) {
+        CacheUnit cacheUnit = new CacheUnit();
+        cacheUnit.setCacheData(cacheData);
+        cacheMapping.put(mappingKey, cacheUnit);
+    }
+
+
+    private BTreeLeafNode getLeafFromExternalStorage(FileSystemHandler fileSystemHandler, String fileName, int offset)
+            throws IOException {
+        byte[] lengthInByte = new byte[4];
+//        startTimeOfReadFile = System.currentTimeMillis();
+        fileSystemHandler.openFile("/", fileName);
+//        timeCostOfReadFile = System.currentTimeMillis() - startTimeOfReadFile;
+//                        startTimeOfReadFile = System.currentTimeMillis();
+        fileSystemHandler.seek(offset);
+//                        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
+//        startTimeOfReadFile = System.currentTimeMillis();
+        fileSystemHandler.readBytesFromFile(offset, lengthInByte);
+//        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
+        int lengthOfLeaveInBytes = ByteBuffer.wrap(lengthInByte, 0, 4).getInt();
+        byte[] leafInByte = new byte[lengthOfLeaveInBytes];
+//                        startTimeOfReadFile = System.currentTimeMillis();
+        fileSystemHandler.seek(offset + 4);
+//                        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
+
+
+//        startTimeOfReadFile = System.currentTimeMillis();
+        fileSystemHandler.readBytesFromFile(offset + 4, leafInByte);
+//        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
+//        Long startTimeOfDeserializationALeaf = System.currentTimeMillis();
+        BytesCounter counter = new BytesCounter();
+        BTreeLeafNode leaf = DeserializationHelper.deserializeLeaf(leafInByte, bTreeOder, counter);
+        fileSystemHandler.closeFile();
+        return leaf;
+//        timeCostOfDeserializationALeaf += (System.currentTimeMillis() - startTimeOfDeserializationALeaf);
+    }
 }

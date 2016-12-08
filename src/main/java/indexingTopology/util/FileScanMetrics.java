@@ -59,4 +59,12 @@ public class FileScanMetrics {
         return searchTime;
     }
 
+    public void addWithAnotherMetrics(FileScanMetrics otherMetrics) {
+        setTotalTime(otherMetrics.getTotalTime() + totalTime);
+        setFileReadingTime(otherMetrics.getFileReadingTime() + fileReadingTime);
+        setLeafDeserializationTime(otherMetrics.getLeafDeserializationTime() + leafDeserializationTime);
+        setTreeDeserializationTime(otherMetrics.getTreeDeserializationTime() + treeDeserializationTime);
+        setSearchTime(otherMetrics.getSearchTime() + searchTime);
+    }
+
 }

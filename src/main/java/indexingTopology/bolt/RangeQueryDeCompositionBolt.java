@@ -13,12 +13,14 @@ import indexingTopology.NormalDistributionIndexingAndRangeQueryTopology;
 import indexingTopology.NormalDistributionIndexingTopology;
 import indexingTopology.MetaData.FilePartitionSchemaManager;
 import indexingTopology.MetaData.FileMetaData;
+import indexingTopology.util.FileScanMetrics;
 import indexingTopology.util.RangeQuerySubQuery;
 import indexingTopology.util.SubQuery;
 import javafx.util.Pair;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
@@ -44,13 +46,13 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 
     private File file;
 
-    /*
+
     private File outputFile;
     private File outputFile1;
     private File outputFile2;
     private File outputFile3;
     private File outputFile4;
-    */
+
 
     private BufferedReader bufferedReader;
 
@@ -64,15 +66,17 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 
     private transient List<Integer> targetTasks;
 
-    private LinkedBlockingQueue<RangeQuerySubQuery> taskQueue;
+//    private LinkedBlockingQueue<RangeQuerySubQuery> taskQueue;
+    private ArrayBlockingQueue<RangeQuerySubQuery> taskQueue;
 
-    /*
+    private transient Map<Integer, ArrayBlockingQueue<RangeQuerySubQuery>> taskIdToTaskQueue;
+
     private FileOutputStream fop;
     private FileOutputStream fop1;
     private FileOutputStream fop2;
     private FileOutputStream fop3;
     private FileOutputStream fop4;
-    */
+
 
     private AtomicDouble minIndexValue;
     private AtomicDouble maxIndexValue;
@@ -89,10 +93,13 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
         queryIdToTimeCostInMillis = new HashMap<Long, Long>();
         filePartitionSchemaManager = new FilePartitionSchemaManager();
 
-        taskQueue = new LinkedBlockingQueue<RangeQuerySubQuery>(Config.FILE_QUERY_TASK_WATINING_QUEUE_CAPACITY);
+        taskQueue = new ArrayBlockingQueue<RangeQuerySubQuery>(Config.TASK_QUEUE_CAPACITY);
+//        taskQueue = new LinkedBlockingQueue<RangeQuerySubQuery>(Config.FILE_QUERY_TASK_WATINING_QUEUE_CAPACITY);
 
         Set<String> componentIds = topologyContext.getThisTargets()
                 .get(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryStream).keySet();
+
+        taskIdToTaskQueue = new HashMap<Integer, ArrayBlockingQueue<RangeQuerySubQuery>>();
 
         targetTasks = new ArrayList<Integer>();
 
@@ -100,12 +107,15 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
             targetTasks.addAll(topologyContext.getComponentTasks(componentId));
         }
 
+        createTaskQueues(targetTasks);
+
         minIndexValue = new AtomicDouble(2000);
         maxIndexValue = new AtomicDouble(0);
 
-        /*
+
         outputFile = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/time_cost.txt");
         outputFile1 = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/number_of_files.txt");
+        /*
         outputFile2 = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/time_cost_of_read_file.txt");
         outputFile3 = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/time_cost_deserialization_a_tree.txt");
         outputFile4 = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/time_cost_deserialization_a_leaf.txt");
@@ -120,7 +130,7 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
             e.printStackTrace();
         }
 
-        /*
+
         try {
             if (!outputFile.exists()) {
                 outputFile.createNewFile();
@@ -135,6 +145,7 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        /*
         try {
             if (!outputFile2.exists()) {
                 outputFile2.createNewFile();
@@ -156,6 +167,7 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        */
         try {
             fop = new FileOutputStream(outputFile);
         } catch (IOException e) {
@@ -166,6 +178,7 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        /*
         try {
             fop2 = new FileOutputStream(outputFile2);
         } catch (IOException e) {
@@ -212,10 +225,52 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
             Long queryId = tuple.getLong(0);
 //            Long timeCostInMillis = System.currentTimeMillis() - queryIdToTimeCostInMillis.get(queryId);
 
+            FileScanMetrics metrics = (FileScanMetrics) tuple.getValue(2);
+
+            int numberOfFilesToScan = tuple.getInteger(3);
+
+            if (metrics != null) {
+                Long totalTimeCost = metrics.getTotalTime();
+
+            /*
             Long timeCostOfReadFile = tuple.getLong(2);
             Long timeCostOfDeserializationALeaf = tuple.getLong(3);
             Long timeCostOfDeserializationATree = tuple.getLong(4);
+            Long timeCostOfSearching = tuple.getLong(5);
+            Long totalTimeCost = tuple.getLong(6);
+            */
 
+
+//            if (timeCostOfReadFile != null && timeCostOfDeserializationALeaf != null && timeCostOfDeserializationATree != null) {
+//                queryIdToTimeCostInMillis.remove(queryId);
+//                System.out.println("Query ID " + queryId + " " + timeCostInMillis);
+
+
+//                String content = "Query ID " + queryId + " " + totalTimeCost;
+                String content = "" + totalTimeCost;
+                String newline = System.getProperty("line.separator");
+                byte[] contentInBytes = content.getBytes();
+                byte[] nextLineInBytes = newline.getBytes();
+                try {
+                    fop.write(contentInBytes);
+                    fop.write(nextLineInBytes);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                content = "" + numberOfFilesToScan;
+//                String content = "" + totalTimeCost;
+                newline = System.getProperty("line.separator");
+                contentInBytes = content.getBytes();
+                nextLineInBytes = newline.getBytes();
+                try {
+                    fop1.write(contentInBytes);
+                    fop1.write(nextLineInBytes);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+//            }
             /*
             if (timeCostOfReadFile != null && timeCostOfDeserializationALeaf != null && timeCostOfDeserializationATree != null) {
                 queryIdToTimeCostInMillis.remove(queryId);
@@ -278,12 +333,13 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 
             int taskId = tuple.getSourceTask();
 
-            RangeQuerySubQuery subQuery = taskQueue.poll();
+            /*task queue model
+            sendSubqueryToTask(taskId);
+            */
 
-            if (subQuery != null) {
-                collector.emitDirect(taskId, NormalDistributionIndexingTopology.FileSystemQueryStream
-                        , new Values(subQuery));
-            }
+//            /*our method
+            sendSubquery(taskId);
+//            */
 
         } else if (tuple.getSourceStreamId().equals(NormalDistributionIndexingAndRangeQueryTopology.QueryGenerateStream)) {
 
@@ -293,7 +349,7 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
                 e.printStackTrace();
             }
 
-            long queryId = tuple.getLong(0);
+            Long queryId = tuple.getLong(0);
             Double leftKey = tuple.getDouble(1);
             Double rightKey = tuple.getDouble(2);
             Long startTimeStamp = tuple.getLong(3);
@@ -392,99 +448,170 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
                 System.out.println("Left key is " + leftKey.intValue());
                 System.out.println("Right key is " + rightKey.intValue());
 
-                Long startTimeStamp = System.currentTimeMillis() - 10000;
-                Long endTimeStamp = System.currentTimeMillis();
-
-//                Long startTimeStamp = (long) 0;
+//                Long startTimeStamp = System.currentTimeMillis() - 100000;
 //                Long endTimeStamp = System.currentTimeMillis();
-//                Long endTimeStamp = Long.MAX_VALUE;
+
+                Long startTimeStamp = (long) 0;
+//                Long endTimeStamp = System.currentTimeMillis();
+                Long endTimeStamp = Long.MAX_VALUE;
 
                 collector.emit(NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryStream,
                         new Values(queryId, leftKey, rightKey, startTimeStamp, endTimeStamp));
 
-//                Double key = 457.6042636844468;
-                /*
-                List<String> fileNames = new ArrayList<String>();
-                for (String fileName : fileInformation.keySet()) {
-                    Pair keyRange = fileInformation.get(fileName);
-                    if (leftKey.compareTo((Double) keyRange.getKey()) <= 0
-                            && rightKey.compareTo((Double) keyRange.getValue()) >= 0) {
-//                        System.out.println(key);
-//                        System.out.println(leftKey);
-//                        System.out.println("min key is " + keyRange.getKey());
-//                        System.out.println(rightKey);
-//                        System.out.println("max key is " + keyRange.getValue());
-                        fileNames.add(fileName);
-                    }
-                }*/
 
-
-//                System.out.println("The size of file names is " + fileNames.size());
 //                int numberOfFilesToScan = 0;
-
-                /*
-                for (String fileName : fileNameToKeyRangeOfFile.keySet()) {
-
-                    Pair keyRange = fileNameToKeyRangeOfFile.get(fileName);
-                    Pair timeStampRange = fileNameToTimeStampRangeOfFile.get(fileName);
-
-                    if (leftKey.compareTo((Double) keyRange.getKey()) <= 0
-                            && rightKey.compareTo((Double) keyRange.getValue()) >= 0
-                            && startTimeStamp.compareTo((Long) timeStampRange.getKey()) <= 0
-                            && endTimeStamp.compareTo((Long) timeStampRange.getValue()) >= 0) {
-//                        System.out.println(key);
-//                        System.out.println(leftKey);
-//                        System.out.println("min key is " + keyRange.getKey());
-//                        System.out.println(rightKey);
-//                        System.out.println("max key is " + keyRange.getValue());
-                        ++numberOfFilesToScan;
-                        collector.emit(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryStream,
-                                new Values(queryId, leftKey, rightKey, fileName));
-                    }
-                }*/
-
 
                 List<String> fileNames = filePartitionSchemaManager.search(leftKey, rightKey,
                         startTimeStamp, endTimeStamp);
 
-                for (String fileName : fileNames) {
-                    RangeQuerySubQuery subQuery = new RangeQuerySubQuery(queryId, leftKey,  rightKey, fileName, startTimeStamp, endTimeStamp);
-                    try {
-                        taskQueue.put(subQuery);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+
+                int numberOfSubqueries = 7;
+
+
+                System.out.println("size : " + fileNames.size());
+                if (fileNames.size() < numberOfSubqueries) {
+                    newQueryRequest.release();
+                    continue;
                 }
+
+
+//                Collections.shuffle(fileNames);
+
 
                 int numberOfFilesToScan = fileNames.size();
 
+                /* taskQueueModel
+                   putSubqueriesToTaskQueue(numberOfSubqueries, leftKey, rightKey, fileNames, startTimeStamp, endTimeStamp);
+                   sendSubqueriesFromTaskQueue();
+                */
 
-                for (Integer taskId : targetTasks) {
-                    RangeQuerySubQuery subQuery = taskQueue.poll();
-                    if (subQuery != null) {
-                        collector.emitDirect(taskId, NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryStream
-                                , new Values(subQuery));
-                    }
-                }
-
-
+                /* shuffleGrouping
+                   sendSubqueriesByshuffleGrouping(numberOfSubqueries, leftKey, rightKey, fileNames, startTimeStamp, endTimeStamp);
+                 */
 
 
-//                for (String fileName : fileNames) {
-//                    collector.emit(NormalDistributionIndexingTopology.FileSystemQueryStream,
-//                            new Values(queryId, leftKey, rightKey, fileName, startTimeStamp, endTimeStamp));
-//                }
+                putSubquerisToTaskQueues(numberOfSubqueries, leftKey, rightKey, fileNames, startTimeStamp, endTimeStamp);
+                sendSubqueriesFromTaskQueues();
 
-//                queryIdToTimeCostInMillis.put(queryId, System.currentTimeMillis());
 
                 collector.emit(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryInformationStream,
-                        new Values(queryId, numberOfFilesToScan));
-
-
+                        new Values(queryId, numberOfSubqueries));
 
                 ++queryId;
 
             }
+        }
+    }
+
+    private void createTaskQueues(List<Integer> targetTasks) {
+        for (Integer taskId : targetTasks) {
+            ArrayBlockingQueue<RangeQuerySubQuery> taskQueue = new ArrayBlockingQueue<RangeQuerySubQuery>(Config.TASK_QUEUE_CAPACITY);
+            taskIdToTaskQueue.put(taskId, taskQueue);
+        }
+    }
+
+    private void putSubquerisToTaskQueue(int numberOfSubqueries, Double leftKey
+            , Double rightKey, List<String> fileNames, Long startTimeStamp, Long endTimeStamp) {
+        for (int i = 0; i < numberOfSubqueries; ++i) {
+            RangeQuerySubQuery subQuery = new RangeQuerySubQuery(queryId, leftKey,  rightKey, fileNames.get(i), startTimeStamp, endTimeStamp);
+            try {
+                taskQueue.put(subQuery);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+    private void putSubquerisToTaskQueues(int numberOfSubqueries, Double leftKey
+            , Double rightKey, List<String> fileNames, Long startTimeStamp, Long endTimeStamp) {
+        for (int i = 0; i < numberOfSubqueries; ++i) {
+            String fileName = fileNames.get(i);
+            int index = Math.abs(fileName.hashCode()) % targetTasks.size();
+            Integer taskId = targetTasks.get(index);
+            ArrayBlockingQueue<RangeQuerySubQuery> taskQueue = taskIdToTaskQueue.get(taskId);
+            RangeQuerySubQuery subQuery = new RangeQuerySubQuery(queryId, leftKey,  rightKey, fileName, startTimeStamp, endTimeStamp);
+            if (taskQueue == null) {
+                taskQueue = new ArrayBlockingQueue<RangeQuerySubQuery>(Config.TASK_QUEUE_CAPACITY);
+            }
+            try {
+                taskQueue.put(subQuery);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            taskIdToTaskQueue.put(taskId, taskQueue);
+        }
+    }
+
+
+    private void sendSubqueriesFromTaskQueue() {
+        for (Integer taskId : targetTasks) {
+            RangeQuerySubQuery subQuery = taskQueue.poll();
+            if (subQuery != null) {
+                collector.emitDirect(taskId, NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryStream
+                        , new Values(subQuery));
+            }
+        }
+    }
+
+
+    private void sendSubqueriesFromTaskQueues() {
+        for (Integer taskId : targetTasks) {
+            ArrayBlockingQueue<RangeQuerySubQuery> taskQueue = taskIdToTaskQueue.get(taskId);
+            RangeQuerySubQuery subQuery = taskQueue.poll();
+            if (subQuery != null) {
+                collector.emitDirect(taskId, NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryStream
+                        , new Values(subQuery));
+            }
+        }
+    }
+
+    private void sendSubqueriesByshuffleGrouping(int numberOfSubqueries, Double leftKey
+            , Double rightKey, List<String> fileNames, Long startTimeStamp, Long endTimeStamp) {
+        for (int i = 0; i < numberOfSubqueries; ++i) {
+            RangeQuerySubQuery subQuery = new RangeQuerySubQuery(queryId, leftKey, rightKey, fileNames.get(i), startTimeStamp, endTimeStamp);
+            collector.emit(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryStream
+                    , new Values(subQuery));
+        }
+    }
+
+
+    private void sendSubqueryToTask(int taskId) {
+        RangeQuerySubQuery subQuery = taskQueue.poll();
+
+        if (subQuery != null) {
+            collector.emitDirect(taskId, NormalDistributionIndexingTopology.FileSystemQueryStream
+                    , new Values(subQuery));
+        }
+
+    }
+
+
+
+    private void sendSubquery(int taskId) {
+
+        ArrayBlockingQueue<RangeQuerySubQuery> taskQueue = taskIdToTaskQueue.get(taskId);
+
+        RangeQuerySubQuery subQuery = taskQueue.poll();
+
+        if (subQuery == null) {
+            List<ArrayBlockingQueue<RangeQuerySubQuery>> taskQueues
+                    = new ArrayList<ArrayBlockingQueue<RangeQuerySubQuery>>(taskIdToTaskQueue.values());
+
+            Collections.sort(taskQueues, new Comparator<ArrayBlockingQueue<RangeQuerySubQuery>>() {
+                public int compare(ArrayBlockingQueue<RangeQuerySubQuery> taskQueue1,
+                                   ArrayBlockingQueue<RangeQuerySubQuery> taskQueue2) {
+                    return taskQueue1.size() > taskQueue2.size() ? -1 : (taskQueue1.size() < taskQueue2.size()) ? 1 : 0;
+                }
+            });
+
+            taskQueue = taskQueues.get(0);
+            subQuery = taskQueue.poll();
+
+        }
+        if (subQuery != null) {
+            collector.emitDirect(taskId, NormalDistributionIndexingTopology.FileSystemQueryStream
+                    , new Values(subQuery));
         }
     }
 

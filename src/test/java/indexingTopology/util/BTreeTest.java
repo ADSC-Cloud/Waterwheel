@@ -317,7 +317,7 @@ customDelete(btree,range,4,1);
 //               file.read(serializedTree, 0, Config.TEMPLATE_SIZE);
 //               fileSystemHandler.seek(4);
 
-               DeserializationHelper deserializationHelper = new DeserializationHelper();
+//               DeserializationHelper deserializationHelper = new DeserializationHelper();
 
 
 
@@ -326,7 +326,7 @@ customDelete(btree,range,4,1);
            fileSystemHandler.readBytesFromFile(serializedTree);
            Integer number = ByteBuffer.wrap(serializedTree, 65536, 4).getInt();
            System.out.println("number " + number);
-               BTree deserializedTree = deserializationHelper.deserializeBTree(serializedTree, bTreeOder, counter);
+               BTree deserializedTree = DeserializationHelper.deserializeBTree(serializedTree, bTreeOder, counter);
 //               BTree deserializedTree = deserializationHelper.deserializeBTree(fileSystemHandler, bTreeOder, counter);
 
 //               BTree deserializedTree = DeserializationHelper.deserializeBTree(fileSystemHandler, bTreeOder, counter);

@@ -18,9 +18,9 @@ public class Config {
 
     public static final int LEAVE_NODE_IN_BYTES = 1000;
 
-    public static final double KER_RANGE_COVERAGE = 1;
+    public static final double KER_RANGE_COVERAGE = 0.2;
 
     public static final int CACHE_SIZE = 10;
 
-    public static final int FILE_QUERY_TASK_WATINING_QUEUE_CAPACITY = 100;
+    public static final int TASK_QUEUE_CAPACITY = 10000;
 }

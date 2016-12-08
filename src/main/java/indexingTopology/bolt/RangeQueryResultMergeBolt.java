@@ -34,11 +34,9 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
 
     Map<Long, Integer> queryIdToNumberOfTasksToSearch;
 
-    Map<Long, Long> queryIdToTimeCostOfDeserilizationOfATree;
+    Map<Long, FileScanMetrics> queryIdToFileScanMetrics;
 
-    Map<Long, Long> queryIdToTimeCostOfDeserilizationOfALeaf;
-
-    Map<Long, Long> queryIdToTimeCostOfReadFile;
+    List<HashMap> maps;
 
     DataSchema schema;
 
@@ -72,9 +70,8 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
         queryIdToNumberOfFilesToScan = new HashMap<Long, Integer>();
         queryIdToNumberOfTasksToSearch = new HashMap<Long, Integer>();
 
-        queryIdToTimeCostOfDeserilizationOfATree = new HashMap<Long, Long>();
-        queryIdToTimeCostOfDeserilizationOfALeaf = new HashMap<Long, Long>();
-        queryIdToTimeCostOfReadFile = new HashMap<Long, Long>();
+        queryIdToFileScanMetrics = new HashMap<Long, FileScanMetrics>();
+
 
         /*
         outputFile = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/time_cost.txt");
@@ -149,163 +146,31 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
             int numberOfTasksToSearch = tuple.getInteger(1);
             Long queryId = tuple.getLong(0);
             queryIdToNumberOfTasksToSearch.put(queryId, numberOfTasksToSearch);
-            /*
-            if (isQueryFinshed(queryId)) {
-                collector.emit(NormalDistributionIndexingAndRangeQueryTopology.NewQueryStream,
-                        new Values(queryId, new String("New query can be executed")));
-                queryIdToCounter.remove(queryId);
-                queryIdToNumberOfFilesToScan.remove(queryId);
-                queryIdToNumberOfTasksToSearch.remove(queryId);
-            }*/
 
             if (isQueryFinshed(queryId)) {
-                collector.emit(NormalDistributionIndexingAndRangeQueryTopology.NewQueryStream,
-                        new Values(queryId, new String("New query can be executed"),
-                                queryIdToTimeCostOfReadFile.get(queryId),
-                                queryIdToTimeCostOfDeserilizationOfALeaf.get(queryId),
-                                queryIdToTimeCostOfDeserilizationOfATree.get(queryId)));
-                queryIdToCounter.remove(queryId);
-                queryIdToNumberOfFilesToScan.remove(queryId);
-                queryIdToNumberOfTasksToSearch.remove(queryId);
-                queryIdToTimeCostOfReadFile.remove(queryId);
-                queryIdToTimeCostOfDeserilizationOfALeaf.remove(queryId);
-                queryIdToTimeCostOfDeserilizationOfATree.remove(queryId);
+                sendNewQueryPermit(queryId);
+                removeQueryIdFromMappings(queryId);
             }
 
-
-
-//            System.out.println("Number of tasks have been updated " + numberOfFilesToScan + " query id" + tuple.getLong(0));
         } else if (tuple.getSourceStreamId()
                 .equals(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryInformationStream)) {
-//            numberOfFilesToScan = tuple.getInteger(1);
             int numberOfFilesToScan = tuple.getInteger(1);
             Long queryId = tuple.getLong(0);
             queryIdToNumberOfFilesToScan.put(queryId, numberOfFilesToScan);
-            /*
-            if (isQueryFinshed(queryId)) {
-                collector.emit(NormalDistributionIndexingAndRangeQueryTopology.NewQueryStream,
-                        new Values(queryId, new String("New query can be executed")));
-                queryIdToCounter.remove(queryId);
-                queryIdToNumberOfFilesToScan.remove(queryId);
-                queryIdToNumberOfTasksToSearch.remove(queryId);
-            }
-            */
 
             if (isQueryFinshed(queryId)) {
-                collector.emit(NormalDistributionIndexingAndRangeQueryTopology.NewQueryStream,
-                        new Values(queryId, new String("New query can be executed"),
-                                queryIdToTimeCostOfReadFile.get(queryId),
-                                queryIdToTimeCostOfDeserilizationOfALeaf.get(queryId),
-                                queryIdToTimeCostOfDeserilizationOfATree.get(queryId)));
-                queryIdToCounter.remove(queryId);
-                queryIdToNumberOfFilesToScan.remove(queryId);
-                queryIdToNumberOfTasksToSearch.remove(queryId);
-                queryIdToTimeCostOfReadFile.remove(queryId);
-                queryIdToTimeCostOfDeserilizationOfALeaf.remove(queryId);
-                queryIdToTimeCostOfDeserilizationOfATree.remove(queryId);
+                sendNewQueryPermit(queryId);
+                removeQueryIdFromMappings(queryId);
             }
 
-
-
-//            System.out.println("Number of files have been updated " + numberOfTasksToSearch + " query id" + tuple.getLong(0));
         } else if (tuple.getSourceStreamId().equals(NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryStream) ||
                 tuple.getSourceStreamId().equals(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryStream)) {
             long queryId = tuple.getLong(0);
 
-
-
             if (tuple.getSourceStreamId().equals(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryStream)) {
                 FileScanMetrics metrics = (FileScanMetrics) tuple.getValue(2);
-                Long timeCostInSearching = metrics.getSearchTime();
-                Long timeCostInMillis = metrics.getTotalTime();
-                Long timeCostOfReadFile = metrics.getFileReadingTime();
-                Long timeCostOfDeserializationALeaf = metrics.getLeafDeserializationTime();
-                Long timeCostOfDeserializationATree = metrics.getTreeDeserializationTime();
-
-                /*
-                String content = "" + timeCostInMillis;
-                String newline = System.getProperty("line.separator");
-                byte[] contentInBytes = content.getBytes();
-                byte[] nextLineInBytes = newline.getBytes();
-                try {
-                    fop.write(contentInBytes);
-                    fop.write(nextLineInBytes);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-
-                content = "" + timeCostOfReadFile;
-                newline = System.getProperty("line.separator");
-                contentInBytes = content.getBytes();
-                nextLineInBytes = newline.getBytes();
-                try {
-                    fop2.write(contentInBytes);
-                    fop2.write(nextLineInBytes);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-
-                content = "" + timeCostOfDeserializationATree;
-                newline = System.getProperty("line.separator");
-                contentInBytes = content.getBytes();
-                nextLineInBytes = newline.getBytes();
-                try {
-                    fop3.write(contentInBytes);
-                    fop3.write(nextLineInBytes);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-
-                content = "" + timeCostOfDeserializationALeaf;
-                newline = System.getProperty("line.separator");
-                contentInBytes = content.getBytes();
-                nextLineInBytes = newline.getBytes();
-                try {
-                    fop4.write(contentInBytes);
-                    fop4.write(nextLineInBytes);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                content = "" + timeCostInSearching;
-                newline = System.getProperty("line.separator");
-                contentInBytes = content.getBytes();
-                nextLineInBytes = newline.getBytes();
-                try {
-                    fop5.write(contentInBytes);
-                    fop5.write(nextLineInBytes);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                */
-
-                Long timeCostOfReadFileTotal = queryIdToTimeCostOfReadFile.get(queryId);
-                Long timeCostOfDeserializationALeafTotal = queryIdToTimeCostOfDeserilizationOfALeaf.get(queryId);
-                Long timeCostOfDeserializationATreeTotal = queryIdToTimeCostOfDeserilizationOfATree.get(queryId);
-                if (timeCostOfReadFileTotal == null) {
-                    queryIdToTimeCostOfReadFile.put(queryId, timeCostOfReadFile);
-                } else {
-                    queryIdToTimeCostOfReadFile.put(queryId, timeCostOfReadFileTotal + timeCostOfReadFile);
-                }
-                if (timeCostOfDeserializationALeafTotal == null) {
-                    queryIdToTimeCostOfDeserilizationOfALeaf.put(queryId, timeCostOfDeserializationALeaf);
-                } else {
-                    queryIdToTimeCostOfDeserilizationOfALeaf.put(queryId, timeCostOfDeserializationALeafTotal + timeCostOfDeserializationALeaf);
-                }
-                if (timeCostOfDeserializationATreeTotal == null) {
-                    queryIdToTimeCostOfDeserilizationOfATree.put(queryId, timeCostOfDeserializationATree);
-                } else {
-                    queryIdToTimeCostOfDeserilizationOfATree.put(queryId, timeCostOfDeserializationATreeTotal + timeCostOfDeserializationATree);
-                }
+                putFileScanMetrics(queryId, metrics);
             }
-
-
-
-
-
 
             Integer counter = queryIdToCounter.get(queryId);
             if (counter == null) {
@@ -315,7 +180,7 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
             }
             ArrayList<byte[]> serializedTuples = (ArrayList) tuple.getValue(1);
 
-
+            /*
             for (int i = 0; i < serializedTuples.size(); ++i) {
                 Values deserializedTuple = null;
                 try {
@@ -326,9 +191,7 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
                 }
                 System.out.println(deserializedTuple);
             }
-
-
-
+            */
 
             Integer numberOfTuples = queryIdToNumberOfTuples.get(queryId);
             if (numberOfTuples == null)
@@ -337,52 +200,13 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
             queryIdToNumberOfTuples.put(queryId, numberOfTuples);
             queryIdToCounter.put(queryId, counter);
 
-//            System.out.println(queryIdToNumberOfFilesToScan.get(queryId));
-//            System.out.println(queryIdToNumberOfTasksToSearch.get(queryId));
-            /*
-            if (queryIdToNumberOfFilesToScan.get(queryId) != null) {
-                numberOfFilesToScan = queryIdToNumberOfFilesToScan.get(queryId);
-            } else {
-                numberOfFilesToScan = 0;
-            }
-            if (queryIdToNumberOfTasksToSearch.get(queryId) != null) {
-                numberOfTasksToSearch = queryIdToNumberOfTasksToSearch.get(queryId);
-            } else {
-                numberOfTasksToSearch = 0;
-            }
-            */
-
-//            System.out.println("The query id is " + queryId);
-            /*
             if (isQueryFinshed(queryId)) {
-                collector.emit(NormalDistributionIndexingAndRangeQueryTopology.NewQueryStream,
-                        new Values(queryId, new String("New query can be executed")));
-                queryIdToCounter.remove(queryId);
-                queryIdToNumberOfFilesToScan.remove(queryId);
-                queryIdToNumberOfTasksToSearch.remove(queryId);
+                sendNewQueryPermit(queryId);
+                removeQueryIdFromMappings(queryId);
             }
-            */
-
-            if (isQueryFinshed(queryId)) {
-                collector.emit(NormalDistributionIndexingAndRangeQueryTopology.NewQueryStream,
-                        new Values(queryId, new String("New query can be executed"),
-                                queryIdToTimeCostOfReadFile.get(queryId),
-                                queryIdToTimeCostOfDeserilizationOfALeaf.get(queryId),
-                                queryIdToTimeCostOfDeserilizationOfATree.get(queryId)));
-                queryIdToCounter.remove(queryId);
-                queryIdToNumberOfFilesToScan.remove(queryId);
-                queryIdToNumberOfTasksToSearch.remove(queryId);
-                queryIdToTimeCostOfReadFile.remove(queryId);
-                queryIdToTimeCostOfDeserilizationOfALeaf.remove(queryId);
-                queryIdToTimeCostOfDeserilizationOfATree.remove(queryId);
-            }
-
-
 
             collector.ack(tuple);
         }
-
-//        System.out.println("Key: " + key + "Number of tuples: " + numberOfTuples);
     }
 
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
@@ -390,8 +214,7 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
 //                , new Fields("queryId", "New Query"));
 
         outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.NewQueryStream
-                , new Fields("queryId", "New Query", "timeCostOfReadFile", "timeCostOfDeserializationALeaf",
-                        "timeCostOfDeserializationATree"));
+                , new Fields("queryId", "New Query", "metrics", "numberOfFilesToScan"));
 
 
     }
@@ -413,4 +236,30 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
         }
         return false;
     }
+
+    private void sendNewQueryPermit(Long queryId) {
+        FileScanMetrics metrics = queryIdToFileScanMetrics.get(queryId);
+        int numberOfFilesToScan = queryIdToNumberOfFilesToScan.get(queryId);
+        collector.emit(NormalDistributionIndexingAndRangeQueryTopology.NewQueryStream,
+                new Values(queryId, new String("New query can be executed"),
+                        metrics, numberOfFilesToScan));
+    }
+
+    private void removeQueryIdFromMappings(Long queryId) {
+        queryIdToCounter.remove(queryId);
+        queryIdToNumberOfFilesToScan.remove(queryId);
+        queryIdToNumberOfTasksToSearch.remove(queryId);
+        queryIdToFileScanMetrics.remove(queryId);
+    }
+
+    private void putFileScanMetrics(Long queryId, FileScanMetrics metrics) {
+        FileScanMetrics fileScanMetrics = queryIdToFileScanMetrics.get(queryId);
+        if (fileScanMetrics == null) {
+            queryIdToFileScanMetrics.put(queryId, metrics);
+        } else {
+            fileScanMetrics.addWithAnotherMetrics(metrics);
+            queryIdToFileScanMetrics.put(queryId, fileScanMetrics);
+        }
+    }
+
 }

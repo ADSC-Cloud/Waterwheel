@@ -77,6 +77,7 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
         builder.setBolt(RangeQueryChunkScannerBolt, new RangeQueryChunkScannerBolt()).setNumTasks(2)
 //                .fieldsGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream, new Fields("fileName"));
                 .directGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream);
+//                .shuffleGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream);
 
         builder.setBolt(ResultMergeBolt, new RangeQueryResultMergeBolt(schema)).setNumTasks(1)
                 .allGrouping(RangeQueryChunkScannerBolt, FileSystemQueryStream)

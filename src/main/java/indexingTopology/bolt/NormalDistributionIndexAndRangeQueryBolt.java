@@ -212,19 +212,20 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
                     byte[] serializedTree = SerializationHelper.serializeTree(indexedData);
                     chunk.write(serializedTree);
 
-                    createNewTemplate(percentage);
-                    if (!isTreeBuilt) {
-                        indexedData.clearPayload();
-                    } else {
-                        isTreeBuilt = false;
-                        indexedData.setTemplateMode();
-                    }
+//                    createNewTemplate(percentage);
+                    indexedData.clearPayload();
+//                    if (!isTreeBuilt) {
+//                        indexedData.clearPayload();
+//                    } else {
+//                        isTreeBuilt = false;
+//                        indexedData.setTemplateMode();
+//                    }
 
                     FileSystemHandler fileSystemHandler = null;
                     String fileName = null;
                     try {
-//                        fileSystemHandler = new LocalFileSystemHandler("/home/acelzj");
-                        fileSystemHandler = new HdfsFileSystemHandler("/home/acelzj");
+                        fileSystemHandler = new LocalFileSystemHandler("/home/acelzj");
+//                        fileSystemHandler = new HdfsFileSystemHandler("/home/acelzj");
                         int taskId = context.getThisTaskId();
                         fileName = "taskId" + taskId + "chunk" + chunkId;
                         fileSystemHandler.writeToFileSystem(chunk, "/", fileName);

@@ -80,6 +80,7 @@ public class NormalDistributionIndexingTopology {
         builder.setBolt(ChunkScannerBolt, new ChunkScannerBolt()).setNumTasks(2)
 //                .fieldsGrouping(QueryDecompositionBolt, FileSystemQueryStream, new Fields("fileName"));
                 .directGrouping(QueryDecompositionBolt, FileSystemQueryStream);
+//                .shuffleGrouping(QueryDecompositionBolt, FileSystemQueryStream);
 
         builder.setBolt(ResultMergeBolt, new ResultMergeBolt(schema)).setNumTasks(1)
                 .allGrouping(ChunkScannerBolt, FileSystemQueryStream)

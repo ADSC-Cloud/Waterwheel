@@ -92,12 +92,13 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
             }
             */
 
-            List<Integer> targetTasks = taskPartitionSchemaManager.search(leftKey, rightKey, startTime, Long.MAX_VALUE);
-            int numberOfTasksToSearch = targetTasks.size();
-            for (Integer taskId : targetTasks) {
-                collector.emitDirect(taskId, NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryStream,
-                        new Values(queryId, leftKey, rightKey));
-            }
+//            List<Integer> targetTasks = taskPartitionSchemaManager.search(leftKey, rightKey, startTime, Long.MAX_VALUE);
+//            int numberOfTasksToSearch = targetTasks.size();
+            int numberOfTasksToSearch = 0;
+//            for (Integer taskId : targetTasks) {
+//                collector.emitDirect(taskId, NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryStream,
+//                        new Values(queryId, leftKey, rightKey));
+//            }
 
             collector.emit(NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryInformationStream
                     , new Values(queryId, numberOfTasksToSearch));
