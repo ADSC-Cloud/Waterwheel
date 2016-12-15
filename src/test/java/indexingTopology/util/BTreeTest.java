@@ -193,7 +193,7 @@ customDelete(btree,range,4,1);
                    "date", "time", "latitude", "longitude"));
            ArrayList valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
                    Double.class, Double.class, Double.class, Double.class, Double.class));
-           DataSchema schema = new DataSchema(fieldNames, valueTypes);
+           DataSchema schema = new DataSchema(fieldNames, valueTypes, "user_id");
            MemChunk chunk = MemChunk.createNew(65000000);
 //        LinkedBlockingQueue<Pair> queue = new LinkedBlockingQueue<Pair>();
            List<Double> indexValueList = new ArrayList<Double>();

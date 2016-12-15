@@ -12,6 +12,7 @@ import indexingTopology.NormalDistributionIndexingAndRangeQueryTopology;
 import indexingTopology.NormalDistributionIndexingTopology;
 import indexingTopology.MetaData.TaskMetaData;
 import indexingTopology.MetaData.TaskPartitionSchemaManager;
+import indexingTopology.util.RangeQuerySubQuery;
 import javafx.util.Pair;
 
 import java.io.IOException;
@@ -74,10 +75,19 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
 //            collector.emit(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
 //                    new Values(tuple.getValue(0)));
 //            int numberOfTasksToSearch = 0;
+
+            RangeQuerySubQuery subQuery = (RangeQuerySubQuery) tuple.getValue(0);
+            /*
             Long queryId = tuple.getLong(0);
             Double leftKey = tuple.getDouble(1);
             Double rightKey = tuple.getDouble(2);
             Long startTime = tuple.getLong(3);
+            */
+            Long queryId = subQuery.getQueryId();
+            Double leftKey = subQuery.getlefKey();
+            Double rightKey = subQuery.getRightKey();
+            Long startTime = subQuery.getStartTimestamp();
+
             /*
             for (Integer taskId : taskIdToKeyRange.keySet()) {
                 Double minKey = (Double) taskIdToKeyRange.get(taskId).getKey();

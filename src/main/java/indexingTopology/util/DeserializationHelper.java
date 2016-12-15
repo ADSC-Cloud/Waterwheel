@@ -21,10 +21,10 @@ public class DeserializationHelper <TKey extends Comparable<TKey>,TValue>{
     static List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
             Double.class, Double.class, Double.class, Double.class, Double.class));
 
-    private static DataSchema schema = new DataSchema(fieldNames, valueTypes);
+    private static DataSchema schema = new DataSchema(fieldNames, valueTypes, "user_id");
 
     private DeserializationHelper() {
-        schema = new DataSchema(fieldNames, valueTypes);
+        schema = new DataSchema(fieldNames, valueTypes, "user_id");
     }
 
     public static BTreeLeafNode deserializeLeaf(byte [] b, int BTreeOrder, BytesCounter counter) throws IOException {

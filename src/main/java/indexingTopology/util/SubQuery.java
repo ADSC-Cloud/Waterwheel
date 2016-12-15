@@ -1,5 +1,6 @@
 package indexingTopology.util;
 
+import javax.transaction.TransactionRequiredException;
 import java.util.ArrayList;
 import java.util.List;
 

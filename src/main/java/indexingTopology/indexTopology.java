@@ -31,7 +31,7 @@ public class indexTopology {
                 Double.class,Double.class,String.class,String.class,Double.class,Double.class,
                 Double.class,Double.class));
 
-        DataSchema schema=new DataSchema(fieldNames,valueTypes);
+        DataSchema schema=new DataSchema(fieldNames,valueTypes, "user_id");
         builder.setSpout("TupleGenerator", new CSVReaderSpout(args[1], schema), 1).setNumTasks(1);
 //        builder.setBolt("Dispatcher",new RangeQueryDispatcherBolt("Indexer","longitude",schema),1).shuffleGrouping("TupleGenerator");
 

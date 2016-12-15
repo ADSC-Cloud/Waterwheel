@@ -79,8 +79,8 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
         Long timeCostOfDeserializationALeaf = ((long) 0);
 
         try {
-            FileSystemHandler fileSystemHandler = new LocalFileSystemHandler("/home/acelzj");
-//                FileSystemHandler fileSystemHandler = new HdfsFileSystemHandler("/home/acelzj");
+//            FileSystemHandler fileSystemHandler = new LocalFileSystemHandler("/home/acelzj");
+                FileSystemHandler fileSystemHandler = new HdfsFileSystemHandler("/home/acelzj");
             CacheMappingKey mappingKey = new CacheMappingKey(fileName, 0);
             BTree deserializedTree = (BTree) getFromCache(mappingKey);
             if (deserializedTree == null) {

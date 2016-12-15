@@ -4,11 +4,20 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by acelzj on 7/21/16.
  */
 public class testDiv {
+
+    private static int getIntervalId(Double key) {
+        return key.intValue() / 100;
+    }
+
+    @Test
     public static void main(String[] args) throws InterruptedException {
         Map<Integer, ArrayBlockingQueue<Integer>> idToQueues = new HashMap<Integer, ArrayBlockingQueue<Integer>>();
 
@@ -33,5 +42,7 @@ public class testDiv {
         for (int i = 0; i < taskQueues.size(); ++i) {
             System.out.println(taskQueues.get(i).size());
         }
+
+        System.out.println(102.1 % 2);
     }
 }

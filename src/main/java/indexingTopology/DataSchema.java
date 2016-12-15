@@ -16,16 +16,18 @@ import java.util.List;
 public class DataSchema implements Serializable {
     private final Fields dataFields;
     private final List<Class> valueTypes;
+    private final String indexField;
 
     private class SerializationIntermediate {
 
     }
 
-    public DataSchema(List<String> fieldNames,List<Class> valueTypes) {
+    public DataSchema(List<String> fieldNames,List<Class> valueTypes, String indexField) {
         assert fieldNames.size()==valueTypes.size() : "number of fields should be " +
                 "same as the number of value types provided";
         dataFields=new Fields(fieldNames);
         this.valueTypes=valueTypes;
+        this.indexField = indexField;
     }
 
     public Fields getFieldsObject() { return dataFields; }
@@ -116,5 +118,9 @@ public class DataSchema implements Serializable {
         bos.write(b);
 
         return bos.toByteArray();
+    }
+
+    public String getIndexField() {
+        return indexField;
     }
 }

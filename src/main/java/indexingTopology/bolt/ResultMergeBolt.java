@@ -189,7 +189,7 @@ public class ResultMergeBolt extends BaseRichBolt {
             ArrayList<byte[]> serializedTuples = (ArrayList) tuple.getValue(1);
 
 
-            /*
+
             for (int i = 0; i < serializedTuples.size(); ++i) {
                 Values deserializedTuple = null;
                 try {
@@ -200,7 +200,7 @@ public class ResultMergeBolt extends BaseRichBolt {
                 }
                 System.out.println(deserializedTuple);
             }
-            */
+
 
             Integer numberOfTuples = queryIdToNumberOfTuples.get(queryId);
             if (numberOfTuples == null)

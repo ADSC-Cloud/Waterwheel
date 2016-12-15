@@ -23,4 +23,6 @@ public class Config {
     public static final int CACHE_SIZE = 10;
 
     public static final int TASK_QUEUE_CAPACITY = 10000;
+
+    public static final int NUMBER_OF_INTERVALS = 100;
 }

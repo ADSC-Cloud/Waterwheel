@@ -15,14 +15,12 @@ import indexingTopology.MetaData.FilePartitionSchemaManager;
 import indexingTopology.MetaData.FileMetaData;
 import indexingTopology.util.FileScanMetrics;
 import indexingTopology.util.RangeQuerySubQuery;
-import indexingTopology.util.SubQuery;
 import javafx.util.Pair;
 
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 
 /**
@@ -394,7 +392,7 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
                 new Fields("subQuery"));
 
         outputFieldsDeclarer.declareStream(NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryStream,
-                new Fields("queryId", "leftKey", "rightKey", "startTimeStamp", "endTimeStamp"));
+                new Fields("subQuery"));
 
         outputFieldsDeclarer.declareStream(
                 NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryInformationStream,
@@ -455,8 +453,11 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 //                Long endTimeStamp = System.currentTimeMillis();
                 Long endTimeStamp = Long.MAX_VALUE;
 
+                RangeQuerySubQuery subQuery = new RangeQuerySubQuery(queryId, leftKey,
+                        rightKey, null, startTimeStamp, endTimeStamp);
+
                 collector.emit(NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryStream,
-                        new Values(queryId, leftKey, rightKey, startTimeStamp, endTimeStamp));
+                        new Values(subQuery));
 
 
 //                int numberOfFilesToScan = 0;
@@ -465,14 +466,14 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
                         startTimeStamp, endTimeStamp);
 
 
-                int numberOfSubqueries = 7;
+                int numberOfSubqueries = fileNames.size();
 
 
-                System.out.println("size : " + fileNames.size());
-                if (fileNames.size() < numberOfSubqueries) {
-                    newQueryRequest.release();
-                    continue;
-                }
+//                System.out.println("size : " + fileNames.size());
+//                if (fileNames.size() < numberOfSubqueries) {
+//                    newQueryRequest.release();
+//                    continue;
+//                }
 
 
 //                Collections.shuffle(fileNames);
@@ -595,17 +596,9 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
         RangeQuerySubQuery subQuery = taskQueue.poll();
 
         if (subQuery == null) {
-            List<ArrayBlockingQueue<RangeQuerySubQuery>> taskQueues
-                    = new ArrayList<ArrayBlockingQueue<RangeQuerySubQuery>>(taskIdToTaskQueue.values());
 
-            Collections.sort(taskQueues, new Comparator<ArrayBlockingQueue<RangeQuerySubQuery>>() {
-                public int compare(ArrayBlockingQueue<RangeQuerySubQuery> taskQueue1,
-                                   ArrayBlockingQueue<RangeQuerySubQuery> taskQueue2) {
-                    return taskQueue1.size() > taskQueue2.size() ? -1 : (taskQueue1.size() < taskQueue2.size()) ? 1 : 0;
-                }
-            });
+            taskQueue = getLongestQueue();
 
-            taskQueue = taskQueues.get(0);
             subQuery = taskQueue.poll();
 
         }
@@ -613,6 +606,33 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
             collector.emitDirect(taskId, NormalDistributionIndexingTopology.FileSystemQueryStream
                     , new Values(subQuery));
         }
+    }
+
+    private ArrayBlockingQueue<RangeQuerySubQuery> getLongestQueue() {
+        List<ArrayBlockingQueue<RangeQuerySubQuery>> taskQueues
+                = new ArrayList<ArrayBlockingQueue<RangeQuerySubQuery>>(taskIdToTaskQueue.values());
+
+        Collections.sort(taskQueues, (taskQueue1, taskQueue2) -> Integer.compare(taskQueue2.size(), taskQueue1.size()));
+
+        ArrayBlockingQueue<RangeQuerySubQuery> taskQueue = taskQueues.get(0);
+
+        return taskQueue;
+    }
+
+    private List<RangeQuerySubQuery> generateSubqueries(Long queryId, Double leftKey
+            , Double rightKey, List<String> fileNames, Long startTimeStamp, Long endTimeStamp) {
+        List<RangeQuerySubQuery> subQueries = new ArrayList<>();
+
+        RangeQuerySubQuery subQuery = new RangeQuerySubQuery(queryId, leftKey,
+                rightKey, null, startTimeStamp, endTimeStamp);
+        subQueries.add(subQuery);
+
+        for (String fileName : fileNames) {
+            subQuery = new RangeQuerySubQuery(queryId, leftKey, rightKey, fileName, startTimeStamp, endTimeStamp);
+            subQueries.add(subQuery);
+        }
+
+        return subQueries;
     }
 
 }

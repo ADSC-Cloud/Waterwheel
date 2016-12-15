@@ -1,8 +1,5 @@
 package indexingTopology.util;
 
-/**
- * Created by acelzj on 12/5/16.
- */
 public class RangeQuerySubQuery {
 
     private long queryId;
@@ -17,7 +14,8 @@ public class RangeQuerySubQuery {
 
     private Long endTimestamp;
 
-    public RangeQuerySubQuery(long queryId, Double leftKey, Double rightKey
+
+    public RangeQuerySubQuery(long queryId,  Double leftKey, Double rightKey
             , String fileName, Long startTimestamp, Long endTimestamp) {
         this.queryId = queryId;
         this.leftKey = leftKey;

@@ -32,6 +32,15 @@ public class TaskPartitionSchemaManager {
                 taskMetaData.keyRangeUpperBound, taskMetaData.endTime));
     }
 
+    public void setBoundsOfTask(TaskMetaData taskMetaData, Double lowerBound, Double upperBound) {
+        tree = tree.delete(taskMetaData, Geometries.rectangle(taskMetaData.keyRangeLowerBound, taskMetaData.startTime,
+                taskMetaData.keyRangeUpperBound, taskMetaData.endTime));
+        taskMetaData.setKeyRangeLowerBound(lowerBound);
+        taskMetaData.setKeyRangeUpperBound(upperBound);
+        tree = tree.add(taskMetaData, Geometries.rectangle(taskMetaData.keyRangeLowerBound, taskMetaData.startTime,
+                taskMetaData.keyRangeUpperBound, taskMetaData.endTime));
+    }
+
     // Retrieve the set of tasks for a given key range and time duration
     public List<Integer> search(double keyRangeLowerBound, double keyRangeUpperBound, long startTime,
                                      long endTime) {

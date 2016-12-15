@@ -218,6 +218,7 @@ public class ChunkScannerBolt extends BaseRichBolt {
 //        Long startTimeOfDeserializationALeaf = System.currentTimeMillis();
         BytesCounter counter = new BytesCounter();
         BTreeLeafNode leaf = DeserializationHelper.deserializeLeaf(leafInByte, bTreeOder, counter);
+        fileSystemHandler.closeFile();
         return leaf;
 //        timeCostOfDeserializationALeaf += (System.currentTimeMillis() - startTimeOfDeserializationALeaf);
     }

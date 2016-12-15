@@ -224,8 +224,8 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
                     FileSystemHandler fileSystemHandler = null;
                     String fileName = null;
                     try {
-                        fileSystemHandler = new LocalFileSystemHandler("/home/acelzj");
-//                        fileSystemHandler = new HdfsFileSystemHandler("/home/acelzj");
+//                        fileSystemHandler = new LocalFileSystemHandler("/home/acelzj");
+                        fileSystemHandler = new HdfsFileSystemHandler("/home/acelzj");
                         int taskId = context.getThisTaskId();
                         fileName = "taskId" + taskId + "chunk" + chunkId;
                         fileSystemHandler.writeToFileSystem(chunk, "/", fileName);

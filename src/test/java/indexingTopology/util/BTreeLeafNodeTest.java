@@ -86,7 +86,7 @@ public class BTreeLeafNodeTest {
                 "date", "time", "latitude", "longitude"));
         ArrayList valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
                 Double.class, Double.class, Double.class, Double.class, Double.class));
-        DataSchema schema = new DataSchema(fieldNames, valueTypes);
+        DataSchema schema = new DataSchema(fieldNames, valueTypes, "user_id");
 //        LinkedBlockingQueue<Pair> queue = new LinkedBlockingQueue<Pair>();
         for (int i = 0; i < 3; ++i) {
             try {

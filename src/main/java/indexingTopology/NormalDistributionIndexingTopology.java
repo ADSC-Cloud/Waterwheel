@@ -27,6 +27,8 @@ public class NormalDistributionIndexingTopology {
     public static final String TimeStampUpdateStream = "TimeStampUpdateStream";
     public static final String QueryGenerateStream = "QueryGenerateStream";
     public static final String FileSubQueryFinishStream = "FileSubQueryFinishStream";
+    public static final String StatisticsReportStream = "KeyStatisticsStream";
+    public static final String IntervalPartitionUpdateStream = "IntervalPartitionUpdateStream";
 
 
     public static final String TimeCostInformationStream = "TimeCostInformationStream";
@@ -38,6 +40,7 @@ public class NormalDistributionIndexingTopology {
     static final String IndexerBolt = "IndexerBolt";
     static final String ChunkScannerBolt = "ChunkScannerBolt";
     static final String ResultMergeBolt = "ResultMergeBolt";
+    static final String RepartitionBolt = "RepartitionBolt";
 
 
     public static void main(String[] args) throws Exception {
@@ -58,14 +61,15 @@ public class NormalDistributionIndexingTopology {
                 "date", "time", "latitude", "longitude"));
         List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
                 Double.class, Double.class, Double.class, Double.class, Double.class));
-        DataSchema schema = new DataSchema(fieldNames, valueTypes);
+        DataSchema schema = new DataSchema(fieldNames, valueTypes, "user_id");
         builder.setSpout(TupleGenerator, new NormalDistributionGenerator(schema), 1).setNumTasks(1);
 //        builder.setBolt("Dispatcher",new RangeQueryDispatcherBolt("Indexer","longitude",schema),1).shuffleGrouping("TupleGenerator");
 
         builder.setBolt(DispatcherBolt, new DispatcherBolt(schema)).setNumTasks(1)
                 .shuffleGrouping(TupleGenerator, IndexStream)
                 .shuffleGrouping(QueryDecompositionBolt, BPlusTreeQueryStream)
-                .shuffleGrouping(IndexerBolt, TimeStampUpdateStream);
+                .shuffleGrouping(IndexerBolt, TimeStampUpdateStream)
+                .shuffleGrouping(RepartitionBolt, IntervalPartitionUpdateStream);
 
         builder.setBolt(IndexerBolt, new NormalDistributionIndexerBolt("user_id", schema, 4, 65000000),1)
                 .setNumTasks(2)
@@ -88,6 +92,9 @@ public class NormalDistributionIndexingTopology {
                 .shuffleGrouping(DispatcherBolt, BPlusTreeQueryInformationStream)
 //                .shuffleGrouping(ChunkScannerBolt, TimeCostInformationStream)
                 .shuffleGrouping(QueryDecompositionBolt, FileSystemQueryInformationStream);
+
+        builder.setBolt(RepartitionBolt, new RepartitionBolt()).setNumTasks(1)
+                .shuffleGrouping(DispatcherBolt, StatisticsReportStream);
 
         Config conf = new Config();
         conf.setDebug(false);

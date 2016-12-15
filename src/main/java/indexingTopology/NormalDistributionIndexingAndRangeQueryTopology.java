@@ -55,7 +55,7 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
                 "date", "time", "latitude", "longitude"));
         List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
                 Double.class, Double.class, Double.class, Double.class, Double.class));
-        DataSchema schema = new DataSchema(fieldNames, valueTypes);
+        DataSchema schema = new DataSchema(fieldNames, valueTypes, "user_id");
         builder.setSpout(TupleGenerator, new NormalDistributionGenerator(schema), 1).setNumTasks(1);
 //        builder.setBolt("Dispatcher",new RangeQueryDispatcherBolt("Indexer","longitude",schema),1).shuffleGrouping("TupleGenerator");
 

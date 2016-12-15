@@ -385,7 +385,7 @@ public class QueryDecompositionBolt extends BaseRichBolt {
                 new Fields("subQuery"));
 
         outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
-                new Fields("queryId", "key", "startTimeStamp", "endTimeStamp"));
+                new Fields("subQuery"));
 
         outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.FileSystemQueryInformationStream,
                 new Fields("queryId", "numberOfFilesToScan"));
@@ -431,8 +431,9 @@ public class QueryDecompositionBolt extends BaseRichBolt {
                 Long endTimeStamp = System.currentTimeMillis();
 //                Long endTimeStamp = Long.MAX_VALUE;
 
+                SubQuery subQuery = new SubQuery(queryId, key, null, startTimeStamp, endTimeStamp);
                 collector.emit(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
-                        new Values(queryId, key, startTimeStamp, endTimeStamp));
+                        new Values(subQuery));
 
                 List<String> fileNames = filePartitionSchemaManager.search(key, key, startTimeStamp, endTimeStamp);
 
@@ -556,16 +557,9 @@ public class QueryDecompositionBolt extends BaseRichBolt {
         SubQuery subQuery = taskQueue.poll();
 
         if (subQuery == null) {
-            List<ArrayBlockingQueue<SubQuery>> taskQueues
-                    = new ArrayList<ArrayBlockingQueue<SubQuery>>(taskIdToTaskQueue.values());
 
-            Collections.sort(taskQueues, new Comparator<ArrayBlockingQueue<SubQuery>>() {
-                public int compare(ArrayBlockingQueue<SubQuery> taskQueue1, ArrayBlockingQueue<SubQuery> taskQueue2) {
-                    return taskQueue1.size() > taskQueue2.size() ? -1 : (taskQueue1.size() < taskQueue2.size()) ? 1 : 0;
-                }
-            });
+            taskQueue = getLongestQueue();
 
-            taskQueue = taskQueues.get(0);
             subQuery = taskQueue.poll();
 
         }
@@ -574,6 +568,17 @@ public class QueryDecompositionBolt extends BaseRichBolt {
             collector.emitDirect(taskId, NormalDistributionIndexingTopology.FileSystemQueryStream
                     , new Values(subQuery));
         }
+    }
+
+    private ArrayBlockingQueue<SubQuery> getLongestQueue() {
+        List<ArrayBlockingQueue<SubQuery>> taskQueues
+                = new ArrayList<ArrayBlockingQueue<SubQuery>>(taskIdToTaskQueue.values());
+
+        Collections.sort(taskQueues, (taskQueue1, taskQueue2) -> Integer.compare(taskQueue2.size(), taskQueue1.size()));
+
+        ArrayBlockingQueue<SubQuery> taskQueue = taskQueues.get(0);
+
+        return taskQueue;
     }
 
 }

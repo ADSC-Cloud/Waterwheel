@@ -22,4 +22,12 @@ public class TaskMetaData {
     public void setStartTime(long startTime) {
         this.startTime = startTime;
     }
+
+    public void setKeyRangeLowerBound(Double keyRangeLowerBound) {
+        this.keyRangeLowerBound = keyRangeLowerBound;
+    }
+
+    public void setKeyRangeUpperBound(Double keyRangeUpperBound) {
+        this.keyRangeUpperBound = keyRangeUpperBound;
+    }
 }

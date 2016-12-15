@@ -1,91 +1,46 @@
 package indexingTopology.util;
 
+import indexingTopology.Config.Config;
 import indexingTopology.FileSystemHandler.FileSystemHandler;
 import indexingTopology.FileSystemHandler.LocalFileSystemHandler;
 
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by acelzj on 7/27/16.
  */
 public class testReference {
-        int a;
-        public testReference() {
-            a = 2;
-        }
-
-        public void setA() {
-            a = 3;
-        }
-
-        public int getA() {
-            return a;
-        }
     public static void main(String[] args) {
-        testReference apple = new testReference();
-        testReference pear = apple;
-        apple.setA();
-        System.out.println(apple.getA());
-        System.out.println(pear.getA());
-
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        for (int i = 0; i < 64; ++i) {
-            byte [] b = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE).putInt(i).array();
-            writeToByteArrayOutputStream(bos, b);
+        List<Integer> targetTasks = new ArrayList<>();
+        for (int i = 0; i < 4; ++i) {
+            targetTasks.add(i);
         }
-
-        byte[] bytes = bos.toByteArray();
-
-        int size = bytes.length;
-
-
-        File file = new File("src/test/test_time");
-        FileOutputStream fop = null;
-
-        try {
-            fop = new FileOutputStream(file);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            fop.write(bytes);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        RandomAccessFile randomAccessFile = null;
-        try {
-            randomAccessFile = new RandomAccessFile("src/test/test_time", "r");
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        bytes = new byte[size / 4];
-        Long totalTime = (long) 0;
-        long position = 0;
-        for (int i = 0 ; i  < 4; ++i) {
-            Long startTime = System.nanoTime();
-            try {
-                randomAccessFile.read(bytes);
-                position += size / 4;
-                randomAccessFile.seek(position);
-                bytes = new byte[size/4];
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            totalTime += System.nanoTime() - startTime;
-        }
-        System.out.println(totalTime);
-
+        testReference test = new testReference();
+        Map<Integer, Integer> partition = test.getInitialPartition(0.0, 1000.0, targetTasks);
+        System.out.println(partition);
     }
 
-    private static void writeToByteArrayOutputStream(ByteArrayOutputStream bos, byte[] b) {
-        try {
-            bos.write(b);
-        } catch (IOException e) {
-            e.printStackTrace();
+    public Map<Integer, Integer> getInitialPartition(Double lowerBound, Double upperBound, List<Integer> targetTasks) {
+        int numberOfTasks = targetTasks.size();
+        Integer distance = (int) ((upperBound - lowerBound) / numberOfTasks);
+        Integer miniDistance = (int) ((upperBound - lowerBound) / Config.NUMBER_OF_INTERVALS);
+        Double keyRangeUpperBound = lowerBound + distance;
+        Double bound = lowerBound + miniDistance;
+        Map<Integer, Integer> IntervalIdToTaskId = new HashMap<>();
+        Integer intervalId = 0;
+        for (int i = 0; i < Config.NUMBER_OF_INTERVALS; ++i) {
+            IntervalIdToTaskId.put(i, intervalId);
+            bound += miniDistance;
+            if (bound > keyRangeUpperBound) {
+                keyRangeUpperBound = keyRangeUpperBound + distance;
+                ++intervalId;
+            }
         }
+        return IntervalIdToTaskId;
     }
 }
