@@ -5,10 +5,19 @@ import indexingTopology.Config.Config;
 /**
  * Created by acelzj on 12/13/16.
  */
-public class IntervalIdMappingFunction {
+public class PartitionFunction {
 
-    public static int getIntervalId(Double key, Double lowerBound, Double upperBound) {
-        int distance = (int) (upperBound - lowerBound) / Config.NUMBER_OF_INTERVALS;
+    public final Double lowerBound;
+
+    public final Double upperBound;
+
+    public PartitionFunction(Double lowerBound, Double upperBound) {
+        this.lowerBound = lowerBound;
+        this.upperBound = upperBound;
+    }
+
+    public int getIntervalId(Double key) {
+        Double distance = (upperBound - lowerBound) / Config.NUMBER_OF_INTERVALS;
 
         Double autualLowerBound = lowerBound + distance;
 
@@ -23,7 +32,7 @@ public class IntervalIdMappingFunction {
         }
 
         if ((key - autualLowerBound) % distance == 0) {
-            return (int) (key - autualLowerBound) / distance;
+            return (int) ((key - autualLowerBound) / distance);
         } else {
             return (int) ((key - autualLowerBound) / distance + 1);
         }

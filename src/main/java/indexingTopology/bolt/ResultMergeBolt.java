@@ -149,7 +149,10 @@ public class ResultMergeBolt extends BaseRichBolt {
         if (tuple.getSourceStreamId()
                 .equals(NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryInformationStream)) {
             int numberOfTasksToSearch = tuple.getInteger(1);
+
             Long queryId = tuple.getLong(0);
+
+            System.out.println("queryId" + queryId + "number of tasks to search " + numberOfTasksToSearch);
             queryIdToNumberOfTasksToSearch.put(queryId, numberOfTasksToSearch);
 
             if (isQueryFinshed(queryId)) {
@@ -161,6 +164,9 @@ public class ResultMergeBolt extends BaseRichBolt {
             int numberOfFilesToScan = tuple.getInteger(1);
 
             Long queryId = tuple.getLong(0);
+
+            System.out.println("queryId" + queryId + "number of files to scan " + numberOfFilesToScan);
+
             queryIdToNumberOfFilesToScan.put(queryId, numberOfFilesToScan);
 
             if (isQueryFinshed(queryId)) {

@@ -145,6 +145,8 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
 //            numberOfTasksToSearch = tuple.getInteger(1);
             int numberOfTasksToSearch = tuple.getInteger(1);
             Long queryId = tuple.getLong(0);
+
+            System.out.println("queryId" + queryId + "number of tasks to search " + numberOfTasksToSearch);
             queryIdToNumberOfTasksToSearch.put(queryId, numberOfTasksToSearch);
 
             if (isQueryFinshed(queryId)) {
@@ -156,6 +158,7 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
                 .equals(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryInformationStream)) {
             int numberOfFilesToScan = tuple.getInteger(1);
             Long queryId = tuple.getLong(0);
+            System.out.println("queryId" + queryId + "number of files to scan " + numberOfFilesToScan);
             queryIdToNumberOfFilesToScan.put(queryId, numberOfFilesToScan);
 
             if (isQueryFinshed(queryId)) {

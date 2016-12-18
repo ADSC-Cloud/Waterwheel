@@ -12,7 +12,7 @@ import indexingTopology.NormalDistributionIndexingTopology;
 import indexingTopology.MetaData.FilePartitionSchemaManager;
 import indexingTopology.MetaData.FileMetaData;
 import indexingTopology.util.FileScanMetrics;
-import indexingTopology.util.RangeQuerySubQuery;
+import indexingTopology.util.PartitionFunction;
 import indexingTopology.util.SubQuery;
 import javafx.util.Pair;
 
@@ -20,7 +20,6 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 
 /**
@@ -30,21 +29,17 @@ public class QueryDecompositionBolt extends BaseRichBolt {
 
     private OutputCollector collector;
 
-    private Random random;
-
     private long seed;
 
     private Thread QueryThread;
 
-    private ConcurrentHashMap<String, Pair> fileNameToKeyRangeOfFile;
-
-    private ConcurrentHashMap<String, Pair> fileNameToTimeStampRangeOfFile;
-
     private FilePartitionSchemaManager filePartitionSchemaManager;
 
+    private List<Integer> indexServers;
 
     private File file;
 
+    private PartitionFunction partitionFunction;
 
     private File outputFile;
     private File outputFile1;
@@ -64,9 +59,13 @@ public class QueryDecompositionBolt extends BaseRichBolt {
 
     private Map<Long, Long> queryIdToTimeCostInMillis;
 
-    private transient List<Integer> targetTasks;
+    private transient List<Integer> queryServers;
 
     private transient Map<Integer, ArrayBlockingQueue<SubQuery>> taskIdToTaskQueue;
+
+    private transient Map<Integer, Long> indexTaskToTimestamp;
+
+    private transient Map<Integer, Integer> intervalToTaskMapping;
 
 //    private LinkedBlockingQueue<SubQuery> taskQueue;
     private ArrayBlockingQueue<SubQuery> taskQueue;
@@ -84,10 +83,6 @@ public class QueryDecompositionBolt extends BaseRichBolt {
 
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
-        seed = 1000;
-        random = new Random(seed);
-        fileNameToKeyRangeOfFile = new ConcurrentHashMap<String, Pair>();
-        fileNameToTimeStampRangeOfFile= new ConcurrentHashMap<String, Pair>();
         taskQueue = new ArrayBlockingQueue<SubQuery>(Config.TASK_QUEUE_CAPACITY);
 //        taskQueue = new LinkedBlockingQueue<SubQuery>(Config.FILE_QUERY_TASK_WATINING_QUEUE_CAPACITY);
 
@@ -97,16 +92,29 @@ public class QueryDecompositionBolt extends BaseRichBolt {
         Set<String> componentIds = topologyContext.getThisTargets()
                 .get(NormalDistributionIndexingTopology.FileSystemQueryStream).keySet();
 
-        taskIdToTaskQueue = new HashMap<Integer, ArrayBlockingQueue<SubQuery>>();
-
-        targetTasks = new ArrayList<Integer>();
+        queryServers = new ArrayList<Integer>();
 
 
         for (String componentId : componentIds) {
-            targetTasks.addAll(topologyContext.getComponentTasks(componentId));
+            queryServers.addAll(topologyContext.getComponentTasks(componentId));
         }
 
-        createTaskQueues(targetTasks);
+        taskIdToTaskQueue = new HashMap<Integer, ArrayBlockingQueue<SubQuery>>();
+
+        createTaskQueues(queryServers);
+
+
+        componentIds = topologyContext.getThisTargets()
+                .get(NormalDistributionIndexingTopology.BPlusTreeQueryStream).keySet();
+
+        indexServers = new ArrayList<Integer>();
+
+
+        for (String componentId : componentIds) {
+            indexServers.addAll(topologyContext.getComponentTasks(componentId));
+        }
+
+        createTaskQueues(indexServers);
 
 
         outputFile = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/time_cost.txt");
@@ -197,6 +205,7 @@ public class QueryDecompositionBolt extends BaseRichBolt {
         queryId = 0;
         queryIdToTimeCostInMillis = new HashMap<Long, Long>();
         filePartitionSchemaManager = new FilePartitionSchemaManager();
+        indexTaskToTimestamp = new HashMap<>();
 
         try {
             bufferedReader = new BufferedReader(new FileReader(file));
@@ -216,8 +225,7 @@ public class QueryDecompositionBolt extends BaseRichBolt {
             String fileName = tuple.getString(0);
             Pair keyRange = (Pair) tuple.getValue(1);
             Pair timeStampRange = (Pair) tuple.getValue(2);
-//            fileNameToKeyRangeOfFile.put(fileName, keyRange);
-//            fileNameToTimeStampRangeOfFile.put(fileName, timeStampRange);
+
             filePartitionSchemaManager.add(new FileMetaData(fileName, (Double) keyRange.getKey(),
                     (Double)keyRange.getValue(), (Long) timeStampRange.getKey(), (Long) timeStampRange.getValue()));
         } else if (tuple.getSourceStreamId().equals(NormalDistributionIndexingTopology.NewQueryStream)) {
@@ -226,8 +234,6 @@ public class QueryDecompositionBolt extends BaseRichBolt {
             FileScanMetrics metrics = (FileScanMetrics) tuple.getValue(2);
 
             int numberOfFilesToScan = tuple.getInteger(3);
-//            System.out.println(tuple.getString(1));
-//            Long timeCostInMillis = System.currentTimeMillis() - queryIdToTimeCostInMillis.get(queryId);
             if (metrics != null) {
                 Long totalTimeCost = metrics.getTotalTime();
             /*
@@ -353,7 +359,7 @@ public class QueryDecompositionBolt extends BaseRichBolt {
                 }
             }
 
-            for (Integer taskId : targetTasks) {
+            for (Integer taskId : queryServers) {
                 SubQuery subQuery = taskQueue.poll();
                 if (subQuery != null) {
                     collector.emitDirect(taskId, NormalDistributionIndexingTopology.FileSystemQueryStream
@@ -373,6 +379,18 @@ public class QueryDecompositionBolt extends BaseRichBolt {
             sendSubquery(taskId);
 //            */
 
+        } else if (tuple.getSourceStreamId().equals(NormalDistributionIndexingTopology.TimeStampUpdateStream)) {
+            int taskId = tuple.getIntegerByField("taskId");
+            Long timestamp = tuple.getLongByField("timestamp");
+
+            indexTaskToTimestamp.put(taskId, timestamp);
+        } else if (tuple.getSourceStreamId().equals(NormalDistributionIndexingTopology.IntervalPartitionUpdateStream)) {
+            Map<Integer, Integer> intervalToTaskMapping = (Map) tuple.getValueByField("newIntervalPartition");
+            if (intervalToTaskMapping.size() > 0) {
+                this.intervalToTaskMapping = intervalToTaskMapping;
+            }
+
+            partitionFunction = (PartitionFunction) tuple.getValueByField("partitionFunction");
         }
     }
 
@@ -385,10 +403,13 @@ public class QueryDecompositionBolt extends BaseRichBolt {
                 new Fields("subQuery"));
 
         outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
-                new Fields("subQuery"));
+                new Fields("queryId", "key"));
 
         outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.FileSystemQueryInformationStream,
                 new Fields("queryId", "numberOfFilesToScan"));
+
+        outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryInformationStream,
+                new Fields("queryId", "numberOfTasksToSearch"));
     }
 
 
@@ -399,7 +420,7 @@ public class QueryDecompositionBolt extends BaseRichBolt {
             while (true) {
 
                 try {
-                    Thread.sleep(1);
+                    Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -425,15 +446,14 @@ public class QueryDecompositionBolt extends BaseRichBolt {
                 String [] tuple = text.split(" ");
 
                 Double key = Double.parseDouble(tuple[0]);
+//                Double key = 499.34001632016685;
 
-//                Long startTimeStamp = (long) 0;
-                Long startTimeStamp = System.currentTimeMillis() - 10000;
-                Long endTimeStamp = System.currentTimeMillis();
-//                Long endTimeStamp = Long.MAX_VALUE;
+                Long startTimeStamp = (long) 0;
+//                Long startTimeStamp = System.currentTimeMillis() - 10000;
+//                Long endTimeStamp = System.currentTimeMillis();
+                Long endTimeStamp = Long.MAX_VALUE;
 
-                SubQuery subQuery = new SubQuery(queryId, key, null, startTimeStamp, endTimeStamp);
-                collector.emit(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
-                        new Values(subQuery));
+                generateTreeSubQuery(key, endTimeStamp);
 
                 List<String> fileNames = filePartitionSchemaManager.search(key, key, startTimeStamp, endTimeStamp);
 
@@ -469,6 +489,23 @@ public class QueryDecompositionBolt extends BaseRichBolt {
         }
     }
 
+    private void generateTreeSubQuery(Double key, Long endTimeStamp) {
+
+        int numberOfTasksToSearch = 0;
+        if (partitionFunction != null && intervalToTaskMapping != null) {
+            int intervalId = partitionFunction.getIntervalId(key);
+            Integer taskId = intervalToTaskMapping.get(intervalId);
+            Long timestamp = indexTaskToTimestamp.get(taskId);
+            if (timestamp <= endTimeStamp) {
+                collector.emitDirect(taskId, NormalDistributionIndexingTopology.BPlusTreeQueryStream,
+                        new Values(queryId, key));
+                numberOfTasksToSearch = 1;
+            }
+        }
+        collector.emit(NormalDistributionIndexingTopology.BPlusTreeQueryInformationStream,
+                new Values(queryId, numberOfTasksToSearch));
+    }
+
     private void createTaskQueues(List<Integer> targetTasks) {
         for (Integer taskId : targetTasks) {
             ArrayBlockingQueue<SubQuery> taskQueue = new ArrayBlockingQueue<SubQuery>(Config.TASK_QUEUE_CAPACITY);
@@ -491,7 +528,7 @@ public class QueryDecompositionBolt extends BaseRichBolt {
 
 
     private void sendSubqueriesFromTaskQueue() {
-        for (Integer taskId : targetTasks) {
+        for (Integer taskId : queryServers) {
             SubQuery subQuery = taskQueue.poll();
             if (subQuery != null) {
                 collector.emitDirect(taskId, NormalDistributionIndexingTopology.FileSystemQueryStream
@@ -514,8 +551,8 @@ public class QueryDecompositionBolt extends BaseRichBolt {
         for (int i = 0; i < numberOfSubqueries; ++i) {
             String fileName = fileNames.get(i);
             SubQuery subQuery = new SubQuery(queryId, key, fileName, startTimeStamp, endTimeStamp);
-            int index = Math.abs(fileName.hashCode()) % targetTasks.size();
-            Integer taskId = targetTasks.get(index);
+            int index = Math.abs(fileName.hashCode()) % queryServers.size();
+            Integer taskId = queryServers.get(index);
             ArrayBlockingQueue<SubQuery> taskQueue = taskIdToTaskQueue.get(taskId);
             if (taskQueue == null) {
                 taskQueue = new ArrayBlockingQueue<SubQuery>(Config.TASK_QUEUE_CAPACITY);
@@ -530,7 +567,7 @@ public class QueryDecompositionBolt extends BaseRichBolt {
     }
 
     private void sendSubqueriesFromTaskQueues() {
-        for (Integer taskId : targetTasks) {
+        for (Integer taskId : queryServers) {
             ArrayBlockingQueue<SubQuery> taskQueue = taskIdToTaskQueue.get(taskId);
             SubQuery subQuery = taskQueue.poll();
             if (subQuery != null) {

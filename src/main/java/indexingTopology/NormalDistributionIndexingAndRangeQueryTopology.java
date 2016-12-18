@@ -28,6 +28,9 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
     public static final String TimeStampUpdateStream = "TimeStampUpdateStream";
     public static final String QueryGenerateStream = "QueryGenerateStream";
     public static final String FileSubQueryFinishStream = "FileSubQueryFinishStream";
+    public static final String StatisticsReportStream = "KeyStatisticsStream";
+    public static final String IntervalPartitionUpdateStream = "IntervalPartitionUpdateStream";
+    public static final String IndexerNumberReportStream = "IndexerNumberReportStream";
 
     static final String TupleGenerator = "TupleGenerator";
     static final String RangeQueryDispatcherBolt = "RangeQueryDispatcherBolt";
@@ -35,6 +38,7 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
     static final String IndexerBolt = "IndexerBolt";
     static final String RangeQueryChunkScannerBolt = "RangeQueryChunkScannerBolt";
     static final String ResultMergeBolt = "RangeQueryResultMergeBolt";
+    static final String MetadataServer = "MetadataServer";
 
 
     public static void main(String[] args) throws Exception {
@@ -61,18 +65,19 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
 
         builder.setBolt(RangeQueryDispatcherBolt, new RangeQueryDispatcherBolt(schema)).setNumTasks(1)
                 .shuffleGrouping(TupleGenerator, IndexStream)
-                .shuffleGrouping(RangeQueryDecompositionBolt, BPlusTreeQueryStream)
-                .shuffleGrouping(IndexerBolt, TimeStampUpdateStream);
+                .shuffleGrouping(MetadataServer, IntervalPartitionUpdateStream);
 
         builder.setBolt(IndexerBolt, new NormalDistributionIndexAndRangeQueryBolt("user_id", schema, 4, 65000000),1)
-                .setNumTasks(2)
-                .customGrouping(RangeQueryDispatcherBolt, IndexStream, new RangePartitionGrouping())
-                .directGrouping(RangeQueryDispatcherBolt, BPlusTreeQueryStream);
+                .setNumTasks(4)
+                .directGrouping(RangeQueryDispatcherBolt, IndexStream)
+                .directGrouping(RangeQueryDecompositionBolt, BPlusTreeQueryStream);
 
         builder.setBolt(RangeQueryDecompositionBolt, new RangeQueryDeCompositionBolt()).setNumTasks(1)
-                .allGrouping(IndexerBolt, FileInformationUpdateStream)
                 .shuffleGrouping(ResultMergeBolt, NewQueryStream)
-                .shuffleGrouping(RangeQueryChunkScannerBolt, FileSubQueryFinishStream);
+                .shuffleGrouping(RangeQueryChunkScannerBolt, FileSubQueryFinishStream)
+                .shuffleGrouping(MetadataServer, FileInformationUpdateStream)
+                .shuffleGrouping(MetadataServer, IntervalPartitionUpdateStream)
+                .shuffleGrouping(MetadataServer, TimeStampUpdateStream);
 
         builder.setBolt(RangeQueryChunkScannerBolt, new RangeQueryChunkScannerBolt()).setNumTasks(2)
 //                .fieldsGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream, new Fields("fileName"));
@@ -82,8 +87,14 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
         builder.setBolt(ResultMergeBolt, new RangeQueryResultMergeBolt(schema)).setNumTasks(1)
                 .allGrouping(RangeQueryChunkScannerBolt, FileSystemQueryStream)
                 .allGrouping(IndexerBolt, BPlusTreeQueryStream)
-                .shuffleGrouping(RangeQueryDispatcherBolt, BPlusTreeQueryInformationStream)
+                .shuffleGrouping(RangeQueryDecompositionBolt, BPlusTreeQueryInformationStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, FileSystemQueryInformationStream);
+
+        builder.setBolt(MetadataServer, new MetadataServer()).setNumTasks(1)
+                .shuffleGrouping(RangeQueryDispatcherBolt, StatisticsReportStream)
+                .shuffleGrouping(IndexerBolt, TimeStampUpdateStream)
+                .shuffleGrouping(IndexerBolt, FileInformationUpdateStream)
+                .shuffleGrouping(RangeQueryDispatcherBolt, IndexerNumberReportStream);
 
         Config conf = new Config();
         conf.setDebug(false);

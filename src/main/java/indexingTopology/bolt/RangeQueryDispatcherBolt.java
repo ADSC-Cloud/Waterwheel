@@ -12,11 +12,14 @@ import indexingTopology.NormalDistributionIndexingAndRangeQueryTopology;
 import indexingTopology.NormalDistributionIndexingTopology;
 import indexingTopology.MetaData.TaskMetaData;
 import indexingTopology.MetaData.TaskPartitionSchemaManager;
+import indexingTopology.util.Histogram;
+import indexingTopology.util.PartitionFunction;
 import indexingTopology.util.RangeQuerySubQuery;
 import javafx.util.Pair;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.Semaphore;
 
 /**
  * Created by parijatmazumdar on 14/09/15.
@@ -36,13 +39,19 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
 
     private List<Integer> targetTasks;
 
-    private Map<Integer, Pair> taskIdToKeyRange;
+    private Histogram histogram;
 
-    private Map<Integer, Long> taskIdToTimeStamp;
+    private Map<Integer, Integer> intervalToTaskMapping;
 
-    private TaskPartitionSchemaManager taskPartitionSchemaManager;
+    private Double lowerBound;
 
-    private Map<Integer, TaskMetaData> taskIdToTaskMetaData;
+    private Double upperBound;
+
+    private Thread staticsSendingThread;
+
+    private Semaphore staticsSendingRequest;
+
+    private PartitionFunction partitionFunction;
 
 
     public RangeQueryDispatcherBolt(DataSchema schema) {
@@ -54,127 +63,90 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
 //        this.nextComponentTasks=topologyContext.getComponentTasks(nextComponentID);
 //        assert this.nextComponentTasks.size()==RANGE_BREAKPOINTS.length : "its hardcoded for now. lengths should match";
         Set<String> componentIds = topologyContext.getThisTargets()
-                .get(NormalDistributionIndexingTopology.BPlusTreeQueryStream).keySet();
+                .get(NormalDistributionIndexingAndRangeQueryTopology.IndexStream).keySet();
         targetTasks = new ArrayList<Integer>();
 
         for (String componentId : componentIds) {
             targetTasks.addAll(topologyContext.getComponentTasks(componentId));
         }
 
+        collector.emit(NormalDistributionIndexingAndRangeQueryTopology.IndexerNumberReportStream, new Values(targetTasks));
+
+        lowerBound = 0.0;
+        upperBound = 1000.0;
+
+        staticsSendingRequest = new Semaphore(1);
+
+        histogram = new Histogram();
+
 //        System.out.println("The task id ");
 //        System.out.println(targetTasks);
 //        scheduleKeyRangeToTask(targetTasks);
 //
 //        InitializeTimeStamp(targetTasks);
-        setInitialKeyRangeAndTimeStampToTasks(targetTasks);
+        staticsSendingThread = new Thread(new SendStatisticsRunnable());
+        staticsSendingThread.start();
     }
 
     public void execute(Tuple tuple) {
 //        double partitionValue = tuple.getDoubleByField(rangePartitionField);
-        if (tuple.getSourceStreamId().equals(NormalDistributionIndexingTopology.BPlusTreeQueryStream)) {
-//            collector.emit(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
-//                    new Values(tuple.getValue(0)));
-//            int numberOfTasksToSearch = 0;
 
-            RangeQuerySubQuery subQuery = (RangeQuerySubQuery) tuple.getValue(0);
-            /*
-            Long queryId = tuple.getLong(0);
-            Double leftKey = tuple.getDouble(1);
-            Double rightKey = tuple.getDouble(2);
-            Long startTime = tuple.getLong(3);
-            */
-            Long queryId = subQuery.getQueryId();
-            Double leftKey = subQuery.getlefKey();
-            Double rightKey = subQuery.getRightKey();
-            Long startTime = subQuery.getStartTimestamp();
-
-            /*
-            for (Integer taskId : taskIdToKeyRange.keySet()) {
-                Double minKey = (Double) taskIdToKeyRange.get(taskId).getKey();
-                Double maxKey = (Double) taskIdToKeyRange.get(taskId).getValue();
-                Long timeStamp = taskIdToTimeStamp.get(taskId);
-
-                if (minKey >= leftKey && maxKey <= rightKey && timeStamp >= startTime) {
-                    collector.emitDirect(taskId, NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryStream,
-                    new Values(queryId, leftKey, rightKey));
-                    ++numberOfTasksToSearch;
-                }
-            }
-            */
-
-//            List<Integer> targetTasks = taskPartitionSchemaManager.search(leftKey, rightKey, startTime, Long.MAX_VALUE);
-//            int numberOfTasksToSearch = targetTasks.size();
-            int numberOfTasksToSearch = 0;
-//            for (Integer taskId : targetTasks) {
-//                collector.emitDirect(taskId, NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryStream,
-//                        new Values(queryId, leftKey, rightKey));
-//            }
-
-            collector.emit(NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryInformationStream
-                    , new Values(queryId, numberOfTasksToSearch));
-
-//            collector.emit(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
-//                    new Values(tuple.getValue(0), tuple.getValue(1)));
-        } else if (tuple.getSourceStreamId().equals(NormalDistributionIndexingAndRangeQueryTopology.IndexStream)){
+        if (tuple.getSourceStreamId().equals(NormalDistributionIndexingAndRangeQueryTopology.IndexStream)){
             try {
                 Long timeStamp = System.currentTimeMillis();
                 Values values = schema.getValuesObject(tuple);
                 values.add(timeStamp);
+
+                Double indexValue = tuple.getDoubleByField(schema.getIndexField());
+
+                updateBound(indexValue);
+
+                while (partitionFunction == null) {
+                    try {
+                        Thread.sleep(1);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                int intervalId = partitionFunction.getIntervalId(indexValue);
+
+                histogram.record(intervalId);
+
+
+//                System.out.println("Interval Id " + intervalId);
+//                System.out.println(intervalToTaskMapping == null);
+//                System.out.println("key " + indexValue);
+//                System.out.println("lower bound " + partitionFunction.lowerBound);
+//                System.out.println("upper bound" + partitionFunction.upperBound);
+                int taskId = intervalToTaskMapping.get(intervalId);
 //                collector.emit(NormalDistributionIndexingAndRangeQueryTopology.IndexStream, schema.getValuesObject(tuple));
-                collector.emit(NormalDistributionIndexingTopology.IndexStream, values);
+                collector.emitDirect(taskId, NormalDistributionIndexingTopology.IndexStream, values);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         } else {
-            Long timeStamp = tuple.getLong(0);
-            int taskId = tuple.getSourceTask();
-//            taskIdToTimeStamp.put(taskId, timeStamp);
-            TaskMetaData taskMetaData = taskIdToTaskMetaData.get(taskId);
-            taskPartitionSchemaManager.setStartTimeOfTask(taskMetaData, timeStamp);
+            Map<Integer, Integer> intervalToTaskMapping = (Map) tuple.getValueByField("newIntervalPartition");
+            if (intervalToTaskMapping.size() > 0) {
+                this.intervalToTaskMapping = intervalToTaskMapping;
+            }
+
+            partitionFunction = (PartitionFunction) tuple.getValueByField("partitionFunction");
+
+            staticsSendingRequest.release();
+
         }
     }
 
-    private void scheduleKeyRangeToTask(List<Integer> targetTasks) {
-        int numberOfBolts = targetTasks.size();
-        Double minKey = 0.0;
-        Double maxKey = 500.0;
-        taskIdToKeyRange = new HashMap<Integer, Pair>();
-        for (int i = 0; i < numberOfBolts; ++i) {
-            taskIdToKeyRange.put(targetTasks.get(i), new Pair(minKey, maxKey));
-            minKey = maxKey + 0.00000000000001;
-            maxKey += 500.0;
+    private void updateBound(Double indexValue) {
+        if (indexValue > upperBound) {
+            upperBound = indexValue;
+        }
+
+        if (indexValue < lowerBound) {
+            lowerBound = indexValue;
         }
     }
-
-    private void InitializeTimeStamp(List<Integer> targetTasks) {
-        taskIdToTimeStamp = new HashMap<Integer, Long>();
-        int numberOfTasks = targetTasks.size();
-        Long currentTimeStamp = System.currentTimeMillis();
-        for (int i = 0; i < numberOfTasks; ++i) {
-            taskIdToTimeStamp.put(targetTasks.get(i), currentTimeStamp);
-        }
-    }
-
-/*
-for (int i=0;i<RANGE_BREAKPOINTS.length;i++) {
-if (partitionValue<RANGE_BREAKPOINTS[i]) {
-try {
-collector.emitDirect(nextComponentTasks.get(i),schema.getValuesObject(tuple));
-//                    collector.emit(schema.getValuesObject(tuple));
-} catch (IOException e) {
-e.printStackTrace();
-} finally {
-break;
-}
-}
-}
-*/
-//        try {
-//            collector.emitDirect(nextComponentTasks.get(0),schema.getValuesObject(tuple));
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
 //        declarer.declare(schema.getFieldsObject());
@@ -188,29 +160,28 @@ break;
 //        declarer.declareStream(NormalDistributionIndexingTopology.IndexStream, schema.getFieldsObject());
         declarer.declareStream(NormalDistributionIndexingTopology.IndexStream, new Fields(fields));
 
-        declarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryInformationStream
-                , new Fields("queryId", "numberOfTasksToSearch"));
-//        declarer.declare(new Fields("key"));
+        declarer.declareStream(NormalDistributionIndexingAndRangeQueryTopology.StatisticsReportStream, new Fields("statistics", "lowerBound", "upperBound"));
+
+        declarer.declareStream(NormalDistributionIndexingAndRangeQueryTopology.IndexerNumberReportStream, new Fields("numberOfIndexers"));
     }
 
-    private void setInitialKeyRangeAndTimeStampToTasks(List<Integer> targetTasks) {
-        taskPartitionSchemaManager = new TaskPartitionSchemaManager();
-        taskIdToTaskMetaData = new HashMap<Integer, TaskMetaData>();
-        int numberOfTasks = targetTasks.size();
-        Double keyRangeLowerBound = 0.0;
-        Double keyRangeUpperBound = 500.0;
-        for (int i = 0; i < numberOfTasks; ++i) {
-            Long startTime = System.currentTimeMillis();
-            Long endTime = Long.MAX_VALUE;
-            int taskId = targetTasks.get(i);
-            TaskMetaData taskMetaData = new TaskMetaData(taskId, keyRangeLowerBound, keyRangeUpperBound,
-                    startTime, endTime);
+    class SendStatisticsRunnable implements Runnable {
 
-            keyRangeLowerBound = keyRangeUpperBound + 0.00000000000001;
-            keyRangeUpperBound += 500.0;
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    staticsSendingRequest.acquire();
+                    Thread.sleep(10000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
 
-            taskPartitionSchemaManager.add(taskMetaData);
-            taskIdToTaskMetaData.put(taskId, taskMetaData);
+                collector.emit(NormalDistributionIndexingTopology.StatisticsReportStream,
+                        new Values(histogram, lowerBound, upperBound));
+            }
         }
+
     }
+
 }

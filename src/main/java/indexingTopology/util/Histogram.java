@@ -11,17 +11,8 @@ public class Histogram {
 
     private Map<Integer, Long> histogram;
 
-    private Double lowerBound;
-
-    private Double upperBound;
-
-    private int numberOfIntervals;
-
-    public Histogram(Double lowerBound, Double upperBound, int numberOfIntervals) {
+    public Histogram() {
         histogram = new HashMap<>();
-        this.lowerBound = lowerBound;
-        this.upperBound = upperBound;
-        this.numberOfIntervals = numberOfIntervals;
     }
 
     public void record(int intervalId) {

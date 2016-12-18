@@ -346,11 +346,11 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
 //        outputFieldsDeclarer.declare(new Fields("num_tuples","wo_template_time","template_time","wo_template_written","template_written"));
         outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.FileInformationUpdateStream,
-                new Fields("fileName", "keyRange", "timeStampRange"));
+                new Fields("fileName", "keyRange", "timestampRange"));
         outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
                 new Fields("queryId", "serializedTuples"));
         outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.TimeStampUpdateStream,
-                new Fields("TimeStamp"));
+                new Fields("timestamp"));
     }
 
     class IndexingRunnable implements Runnable {

@@ -6,8 +6,8 @@ import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import indexingTopology.bolt.*;
 import indexingTopology.spout.NormalDistributionGenerator;
-import indexingTopology.util.Constants;
 import indexingTopology.util.RangePartitionGrouping;
+import org.apache.hadoop.hdfs.DFSClient;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,7 +29,7 @@ public class NormalDistributionIndexingTopology {
     public static final String FileSubQueryFinishStream = "FileSubQueryFinishStream";
     public static final String StatisticsReportStream = "KeyStatisticsStream";
     public static final String IntervalPartitionUpdateStream = "IntervalPartitionUpdateStream";
-
+    public static final String IndexerNumberReportStream = "IndexerNumberReportStream";
 
     public static final String TimeCostInformationStream = "TimeCostInformationStream";
 
@@ -40,7 +40,8 @@ public class NormalDistributionIndexingTopology {
     static final String IndexerBolt = "IndexerBolt";
     static final String ChunkScannerBolt = "ChunkScannerBolt";
     static final String ResultMergeBolt = "ResultMergeBolt";
-    static final String RepartitionBolt = "RepartitionBolt";
+    static final String MetadataServer = "MetadataServer";
+
 
 
     public static void main(String[] args) throws Exception {
@@ -67,19 +68,19 @@ public class NormalDistributionIndexingTopology {
 
         builder.setBolt(DispatcherBolt, new DispatcherBolt(schema)).setNumTasks(1)
                 .shuffleGrouping(TupleGenerator, IndexStream)
-                .shuffleGrouping(QueryDecompositionBolt, BPlusTreeQueryStream)
-                .shuffleGrouping(IndexerBolt, TimeStampUpdateStream)
-                .shuffleGrouping(RepartitionBolt, IntervalPartitionUpdateStream);
+                .shuffleGrouping(MetadataServer, IntervalPartitionUpdateStream);
 
-        builder.setBolt(IndexerBolt, new NormalDistributionIndexerBolt("user_id", schema, 4, 65000000),1)
-                .setNumTasks(2)
-                .customGrouping(DispatcherBolt, IndexStream, new RangePartitionGrouping())
-                .directGrouping(DispatcherBolt, BPlusTreeQueryStream);
+        builder.setBolt(IndexerBolt, new NormalDistributionIndexerBolt("user_id", schema, indexingTopology.Config.Config.BTREE_OREDER, 65000000),1)
+                .setNumTasks(4)
+                .directGrouping(DispatcherBolt, IndexStream)
+                .directGrouping(QueryDecompositionBolt, BPlusTreeQueryStream);
 
-        builder.setBolt(QueryDecompositionBolt, new QueryDecompositionBolt()).setNumTasks(1).
-                allGrouping(IndexerBolt, FileInformationUpdateStream)
+        builder.setBolt(QueryDecompositionBolt, new QueryDecompositionBolt()).setNumTasks(1)
                 .shuffleGrouping(ResultMergeBolt, NewQueryStream)
-                .shuffleGrouping(ChunkScannerBolt, FileSubQueryFinishStream);
+                .shuffleGrouping(ChunkScannerBolt, FileSubQueryFinishStream)
+                .shuffleGrouping(MetadataServer, FileInformationUpdateStream)
+                .shuffleGrouping(MetadataServer, IntervalPartitionUpdateStream)
+                .shuffleGrouping(MetadataServer, TimeStampUpdateStream);
 
         builder.setBolt(ChunkScannerBolt, new ChunkScannerBolt()).setNumTasks(2)
 //                .fieldsGrouping(QueryDecompositionBolt, FileSystemQueryStream, new Fields("fileName"));
@@ -89,29 +90,20 @@ public class NormalDistributionIndexingTopology {
         builder.setBolt(ResultMergeBolt, new ResultMergeBolt(schema)).setNumTasks(1)
                 .allGrouping(ChunkScannerBolt, FileSystemQueryStream)
                 .allGrouping(IndexerBolt, BPlusTreeQueryStream)
-                .shuffleGrouping(DispatcherBolt, BPlusTreeQueryInformationStream)
+                .shuffleGrouping(QueryDecompositionBolt, BPlusTreeQueryInformationStream)
 //                .shuffleGrouping(ChunkScannerBolt, TimeCostInformationStream)
                 .shuffleGrouping(QueryDecompositionBolt, FileSystemQueryInformationStream);
 
-        builder.setBolt(RepartitionBolt, new RepartitionBolt()).setNumTasks(1)
-                .shuffleGrouping(DispatcherBolt, StatisticsReportStream);
+        builder.setBolt(MetadataServer, new MetadataServer()).setNumTasks(1)
+                .shuffleGrouping(DispatcherBolt, StatisticsReportStream)
+                .shuffleGrouping(IndexerBolt, TimeStampUpdateStream)
+                .shuffleGrouping(IndexerBolt, FileInformationUpdateStream)
+                .shuffleGrouping(DispatcherBolt, IndexerNumberReportStream);
 
         Config conf = new Config();
         conf.setDebug(false);
         conf.setMaxTaskParallelism(4);
-        conf.put(Constants.HDFS_CORE_SITE.str, "/Users/parijatmazumdar" +
-                "/Desktop/thesis/hadoop-2.7.1/etc/hadoop/core-site.xml");
-        conf.put(Constants.HDFS_HDFS_SITE.str,"/Users/parijatmazumdar/" +
-                "Desktop/thesis/hadoop-2.7.1/etc/hadoop/hdfs-site.xml");
 
-//        LocalCluster cluster = new LocalCluster();
-//        LocalCluster cluster = new LocalCluster();
-//        cluster.submitTopology("generatorTest", conf, builder.createTopology());
         StormSubmitter.submitTopologyWithProgressBar(args[0], conf, builder.createTopology());
-//        BufferedReader in=new BufferedReader(new InputStreamReader(System.in));
-//        System.out.println("Type anything to stop the cluster");
-//        in.readLine();
-        //   cluster.shutdown();
-        //    cluster.shutdown();
     }
 }

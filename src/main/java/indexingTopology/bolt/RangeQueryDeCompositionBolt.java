@@ -14,6 +14,7 @@ import indexingTopology.NormalDistributionIndexingTopology;
 import indexingTopology.MetaData.FilePartitionSchemaManager;
 import indexingTopology.MetaData.FileMetaData;
 import indexingTopology.util.FileScanMetrics;
+import indexingTopology.util.PartitionFunction;
 import indexingTopology.util.RangeQuerySubQuery;
 import javafx.util.Pair;
 
@@ -29,10 +30,6 @@ import java.util.concurrent.Semaphore;
 public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 
     private OutputCollector collector;
-
-    private Random random;
-
-    private long seed;
 
     private Thread QueryThread;
 
@@ -64,7 +61,14 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 
     private transient List<Integer> targetTasks;
 
-//    private LinkedBlockingQueue<RangeQuerySubQuery> taskQueue;
+    private List<Integer> indexServers;
+
+    private PartitionFunction partitionFunction;
+
+    private transient Map<Integer, Long> indexTaskToTimestamp;
+
+    private transient Map<Integer, Integer> intervalToTaskMapping;
+
     private ArrayBlockingQueue<RangeQuerySubQuery> taskQueue;
 
     private transient Map<Integer, ArrayBlockingQueue<RangeQuerySubQuery>> taskIdToTaskQueue;
@@ -81,8 +85,6 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
-        seed = 1000;
-        random = new Random(seed);
         fileNameToKeyRangeOfFile = new ConcurrentHashMap<String, Pair>();
         fileNameToTimeStampRangeOfFile= new ConcurrentHashMap<String, Pair>();
         file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/input_data");
@@ -195,7 +197,7 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
         */
 
 
-
+        indexTaskToTimestamp = new HashMap<>();
         QueryThread = new Thread(new QueryRunnable());
         QueryThread.start();
     }
@@ -206,19 +208,8 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
             Pair keyRange = (Pair) tuple.getValue(1);
             Pair timeStampRange = (Pair) tuple.getValue(2);
 
-            Double minKey = (Double) keyRange.getKey();
-            Double maxKey = (Double) keyRange.getValue();
-            if (minKey < minIndexValue.get()) {
-                minIndexValue.set(minKey);
-            }
-            if (maxKey > maxIndexValue.get()) {
-                maxIndexValue.set(maxKey);
-            }
-
             filePartitionSchemaManager.add(new FileMetaData(fileName, (Double) keyRange.getKey(),
                     (Double)keyRange.getValue(), (Long) timeStampRange.getKey(), (Long) timeStampRange.getValue()));
-//            fileNameToKeyRangeOfFile.put(fileName, keyRange);
-//            fileNameToTimeStampRangeOfFile.put(fileName, timeStampRange);
         } else if (tuple.getSourceStreamId().equals(NormalDistributionIndexingTopology.NewQueryStream)) {
             Long queryId = tuple.getLong(0);
 //            Long timeCostInMillis = System.currentTimeMillis() - queryIdToTimeCostInMillis.get(queryId);
@@ -380,6 +371,18 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
                 }
             }
 
+        } else if (tuple.getSourceStreamId().equals(NormalDistributionIndexingAndRangeQueryTopology.TimeStampUpdateStream)) {
+            int taskId = tuple.getIntegerByField("taskId");
+            Long timestamp = tuple.getLongByField("timestamp");
+
+            indexTaskToTimestamp.put(taskId, timestamp);
+        } else if (tuple.getSourceStreamId().equals(NormalDistributionIndexingAndRangeQueryTopology.IntervalPartitionUpdateStream)) {
+            Map<Integer, Integer> intervalToTaskMapping = (Map) tuple.getValueByField("newIntervalPartition");
+            if (intervalToTaskMapping.size() > 0) {
+                this.intervalToTaskMapping = intervalToTaskMapping;
+            }
+
+            partitionFunction = (PartitionFunction) tuple.getValueByField("partitionFunction");
         }
     }
 
@@ -392,11 +395,15 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
                 new Fields("subQuery"));
 
         outputFieldsDeclarer.declareStream(NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryStream,
-                new Fields("subQuery"));
+                new Fields("queryId", "leftKey", "rightKey"));
 
         outputFieldsDeclarer.declareStream(
                 NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryInformationStream,
                 new Fields("queryId", "numberOfFilesToScan"));
+
+        outputFieldsDeclarer.declareStream(
+                NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryInformationStream,
+                new Fields("queryId", "numberOfTasksToScan"));
     }
 
 
@@ -406,7 +413,7 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
         public void run() {
             while (true) {
                 try {
-                    Thread.sleep(100);
+                    Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -432,32 +439,32 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 
 //                String [] tuple = text.split(" ");
 //
-//                Double leftKey = 0.0;
-//                Double rightKey = 1000.0;
+                Double leftKey = 0.0;
+                Double rightKey = 1000.0;
                 Double min = minIndexValue.get();
                 Double max = maxIndexValue.get();
-                while (min > max) {
-                    min = minIndexValue.get();
-                    max = maxIndexValue.get();
-                }
-                Double leftKey = min + ((max - min) * (1 - Config.KER_RANGE_COVERAGE)) / 2;
-                Double rightKey = max - ((max - min) * (1 - Config.KER_RANGE_COVERAGE)) / 2;
+//                while (min > max) {
+//                    min = minIndexValue.get();
+//                    max = maxIndexValue.get();
+//                }
+//                Double leftKey = min + ((max - min) * (1 - Config.KER_RANGE_COVERAGE)) / 2;
+//                Double rightKey = max - ((max - min) * (1 - Config.KER_RANGE_COVERAGE)) / 2;
 
                 System.out.println("Left key is " + leftKey.intValue());
                 System.out.println("Right key is " + rightKey.intValue());
 
-//                Long startTimeStamp = System.currentTimeMillis() - 100000;
+                Long startTimeStamp = System.currentTimeMillis() - 10000;
+                Long endTimeStamp = System.currentTimeMillis();
+
+//                Long startTimeStamp = (long) 0;
 //                Long endTimeStamp = System.currentTimeMillis();
+//                Long endTimeStamp = Long.MAX_VALUE;
 
-                Long startTimeStamp = (long) 0;
-//                Long endTimeStamp = System.currentTimeMillis();
-                Long endTimeStamp = Long.MAX_VALUE;
+//                RangeQuerySubQuery subQuery = new RangeQuerySubQuery(queryId, leftKey,
+//                        rightKey, null, startTimeStamp, endTimeStamp);
 
-                RangeQuerySubQuery subQuery = new RangeQuerySubQuery(queryId, leftKey,
-                        rightKey, null, startTimeStamp, endTimeStamp);
-
-                collector.emit(NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryStream,
-                        new Values(subQuery));
+//                collector.emit(NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryStream,
+//                        new Values(subQuery));
 
 
 //                int numberOfFilesToScan = 0;
@@ -465,6 +472,7 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
                 List<String> fileNames = filePartitionSchemaManager.search(leftKey, rightKey,
                         startTimeStamp, endTimeStamp);
 
+                generateTreeSubQuery(leftKey, rightKey, endTimeStamp);
 
                 int numberOfSubqueries = fileNames.size();
 
@@ -523,6 +531,26 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
         }
     }
 
+    private void generateTreeSubQuery(Double leftKey, Double rightKey, Long endTimeStamp) {
+
+        int numberOfTasksToSearch = 0;
+        if (partitionFunction != null && intervalToTaskMapping != null) {
+            int leftIntervalId = partitionFunction.getIntervalId(leftKey);
+            int rightIntervalId = partitionFunction.getIntervalId(rightKey);
+            Integer startTaskId = intervalToTaskMapping.get(leftIntervalId);
+            Integer endTaskId = intervalToTaskMapping.get(rightIntervalId);
+            for (Integer taskId = startTaskId; taskId <= endTaskId; ++taskId) {
+                Long timestamp = indexTaskToTimestamp.get(taskId);
+                if (timestamp <= endTimeStamp) {
+                    collector.emitDirect(taskId, NormalDistributionIndexingTopology.BPlusTreeQueryStream,
+                            new Values(queryId, leftKey, rightKey));
+                    ++numberOfTasksToSearch;
+                }
+            }
+        }
+        collector.emit(NormalDistributionIndexingTopology.BPlusTreeQueryInformationStream,
+                new Values(queryId, numberOfTasksToSearch));
+    }
 
     private void putSubquerisToTaskQueues(int numberOfSubqueries, Double leftKey
             , Double rightKey, List<String> fileNames, Long startTimeStamp, Long endTimeStamp) {
