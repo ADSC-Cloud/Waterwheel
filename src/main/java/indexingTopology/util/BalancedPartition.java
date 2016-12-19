@@ -11,62 +11,106 @@ import java.util.Map;
  */
 public class BalancedPartition {
 
-    private List<Integer> indexTasks;
-
     private Double lowerBound;
 
     private Double upperBound;
 
-    public BalancedPartition(List<Integer> tasks, Double lowerBound, Double upperBound) {
-        indexTasks = tasks;
+    private int numberOfPartitions;
+
+    private Map<Integer, Integer> intervalToPartitionMapping;
+
+    private boolean enableRecord = false;
+
+    private Histogram histogram;
+
+    public BalancedPartition(int numberOfPartitions, Double lowerBound, Double upperBound) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
+        this.numberOfPartitions = numberOfPartitions;
+        intervalToPartitionMapping = getBalancedPartitionPlan();
     }
 
+    public BalancedPartition(int numberOfPartitions, Double lowerBound, Double upperBound, boolean enableRecord) {
+        this(numberOfPartitions, lowerBound, upperBound);
+        if (enableRecord) {
+            setEnableRecord();
+            histogram = new Histogram();
+        }
+    }
+
+    public BalancedPartition(int numberOfPartitions, Double lowerBound, Double upperBound,
+                             Map<Integer, Integer> intervalToPartitionMapping) {
+        this(numberOfPartitions, lowerBound, upperBound, true);
+        this.intervalToPartitionMapping.putAll(intervalToPartitionMapping);
+    }
 
     public Map<Integer, Integer> getBalancedPartitionPlan() {
-        int numberOfTasks = indexTasks.size();
-        Double distance = (upperBound - lowerBound) / numberOfTasks;
+        Double distance = (upperBound - lowerBound) / numberOfPartitions;
         Double miniDistance = (upperBound - lowerBound) / Config.NUMBER_OF_INTERVALS;
         Double keyRangeUpperBound = lowerBound + distance;
         Double bound = lowerBound + miniDistance;
-        Map<Integer, Integer> intervalToTaskMapping = new HashMap<>();
-        int index = 0;
+        Map<Integer, Integer> intervalToPartitionMapping = new HashMap<>();
+        int bin = 0;
         for (int i = 0; i < Config.NUMBER_OF_INTERVALS; ++i) {
-            intervalToTaskMapping.put(i, indexTasks.get(index));
+            intervalToPartitionMapping.put(i, bin);
             bound += miniDistance;
             if (bound > keyRangeUpperBound) {
                 keyRangeUpperBound = keyRangeUpperBound + distance;
-//                bound = 0D;
-                ++index;
+                ++bin;
             }
         }
-        System.out.println("balanced partition has been finished!");
-        System.out.println(intervalToTaskMapping);
-        return intervalToTaskMapping;
+        return intervalToPartitionMapping;
     }
 
+    public Map<Integer, Integer> getIntervalToPartitionMapping() {
+        return this.intervalToPartitionMapping;
+    }
 
-    /*
-    public Map<Integer, Integer> getBalancedPartitionPlan() {
-        int numberOfTasks = indexTasks.size();
-        int numberOfintervalsOfTask =  Config.NUMBER_OF_INTERVALS / numberOfTasks;
-        int index = 0;
-        Map<Integer, Integer> intervalToTaskMapping = new HashMap<>();
+    public int getIntervalId(Double key) {
+        Double distance = (upperBound - lowerBound) / Config.NUMBER_OF_INTERVALS;
 
-        int count = 0;
+        Double autualLowerBound = lowerBound + distance;
 
-        for (int i = 0; i < Config.NUMBER_OF_INTERVALS; ++i) {
-            intervalToTaskMapping.put(i, indexTasks.get(index));
-            ++count;
-            if (count > numberOfintervalsOfTask) {
-                count = 0;
-                ++index;
-            }
+        Double autualUpperBound = upperBound - distance;
+
+        if (key <= autualLowerBound) {
+            return 0;
         }
-        System.out.println("balanced partition has been finished!");
-        System.out.println(intervalToTaskMapping);
-        return intervalToTaskMapping;
+
+        if (key > autualUpperBound) {
+            return Config.NUMBER_OF_INTERVALS - 1;
+        }
+
+        if ((key - autualLowerBound) % distance == 0) {
+            return (int) ((key - autualLowerBound) / distance);
+        } else {
+            return (int) ((key - autualLowerBound) / distance + 1);
+        }
     }
-    */
+
+    public void setEnableRecord() {
+        enableRecord = true;
+    }
+
+    public void record(Double key) {
+        if (enableRecord) {
+            int intervalId = getIntervalId(key);
+            histogram.record(intervalId);
+        }
+    }
+
+    public Histogram getIntervalDistribution() {
+        histogram.setDefaultValueForAbsentKey(Config.NUMBER_OF_INTERVALS);
+        return histogram;
+    }
+
+    public void setIntervalToPartitionMapping(Map<Integer, Integer> intervalToPartitionMapping) {
+        this.intervalToPartitionMapping.clear();
+        this.intervalToPartitionMapping.putAll(intervalToPartitionMapping);
+    }
+
+    public void clearHistogram() {
+        histogram.clear();
+    }
+
 }

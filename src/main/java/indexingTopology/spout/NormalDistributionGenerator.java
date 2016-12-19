@@ -13,6 +13,7 @@ import indexingTopology.NormalDistributionIndexingTopology;
 import org.apache.commons.math3.distribution.NormalDistribution;
 
 import java.io.*;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,6 +34,7 @@ public class NormalDistributionGenerator extends BaseRichSpout {
     AtomicInteger counter;
     Random random;
     long seed;
+    Long timeStamp;
     private FileOutputStream fop;
     private final DataSchema schema;
 
@@ -48,8 +50,9 @@ public class NormalDistributionGenerator extends BaseRichSpout {
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-//        declarer.declare(new Fields("indexValue", "value1", "value2", "value3", "value4", "value5", "value6", "value7"));
-        declarer.declareStream(NormalDistributionIndexingTopology.IndexStream, schema.getFieldsObject());
+        List<String> fields = schema.getFieldsObject().toList();
+        fields.add("timeStamp");
+        declarer.declareStream(NormalDistributionIndexingTopology.IndexStream, new Fields(fields));
     }
 
     public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
@@ -63,6 +66,8 @@ public class NormalDistributionGenerator extends BaseRichSpout {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        timeStamp = 0L;
 
 //        try {
 //            fop = new FileOutputStream(file);
@@ -112,10 +117,14 @@ public class NormalDistributionGenerator extends BaseRichSpout {
             String [] tuple = text.split(" ");
 //            System.out.println("The tuple is " + schema.getValuesObject(tuple));
 //            double indexValue = Double.parseDouble(text);
-            collector_.emit(NormalDistributionIndexingTopology.IndexStream, schema.getValuesObject(tuple), msgId);
+            Values values = schema.getValuesObject(tuple);
+            values.add(timeStamp);
+
+            collector_.emit(NormalDistributionIndexingTopology.IndexStream, values, msgId);
             if (counter.get() == Integer.MAX_VALUE) {
                 counter.set(0);
             }
+            ++timeStamp;
         } catch (IOException e) {
             e.printStackTrace();
         }

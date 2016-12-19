@@ -10,9 +10,8 @@ import backtype.storm.tuple.Values;
 import indexingTopology.Cache.*;
 import indexingTopology.Config.Config;
 import indexingTopology.FileSystemHandler.FileSystemHandler;
-import indexingTopology.FileSystemHandler.HdfsFileSystemHandler;
 import indexingTopology.FileSystemHandler.LocalFileSystemHandler;
-import indexingTopology.NormalDistributionIndexingTopology;
+import indexingTopology.Streams.Streams;
 import indexingTopology.util.*;
 
 import java.io.FileNotFoundException;
@@ -44,15 +43,6 @@ public class ChunkScannerBolt extends BaseRichBolt {
     public void execute(Tuple tuple) {
 
         SubQuery subQuery = (SubQuery) tuple.getValue(0);
-
-        /*
-        Long queryId = tuple.getLong(0);
-        Double key = tuple.getDouble(1);
-//        ArrayList<String> fileNames = (ArrayList) tuple.getValue(2);
-        String fileName = (String) tuple.getValue(2);
-        Long timestampLowerBound = tuple.getLong(3);
-        Long timestampUpperBound = tuple.getLong(4);
-        */
 
         Long queryId = subQuery.getQueryId();
         Double key = subQuery.getKey();
@@ -120,10 +110,10 @@ public class ChunkScannerBolt extends BaseRichBolt {
 //                collector.emit(NormalDistributionIndexingTopology.FileSystemQueryStream,
 //                        new Values(queryId, serializedTuples, timeCostOfReadFile, timeCostOfDeserializationALeaf,
 //                                timeCostOfDeserializationATree));
-                collector.emit(NormalDistributionIndexingTopology.FileSystemQueryStream,
+                collector.emit(Streams.FileSystemQueryStream,
                         new Values(queryId, serializedTuples, metrics));
 
-                collector.emit(NormalDistributionIndexingTopology.FileSubQueryFinishStream,
+                collector.emit(Streams.FileSubQueryFinishStream,
                         new Values("finished"));
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
@@ -148,10 +138,10 @@ public class ChunkScannerBolt extends BaseRichBolt {
 //                new Fields("queryId", "timeCostOfReadFile", "timeCostOfDeserializationALeaf",
 //                        "timeCostOfDeserializationATree"));
 
-        outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.FileSystemQueryStream,
+        outputFieldsDeclarer.declareStream(Streams.FileSystemQueryStream,
                 new Fields("queryId", "serializedTuples", "metrics"));
 
-        outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.FileSubQueryFinishStream,
+        outputFieldsDeclarer.declareStream(Streams.FileSubQueryFinishStream,
                 new Fields("finished"));
     }
 

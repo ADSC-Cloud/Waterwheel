@@ -45,6 +45,8 @@ public class DataSchema implements Serializable {
             }
         }
 
+        values.add(tuple.getLong(valueTypes.size()));
+
         return values;
     }
 

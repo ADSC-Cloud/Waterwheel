@@ -10,6 +10,7 @@ import backtype.storm.tuple.Values;
 import indexingTopology.DataSchema;
 import indexingTopology.NormalDistributionIndexingAndRangeQueryTopology;
 import indexingTopology.NormalDistributionIndexingTopology;
+import indexingTopology.Streams.Streams;
 import indexingTopology.util.DeserializationHelper;
 import indexingTopology.util.FileScanMetrics;
 
@@ -141,12 +142,11 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
 
     public void execute(Tuple tuple) {
         if (tuple.getSourceStreamId()
-                .equals(NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryInformationStream)) {
-//            numberOfTasksToSearch = tuple.getInteger(1);
+                .equals(Streams.BPlusTreeQueryInformationStream)) {
             int numberOfTasksToSearch = tuple.getInteger(1);
             Long queryId = tuple.getLong(0);
 
-            System.out.println("queryId" + queryId + "number of tasks to search " + numberOfTasksToSearch);
+//            System.out.println("queryId" + queryId + "number of tasks to search " + numberOfTasksToSearch);
             queryIdToNumberOfTasksToSearch.put(queryId, numberOfTasksToSearch);
 
             if (isQueryFinshed(queryId)) {
@@ -155,10 +155,10 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
             }
 
         } else if (tuple.getSourceStreamId()
-                .equals(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryInformationStream)) {
+                .equals(Streams.FileSystemQueryInformationStream)) {
             int numberOfFilesToScan = tuple.getInteger(1);
             Long queryId = tuple.getLong(0);
-            System.out.println("queryId" + queryId + "number of files to scan " + numberOfFilesToScan);
+//            System.out.println("queryId" + queryId + "number of files to scan " + numberOfFilesToScan);
             queryIdToNumberOfFilesToScan.put(queryId, numberOfFilesToScan);
 
             if (isQueryFinshed(queryId)) {
@@ -166,11 +166,11 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
                 removeQueryIdFromMappings(queryId);
             }
 
-        } else if (tuple.getSourceStreamId().equals(NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryStream) ||
-                tuple.getSourceStreamId().equals(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryStream)) {
+        } else if (tuple.getSourceStreamId().equals(Streams.BPlusTreeQueryStream) ||
+                tuple.getSourceStreamId().equals(Streams.FileSystemQueryStream)) {
             long queryId = tuple.getLong(0);
 
-            if (tuple.getSourceStreamId().equals(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryStream)) {
+            if (tuple.getSourceStreamId().equals(Streams.FileSystemQueryStream)) {
                 FileScanMetrics metrics = (FileScanMetrics) tuple.getValue(2);
                 putFileScanMetrics(queryId, metrics);
             }
@@ -243,7 +243,7 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
     private void sendNewQueryPermit(Long queryId) {
         FileScanMetrics metrics = queryIdToFileScanMetrics.get(queryId);
         int numberOfFilesToScan = queryIdToNumberOfFilesToScan.get(queryId);
-        collector.emit(NormalDistributionIndexingAndRangeQueryTopology.NewQueryStream,
+        collector.emit(Streams.NewQueryStream,
                 new Values(queryId, new String("New query can be executed"),
                         metrics, numberOfFilesToScan));
     }

@@ -12,6 +12,8 @@ import indexingTopology.NormalDistributionIndexingAndRangeQueryTopology;
 import indexingTopology.NormalDistributionIndexingTopology;
 import indexingTopology.MetaData.TaskMetaData;
 import indexingTopology.MetaData.TaskPartitionSchemaManager;
+import indexingTopology.Streams.Streams;
+import indexingTopology.util.BalancedPartition;
 import indexingTopology.util.Histogram;
 import indexingTopology.util.PartitionFunction;
 import indexingTopology.util.RangeQuerySubQuery;
@@ -39,29 +41,29 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
 
     private List<Integer> targetTasks;
 
-    private Histogram histogram;
-
-    private Map<Integer, Integer> intervalToTaskMapping;
+    private Map<Integer, Integer> intervalToPartitionMapping;
 
     private Double lowerBound;
 
     private Double upperBound;
 
-    private Thread staticsSendingThread;
+    private BalancedPartition balancedPartition;
 
-    private Semaphore staticsSendingRequest;
+    private boolean enableLoadBlance;
 
-    private PartitionFunction partitionFunction;
+    private int numberOfPartitions;
 
 
-    public RangeQueryDispatcherBolt(DataSchema schema) {
+    public RangeQueryDispatcherBolt(DataSchema schema, Double lowerBound, Double upperBound, boolean enableLoadBlance) {
         this.schema = schema;
+        this.lowerBound = lowerBound;
+        this.upperBound = upperBound;
+        this.enableLoadBlance = enableLoadBlance;
     }
 
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
-//        this.nextComponentTasks=topologyContext.getComponentTasks(nextComponentID);
-//        assert this.nextComponentTasks.size()==RANGE_BREAKPOINTS.length : "its hardcoded for now. lengths should match";
+
         Set<String> componentIds = topologyContext.getThisTargets()
                 .get(NormalDistributionIndexingAndRangeQueryTopology.IndexStream).keySet();
         targetTasks = new ArrayList<Integer>();
@@ -70,71 +72,51 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
             targetTasks.addAll(topologyContext.getComponentTasks(componentId));
         }
 
-        collector.emit(NormalDistributionIndexingAndRangeQueryTopology.IndexerNumberReportStream, new Values(targetTasks));
+        numberOfPartitions = targetTasks.size();
 
-        lowerBound = 0.0;
-        upperBound = 1000.0;
+        balancedPartition = new BalancedPartition(numberOfPartitions, lowerBound, upperBound, enableLoadBlance);
 
-        staticsSendingRequest = new Semaphore(1);
+        intervalToPartitionMapping = balancedPartition.getIntervalToPartitionMapping();
 
-        histogram = new Histogram();
-
-//        System.out.println("The task id ");
-//        System.out.println(targetTasks);
-//        scheduleKeyRangeToTask(targetTasks);
-//
-//        InitializeTimeStamp(targetTasks);
-        staticsSendingThread = new Thread(new SendStatisticsRunnable());
-        staticsSendingThread.start();
     }
 
     public void execute(Tuple tuple) {
 //        double partitionValue = tuple.getDoubleByField(rangePartitionField);
 
-        if (tuple.getSourceStreamId().equals(NormalDistributionIndexingAndRangeQueryTopology.IndexStream)){
+        if (tuple.getSourceStreamId().equals(Streams.IndexStream)){
+
+            Double indexValue = tuple.getDoubleByField(schema.getIndexField());
+
+//                updateBound(indexValue);
+            balancedPartition.record(indexValue);
+
+            int partitionId = intervalToPartitionMapping.get(balancedPartition.getIntervalId(indexValue));
+
+            int taskId = targetTasks.get(partitionId);
+
+            Values values = null;
             try {
-                Long timeStamp = System.currentTimeMillis();
-                Values values = schema.getValuesObject(tuple);
-                values.add(timeStamp);
-
-                Double indexValue = tuple.getDoubleByField(schema.getIndexField());
-
-                updateBound(indexValue);
-
-                while (partitionFunction == null) {
-                    try {
-                        Thread.sleep(1);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                int intervalId = partitionFunction.getIntervalId(indexValue);
-
-                histogram.record(intervalId);
-
-
-//                System.out.println("Interval Id " + intervalId);
-//                System.out.println(intervalToTaskMapping == null);
-//                System.out.println("key " + indexValue);
-//                System.out.println("lower bound " + partitionFunction.lowerBound);
-//                System.out.println("upper bound" + partitionFunction.upperBound);
-                int taskId = intervalToTaskMapping.get(intervalId);
-//                collector.emit(NormalDistributionIndexingAndRangeQueryTopology.IndexStream, schema.getValuesObject(tuple));
-                collector.emitDirect(taskId, NormalDistributionIndexingTopology.IndexStream, values);
+                values = schema.getValuesObject(tuple);
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        } else {
+
+            collector.emitDirect(taskId, Streams.IndexStream, values);
+
+        } else if (tuple.getSourceStreamId().equals(Streams.IntervalPartitionUpdateStream)){
             Map<Integer, Integer> intervalToTaskMapping = (Map) tuple.getValueByField("newIntervalPartition");
             if (intervalToTaskMapping.size() > 0) {
-                this.intervalToTaskMapping = intervalToTaskMapping;
+                this.intervalToPartitionMapping = intervalToTaskMapping;
             }
 
-            partitionFunction = (PartitionFunction) tuple.getValueByField("partitionFunction");
+        } else if (tuple.getSourceStreamId().equals(Streams.StaticsRequestStream)){
 
-            staticsSendingRequest.release();
+            System.out.println(balancedPartition.getIntervalDistribution().getHistogram());
 
+            collector.emit(Streams.StatisticsReportStream,
+                    new Values(new Histogram(balancedPartition.getIntervalDistribution().getHistogram())));
+
+            balancedPartition.clearHistogram();
         }
     }
 
@@ -149,39 +131,17 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-//        declarer.declare(schema.getFieldsObject());
-//        declarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryStream, new Fields("key"));
-        declarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryStream, new Fields("queryId", "leftKey"
+        declarer.declareStream(Streams.BPlusTreeQueryStream, new Fields("queryId", "leftKey"
                 , "rightKey"));
 
         List<String> fields = schema.getFieldsObject().toList();
         fields.add("timeStamp");
 
-//        declarer.declareStream(NormalDistributionIndexingTopology.IndexStream, schema.getFieldsObject());
-        declarer.declareStream(NormalDistributionIndexingTopology.IndexStream, new Fields(fields));
+        declarer.declareStream(Streams.IndexStream, new Fields(fields));
 
-        declarer.declareStream(NormalDistributionIndexingAndRangeQueryTopology.StatisticsReportStream, new Fields("statistics", "lowerBound", "upperBound"));
-
-        declarer.declareStream(NormalDistributionIndexingAndRangeQueryTopology.IndexerNumberReportStream, new Fields("numberOfIndexers"));
-    }
-
-    class SendStatisticsRunnable implements Runnable {
-
-        @Override
-        public void run() {
-            while (true) {
-                try {
-                    staticsSendingRequest.acquire();
-                    Thread.sleep(10000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-                collector.emit(NormalDistributionIndexingTopology.StatisticsReportStream,
-                        new Values(histogram, lowerBound, upperBound));
-            }
-        }
+        declarer.declareStream(Streams.StatisticsReportStream, new Fields("statistics"));
 
     }
+
 
 }
