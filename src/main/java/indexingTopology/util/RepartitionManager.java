@@ -15,15 +15,12 @@ public class RepartitionManager {
 
     private int nbins;
 
-    private List<Integer> bins;
-
     public RepartitionManager(int numberOfBins, Map<Integer, Integer> ballToBinMapping,
-                              Map<Integer, Long> ballToWeight, Long workload, List<Integer> bins) {
+                              Map<Integer, Long> ballToWeight, Long workload) {
         this.workload = workload;
         this.ballToBinMapping.putAll(ballToBinMapping);
         this.ballToWeight = ballToWeight;
         nbins = numberOfBins;
-        this.bins = bins;
     }
 
     public Map<Integer, Integer> getRepartitionPlan() {
@@ -50,7 +47,7 @@ public class RepartitionManager {
         for (Object ball : balls) {
             Long weight = ballToWeight.get(ball);
             totalWeight += weight;
-            newBallToBinMapping.put((Integer) ball, bins.get(bin));
+            newBallToBinMapping.put((Integer) ball, bin);
             if (totalWeight >= distance) {
                 ++bin;
                 totalWeight = 0L;

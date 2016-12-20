@@ -25,4 +25,6 @@ public class Config {
     public static final int NUMBER_OF_INTERVALS = 10;
 
     public static final int BTREE_OREDER = 4;
+
+    public static final double LOAD_BALANCE_THRESHOLD = 0.2;
 }

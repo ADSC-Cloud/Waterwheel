@@ -13,6 +13,7 @@ import indexingTopology.FileSystemHandler.FileSystemHandler;
 import indexingTopology.FileSystemHandler.HdfsFileSystemHandler;
 import indexingTopology.FileSystemHandler.LocalFileSystemHandler;
 import indexingTopology.NormalDistributionIndexingAndRangeQueryTopology;
+import indexingTopology.Streams.Streams;
 import indexingTopology.util.*;
 
 import java.io.FileNotFoundException;
@@ -44,14 +45,6 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
 
         RangeQuerySubQuery subQuery = (RangeQuerySubQuery) tuple.getValue(0);
 
-//        Long queryId = tuple.getLong(0);
-//        Double leftKey = tuple.getDouble(1);
-//        Double rightKey = tuple.getDouble(2);
-
-//        ArrayList<String> fileNames = (ArrayList) tuple.getValue(2);
-//        String fileName = (String) tuple.getValue(3);
-//        Long timestampLowerBound = tuple.getLong(4);
-//        Long timestampUpperBound = tuple.getLong(5);
         Long queryId = subQuery.getQueryId();
         Double leftKey = subQuery.getlefKey();
         Double rightKey = subQuery.getRightKey();
@@ -123,11 +116,9 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
             metrics.setLeafDeserializationTime(timeCostOfDeserializationALeaf);
             metrics.setTreeDeserializationTime(timeCostOfDeserializationATree);
             metrics.setSearchTime(timeCostOfSearching);
-            collector.emit(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryStream,
-                        new Values(queryId, serializedTuples, metrics));
+            collector.emit(Streams.FileSystemQueryStream, new Values(queryId, serializedTuples, metrics));
 
-            collector.emit(NormalDistributionIndexingAndRangeQueryTopology.FileSubQueryFinishStream,
-                      new Values("finished"));
+            collector.emit(Streams.FileSubQueryFinishStream, new Values("finished"));
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             } catch (IOException e) {
@@ -145,10 +136,10 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
 //                new Fields("queryId", "serializedTuples", "timeCostOfReadFile", "timeCostOfDeserializationALeaf",
 //                        "timeCostOfDeserializationATree"));
 
-        outputFieldsDeclarer.declareStream(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryStream,
+        outputFieldsDeclarer.declareStream(Streams.FileSystemQueryStream,
                 new Fields("queryId", "serializedTuples", "metrics"));
 
-        outputFieldsDeclarer.declareStream(NormalDistributionIndexingAndRangeQueryTopology.FileSubQueryFinishStream,
+        outputFieldsDeclarer.declareStream(Streams.FileSubQueryFinishStream,
                 new Fields("finished"));
 
     }

@@ -7,20 +7,16 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-import indexingTopology.Config.Config;
 import indexingTopology.DataSchema;
-import indexingTopology.MetaData.TaskMetaData;
-import indexingTopology.MetaData.TaskPartitionSchemaManager;
 import indexingTopology.NormalDistributionIndexingTopology;
+import indexingTopology.Streams.Streams;
+import indexingTopology.util.BalancedPartition;
 import indexingTopology.util.Histogram;
-import indexingTopology.util.PartitionFunction;
-import indexingTopology.util.SubQuery;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.Semaphore;
 
 /**
  * Created by acelzj on 11/17/16.
@@ -28,46 +24,37 @@ import java.util.concurrent.Semaphore;
 public class DispatcherBolt extends BaseRichBolt{
 
     OutputCollector collector;
-    /*
-    private final String nextComponentID;
-    private final DataSchema schema;
-    // TODO hard coded for now. make dynamic.
-    private final double [] RANGE_BREAKPOINTS = {103.8,103.85,103.90,104.00};
-    private List<Integer> nextComponentTasks;
-    private String rangePartitionField;
-    */
 
     private final DataSchema schema;
 
     private List<Integer> targetTasks;
 
-    private Map<Integer, Integer> intervalToTaskMapping;
+    private Map<Integer, Integer> intervalToPartitionMapping;
 
     private File outputFile;
 
     private FileOutputStream fop;
 
-    private Histogram histogram;
-
     private Double lowerBound;
 
     private Double upperBound;
 
-    private Thread staticsSendingThread;
+    private BalancedPartition balancedPartition;
 
-    private Semaphore staticsSendingRequest;
+    private int numberOfPartitions;
 
-    private PartitionFunction partitionFunction;
+    private boolean enableRecord;
 
-    public DispatcherBolt(DataSchema schema) {
+    public DispatcherBolt(DataSchema schema, Double lowerBound, Double upperBound, boolean enableRecord) {
         this.schema = schema;
+        this.lowerBound = lowerBound;
+        this.upperBound = upperBound;
+        this.enableRecord = enableRecord;
     }
 
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
         outputFile = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/number_of_tasks.txt");
-//        this.nextComponentTasks=topologyContext.getComponentTasks(nextComponentID);
-//        assert this.nextComponentTasks.size()==RANGE_BREAKPOINTS.length : "its hardcoded for now. lengths should match";
         Set<String> componentIds = topologyContext.getThisTargets()
                 .get(NormalDistributionIndexingTopology.IndexStream).keySet();
         targetTasks = new ArrayList<>();
@@ -75,14 +62,11 @@ public class DispatcherBolt extends BaseRichBolt{
             targetTasks.addAll(topologyContext.getComponentTasks(componentId));
         }
 
-        collector.emit(NormalDistributionIndexingTopology.IndexerNumberReportStream, new Values(targetTasks));
+        numberOfPartitions = topologyContext.getComponentTasks("IndexerBolt").size();
 
-        lowerBound = 0.0;
-        upperBound = 1000.0;
+        balancedPartition = new BalancedPartition(numberOfPartitions, lowerBound, upperBound, enableRecord);
 
-        staticsSendingRequest = new Semaphore(1);
-
-        histogram = new Histogram();
+        intervalToPartitionMapping = balancedPartition.getIntervalToPartitionMapping();
 
         try {
             fop = new FileOutputStream(outputFile);
@@ -90,76 +74,62 @@ public class DispatcherBolt extends BaseRichBolt{
             e.printStackTrace();
         }
 
-//        scheduleKeyRangeToTask(targetTasks);
-
-//        InitializeTimeStamp(targetTasks);
-
-        staticsSendingThread = new Thread(new SendStatisticsRunnable());
-        staticsSendingThread.start();
     }
 
     public void execute(Tuple tuple) {
-//        double partitionValue = tuple.getDoubleByField(rangePartitionField);
-        if (tuple.getSourceStreamId().equals(NormalDistributionIndexingTopology.IndexStream)) {
+        if (tuple.getSourceStreamId().equals(Streams.IndexStream)) {
+
+            Double indexValue = tuple.getDoubleByField(schema.getIndexField());
+
+//                updateBound(indexValue);
+
+
+            balancedPartition.record(indexValue);
+
+            int partitionId = intervalToPartitionMapping.get(balancedPartition.getIntervalId(indexValue));
+
+            int taskId = targetTasks.get(partitionId);
+
+            Values values = null;
             try {
-                Long timeStamp = System.currentTimeMillis();
-                Values values = schema.getValuesObject(tuple);
-
-                Double indexValue = tuple.getDoubleByField(schema.getIndexField());
-
-                updateBound(indexValue);
-
-                while (partitionFunction == null) {
-                    try {
-                        Thread.sleep(1);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                int intervalId = partitionFunction.getIntervalId(indexValue);
-
-                histogram.record(intervalId);
-
-                values.add(timeStamp);
-
-
-//                System.out.println("Interval Id " + intervalId);
-//                System.out.println(intervalToTaskMapping == null);
-//                System.out.println("key " + indexValue);
-//                System.out.println("lower bound " + partitionFunction.lowerBound);
-//                System.out.println("upper bound" + partitionFunction.upperBound);
-                int taskId = intervalToTaskMapping.get(intervalId);
-
-                collector.emitDirect(taskId, NormalDistributionIndexingTopology.IndexStream, values);
+                values = schema.getValuesObject(tuple);
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        } else {
+
+            collector.emitDirect(taskId, Streams.IndexStream, values);
+
+        } else if (tuple.getSourceStreamId().equals(Streams.IntervalPartitionUpdateStream)){
             Map<Integer, Integer> intervalToTaskMapping = (Map) tuple.getValueByField("newIntervalPartition");
             if (intervalToTaskMapping.size() > 0) {
-                this.intervalToTaskMapping = intervalToTaskMapping;
+                this.intervalToPartitionMapping = intervalToTaskMapping;
             }
 
-            partitionFunction = (PartitionFunction) tuple.getValueByField("partitionFunction");
+        } else if (tuple.getSourceStreamId().equals(Streams.StaticsRequestStream)){
 
-            staticsSendingRequest.release();
+
+            System.out.println(balancedPartition.getIntervalDistribution().getHistogram());
+
+
+            collector.emit(Streams.StatisticsReportStream,
+                    new Values(new Histogram(balancedPartition.getIntervalDistribution().getHistogram())));
+
+            balancedPartition.clearHistogram();
         }
     }
 
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryStream, new Fields("queryId", "key"));
+        declarer.declareStream(Streams.BPlusTreeQueryStream, new Fields("queryId", "key"));
 
         List<String> fields = schema.getFieldsObject().toList();
         fields.add("timeStamp");
 
 //        declarer.declareStream(NormalDistributionIndexingTopology.IndexStream, schema.getFieldsObject());
-        declarer.declareStream(NormalDistributionIndexingTopology.IndexStream, new Fields(fields));
+        declarer.declareStream(Streams.IndexStream, new Fields(fields));
 
-        declarer.declareStream(NormalDistributionIndexingTopology.StatisticsReportStream, new Fields("statistics", "lowerBound", "upperBound"));
+        declarer.declareStream(Streams.StatisticsReportStream, new Fields("statistics"));
 
-        declarer.declareStream(NormalDistributionIndexingTopology.IndexerNumberReportStream, new Fields("numberOfIndexers"));
     }
 
     private void updateBound(Double indexValue) {
@@ -173,22 +143,4 @@ public class DispatcherBolt extends BaseRichBolt{
     }
 
 
-    class SendStatisticsRunnable implements Runnable {
-
-        @Override
-        public void run() {
-            while (true) {
-                try {
-                    staticsSendingRequest.acquire();
-                    Thread.sleep(10000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-                collector.emit(NormalDistributionIndexingTopology.StatisticsReportStream,
-                        new Values(histogram, lowerBound, upperBound));
-            }
-        }
-
-    }
 }

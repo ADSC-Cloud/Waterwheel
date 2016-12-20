@@ -3,11 +3,10 @@ package indexingTopology;
 import backtype.storm.Config;
 import backtype.storm.StormSubmitter;
 import backtype.storm.topology.TopologyBuilder;
-import backtype.storm.tuple.Fields;
+import indexingTopology.Streams.Streams;
 import indexingTopology.bolt.*;
 import indexingTopology.spout.NormalDistributionGenerator;
 import indexingTopology.util.Constants;
-import indexingTopology.util.RangePartitionGrouping;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,16 +27,17 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
     public static final String TimeStampUpdateStream = "TimeStampUpdateStream";
     public static final String QueryGenerateStream = "QueryGenerateStream";
     public static final String FileSubQueryFinishStream = "FileSubQueryFinishStream";
-    public static final String StatisticsReportStream = "KeyStatisticsStream";
+    public static final String StatisticsReportStream = "StatisticsReportStream";
     public static final String IntervalPartitionUpdateStream = "IntervalPartitionUpdateStream";
-    public static final String IndexerNumberReportStream = "IndexerNumberReportStream";
+    public static final String StaticsRequestStream = "StaticsRequestStream";
+
 
     static final String TupleGenerator = "TupleGenerator";
-    static final String RangeQueryDispatcherBolt = "RangeQueryDispatcherBolt";
-    static final String RangeQueryDecompositionBolt = "RangeQueryDeCompositionBolt";
+    static final String RangeQueryDispatcherBolt = "DispatcherBolt";
+    static final String RangeQueryDecompositionBolt = "QueryDeCompositionBolt";
     static final String IndexerBolt = "IndexerBolt";
-    static final String RangeQueryChunkScannerBolt = "RangeQueryChunkScannerBolt";
-    static final String ResultMergeBolt = "RangeQueryResultMergeBolt";
+    static final String RangeQueryChunkScannerBolt = "ChunkScannerBolt";
+    static final String ResultMergeBolt = "GResultMergeBolt";
     static final String MetadataServer = "MetadataServer";
 
 
@@ -60,41 +60,47 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
         List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
                 Double.class, Double.class, Double.class, Double.class, Double.class));
         DataSchema schema = new DataSchema(fieldNames, valueTypes, "user_id");
+
+        Double lowerBound = 0.0;
+
+        Double upperBound = 1000.0;
+
+        boolean enableLoadBalance = true;
+
         builder.setSpout(TupleGenerator, new NormalDistributionGenerator(schema), 1).setNumTasks(1);
-//        builder.setBolt("Dispatcher",new RangeQueryDispatcherBolt("Indexer","longitude",schema),1).shuffleGrouping("TupleGenerator");
 
-        builder.setBolt(RangeQueryDispatcherBolt, new RangeQueryDispatcherBolt(schema)).setNumTasks(1)
-                .shuffleGrouping(TupleGenerator, IndexStream)
-                .shuffleGrouping(MetadataServer, IntervalPartitionUpdateStream);
+        builder.setBolt(RangeQueryDispatcherBolt, new RangeQueryDispatcherBolt(schema, lowerBound, upperBound, enableLoadBalance)).setNumTasks(1)
+                .shuffleGrouping(TupleGenerator, Streams.IndexStream)
+                .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
+                .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 
-        builder.setBolt(IndexerBolt, new NormalDistributionIndexAndRangeQueryBolt("user_id", schema, 4, 65000000),1)
+        builder.setBolt(IndexerBolt, new NormalDistributionIndexAndRangeQueryBolt("user_id", schema, indexingTopology.Config.Config.BTREE_OREDER, 65000000),1)
                 .setNumTasks(4)
-                .directGrouping(RangeQueryDispatcherBolt, IndexStream)
-                .directGrouping(RangeQueryDecompositionBolt, BPlusTreeQueryStream);
+                .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
+                .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream);
 
-        builder.setBolt(RangeQueryDecompositionBolt, new RangeQueryDeCompositionBolt()).setNumTasks(1)
-                .shuffleGrouping(ResultMergeBolt, NewQueryStream)
-                .shuffleGrouping(RangeQueryChunkScannerBolt, FileSubQueryFinishStream)
-                .shuffleGrouping(MetadataServer, FileInformationUpdateStream)
-                .shuffleGrouping(MetadataServer, IntervalPartitionUpdateStream)
-                .shuffleGrouping(MetadataServer, TimeStampUpdateStream);
+        builder.setBolt(RangeQueryDecompositionBolt, new RangeQueryDeCompositionBolt(lowerBound, upperBound)).setNumTasks(1)
+                .shuffleGrouping(ResultMergeBolt, Streams.NewQueryStream)
+                .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSubQueryFinishStream)
+                .shuffleGrouping(MetadataServer, Streams.FileInformationUpdateStream)
+                .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
+                .shuffleGrouping(MetadataServer, Streams.TimeStampUpdateStream);
 
         builder.setBolt(RangeQueryChunkScannerBolt, new RangeQueryChunkScannerBolt()).setNumTasks(2)
 //                .fieldsGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream, new Fields("fileName"));
-                .directGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream);
+                .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream);
 //                .shuffleGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream);
 
         builder.setBolt(ResultMergeBolt, new RangeQueryResultMergeBolt(schema)).setNumTasks(1)
-                .allGrouping(RangeQueryChunkScannerBolt, FileSystemQueryStream)
-                .allGrouping(IndexerBolt, BPlusTreeQueryStream)
-                .shuffleGrouping(RangeQueryDecompositionBolt, BPlusTreeQueryInformationStream)
-                .shuffleGrouping(RangeQueryDecompositionBolt, FileSystemQueryInformationStream);
+                .allGrouping(RangeQueryChunkScannerBolt, Streams.FileSystemQueryStream)
+                .allGrouping(IndexerBolt, Streams.BPlusTreeQueryStream)
+                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryInformationStream)
+                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryInformationStream);
 
-        builder.setBolt(MetadataServer, new MetadataServer()).setNumTasks(1)
-                .shuffleGrouping(RangeQueryDispatcherBolt, StatisticsReportStream)
-                .shuffleGrouping(IndexerBolt, TimeStampUpdateStream)
-                .shuffleGrouping(IndexerBolt, FileInformationUpdateStream)
-                .shuffleGrouping(RangeQueryDispatcherBolt, IndexerNumberReportStream);
+        builder.setBolt(MetadataServer, new MetadataServer(lowerBound, upperBound)).setNumTasks(1)
+                .shuffleGrouping(RangeQueryDispatcherBolt, Streams.StatisticsReportStream)
+                .shuffleGrouping(IndexerBolt, Streams.TimeStampUpdateStream)
+                .shuffleGrouping(IndexerBolt, Streams.FileInformationUpdateStream);
 
         Config conf = new Config();
         conf.setDebug(false);

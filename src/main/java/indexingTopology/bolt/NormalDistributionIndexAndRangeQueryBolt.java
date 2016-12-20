@@ -14,6 +14,7 @@ import indexingTopology.FileSystemHandler.HdfsFileSystemHandler;
 import indexingTopology.FileSystemHandler.LocalFileSystemHandler;
 import indexingTopology.NormalDistributionIndexingAndRangeQueryTopology;
 import indexingTopology.NormalDistributionIndexingTopology;
+import indexingTopology.Streams.Streams;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.util.*;
 import javafx.util.Pair;
@@ -162,7 +163,7 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
     }
 
     public void execute(Tuple tuple) {
-        if (tuple.getSourceStreamId().equals(NormalDistributionIndexingTopology.IndexStream)) {
+        if (tuple.getSourceStreamId().equals(Streams.IndexStream)) {
             Double indexValue = tuple.getDoubleByField(indexField);
             Long timeStamp = tuple.getLong(8);
 //            Double indexValue = tuple.getDouble(0);
@@ -236,11 +237,9 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
                     Pair keyRange = new Pair(minIndexValue, maxIndexValue);
                     Pair timeStampRange = new Pair(minTimeStamp, maxTimeStamp);
 
-                    collector.emit(NormalDistributionIndexingTopology.FileInformationUpdateStream,
-                            new Values(fileName, keyRange, timeStampRange));
+                    collector.emit(Streams.FileInformationUpdateStream, new Values(fileName, keyRange, timeStampRange));
 
-                    collector.emit(NormalDistributionIndexingAndRangeQueryTopology.TimeStampUpdateStream,
-                            new Values(maxTimeStamp));
+                    collector.emit(Streams.TimeStampUpdateStream, new Values(maxTimeStamp));
 
                     numTuples = 0;
 
@@ -286,7 +285,7 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
             List<byte[]> serializedTuples = indexedData.searchRange(leftKey, rightKey);
 //            System.out.println("The tuple is " + serializedTuples);
 //            if (serializedTuples != null) {
-                collector.emit(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
+                collector.emit(Streams.BPlusTreeQueryStream,
                         new Values(queryId, serializedTuples));
 //            }
         }
@@ -354,13 +353,13 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
 
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
 //        outputFieldsDeclarer.declare(new Fields("num_tuples","wo_template_time","template_time","wo_template_written","template_written"));
-        outputFieldsDeclarer.declareStream(NormalDistributionIndexingAndRangeQueryTopology.FileInformationUpdateStream,
+        outputFieldsDeclarer.declareStream(Streams.FileInformationUpdateStream,
                 new Fields("fileName", "keyRange", "timeStampRange"));
 //        outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
 //                new Fields("leftKey", "rightKey", "serializedTuples"));
-        outputFieldsDeclarer.declareStream(NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryStream,
+        outputFieldsDeclarer.declareStream(Streams.BPlusTreeQueryStream,
                 new Fields("queryId", "serializedTuples"));
-        outputFieldsDeclarer.declareStream(NormalDistributionIndexingAndRangeQueryTopology.TimeStampUpdateStream,
+        outputFieldsDeclarer.declareStream(Streams.TimeStampUpdateStream,
                 new Fields("timestamp"));
     }
 
