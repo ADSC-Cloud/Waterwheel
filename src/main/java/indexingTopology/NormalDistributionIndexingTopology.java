@@ -3,6 +3,7 @@ package indexingTopology;
 import backtype.storm.Config;
 import backtype.storm.StormSubmitter;
 import backtype.storm.topology.TopologyBuilder;
+import indexingTopology.Config.TopologyConfig;
 import indexingTopology.Streams.Streams;
 import indexingTopology.bolt.*;
 import indexingTopology.spout.NormalDistributionGenerator;
@@ -74,7 +75,7 @@ public class NormalDistributionIndexingTopology {
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 
-        builder.setBolt(IndexerBolt, new NormalDistributionIndexerBolt("user_id", schema, indexingTopology.Config.Config.BTREE_OREDER, 65000000),1)
+        builder.setBolt(IndexerBolt, new NormalDistributionIndexerBolt("user_id", schema, TopologyConfig.BTREE_OREDER, 65000000),1)
                 .setNumTasks(4)
                 .directGrouping(DispatcherBolt, Streams.IndexStream)
                 .directGrouping(QueryDecompositionBolt, Streams.BPlusTreeQueryStream);

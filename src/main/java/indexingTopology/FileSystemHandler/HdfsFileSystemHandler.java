@@ -1,7 +1,6 @@
 package indexingTopology.FileSystemHandler;
 
-import indexingTopology.Config.Config;
-import indexingTopology.FileSystemHandler.FileSystemHandler;
+import indexingTopology.Config.TopologyConfig;
 import indexingTopology.util.MemChunk;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -10,7 +9,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.net.URI;
 import java.nio.ByteBuffer;
 
@@ -28,7 +26,7 @@ public class HdfsFileSystemHandler implements FileSystemHandler {
     public HdfsFileSystemHandler(String path) throws IOException {
         configuration = new Configuration();
         configuration.setBoolean("dfs.support.append", true);
-        uri = URI.create(Config.HDFS_HOST + path);
+        uri = URI.create(TopologyConfig.HDFS_HOST + path);
         fileSystem = FileSystem.get(uri, configuration);
         this.path = path;
     }

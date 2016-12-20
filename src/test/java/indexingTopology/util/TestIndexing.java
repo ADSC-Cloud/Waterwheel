@@ -3,12 +3,8 @@ package indexingTopology.util;
 /**
  * Created by dmir on 9/26/16.
  */
-import backtype.storm.tuple.Tuple;
-import backtype.storm.tuple.Values;
-import backtype.storm.utils.Utils;
-import indexingTopology.Config.Config;
+import indexingTopology.Config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
-import indexingTopology.util.*;
 import javafx.util.Pair;
 
 import java.io.*;
@@ -278,7 +274,7 @@ public class TestIndexing {
 
     private void createNewTree(double percentage) {
 //        int numberOfLeaves = bulkLoader.getNumberOfLeaves();
-        if (percentage > Config.REBUILD_TEMPLATE_PERCENTAGE) {
+        if (percentage > TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
             indexedData = bulkLoader.createTreeWithBulkLoading(indexedData);
         }
     }

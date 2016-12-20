@@ -1,6 +1,6 @@
 package indexingTopology.util;
 
-import indexingTopology.Config.Config;
+import indexingTopology.Config.TopologyConfig;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -15,7 +15,7 @@ import java.util.Queue;
 public class SerializationHelper {
 
     public static byte[] serializeTree(BTree bTree) {
-        ByteBuffer b = ByteBuffer.allocate(Config.TEMPLATE_SIZE);
+        ByteBuffer b = ByteBuffer.allocate(TopologyConfig.TEMPLATE_SIZE);
         Queue<BTreeNode> q = new LinkedList<BTreeNode>();
         q.add(bTree.getRoot());
         while (!q.isEmpty()) {

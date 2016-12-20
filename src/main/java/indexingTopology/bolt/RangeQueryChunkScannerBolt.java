@@ -8,11 +8,10 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import indexingTopology.Cache.*;
-import indexingTopology.Config.Config;
+import indexingTopology.Config.TopologyConfig;
 import indexingTopology.FileSystemHandler.FileSystemHandler;
 import indexingTopology.FileSystemHandler.HdfsFileSystemHandler;
 import indexingTopology.FileSystemHandler.LocalFileSystemHandler;
-import indexingTopology.NormalDistributionIndexingAndRangeQueryTopology;
 import indexingTopology.Streams.Streams;
 import indexingTopology.util.*;
 
@@ -38,7 +37,7 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
         bTreeOder = 4;
-        cacheMapping = new LRUCache<CacheMappingKey, CacheUnit>(Config.CACHE_SIZE);
+        cacheMapping = new LRUCache<CacheMappingKey, CacheUnit>(TopologyConfig.CACHE_SIZE);
     }
 
     public void execute(Tuple tuple) {
@@ -72,8 +71,13 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
         Long timeCostOfDeserializationALeaf = ((long) 0);
 
         try {
-            FileSystemHandler fileSystemHandler = new LocalFileSystemHandler("/home/acelzj");
-//                FileSystemHandler fileSystemHandler = new HdfsFileSystemHandler("/home/acelzj");
+            FileSystemHandler fileSystemHandler = null;
+            if(TopologyConfig.HDFSFlag) {
+                fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
+            } else {
+                fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
+            }
+
             CacheMappingKey mappingKey = new CacheMappingKey(fileName, 0);
             BTree deserializedTree = (BTree) getFromCache(mappingKey);
             if (deserializedTree == null) {
@@ -156,7 +160,7 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
         fileSystemHandler.openFile("/", fileName);
 //        timeCostOfReadFile = System.currentTimeMillis() - startTimeOfReadFile;
 
-        byte[] serializedTree = new byte[Config.TEMPLATE_SIZE];
+        byte[] serializedTree = new byte[TopologyConfig.TEMPLATE_SIZE];
 //                DeserializationHelper deserializationHelper = new DeserializationHelper();
         BytesCounter counter = new BytesCounter();
 

@@ -8,7 +8,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import com.google.common.util.concurrent.AtomicDouble;
-import indexingTopology.Config.Config;
+import indexingTopology.Config.TopologyConfig;
 import indexingTopology.NormalDistributionIndexingAndRangeQueryTopology;
 import indexingTopology.NormalDistributionIndexingTopology;
 import indexingTopology.MetaData.FilePartitionSchemaManager;
@@ -16,14 +16,12 @@ import indexingTopology.MetaData.FileMetaData;
 import indexingTopology.Streams.Streams;
 import indexingTopology.util.BalancedPartition;
 import indexingTopology.util.FileScanMetrics;
-import indexingTopology.util.PartitionFunction;
 import indexingTopology.util.RangeQuerySubQuery;
 import javafx.util.Pair;
 
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
 /**
@@ -98,8 +96,8 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
         queryIdToTimeCostInMillis = new HashMap<Long, Long>();
         filePartitionSchemaManager = new FilePartitionSchemaManager();
 
-        taskQueue = new ArrayBlockingQueue<RangeQuerySubQuery>(Config.TASK_QUEUE_CAPACITY);
-//        taskQueue = new LinkedBlockingQueue<RangeQuerySubQuery>(Config.FILE_QUERY_TASK_WATINING_QUEUE_CAPACITY);
+        taskQueue = new ArrayBlockingQueue<RangeQuerySubQuery>(TopologyConfig.TASK_QUEUE_CAPACITY);
+//        taskQueue = new LinkedBlockingQueue<RangeQuerySubQuery>(TopologyConfig.FILE_QUERY_TASK_WATINING_QUEUE_CAPACITY);
 
         Set<String> componentIds = topologyContext.getThisTargets().get(Streams.FileSystemQueryStream).keySet();
 
@@ -407,18 +405,18 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 //        outputFieldsDeclarer.declareStream(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryStream,
 //                new Fields("queryId", "leftKey", "rightKey", "fileName", "startTimeStamp", "endTimeStamp"));
 
-        outputFieldsDeclarer.declareStream(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryStream,
+        outputFieldsDeclarer.declareStream(Streams.FileSystemQueryStream,
                 new Fields("subQuery"));
 
-        outputFieldsDeclarer.declareStream(NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryStream,
+        outputFieldsDeclarer.declareStream(Streams.BPlusTreeQueryStream,
                 new Fields("queryId", "leftKey", "rightKey"));
 
         outputFieldsDeclarer.declareStream(
-                NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryInformationStream,
+                Streams.FileSystemQueryInformationStream,
                 new Fields("queryId", "numberOfFilesToScan"));
 
         outputFieldsDeclarer.declareStream(
-                NormalDistributionIndexingAndRangeQueryTopology.BPlusTreeQueryInformationStream,
+                Streams.BPlusTreeQueryInformationStream,
                 new Fields("queryId", "numberOfTasksToScan"));
     }
 
@@ -463,8 +461,8 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 //                    min = minIndexValue.get();
 //                    max = maxIndexValue.get();
 //                }
-//                Double leftKey = min + ((max - min) * (1 - Config.KER_RANGE_COVERAGE)) / 2;
-//                Double rightKey = max - ((max - min) * (1 - Config.KER_RANGE_COVERAGE)) / 2;
+//                Double leftKey = min + ((max - min) * (1 - TopologyConfig.KER_RANGE_COVERAGE)) / 2;
+//                Double rightKey = max - ((max - min) * (1 - TopologyConfig.KER_RANGE_COVERAGE)) / 2;
 
 
 
@@ -511,7 +509,7 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 
     private void createTaskQueues(List<Integer> targetTasks) {
         for (Integer taskId : targetTasks) {
-            ArrayBlockingQueue<RangeQuerySubQuery> taskQueue = new ArrayBlockingQueue<RangeQuerySubQuery>(Config.TASK_QUEUE_CAPACITY);
+            ArrayBlockingQueue<RangeQuerySubQuery> taskQueue = new ArrayBlockingQueue<RangeQuerySubQuery>(TopologyConfig.TASK_QUEUE_CAPACITY);
             taskIdToTaskQueue.put(taskId, taskQueue);
         }
     }
@@ -564,7 +562,7 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
             ArrayBlockingQueue<RangeQuerySubQuery> taskQueue = taskIdToTaskQueue.get(taskId);
             RangeQuerySubQuery subQuery = new RangeQuerySubQuery(queryId, leftKey,  rightKey, fileName, startTimeStamp, endTimeStamp);
             if (taskQueue == null) {
-                taskQueue = new ArrayBlockingQueue<RangeQuerySubQuery>(Config.TASK_QUEUE_CAPACITY);
+                taskQueue = new ArrayBlockingQueue<RangeQuerySubQuery>(TopologyConfig.TASK_QUEUE_CAPACITY);
             }
             try {
                 taskQueue.put(subQuery);

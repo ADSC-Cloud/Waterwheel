@@ -1,6 +1,6 @@
 package indexingTopology.util;
 
-import indexingTopology.Config.Config;
+import indexingTopology.Config.TopologyConfig;
 
 /**
  * Created by acelzj on 12/13/16.
@@ -17,7 +17,7 @@ public class PartitionFunction {
     }
 
     public int getIntervalId(Double key) {
-        Double distance = (upperBound - lowerBound) / Config.NUMBER_OF_INTERVALS;
+        Double distance = (upperBound - lowerBound) / TopologyConfig.NUMBER_OF_INTERVALS;
 
         Double autualLowerBound = lowerBound + distance;
 
@@ -28,7 +28,7 @@ public class PartitionFunction {
         }
 
         if (key > autualUpperBound) {
-            return Config.NUMBER_OF_INTERVALS - 1;
+            return TopologyConfig.NUMBER_OF_INTERVALS - 1;
         }
 
         if ((key - autualLowerBound) % distance == 0) {

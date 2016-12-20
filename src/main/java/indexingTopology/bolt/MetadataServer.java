@@ -7,16 +7,12 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-import indexingTopology.Config.Config;
 import indexingTopology.MetaData.FileMetaData;
 import indexingTopology.MetaData.FilePartitionSchemaManager;
-import indexingTopology.MetaData.TaskMetaData;
-import indexingTopology.MetaData.TaskPartitionSchemaManager;
 import indexingTopology.NormalDistributionIndexingTopology;
 import indexingTopology.Streams.Streams;
 import indexingTopology.util.BalancedPartition;
 import indexingTopology.util.Histogram;
-import indexingTopology.util.PartitionFunction;
 import indexingTopology.util.RepartitionManager;
 import javafx.util.Pair;
 
@@ -68,10 +64,6 @@ public class MetadataServer extends BaseRichBolt {
         filePartitionSchemaManager = new FilePartitionSchemaManager();
 
         intervalToPartitionMapping = new HashMap<>();
-
-        lowerBound = 0D;
-
-        upperBound = 1000D;
 
         numberOfDispatchers = topologyContext.getComponentTasks("DispatcherBolt").size();
 
@@ -198,12 +190,21 @@ public class MetadataServer extends BaseRichBolt {
 
         @Override
         public void run() {
+            final int sleepTimeInSecond = 10;
             while (true) {
                 try {
-                    Thread.sleep(10000);
+                    Thread.sleep(sleepTimeInSecond * 1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+
+                List<Long> counts = histogram.histogramToList();
+                long sum = 0;
+                for(Long count: counts) {
+                    sum += count;
+                }
+
+                System.out.println(String.format("Overall Throughput: %f tuple / second", sum / (double)sleepTimeInSecond));
 
                 histogram.clear();
 

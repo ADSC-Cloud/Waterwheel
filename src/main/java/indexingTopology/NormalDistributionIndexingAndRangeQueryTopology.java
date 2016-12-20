@@ -3,10 +3,15 @@ package indexingTopology;
 import backtype.storm.Config;
 import backtype.storm.StormSubmitter;
 import backtype.storm.topology.TopologyBuilder;
+import indexingTopology.Config.TopologyConfig;
 import indexingTopology.Streams.Streams;
 import indexingTopology.bolt.*;
 import indexingTopology.spout.NormalDistributionGenerator;
+import indexingTopology.spout.TexiTrajectoryGenerator;
 import indexingTopology.util.Constants;
+import indexingTopology.util.texi.City;
+import indexingTopology.util.texi.TrajectoryGenerator;
+import indexingTopology.util.texi.TrajectoryUniformGenerator;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,6 +47,7 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
 
 
     public static void main(String[] args) throws Exception {
+
         TopologyBuilder builder = new TopologyBuilder();
      /*   List<String> fieldNames=new ArrayList<String>(Arrays.asList("user_id","id_1","id_2","ts_epoch",
                 "date","time","latitude","longitude","time_elapsed","distance","speed","angel",
@@ -67,6 +73,9 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
 
         boolean enableLoadBalance = true;
 
+        TopologyConfig.dataDir = "/home/lzj";
+        TopologyConfig.HDFSFlag = false;
+
         builder.setSpout(TupleGenerator, new NormalDistributionGenerator(schema), 1).setNumTasks(1);
 
         builder.setBolt(RangeQueryDispatcherBolt, new RangeQueryDispatcherBolt(schema, lowerBound, upperBound, enableLoadBalance)).setNumTasks(1)
@@ -74,7 +83,7 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 
-        builder.setBolt(IndexerBolt, new NormalDistributionIndexAndRangeQueryBolt("user_id", schema, indexingTopology.Config.Config.BTREE_OREDER, 65000000),1)
+        builder.setBolt(IndexerBolt, new NormalDistributionIndexAndRangeQueryBolt("user_id", schema, TopologyConfig.BTREE_OREDER, 65000000),1)
                 .setNumTasks(4)
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream);

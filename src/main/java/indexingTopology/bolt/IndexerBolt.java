@@ -7,7 +7,7 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.utils.Utils;
-import indexingTopology.Config.Config;
+import indexingTopology.Config.TopologyConfig;
 import indexingTopology.DataSchema;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.util.*;
@@ -229,7 +229,7 @@ public class IndexerBolt extends BaseRichBolt {
 
          //   List keysBeforeRebuild = indexedData.printBtree();
          //   System.out.println("The number of record is " + bulkLoader.getNumberOfRecord());
-//            if (percentage > Config.rebuildTemplatePercentage) {
+//            if (percentage > TopologyConfig.rebuildTemplatePercentage) {
 //                indexedData = bulkLoader.createTreeWithBulkLoading();
 //                copyOfIndexedData = indexedData;
 //                System.out.println("New template has been built");
@@ -297,7 +297,7 @@ public class IndexerBolt extends BaseRichBolt {
     }
 
     private void createNewTree(double percentage) {
-        if (percentage > Config.REBUILD_TEMPLATE_PERCENTAGE) {
+        if (percentage > TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
             indexedData = bulkLoader.createTreeWithBulkLoading(indexedData);
         }
     }

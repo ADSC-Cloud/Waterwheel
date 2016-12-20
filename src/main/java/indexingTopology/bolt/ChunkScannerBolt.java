@@ -8,7 +8,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import indexingTopology.Cache.*;
-import indexingTopology.Config.Config;
+import indexingTopology.Config.TopologyConfig;
 import indexingTopology.FileSystemHandler.FileSystemHandler;
 import indexingTopology.FileSystemHandler.LocalFileSystemHandler;
 import indexingTopology.Streams.Streams;
@@ -37,7 +37,7 @@ public class ChunkScannerBolt extends BaseRichBolt {
         collector = outputCollector;
         bTreeOder = 4;
         numberOfCacheUnit = 0;
-        cacheMapping = new LRUCache<CacheMappingKey, CacheUnit>(Config.CACHE_SIZE);
+        cacheMapping = new LRUCache<CacheMappingKey, CacheUnit>(TopologyConfig.CACHE_SIZE);
     }
 
     public void execute(Tuple tuple) {
@@ -158,7 +158,7 @@ public class ChunkScannerBolt extends BaseRichBolt {
         fileSystemHandler.openFile("/", fileName);
 //        timeCostOfReadFile = System.currentTimeMillis() - startTimeOfReadFile;
 
-        byte[] serializedTree = new byte[Config.TEMPLATE_SIZE];
+        byte[] serializedTree = new byte[TopologyConfig.TEMPLATE_SIZE];
 //                DeserializationHelper deserializationHelper = new DeserializationHelper();
         BytesCounter counter = new BytesCounter();
 

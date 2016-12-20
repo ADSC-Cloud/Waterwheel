@@ -1,9 +1,8 @@
 package indexingTopology.util;
 
-import indexingTopology.Config.Config;
+import indexingTopology.Config.TopologyConfig;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -46,12 +45,12 @@ public class BalancedPartition {
 
     public Map<Integer, Integer> getBalancedPartitionPlan() {
         Double distance = (upperBound - lowerBound) / numberOfPartitions;
-        Double miniDistance = (upperBound - lowerBound) / Config.NUMBER_OF_INTERVALS;
+        Double miniDistance = (upperBound - lowerBound) / TopologyConfig.NUMBER_OF_INTERVALS;
         Double keyRangeUpperBound = lowerBound + distance;
         Double bound = lowerBound + miniDistance;
         Map<Integer, Integer> intervalToPartitionMapping = new HashMap<>();
         int bin = 0;
-        for (int i = 0; i < Config.NUMBER_OF_INTERVALS; ++i) {
+        for (int i = 0; i < TopologyConfig.NUMBER_OF_INTERVALS; ++i) {
             intervalToPartitionMapping.put(i, bin);
             bound += miniDistance;
             if (bound > keyRangeUpperBound) {
@@ -67,7 +66,7 @@ public class BalancedPartition {
     }
 
     public int getIntervalId(Double key) {
-        Double distance = (upperBound - lowerBound) / Config.NUMBER_OF_INTERVALS;
+        Double distance = (upperBound - lowerBound) / TopologyConfig.NUMBER_OF_INTERVALS;
 
         Double autualLowerBound = lowerBound + distance;
 
@@ -78,7 +77,7 @@ public class BalancedPartition {
         }
 
         if (key > autualUpperBound) {
-            return Config.NUMBER_OF_INTERVALS - 1;
+            return TopologyConfig.NUMBER_OF_INTERVALS - 1;
         }
 
         if ((key - autualLowerBound) % distance == 0) {
@@ -100,7 +99,7 @@ public class BalancedPartition {
     }
 
     public Histogram getIntervalDistribution() {
-        histogram.setDefaultValueForAbsentKey(Config.NUMBER_OF_INTERVALS);
+        histogram.setDefaultValueForAbsentKey(TopologyConfig.NUMBER_OF_INTERVALS);
         return histogram;
     }
 

@@ -74,7 +74,7 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
 
         numberOfPartitions = targetTasks.size();
 
-        balancedPartition = new BalancedPartition(numberOfPartitions, lowerBound, upperBound, enableLoadBlance);
+        balancedPartition = new BalancedPartition(numberOfPartitions, lowerBound, upperBound, true);
 
         intervalToPartitionMapping = balancedPartition.getIntervalToPartitionMapping();
 
@@ -101,7 +101,8 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
                 e.printStackTrace();
             }
 
-            collector.emitDirect(taskId, Streams.IndexStream, values);
+            collector.emitDirect(taskId, Streams.IndexStream, tuple, values);
+            collector.ack(tuple);
 
         } else if (tuple.getSourceStreamId().equals(Streams.IntervalPartitionUpdateStream)){
             Map<Integer, Integer> intervalToTaskMapping = (Map) tuple.getValueByField("newIntervalPartition");

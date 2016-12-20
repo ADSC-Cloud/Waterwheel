@@ -2,7 +2,6 @@ import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.util.BTree;
 import indexingTopology.util.SplitCounterModule;
 import indexingTopology.util.TimingModule;
-import org.apache.commons.exec.Executor;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;

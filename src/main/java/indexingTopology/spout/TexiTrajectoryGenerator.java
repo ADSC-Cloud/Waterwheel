@@ -4,6 +4,7 @@ import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichSpout;
+import backtype.storm.tuple.Fields;
 import indexingTopology.DataSchema;
 import indexingTopology.NormalDistributionIndexingTopology;
 import indexingTopology.util.texi.Car;
@@ -13,6 +14,7 @@ import org.apache.commons.math3.distribution.NormalDistribution;
 import backtype.storm.tuple.Values;
 
 import java.io.*;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -43,7 +45,9 @@ public class TexiTrajectoryGenerator extends BaseRichSpout {
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declareStream(NormalDistributionIndexingTopology.IndexStream, schema.getFieldsObject());
+        List<String> fields = schema.getFieldsObject().toList();
+        fields.add("timeStamp");
+        declarer.declareStream(NormalDistributionIndexingTopology.IndexStream, new Fields(fields));
     }
 
     public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
@@ -51,22 +55,9 @@ public class TexiTrajectoryGenerator extends BaseRichSpout {
     }
 
     public void nextTuple() {
-        try {
-            String text = null;
-            text = bufferedReader.readLine();
-            if (text == null) {
-//                bufferedReader.close();
-                bufferedReader = new BufferedReader(new FileReader(file));
-                text = bufferedReader.readLine();
-            }
-            String [] tuple = text.split(" ");
-//            System.out.println("The tuple is " + schema.getValuesObject(tuple));
-//            double indexValue = Double.parseDouble(text);
-            Car car = generator.generate();
-            collector_.emit(NormalDistributionIndexingTopology.IndexStream, new Values(car.id, city.getZCodeForALocation(car.x
-            , car.y), new String(new char[payloadSize])), new Object());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        Car car = generator.generate();
+        final long timestamp = System.currentTimeMillis();
+        collector_.emit(NormalDistributionIndexingTopology.IndexStream, new Values((double)car.id, (double)city.getZCodeForALocation(car.x
+        , car.y), new String(new char[payloadSize]), timestamp), new Object());
     }
 }
