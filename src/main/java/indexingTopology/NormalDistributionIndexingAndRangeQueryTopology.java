@@ -67,6 +67,10 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
 
         boolean enableLoadBalance = true;
 
+        String path = "/home/acelzj";
+
+        boolean enableHdfs = false;
+
         builder.setSpout(TupleGenerator, new NormalDistributionGenerator(schema), 1).setNumTasks(1);
 
         builder.setBolt(RangeQueryDispatcherBolt, new RangeQueryDispatcherBolt(schema, lowerBound, upperBound, enableLoadBalance)).setNumTasks(1)
@@ -74,7 +78,7 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 
-        builder.setBolt(IndexerBolt, new NormalDistributionIndexAndRangeQueryBolt("user_id", schema, indexingTopology.Config.Config.BTREE_OREDER, 65000000),1)
+        builder.setBolt(IndexerBolt, new NormalDistributionIndexAndRangeQueryBolt("user_id", schema, indexingTopology.Config.Config.BTREE_OREDER, 65000000, path, enableHdfs),1)
                 .setNumTasks(4)
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream);
@@ -86,7 +90,7 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.TimeStampUpdateStream);
 
-        builder.setBolt(RangeQueryChunkScannerBolt, new RangeQueryChunkScannerBolt()).setNumTasks(2)
+        builder.setBolt(RangeQueryChunkScannerBolt, new RangeQueryChunkScannerBolt(path, enableHdfs)).setNumTasks(2)
 //                .fieldsGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream, new Fields("fileName"));
                 .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream);
 //                .shuffleGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream);

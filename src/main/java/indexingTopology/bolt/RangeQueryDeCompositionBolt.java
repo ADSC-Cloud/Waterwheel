@@ -39,13 +39,6 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 
     private File file;
 
-    private File outputFile;
-    private File outputFile1;
-    private File outputFile2;
-    private File outputFile3;
-    private File outputFile4;
-
-
     private BufferedReader bufferedReader;
 
     private Semaphore newQueryRequest;
@@ -54,15 +47,11 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 
     private long queryId;
 
-    private Map<Long, Long> queryIdToTimeCostInMillis;
-
     private transient List<Integer> queryServers;
 
     private List<Integer> indexServers;
 
     private transient Map<Integer, Long> indexTaskToTimestampMapping;
-
-    private transient Map<Integer, Integer> intervalToPartitionMapping;
 
     private ArrayBlockingQueue<RangeQuerySubQuery> taskQueue;
 
@@ -74,13 +63,6 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 
     private Double lowerBound;
     private Double upperBound;
-
-    private FileOutputStream fop;
-    private FileOutputStream fop1;
-    private FileOutputStream fop2;
-    private FileOutputStream fop3;
-    private FileOutputStream fop4;
-
 
     private AtomicDouble minIndexValue;
     private AtomicDouble maxIndexValue;
@@ -95,7 +77,6 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
         file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/input_data");
         newQueryRequest = new Semaphore(MAX_NUMBER_OF_CONCURRENT_QUERIES);
         queryId = 0;
-        queryIdToTimeCostInMillis = new HashMap<Long, Long>();
         filePartitionSchemaManager = new FilePartitionSchemaManager();
 
         taskQueue = new ArrayBlockingQueue<RangeQuerySubQuery>(Config.TASK_QUEUE_CAPACITY);
@@ -126,15 +107,6 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
         maxIndexValue = new AtomicDouble(0);
 
 
-        outputFile = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/time_cost.txt");
-        outputFile1 = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/number_of_files.txt");
-        /*
-        outputFile2 = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/time_cost_of_read_file.txt");
-        outputFile3 = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/time_cost_deserialization_a_tree.txt");
-        outputFile4 = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/time_cost_deserialization_a_leaf.txt");
-        */
-
-
         try {
             bufferedReader = new BufferedReader(new FileReader(file));
         } catch (FileNotFoundException e) {
@@ -143,79 +115,10 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
             e.printStackTrace();
         }
 
-
-        try {
-            if (!outputFile.exists()) {
-                outputFile.createNewFile();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            if (!outputFile1.exists()) {
-                outputFile1.createNewFile();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        /*
-        try {
-            if (!outputFile2.exists()) {
-                outputFile2.createNewFile();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            if (!outputFile3.exists()) {
-                outputFile3.createNewFile();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            if (!outputFile4.exists()) {
-                outputFile4.createNewFile();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        */
-        try {
-            fop = new FileOutputStream(outputFile);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            fop1 = new FileOutputStream(outputFile1);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        /*
-        try {
-            fop2 = new FileOutputStream(outputFile2);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            fop3 = new FileOutputStream(outputFile3);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            fop4 = new FileOutputStream(outputFile4);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        */
-
-
         setTimestamps();
 
         numberOfPartitions = queryServers.size();
         balancedPartition = new BalancedPartition(numberOfPartitions, lowerBound, upperBound);
-
-        intervalToPartitionMapping = balancedPartition.getIntervalToPartitionMapping();
 
         QueryThread = new Thread(new QueryRunnable());
         QueryThread.start();
@@ -236,105 +139,6 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
             FileScanMetrics metrics = (FileScanMetrics) tuple.getValue(2);
 
             int numberOfFilesToScan = tuple.getInteger(3);
-
-            if (metrics != null) {
-                Long totalTimeCost = metrics.getTotalTime();
-
-            /*
-            Long timeCostOfReadFile = tuple.getLong(2);
-            Long timeCostOfDeserializationALeaf = tuple.getLong(3);
-            Long timeCostOfDeserializationATree = tuple.getLong(4);
-            Long timeCostOfSearching = tuple.getLong(5);
-            Long totalTimeCost = tuple.getLong(6);
-            */
-
-
-//            if (timeCostOfReadFile != null && timeCostOfDeserializationALeaf != null && timeCostOfDeserializationATree != null) {
-//                queryIdToTimeCostInMillis.remove(queryId);
-//                System.out.println("Query ID " + queryId + " " + timeCostInMillis);
-
-
-//                String content = "Query ID " + queryId + " " + totalTimeCost;
-                String content = "" + totalTimeCost;
-                String newline = System.getProperty("line.separator");
-                byte[] contentInBytes = content.getBytes();
-                byte[] nextLineInBytes = newline.getBytes();
-                try {
-                    fop.write(contentInBytes);
-                    fop.write(nextLineInBytes);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                content = "" + numberOfFilesToScan;
-//                String content = "" + totalTimeCost;
-                newline = System.getProperty("line.separator");
-                contentInBytes = content.getBytes();
-                nextLineInBytes = newline.getBytes();
-                try {
-                    fop1.write(contentInBytes);
-                    fop1.write(nextLineInBytes);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-//            }
-            /*
-            if (timeCostOfReadFile != null && timeCostOfDeserializationALeaf != null && timeCostOfDeserializationATree != null) {
-                queryIdToTimeCostInMillis.remove(queryId);
-                System.out.println("Query ID " + queryId + " " + timeCostInMillis);
-
-
-                String content = "Query ID " + queryId + " " + timeCostInMillis;
-                String newline = System.getProperty("line.separator");
-                byte[] contentInBytes = content.getBytes();
-                byte[] nextLineInBytes = newline.getBytes();
-                try {
-                    fop.write(contentInBytes);
-                    fop.write(nextLineInBytes);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-
-                content = "Query ID " + queryId + " " + timeCostOfReadFile;
-                newline = System.getProperty("line.separator");
-                contentInBytes = content.getBytes();
-                nextLineInBytes = newline.getBytes();
-                try {
-                    fop2.write(contentInBytes);
-                    fop2.write(nextLineInBytes);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-
-                content = "Query ID " + queryId + " " + timeCostOfDeserializationATree;
-                newline = System.getProperty("line.separator");
-                contentInBytes = content.getBytes();
-                nextLineInBytes = newline.getBytes();
-                try {
-                    fop3.write(contentInBytes);
-                    fop3.write(nextLineInBytes);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-
-                content = "Query ID " + queryId + " " + timeCostOfDeserializationALeaf;
-                newline = System.getProperty("line.separator");
-                contentInBytes = content.getBytes();
-                nextLineInBytes = newline.getBytes();
-                try {
-                    fop4.write(contentInBytes);
-                    fop4.write(nextLineInBytes);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            } else {
-                queryIdToTimeCostInMillis.remove(queryId);
-            }
-            */
 
             newQueryRequest.release();
         } else if (tuple.getSourceStreamId().equals(Streams.FileSubQueryFinishStream)) {
@@ -395,10 +199,8 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 
             indexTaskToTimestampMapping.put(taskId, timestamp);
         } else if (tuple.getSourceStreamId().equals(NormalDistributionIndexingAndRangeQueryTopology.IntervalPartitionUpdateStream)) {
-            Map<Integer, Integer> intervalToTaskMapping = (Map) tuple.getValueByField("newIntervalPartition");
-            if (intervalToTaskMapping.size() > 0) {
-                balancedPartition.setIntervalToPartitionMapping(intervalToPartitionMapping);
-            }
+            Map<Integer, Integer> intervalToPartitionMapping = (Map) tuple.getValueByField("newIntervalPartition");
+            balancedPartition.setIntervalToPartitionMapping(intervalToPartitionMapping);
         }
     }
 
@@ -532,12 +334,11 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 
         int numberOfTasksToSearch = 0;
 
+//        int leftIntervalId = balancedPartition.getIntervalId(leftKey);
+//        int rightIntervalId = balancedPartition.getIntervalId(rightKey);
 
-        int leftIntervalId = balancedPartition.getIntervalId(leftKey);
-        int rightIntervalId = balancedPartition.getIntervalId(rightKey);
-
-        Integer startPartitionId = intervalToPartitionMapping.get(leftIntervalId);
-        Integer endPartitionId = intervalToPartitionMapping.get(rightIntervalId);
+        Integer startPartitionId = balancedPartition.getPartitionId(leftKey);
+        Integer endPartitionId = balancedPartition.getPartitionId(rightKey);
 
 
         Integer startTaskId = indexServers.get(startPartitionId);

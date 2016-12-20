@@ -88,6 +88,10 @@ public class BalancedPartition {
         }
     }
 
+    public int getPartitionId(Double key) {
+        return intervalToPartitionMapping.get(getIntervalId(key));
+    }
+
     public void setEnableRecord() {
         enableRecord = true;
     }

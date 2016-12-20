@@ -86,7 +86,9 @@ public class DispatcherBolt extends BaseRichBolt{
 
             balancedPartition.record(indexValue);
 
-            int partitionId = intervalToPartitionMapping.get(balancedPartition.getIntervalId(indexValue));
+//            int intervalId = balancedPartition.getIntervalId(indexValue);
+
+            int partitionId = balancedPartition.getPartitionId(indexValue);
 
             int taskId = targetTasks.get(partitionId);
 
@@ -100,10 +102,8 @@ public class DispatcherBolt extends BaseRichBolt{
             collector.emitDirect(taskId, Streams.IndexStream, values);
 
         } else if (tuple.getSourceStreamId().equals(Streams.IntervalPartitionUpdateStream)){
-            Map<Integer, Integer> intervalToTaskMapping = (Map) tuple.getValueByField("newIntervalPartition");
-            if (intervalToTaskMapping.size() > 0) {
-                this.intervalToPartitionMapping = intervalToTaskMapping;
-            }
+            Map<Integer, Integer> intervalToPartitionMapping = (Map) tuple.getValueByField("newIntervalPartition");
+            balancedPartition.setIntervalToPartitionMapping(intervalToPartitionMapping);
 
         } else if (tuple.getSourceStreamId().equals(Streams.StaticsRequestStream)){
 

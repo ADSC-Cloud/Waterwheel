@@ -69,10 +69,6 @@ public class MetadataServer extends BaseRichBolt {
 
         intervalToPartitionMapping = new HashMap<>();
 
-        lowerBound = 0D;
-
-        upperBound = 1000D;
-
         numberOfDispatchers = topologyContext.getComponentTasks("DispatcherBolt").size();
 
         indexTasks = topologyContext.getComponentTasks("IndexerBolt");
@@ -114,10 +110,8 @@ public class MetadataServer extends BaseRichBolt {
                                 intervalToPartitionMapping);
                         collector.emit(NormalDistributionIndexingTopology.IntervalPartitionUpdateStream,
                                 new Values(this.balancedPartition.getIntervalToPartitionMapping()));
-                    } else {
-                        collector.emit(NormalDistributionIndexingTopology.IntervalPartitionUpdateStream,
-                                new Values(new HashMap<>()));
                     }
+
                     numberOfStaticsReceived = 0;
                 }
             }

@@ -84,11 +84,18 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
 
     private TopologyContext context;
 
-    public NormalDistributionIndexerBolt(String indexField, DataSchema schema, int btreeOrder, int bytesLimit) {
+    String path;
+
+    boolean enableHdfs;
+
+    public NormalDistributionIndexerBolt(String indexField, DataSchema schema, int btreeOrder, int bytesLimit,
+                                         String path, boolean enableHdfs) {
         this.schema = schema;
         this.btreeOrder = btreeOrder;
         this.bytesLimit = bytesLimit;
         this.indexField = indexField;
+        this.path = path;
+        this.enableHdfs = enableHdfs;
     }
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
@@ -218,8 +225,12 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
                     FileSystemHandler fileSystemHandler = null;
                     String fileName = null;
                     try {
-                        fileSystemHandler = new LocalFileSystemHandler("/home/acelzj");
-//                        fileSystemHandler = new HdfsFileSystemHandler("/home/acelzj");
+                        if (enableHdfs) {
+                            fileSystemHandler = new HdfsFileSystemHandler(path);
+                        } else {
+                            fileSystemHandler = new LocalFileSystemHandler(this.path);
+                        }
+//
                         int taskId = context.getThisTaskId();
                         fileName = "taskId" + taskId + "chunk" + chunkId;
                         fileSystemHandler.writeToFileSystem(chunk, "/", fileName);

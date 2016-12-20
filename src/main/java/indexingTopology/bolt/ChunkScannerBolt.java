@@ -10,6 +10,7 @@ import backtype.storm.tuple.Values;
 import indexingTopology.Cache.*;
 import indexingTopology.Config.Config;
 import indexingTopology.FileSystemHandler.FileSystemHandler;
+import indexingTopology.FileSystemHandler.HdfsFileSystemHandler;
 import indexingTopology.FileSystemHandler.LocalFileSystemHandler;
 import indexingTopology.Streams.Streams;
 import indexingTopology.util.*;
@@ -32,6 +33,15 @@ public class ChunkScannerBolt extends BaseRichBolt {
     private transient LRUCache<CacheMappingKey, CacheUnit> cacheMapping;
 
     private transient int numberOfCacheUnit;
+
+    private String path;
+
+    private boolean enableHdfs;
+
+    public ChunkScannerBolt(String path, boolean enableHdfs) {
+        this.path = path;
+        this.enableHdfs = enableHdfs;
+    }
 
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
@@ -68,7 +78,12 @@ public class ChunkScannerBolt extends BaseRichBolt {
 //        RandomAccessFile file = null;
 //        for (String fileName : fileNames) {
             try {
-                FileSystemHandler fileSystemHandler = new LocalFileSystemHandler("/home/acelzj");
+                FileSystemHandler fileSystemHandler;
+                if (enableHdfs) {
+                    fileSystemHandler = new HdfsFileSystemHandler(path);
+                } else {
+                    fileSystemHandler = new LocalFileSystemHandler(path);
+                }
                 CacheMappingKey mappingKey = new CacheMappingKey(fileName, 0);
                 BTree deserializedTree = (BTree) getFromCache(mappingKey);
                 if (deserializedTree == null) {

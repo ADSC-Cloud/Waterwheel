@@ -28,20 +28,10 @@ import java.util.concurrent.Semaphore;
  */
 public class RangeQueryDispatcherBolt extends BaseRichBolt {
     OutputCollector collector;
-    /*
-    private final String nextComponentID;
-    private final DataSchema schema;
-    // TODO hard coded for now. make dynamic.
-    private final double [] RANGE_BREAKPOINTS = {103.8,103.85,103.90,104.00};
-    private List<Integer> nextComponentTasks;
-    private String rangePartitionField;
-    */
 
     private final DataSchema schema;
 
     private List<Integer> targetTasks;
-
-    private Map<Integer, Integer> intervalToPartitionMapping;
 
     private Double lowerBound;
 
@@ -76,8 +66,6 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
 
         balancedPartition = new BalancedPartition(numberOfPartitions, lowerBound, upperBound, enableLoadBlance);
 
-        intervalToPartitionMapping = balancedPartition.getIntervalToPartitionMapping();
-
     }
 
     public void execute(Tuple tuple) {
@@ -90,7 +78,9 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
 //                updateBound(indexValue);
             balancedPartition.record(indexValue);
 
-            int partitionId = intervalToPartitionMapping.get(balancedPartition.getIntervalId(indexValue));
+//            int intervalId = balancedPartition.getIntervalId(indexValue);
+
+            int partitionId = balancedPartition.getPartitionId(indexValue);
 
             int taskId = targetTasks.get(partitionId);
 
@@ -104,11 +94,8 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
             collector.emitDirect(taskId, Streams.IndexStream, values);
 
         } else if (tuple.getSourceStreamId().equals(Streams.IntervalPartitionUpdateStream)){
-            Map<Integer, Integer> intervalToTaskMapping = (Map) tuple.getValueByField("newIntervalPartition");
-            if (intervalToTaskMapping.size() > 0) {
-                this.intervalToPartitionMapping = intervalToTaskMapping;
-            }
-
+            Map<Integer, Integer> intervalToPartitionMapping = (Map) tuple.getValueByField("newIntervalPartition");
+            balancedPartition.setIntervalToPartitionMapping(intervalToPartitionMapping);
         } else if (tuple.getSourceStreamId().equals(Streams.StaticsRequestStream)){
 
             System.out.println(balancedPartition.getIntervalDistribution().getHistogram());

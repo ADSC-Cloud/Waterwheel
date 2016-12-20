@@ -35,16 +35,6 @@ public class ResultMergeBolt extends BaseRichBolt {
 
     Map<Long, Integer> queryIdToNumberOfTasksToSearch;
 
-    Map<Long, Long> queryIdToTimeCostOfDeserilizationOfATree;
-
-    Map<Long, Long> queryIdToTimeCostOfDeserilizationOfALeaf;
-
-    Map<Long, Long> queryIdToTimeCostOfReadFile;
-
-    Map<Long, Long> queryIdToTotalTimeCost;
-
-    Map<Long, Long> queryIdToTimeCostOfSearching;
-
     Map<Long, FileScanMetrics> queryIdToFileScanMetrics;
 
     DataSchema schema;
@@ -52,18 +42,6 @@ public class ResultMergeBolt extends BaseRichBolt {
     OutputCollector collector;
 
     private int counter;
-
-    private File outputFile;
-    private File outputFile2;
-    private File outputFile3;
-    private File outputFile4;
-    private File outputFile5;
-
-    private FileOutputStream fop;
-    private FileOutputStream fop2;
-    private FileOutputStream fop3;
-    private FileOutputStream fop4;
-    private FileOutputStream fop5;
 
     public ResultMergeBolt(DataSchema schema) {
         this.schema = schema;
@@ -79,70 +57,6 @@ public class ResultMergeBolt extends BaseRichBolt {
 
         queryIdToFileScanMetrics = new HashMap<Long, FileScanMetrics>();
 
-        /*
-        outputFile = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/time_cost.txt");
-        outputFile2 = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/time_cost_of_read_file.txt");
-        outputFile3 = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/time_cost_deserialization_a_tree.txt");
-        outputFile4 = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/time_cost_deserialization_a_leaf.txt");
-        outputFile5 = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/time_cost_searching.txt");
-
-
-        try {
-            if (!outputFile.exists()) {
-                outputFile.createNewFile();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            if (!outputFile2.exists()) {
-                outputFile2.createNewFile();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            if (!outputFile3.exists()) {
-                outputFile3.createNewFile();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            if (!outputFile4.exists()) {
-                outputFile4.createNewFile();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            fop = new FileOutputStream(outputFile);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            fop2 = new FileOutputStream(outputFile2);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            fop3 = new FileOutputStream(outputFile3);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            fop4 = new FileOutputStream(outputFile4);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            fop5 = new FileOutputStream(outputFile5);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        */
-
-
         collector = outputCollector;
     }
 
@@ -153,7 +67,6 @@ public class ResultMergeBolt extends BaseRichBolt {
 
             Long queryId = tuple.getLong(0);
 
-//            System.out.println("queryId" + queryId + "number of tasks to search " + numberOfTasksToSearch);
             queryIdToNumberOfTasksToSearch.put(queryId, numberOfTasksToSearch);
 
             if (isQueryFinshed(queryId)) {
@@ -165,8 +78,6 @@ public class ResultMergeBolt extends BaseRichBolt {
             int numberOfFilesToScan = tuple.getInteger(1);
 
             Long queryId = tuple.getLong(0);
-
-//            System.out.println("queryId" + queryId + "number of files to scan " + numberOfFilesToScan);
 
             queryIdToNumberOfFilesToScan.put(queryId, numberOfFilesToScan);
 
