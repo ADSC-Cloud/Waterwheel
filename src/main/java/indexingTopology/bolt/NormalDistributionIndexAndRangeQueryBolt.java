@@ -7,13 +7,11 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-import indexingTopology.Config.Config;
+import indexingTopology.Config.TopologyConfig;
 import indexingTopology.DataSchema;
 import indexingTopology.FileSystemHandler.FileSystemHandler;
 import indexingTopology.FileSystemHandler.HdfsFileSystemHandler;
 import indexingTopology.FileSystemHandler.LocalFileSystemHandler;
-import indexingTopology.NormalDistributionIndexingAndRangeQueryTopology;
-import indexingTopology.NormalDistributionIndexingTopology;
 import indexingTopology.Streams.Streams;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.util.*;
@@ -127,38 +125,38 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
         this.bulkLoader = new BulkLoader(btreeOrder, tm, sm);
 
         this.queue = new LinkedBlockingQueue<Pair>(1024);
-        this.outputFile = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/query_latency_with_nothing_4");
 //        this.outputFile = new File("/home/lzj/IndexTopology_experiment/NormalDistribution/query_latency_without_rebuild_but_split_256");
 //        this.outputFile = new File("/home/lzj/IndexTopology_experiment/NormalDistribution/query_latency_with_rebuild_and_split_4");
-        try {
-            if (!outputFile.exists()) {
-                outputFile.createNewFile();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            queryFileOutPut = new FileOutputStream(outputFile);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            this.outputFile = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/query_latency_with_nothing_4");
+//            if (!outputFile.exists()) {
+//                outputFile.createNewFile();
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//        try {
+//            queryFileOutPut = new FileOutputStream(outputFile);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
 //        file = new File("/home/lzj/IndexTopology_experiment/NormalDistribution/specific_time_with_rebuild_and_split_with_query_4_64M");
 //        file = new File("/home/lzj/IndexTopology_experiment/NormalDistribution/specific_time_without_rebuild_but_split_with_query_256_64M");
-        file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/specific_time_with_nothing_4_64M");
-        try {
-            if (!file.exists()) {
-                file.createNewFile();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            fop = new FileOutputStream(file);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/specific_time_with_nothing_4_64M");
+//            if (!file.exists()) {
+//                file.createNewFile();
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        try {
+//            fop = new FileOutputStream(file);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
         createIndexingThread();
 
@@ -172,11 +170,11 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
     public void execute(Tuple tuple) {
         if (tuple.getSourceStreamId().equals(Streams.IndexStream)) {
             Double indexValue = tuple.getDoubleByField(indexField);
-            Long timeStamp = tuple.getLong(8);
+            Long timeStamp = tuple.getLong(schema.getNumberOfFileds());
 //            Double indexValue = tuple.getDouble(0);
 //            System.out.println("The stream is " + NormalDistributionIndexingTopology.IndexStream);
             try {
-                if (numTuples < Config.NUMBER_TUPLES_OF_A_CHUNK) {
+                if (numTuples < TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK) {
 //                    if (chunkId == 0) {
 //                        System.out.println("Num tuples " + numTuples + " " + indexValue);
 //                    }
@@ -285,6 +283,7 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+            collector.ack(tuple);
         } else {
 //            System.out.println("The stream is " + NormalDistributionIndexingTopology.BPlusTreeQueryStream);
 //            System.out.println("The bolt id is " + context.getThisTaskId());
@@ -315,7 +314,7 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
 
 
     private void createNewTemplate(double percentage) {
-        if (percentage > Config.REBUILD_TEMPLATE_PERCENTAGE) {
+        if (percentage > TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
             System.out.println("New tree has been built");
             isTreeBuilt = true;
             indexedData = bulkLoader.createTreeWithBulkLoading(indexedData);
@@ -329,37 +328,6 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
         }
     }
 
-/*
-    private long buildOneTree(Double indexValue, byte[] serializedTuple) {
-        if (numTuples<43842) {
-            try {
-                indexedData.insert(indexValue, serializedTuple);
-            } catch (UnsupportedGenericException e) {
-                e.printStackTrace();
-            }
-        }
-
-        else if (numTuples==43842) {
-            System.out.println("number of tuples processed : " + numTuples);
-            System.out.println("**********************Tree Written***************************");
-            indexedDataWoTemplate.printBtree();
-            System.out.println("**********************Tree Written***************************");
-        }
-
-        return 0;
-    }
-*/
-
-    private void writeIndexedDataToHDFS() {
-        // todo write this to hdfs
-        chunk.serializeAndRefresh();
-//        try {
-//            hdfs.writeToNewFile(indexedData.serializeTree(),"testname"+System.currentTimeMillis()+".dat");
-//            System.out.println("**********************************WRITTEN*******************************");
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-    }
 
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
 //        outputFieldsDeclarer.declare(new Fields("num_tuples","wo_template_time","template_time","wo_template_written","template_written"));

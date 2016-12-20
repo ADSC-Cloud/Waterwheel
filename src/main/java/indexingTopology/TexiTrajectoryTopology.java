@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * Created by acelzj on 11/15/16.
  */
-public class NormalDistributionIndexingAndRangeQueryTopology {
+public class TexiTrajectoryTopology {
 
     public static final String FileSystemQueryStream = "FileSystemQueryStream";
     public static final String BPlusTreeQueryStream = "BPlusTreeQueryStream";
@@ -48,57 +48,54 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
 
     public static void main(String[] args) throws Exception {
 
+
+
+        //
+
         TopologyBuilder builder = new TopologyBuilder();
-     /*   List<String> fieldNames=new ArrayList<String>(Arrays.asList("user_id","id_1","id_2","ts_epoch",
-                "date","time","latitude","longitude","time_elapsed","distance","speed","angel",
-                "mrt_station","label_1","label_2","label_3","label_4"));
+        List<String> fieldNames = new ArrayList<String>(Arrays.asList("id", "zcode", "payload"));
+        List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, String.class));
+        DataSchema schema = new DataSchema(fieldNames, valueTypes, "zcode");
 
-        List<Class> valueTypes=new ArrayList<Class>(Arrays.asList(Double.class,String.class,String.class,
-                Double.class,String.class,String.class,Double.class,Double.class,Double.class,
-                Double.class,Double.class,String.class,String.class,Double.class,Double.class,
-                Double.class,Double.class));
+        final double x1 = 0;
+        final double x2 = 1000;
+        final double y1 = 0;
+        final double y2 = 500;
+        final int partitions = 100;
 
+        TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
+        City city = new City(x1, x2, y1, y2, partitions);
 
-
-        DataSchema schema=new DataSchema(fieldNames,valueTypes);*/
-        List<String> fieldNames = new ArrayList<String>(Arrays.asList("user_id", "id_1", "id_2", "ts_epoch",
-                "date", "time", "latitude", "longitude"));
-        List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
-                Double.class, Double.class, Double.class, Double.class, Double.class));
-        DataSchema schema = new DataSchema(fieldNames, valueTypes, "user_id");
 
         Double lowerBound = 0.0;
 
-        Double upperBound = 1000.0;
+        Double upperBound = 10000.0;
 
-        boolean enableLoadBalance = true;
+        String path = "/home/acelzj";
+
+        boolean enableLoadBalance = false;
 
 
-        TopologyConfig.dataDir = "/home/lzj";
-        TopologyConfig.HDFSFlag = false;
+        builder.setSpout(TupleGenerator, new TexiTrajectoryGenerator(schema, generator, 10, city), 1);
 
-        builder.setSpout(TupleGenerator, new NormalDistributionGenerator(schema), 1).setNumTasks(1);
-
-        builder.setBolt(RangeQueryDispatcherBolt, new RangeQueryDispatcherBolt(schema, lowerBound, upperBound, enableLoadBalance)).setNumTasks(1)
+        builder.setBolt(RangeQueryDispatcherBolt, new RangeQueryDispatcherBolt(schema, lowerBound, upperBound, enableLoadBalance), 1)
                 .shuffleGrouping(TupleGenerator, Streams.IndexStream)
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 
-        builder.setBolt(IndexerBolt, new NormalDistributionIndexAndRangeQueryBolt("user_id", schema, TopologyConfig.BTREE_OREDER, 65000000, TopologyConfig.dataDir, TopologyConfig.HDFSFlag),1)
-
-
-                .setNumTasks(4)
+        builder.setBolt(IndexerBolt, new NormalDistributionIndexAndRangeQueryBolt(schema.getIndexField(), schema, TopologyConfig.BTREE_OREDER, 65000000, path, enableLoadBalance), 1)
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
-                .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream);
+                .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream); // direct grouping should be used.
+        // And RangeQueryDecompositionBolt should emit to this stream via directEmit!!!!!
 
-        builder.setBolt(RangeQueryDecompositionBolt, new RangeQueryDeCompositionBolt(lowerBound, upperBound)).setNumTasks(1)
+        builder.setBolt(RangeQueryDecompositionBolt, new RangeQueryDeCompositionBolt(lowerBound, upperBound), 1)
                 .shuffleGrouping(ResultMergeBolt, Streams.NewQueryStream)
                 .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSubQueryFinishStream)
                 .shuffleGrouping(MetadataServer, Streams.FileInformationUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.TimeStampUpdateStream);
 
-        builder.setBolt(RangeQueryChunkScannerBolt, new RangeQueryChunkScannerBolt(TopologyConfig.dataDir, TopologyConfig.HDFSFlag)).setNumTasks(2)
+        builder.setBolt(RangeQueryChunkScannerBolt, new RangeQueryChunkScannerBolt(path, enableLoadBalance), 1)
 //                .fieldsGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream, new Fields("fileName"));
                 .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream);
 //                .shuffleGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream);
@@ -116,11 +113,7 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
 
         Config conf = new Config();
         conf.setDebug(false);
-        conf.setMaxTaskParallelism(4);
-        conf.put(Constants.HDFS_CORE_SITE.str, "/Users/parijatmazumdar" +
-                "/Desktop/thesis/hadoop-2.7.1/etc/hadoop/core-site.xml");
-        conf.put(Constants.HDFS_HDFS_SITE.str,"/Users/parijatmazumdar/" +
-                "Desktop/thesis/hadoop-2.7.1/etc/hadoop/hdfs-site.xml");
+        conf.setNumWorkers(2);
 
 //        LocalCluster cluster = new LocalCluster();
 //        LocalCluster cluster = new LocalCluster();

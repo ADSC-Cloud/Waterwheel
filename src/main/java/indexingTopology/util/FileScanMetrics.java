@@ -1,9 +1,11 @@
 package indexingTopology.util;
 
+import java.io.Serializable;
+
 /**
  * Created by acelzj on 11/28/16.
  */
-public class FileScanMetrics {
+public class FileScanMetrics implements Serializable {
 
     private Long fileReadingTime;
 

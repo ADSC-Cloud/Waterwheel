@@ -7,12 +7,11 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-import indexingTopology.Config.Config;
+import indexingTopology.Config.TopologyConfig;
 import indexingTopology.DataSchema;
 import indexingTopology.FileSystemHandler.FileSystemHandler;
 import indexingTopology.FileSystemHandler.HdfsFileSystemHandler;
 import indexingTopology.FileSystemHandler.LocalFileSystemHandler;
-import indexingTopology.NormalDistributionIndexingTopology;
 import indexingTopology.Streams.Streams;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.util.*;
@@ -170,7 +169,7 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
 //            Double indexValue = tuple.getDouble(0);
 //            System.out.println("The stream is " + NormalDistributionIndexingTopology.IndexStream);
             try {
-                if (numTuples < Config.NUMBER_TUPLES_OF_A_CHUNK) {
+                if (numTuples < TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK) {
 //                    if (chunkId == 0) {
 //                        System.out.println("Num tuples " + numTuples + " " + indexValue);
 //                    }
@@ -309,7 +308,7 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
 
 
     private void createNewTemplate(double percentage) {
-        if (percentage > Config.REBUILD_TEMPLATE_PERCENTAGE) {
+        if (percentage > TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
             System.out.println("New tree has been built");
             isTreeBuilt = true;
             indexedData = bulkLoader.createTreeWithBulkLoading(indexedData);

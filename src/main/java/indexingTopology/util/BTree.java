@@ -1,17 +1,11 @@
 package indexingTopology.util;
 
-import indexingTopology.Config.Config;
+import indexingTopology.Config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
-import org.omg.Messaging.SYNC_WITH_TRANSPORT;
 
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * A B+ tree
@@ -108,7 +102,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	}*/
 
     public byte[] serializeTree() {
-        ByteBuffer b = ByteBuffer.allocate(Config.TEMPLATE_SIZE);
+        ByteBuffer b = ByteBuffer.allocate(TopologyConfig.TEMPLATE_SIZE);
 //		byte[] lengthOfSerializedTreeInByte = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE).
 //				putInt(counter.getBytesEstimateForInsertInTemplate()).array();
 //		b.put(lengthOfSerializedTreeInByte);

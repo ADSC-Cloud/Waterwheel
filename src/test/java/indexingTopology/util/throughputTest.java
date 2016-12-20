@@ -1,19 +1,13 @@
 package indexingTopology.util;
 
-import backtype.storm.tuple.Tuple;
-import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
-import indexingTopology.Config.Config;
+import indexingTopology.Config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
 import javafx.util.Pair;
 
 import java.io.*;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -183,7 +177,7 @@ public class throughputTest {
     }
 
     private void createNewTree(double percentage, int processedTuples) {
-        if (percentage > Config.REBUILD_TEMPLATE_PERCENTAGE) {
+        if (percentage > TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
             indexedData = bulkLoader.createTreeWithBulkLoading(indexedData);
         }
     }

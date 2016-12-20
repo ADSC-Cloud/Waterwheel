@@ -1,11 +1,10 @@
 package indexingTopology.util;
 
 import backtype.storm.tuple.Values;
-import indexingTopology.Config.Config;
+import indexingTopology.Config.TopologyConfig;
 import indexingTopology.DataSchema;
 import indexingTopology.FileSystemHandler.FileSystemHandler;
 import indexingTopology.FileSystemHandler.HdfsFileSystemHandler;
-import indexingTopology.FileSystemHandler.LocalFileSystemHandler;
 import indexingTopology.exception.UnsupportedGenericException;
 import org.junit.Test;
 
@@ -199,7 +198,7 @@ customDelete(btree,range,4,1);
            List<Double> indexValueList = new ArrayList<Double>();
            int count = 0;
 //           while (true) {
-               for (int i = 0; i < Config.NUMBER_TUPLES_OF_A_CHUNK; ++i) {
+               for (int i = 0; i < TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK; ++i) {
                    try {
                        text = bufferedReader.readLine();
                        if (text == null) {
@@ -257,7 +256,7 @@ customDelete(btree,range,4,1);
            System.out.println("next position " + nextPosition);
            System.out.println("The offset is " + (nextPosition - startPosition));
            chunk.changeToSpecificPosition(deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey));
-//           chunk.changeToSpecificPosition(Config.TEMPLATE_SIZE);
+//           chunk.changeToSpecificPosition(TopologyConfig.TEMPLATE_SIZE);
            int lengthOfLeaveInBytes = ByteBuffer.wrap(dataInByte, deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey), len).getInt();
 //           System.out.println(lengthOfLeaveInBytes);
            chunk.changeToSpecificPosition(deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey) + len);
@@ -272,8 +271,8 @@ customDelete(btree,range,4,1);
 
 //           lengthOfLeaveInBytes = ByteBuffer.wrap(dataInByte, deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey) + lengthOfLeaveInBytes, len).getInt();
            System.out.println(lengthOfLeaveInBytes);
-//           chunk.changeToSpecificPosition(deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey) + len + 1 * Config.LEAVE_NODE_IN_BYTES);
-//           chunk.changeToSpecificPosition(deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey) +  1 * Config.LEAVE_NODE_IN_BYTES);
+//           chunk.changeToSpecificPosition(deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey) + len + 1 * TopologyConfig.LEAVE_NODE_IN_BYTES);
+//           chunk.changeToSpecificPosition(deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey) +  1 * TopologyConfig.LEAVE_NODE_IN_BYTES);
 //           System.out.println(deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey) + lengthOfLeaveInBytes + len);
            chunk.changeToSpecificPosition(deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey) + lengthOfLeaveInBytes + len + len);
            int nextLengthOfLeaveInBytes = ByteBuffer.wrap(dataInByte, deserializedTree.getOffsetOfLeaveNodeShouldContainKey(leftKey) + lengthOfLeaveInBytes, len).getInt();
@@ -314,7 +313,7 @@ customDelete(btree,range,4,1);
 
 
 //               serializedTree = new byte[lengthOfSizeOfBTreeInBytes];
-//               file.read(serializedTree, 0, Config.TEMPLATE_SIZE);
+//               file.read(serializedTree, 0, TopologyConfig.TEMPLATE_SIZE);
 //               fileSystemHandler.seek(4);
 
 //               DeserializationHelper deserializationHelper = new DeserializationHelper();
@@ -322,7 +321,7 @@ customDelete(btree,range,4,1);
 
 
                Long startTime = System.nanoTime();
-//               serializedTree = new byte[Config.TEMPLATE_SIZE];
+//               serializedTree = new byte[TopologyConfig.TEMPLATE_SIZE];
            fileSystemHandler.readBytesFromFile(serializedTree);
            Integer number = ByteBuffer.wrap(serializedTree, 65536, 4).getInt();
            System.out.println("number " + number);

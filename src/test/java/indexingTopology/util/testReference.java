@@ -1,11 +1,7 @@
 package indexingTopology.util;
 
-import indexingTopology.Config.Config;
-import indexingTopology.FileSystemHandler.FileSystemHandler;
-import indexingTopology.FileSystemHandler.LocalFileSystemHandler;
+import indexingTopology.Config.TopologyConfig;
 
-import java.io.*;
-import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
@@ -25,12 +21,12 @@ public class testReference {
     public Map<Integer, Integer> getInitialPartition(Double lowerBound, Double upperBound, List<Integer> targetTasks) {
         int numberOfTasks = targetTasks.size();
         Integer distance = (int) ((upperBound - lowerBound) / numberOfTasks);
-        Integer miniDistance = (int) ((upperBound - lowerBound) / Config.NUMBER_OF_INTERVALS);
+        Integer miniDistance = (int) ((upperBound - lowerBound) / TopologyConfig.NUMBER_OF_INTERVALS);
         Double keyRangeUpperBound = lowerBound + distance;
         Double bound = lowerBound + miniDistance;
         Map<Integer, Integer> IntervalIdToTaskId = new HashMap<>();
         Integer intervalId = 0;
-        for (int i = 0; i < Config.NUMBER_OF_INTERVALS; ++i) {
+        for (int i = 0; i < TopologyConfig.NUMBER_OF_INTERVALS; ++i) {
             IntervalIdToTaskId.put(i, intervalId);
             bound += miniDistance;
             if (bound > keyRangeUpperBound) {

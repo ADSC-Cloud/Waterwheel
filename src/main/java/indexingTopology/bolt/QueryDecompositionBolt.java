@@ -7,13 +7,13 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-import indexingTopology.Config.Config;
+import indexingTopology.Config.TopologyConfig;
 import indexingTopology.NormalDistributionIndexingTopology;
 import indexingTopology.MetaData.FilePartitionSchemaManager;
 import indexingTopology.MetaData.FileMetaData;
 import indexingTopology.Streams.Streams;
 import indexingTopology.util.BalancedPartition;
-import indexingTopology.util.FileScanMetrics;;
+import indexingTopology.util.FileScanMetrics;
 import indexingTopology.util.SubQuery;
 import javafx.util.Pair;
 
@@ -53,7 +53,6 @@ public class QueryDecompositionBolt extends BaseRichBolt {
 
     private BalancedPartition balancedPartition;
 
-//    private LinkedBlockingQueue<SubQuery> taskQueue;
     private ArrayBlockingQueue<SubQuery> taskQueue;
 
     private Double lowerBound;
@@ -68,8 +67,8 @@ public class QueryDecompositionBolt extends BaseRichBolt {
 
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
-        taskQueue = new ArrayBlockingQueue<SubQuery>(Config.TASK_QUEUE_CAPACITY);
-//        taskQueue = new LinkedBlockingQueue<SubQuery>(Config.FILE_QUERY_TASK_WATINING_QUEUE_CAPACITY);
+        taskQueue = new ArrayBlockingQueue<SubQuery>(TopologyConfig.TASK_QUEUE_CAPACITY);
+//        taskQueue = new LinkedBlockingQueue<SubQuery>(TopologyConfig.FILE_QUERY_TASK_WATINING_QUEUE_CAPACITY);
 
 
         file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/input_data");
@@ -115,8 +114,11 @@ public class QueryDecompositionBolt extends BaseRichBolt {
         }
 
 
-        QueryThread = new Thread(new QueryRunnable());
-        QueryThread.start();
+
+
+
+//        QueryThread = new Thread(new QueryRunnable());
+//        QueryThread.start();
     }
 
     public void execute(Tuple tuple) {
@@ -133,6 +135,10 @@ public class QueryDecompositionBolt extends BaseRichBolt {
             FileScanMetrics metrics = (FileScanMetrics) tuple.getValue(2);
 
             int numberOfFilesToScan = tuple.getInteger(3);
+
+            if (metrics != null) {
+                Long totalTimeCost = metrics.getTotalTime();
+            }
 
             newQueryRequest.release();
 
@@ -239,11 +245,11 @@ public class QueryDecompositionBolt extends BaseRichBolt {
                 String text = null;
                 try {
                     text = bufferedReader.readLine();
-                    if (text == null) {
-//                        bufferedReader.close();
-                        bufferedReader = new BufferedReader(new FileReader(file));
-                        text = bufferedReader.readLine();
-                    }
+//                    if (text == null) {
+////                        bufferedReader.close();
+//                        bufferedReader = new BufferedReader(new FileReader(file));
+//                        text = bufferedReader.readLine();
+//                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -312,7 +318,7 @@ public class QueryDecompositionBolt extends BaseRichBolt {
 
     private void createTaskQueues(List<Integer> targetTasks) {
         for (Integer taskId : targetTasks) {
-            ArrayBlockingQueue<SubQuery> taskQueue = new ArrayBlockingQueue<SubQuery>(Config.TASK_QUEUE_CAPACITY);
+            ArrayBlockingQueue<SubQuery> taskQueue = new ArrayBlockingQueue<SubQuery>(TopologyConfig.TASK_QUEUE_CAPACITY);
             taskIdToTaskQueue.put(taskId, taskQueue);
         }
     }
@@ -359,7 +365,7 @@ public class QueryDecompositionBolt extends BaseRichBolt {
             Integer taskId = queryServers.get(index);
             ArrayBlockingQueue<SubQuery> taskQueue = taskIdToTaskQueue.get(taskId);
             if (taskQueue == null) {
-                taskQueue = new ArrayBlockingQueue<SubQuery>(Config.TASK_QUEUE_CAPACITY);
+                taskQueue = new ArrayBlockingQueue<SubQuery>(TopologyConfig.TASK_QUEUE_CAPACITY);
             }
             try {
                 taskQueue.put(subQuery);

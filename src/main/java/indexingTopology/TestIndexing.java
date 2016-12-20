@@ -1,6 +1,6 @@
 package indexingTopology;
 
-import indexingTopology.Config.Config;
+import indexingTopology.Config.TopologyConfig;
 import indexingTopology.FileSystemHandler.FileSystemHandler;
 import indexingTopology.FileSystemHandler.HdfsFileSystemHandler;
 import indexingTopology.exception.UnsupportedGenericException;
@@ -235,7 +235,7 @@ public class TestIndexing {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                if (numberOfProcessedTuples < Config.NUMBER_TUPLES_OF_A_CHUNK) {
+                if (numberOfProcessedTuples < TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK) {
                     if (numberOfProcessedTuples == 0) {
                         System.out.println(indexValue);
                     }
@@ -342,7 +342,7 @@ public class TestIndexing {
                     }
 
 //                    chunk.changeToStartPosition();
-//                    serializedTree = new byte[Config.TEMPLATE_SIZE];
+//                    serializedTree = new byte[TopologyConfig.TEMPLATE_SIZE];
 //                    chunk.getData().get(serializedTree);
 //                    DeserializationHelper deserializationHelper = new DeserializationHelper();
 //                    BTree deserializedTree = deserializationHelper.deserializeBTree(serializedTree, 4, new BytesCounter());
@@ -600,12 +600,12 @@ public class TestIndexing {
 //                            FileSystemHandler fileSystemHandler = new LocalFileSystemHandler("/home/acelzj");
                             fileSystemHandler.openFile("/", fileName);
 //                            file = new RandomAccessFile("/home/acelzj/" + fileName, "r");
-                            byte[] serializedTree = new byte[Config.TEMPLATE_SIZE];
+                            byte[] serializedTree = new byte[TopologyConfig.TEMPLATE_SIZE];
 //                            DeserializationHelper deserializationHelper = new DeserializationHelper();
                             BytesCounter counter = new BytesCounter();
 
                             fileSystemHandler.readBytesFromFile(serializedTree);
-//                            file.read(serializedTree, 0, Config.TEMPLATE_SIZE);
+//                            file.read(serializedTree, 0, TopologyConfig.TEMPLATE_SIZE);
                             BTree deserializedTree = DeserializationHelper.deserializeBTree(fileSystemHandler, btreeOrder, counter);
                             System.out.println("***********************************************************");
 //                            break;
@@ -700,7 +700,7 @@ public class TestIndexing {
     }
 
     private void createNewTree(double percentage) {
-        if (percentage > Config.REBUILD_TEMPLATE_PERCENTAGE) {
+        if (percentage > TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
                 System.out.println(Thread.currentThread().getId() + " has been created a new tree");
                 System.out.println("New Template has been built");
             long startTime = System.currentTimeMillis();

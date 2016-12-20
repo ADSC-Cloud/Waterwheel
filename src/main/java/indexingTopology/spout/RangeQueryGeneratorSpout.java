@@ -90,8 +90,8 @@ public class RangeQueryGeneratorSpout extends BaseRichSpout {
                     min = minIndexValue.get();
                     max = maxIndexValue.get();
                 }
-                Double leftKey = min + ((max - min) * (1 - Config.KER_RANGE_COVERAGE)) / 2;
-                Double rightKey = max - ((max - min) * (1 - Config.KER_RANGE_COVERAGE)) / 2;
+                Double leftKey = min + ((max - min) * (1 - TopologyConfig.KER_RANGE_COVERAGE)) / 2;
+                Double rightKey = max - ((max - min) * (1 - TopologyConfig.KER_RANGE_COVERAGE)) / 2;
                 */
 
                 System.out.println("Left key is " + leftKey.intValue());

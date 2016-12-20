@@ -1,13 +1,14 @@
 package indexingTopology.util;
 
-import indexingTopology.Config.Config;
+import indexingTopology.Config.TopologyConfig;
 
+import java.io.Serializable;
 import java.util.*;
 
 /**
  * Created by acelzj on 12/12/16.
  */
-public class Histogram {
+public class Histogram implements Serializable{
 
     private Map<Integer, Long> histogram;
 
@@ -35,7 +36,7 @@ public class Histogram {
 
     public List<Long> histogramToList() {
         List<Long> ret = new ArrayList<>();
-        setDefaultValueForAbsentKey(Config.NUMBER_OF_INTERVALS);
+        setDefaultValueForAbsentKey(TopologyConfig.NUMBER_OF_INTERVALS);
         Object[] keys = histogram.keySet().toArray();
         Arrays.sort(keys);
         for (Object key : keys) {

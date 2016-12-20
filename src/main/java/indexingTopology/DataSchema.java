@@ -8,6 +8,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.nio.channels.InterruptedByTimeoutException;
 import java.util.List;
 
 /**
@@ -40,7 +41,9 @@ public class DataSchema implements Serializable {
             else if (valueTypes.get(i).equals(String.class)) {
                 values.add(tuple.getString(i));
             }
-            else {
+            else if (valueTypes.get(i).equals(Integer.class)) {
+                values.add(tuple.getInteger(i));
+            } else {
                 throw new IOException("Only classes supported till now are string and double");
             }
         }
@@ -61,8 +64,9 @@ public class DataSchema implements Serializable {
             }
             else if (valueTypes.get(i).equals(String.class)) {
                 values.add(valuesAsString[i]);
-            }
-            else {
+            } else if (valueTypes.get(i).equals(Integer.class)) {
+                values.add(Integer.parseInt(valuesAsString[i]));
+            } else {
                 throw new IOException("Only classes supported till now are string and double");
             }
         }
@@ -124,5 +128,9 @@ public class DataSchema implements Serializable {
 
     public String getIndexField() {
         return indexField;
+    }
+
+    public int getNumberOfFileds() {
+        return dataFields.size();
     }
 }

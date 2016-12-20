@@ -1,6 +1,6 @@
 package indexingTopology.util;
 
-import indexingTopology.Config.Config;
+import indexingTopology.Config.TopologyConfig;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -37,7 +37,7 @@ public class HdfsTest {
         FileSystem fileSystem;
         Configuration configuration = new Configuration();
         configuration.setBoolean("dfs.support.append", true);
-        URI uri = URI.create(Config.HDFS_HOST + "/src");
+        URI uri = URI.create(TopologyConfig.HDFS_HOST + "/src");
         fileSystem = FileSystem.get(uri, configuration);
         Path path = new Path("/src/testHdfs");
         FSDataOutputStream fsDataOutputStream = fileSystem.create(path);

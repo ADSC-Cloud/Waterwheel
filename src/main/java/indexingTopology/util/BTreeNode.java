@@ -1,6 +1,6 @@
 package indexingTopology.util;
 
-import indexingTopology.Config.Config;
+import indexingTopology.Config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
 
 import java.io.*;
@@ -326,7 +326,7 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 	}
 
 	public boolean isOverflowIntemplate() {
-		double threshold = this.ORDER * Config.TEMPLATE_OVERFLOW_PERCENTAGE;
+		double threshold = this.ORDER * TopologyConfig.TEMPLATE_OVERFLOW_PERCENTAGE;
 		return ((double) this.getKeyCount() > threshold);
 	}
 

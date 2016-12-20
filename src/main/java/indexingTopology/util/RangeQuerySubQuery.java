@@ -1,6 +1,8 @@
 package indexingTopology.util;
 
-public class RangeQuerySubQuery {
+import java.io.Serializable;
+
+public class RangeQuerySubQuery implements Serializable {
 
     private long queryId;
 
