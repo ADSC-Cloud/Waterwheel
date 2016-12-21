@@ -104,7 +104,7 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
             BTreeNode mostRightNode = deserializedTree.findLeafNodeShouldContainKeyInDeserializedTemplate(rightKey);
 
             Long searchStartTime = System.currentTimeMillis();
-            List<Integer> offsets = deserializedTree.getOffsetsOfLeaveNodesShoulsContainKeys(mostLeftNode
+            List<Integer> offsets = deserializedTree.getOffsetsOfLeaveNodesShouldContainKeys(mostLeftNode
                         , mostRightNode);
             timeCostOfSearching += (System.currentTimeMillis() - searchStartTime);
 

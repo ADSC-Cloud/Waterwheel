@@ -212,7 +212,8 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
                     double percentage = (double) sm.getCounter() * 100 / (double) numTuples;
 //                    indexedData.printBtree();
                     chunk.changeToLeaveNodesStartPosition();
-                    indexedData.writeLeavesIntoChunk(chunk);
+//                    indexedData.writeLeavesIntoChunk(chunk);
+                    writeLeavesIntoChunk(chunk, indexedData);
                     chunk.changeToStartPosition();
 //                    byte[] serializedTree = indexedData.serializeTree();
                     byte[] serializedTree = SerializationHelper.serializeTree(indexedData);
@@ -440,5 +441,13 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
         }
     }
 
+    public void writeLeavesIntoChunk(MemChunk chunk, BTree indexedData) {
+        List<BTreeLeafNode> leaves = indexedData.getLeaves();
+        for (BTreeLeafNode leaf : leaves) {
+            byte[] serializedLeave = SerializationHelper.serializeLeafNode(leaf);
+            int offset = chunk.write(serializedLeave);
+            ((BTreeInnerNode)leaf.getParent()).putOffset(offset);
+        }
+    }
 
 }

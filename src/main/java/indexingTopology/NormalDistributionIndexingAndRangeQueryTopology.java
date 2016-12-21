@@ -113,7 +113,7 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
                 .shuffleGrouping(IndexerBolt, Streams.FileInformationUpdateStream);
 
         Config conf = new Config();
-        conf.setNumWorkers(2);
+        conf.setNumWorkers(1);
         conf.setDebug(false);
         conf.setMaxTaskParallelism(4);
         conf.put(Constants.HDFS_CORE_SITE.str, "/Users/parijatmazumdar" +

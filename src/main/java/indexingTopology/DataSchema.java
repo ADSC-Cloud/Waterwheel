@@ -99,7 +99,6 @@ public class DataSchema implements Serializable {
         int len = Long.SIZE / Byte.SIZE;
         Long val = ByteBuffer.wrap(b, offset, len).getLong();
         values.add(val);
-
         return values;
     }
 

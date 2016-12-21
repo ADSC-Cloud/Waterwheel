@@ -733,11 +733,8 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		int offset = 0;
 		while (leave != null) {
 			++count;
-//			byte[] serializedLeave = leave.serialize();
 			byte[] serializedLeave = SerializationHelper.serializeLeafNode(leave);
-//			leave.print();
             offset = chunk.write(serializedLeave);
-//			System.out.println("Offset" + offset);
             ((BTreeInnerNode)leave.getParent()).putOffset(offset);
             leave = (BTreeLeafNode) leave.rightSibling;
 		}
@@ -766,7 +763,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		return (BTreeNode) currentNode;
 	}
 
-	public List<Integer> getOffsetsOfLeaveNodesShoulsContainKeys(BTreeNode mostLeftNode
+	public List<Integer> getOffsetsOfLeaveNodesShouldContainKeys(BTreeNode mostLeftNode
 			, BTreeNode mostRightNode) {
 		List<Integer> offsets = new ArrayList<Integer>();
 		BTreeInnerNode<TKey> currentNode = (BTreeInnerNode) mostLeftNode;
@@ -777,6 +774,17 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		}
 		offsets.addAll(((BTreeInnerNode) mostRightNode).offsets);
 		return offsets;
+	}
+
+	public List<BTreeLeafNode> getLeaves() {
+		BTreeLeafNode leaf = getLeftMostLeaf();
+		List<BTreeLeafNode> leaves = new ArrayList<>();
+		int offset = 0;
+		while (leaf != null) {
+			leaves.add(leaf);
+			leaf = (BTreeLeafNode) leaf.rightSibling;
+		}
+		return leaves;
 	}
 }
 

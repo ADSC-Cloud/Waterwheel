@@ -19,14 +19,37 @@ import static org.junit.Assert.*;
  * Created by acelzj on 11/1/16.
  */
 public class BTreeLeafNodeTest {
+
+    private List<String> fieldNames = new ArrayList<String>(Arrays.asList("user_id", "id_1", "id_2", "ts_epoch",
+            "date", "time", "latitude", "longitude"));
+    private ArrayList valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
+            Double.class, Double.class, Double.class, Double.class, Double.class));
+    private DataSchema schema = new DataSchema(fieldNames, valueTypes, "user_id");
+
     @Test
-    public void insertKeyValueWithoutDuplicateKey() throws Exception, UnsupportedGenericException {
+    public void testSplit() throws Exception, UnsupportedGenericException {
         BTreeLeafNode leaf = new BTreeLeafNode(4, new BytesCounter());
-        List<String> fieldNames = new ArrayList<String>(Arrays.asList("user_id", "id_1", "id_2", "ts_epoch",
-                "date", "time", "latitude", "longitude"));
-        ArrayList valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
-                Double.class, Double.class, Double.class, Double.class, Double.class));
-        DataSchema schema = new DataSchema(fieldNames, valueTypes, "user_id");
+        BTreeNode root = null;
+
+        for (int i = 0; i < 5; ++i) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) i);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            root = leaf.insertKeyValue(i, bytes);
+        }
+
+        assertEquals(2, leaf.getKeyCount());
+        assertEquals(3, leaf.rightSibling.getKeyCount());
+        assertEquals(1, root.getKeyCount());
+    }
+
+    @Test
+    public void testSearchRangeLeftKeyAndRightKeyTheSame() throws Exception, UnsupportedGenericException {
+        BTreeLeafNode leaf = new BTreeLeafNode(4, new BytesCounter());
+
         for (int i = 0; i < 4; ++i) {
             List<Double> values = new ArrayList<>();
             values.add((double) i);
@@ -36,6 +59,138 @@ public class BTreeLeafNodeTest {
             byte[] bytes = serializeIndexValue(values);
             leaf.insertKeyValue(i, bytes);
         }
+
+        for (int i = 0; i < 4; ++i) {
+            leaf.acquireReadLock();
+            List<byte[]> tuples = leaf.searchRange(0, 0);
+            assertEquals(1, tuples.size());
+        }
+
+    }
+
+
+    @Test
+    public void testSearchRangeAllTuples() throws Exception, UnsupportedGenericException {
+        BTreeLeafNode leaf = new BTreeLeafNode(4, new BytesCounter());
+
+        for (int i = 0; i < 4; ++i) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) i);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            leaf.insertKeyValue(i, bytes);
+        }
+
+        leaf.acquireReadLock();
+        List<byte[]> tuples = leaf.searchRange(0, 5);
+        assertEquals(4, tuples.size());
+
+    }
+
+
+    @Test
+    public void testSearchRangeSomeTuples() throws Exception, UnsupportedGenericException {
+        BTreeLeafNode leaf = new BTreeLeafNode(4, new BytesCounter());
+
+        for (int i = 0; i < 4; ++i) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) i);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            leaf.insertKeyValue(i, bytes);
+        }
+
+        leaf.acquireReadLock();
+        List<byte[]> tuples = leaf.searchRange(1, 3);
+        assertEquals(3, tuples.size());
+
+    }
+
+    @Test
+    public void testSearchRangeWithoutTuples() throws Exception, UnsupportedGenericException {
+        BTreeLeafNode leaf = new BTreeLeafNode(4, new BytesCounter());
+
+        for (int i = 0; i < 4; ++i) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) i);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            leaf.insertKeyValue(i, bytes);
+        }
+
+        leaf.acquireReadLock();
+        List<byte[]> tuples = leaf.searchRange(4, 8);
+        assertEquals(0, tuples.size());
+
+        leaf.acquireReadLock();
+        tuples = leaf.searchRange(-5, -1);
+        assertEquals(0, tuples.size());
+    }
+
+    @Test
+    public void testSearchAndGetTuplesWithinTimestampRange() throws Exception, UnsupportedGenericException {
+        BTreeLeafNode leaf = new BTreeLeafNode(4, new BytesCounter());
+
+        for (int i = 0; i < 4; ++i) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) i);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            System.out.println(values);
+            byte[] bytes = serializeIndexValue(values);
+            leaf.insertKeyValue(i, bytes);
+        }
+
+        for (int i = 0; i < 4; ++i) {
+            assertEquals(1, leaf.searchAndGetTuplesWithinTimestampRange(i, 4620693217682128896L, 4620693217682128896L).size());
+        }
+
+        for (int i = 0; i < 4; ++i) {
+            assertEquals(1, leaf.searchAndGetTuplesWithinTimestampRange(i, 4620693217682128892L, 4620693217682128899L).size());
+        }
+    }
+
+    @Test
+    public void testSearchAndGetTuplesNotinTimestampRange() throws Exception, UnsupportedGenericException {
+        BTreeLeafNode leaf = new BTreeLeafNode(4, new BytesCounter());
+
+        for (int i = 0; i < 4; ++i) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) i);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            System.out.println(values);
+            byte[] bytes = serializeIndexValue(values);
+            leaf.insertKeyValue(i, bytes);
+        }
+
+        for (int i = 0; i < 4; ++i) {
+            assertEquals(0, leaf.searchAndGetTuplesWithinTimestampRange(i, 0L, 1L).size());
+        }
+    }
+
+    @Test
+    public void testInsertKeyValueWithoutDuplicateKey() throws Exception, UnsupportedGenericException {
+        BTreeLeafNode leaf = new BTreeLeafNode(4, new BytesCounter());
+
+        for (int i = 0; i < 4; ++i) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) i);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            leaf.insertKeyValue(i, bytes);
+        }
+
         for (int i = 0; i < 4; ++i) {
             ArrayList<byte[]> bytes = leaf.searchAndGetTuples(i);
             for (int j = 0; j < bytes.size(); ++j) {
@@ -45,7 +200,7 @@ public class BTreeLeafNodeTest {
     }
 
     @Test
-    public void insertKeyValueWithDuplicateKey() throws Exception, UnsupportedGenericException {
+    public void testInsertKeyValueWithDuplicateKey() throws Exception, UnsupportedGenericException {
         BTreeLeafNode leaf = new BTreeLeafNode(4, new BytesCounter());
         List<String> fieldNames = new ArrayList<String>(Arrays.asList("user_id", "id_1", "id_2", "ts_epoch",
                 "date", "time", "latitude", "longitude"));
@@ -69,59 +224,6 @@ public class BTreeLeafNodeTest {
         assertEquals(4, bytes.size());
 
     }
-
-    /*
-    @Test
-    public void serialize() throws Exception {
-        File inputFile = new File("src/input_data_new");
-        BufferedReader bufferedReader = new BufferedReader(new FileReader(inputFile));
-        String text = null;
-        SplitCounterModule sm = SplitCounterModule.createNew();
-        TimingModule tm = TimingModule.createNew();
-        BytesCounter counter = new BytesCounter();
-        BTreeLeafNode leaf = new BTreeLeafNode(4, counter);
-        List<Double> values = null;
-        Double indexValue = 0.0;
-        List<String> fieldNames = new ArrayList<String>(Arrays.asList("user_id", "id_1", "id_2", "ts_epoch",
-                "date", "time", "latitude", "longitude"));
-        ArrayList valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
-                Double.class, Double.class, Double.class, Double.class, Double.class));
-        DataSchema schema = new DataSchema(fieldNames, valueTypes);
-//        LinkedBlockingQueue<Pair> queue = new LinkedBlockingQueue<Pair>();
-        for (int i = 0; i < 4; ++i) {
-            try {
-                text = bufferedReader.readLine();
-                String[] tokens = text.split(" ");
-                values = getValuesObject(tokens);
-                indexValue = values.get(0);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            byte[] serializedTuple = serializeIndexValue(values);
-            System.out.println(serializedTuple.length);
-            try {
-                leaf.insertKeyValue(indexValue, serializedTuple);
-            } catch (UnsupportedGenericException e) {
-                e.printStackTrace();
-            }
-        }
-        System.out.println("Leave: ");
-        leaf.print();
-        System.out.println(leaf.bytesCount);
-        byte[] serializedLeave = leaf.serialize();
-        BTreeLeafNode deserializedLeave = leaf.deserialize(serializedLeave, 4, counter);
-        deserializedLeave.print();
-        for (int i = 0; i < deserializedLeave.tuples.size(); ++i) {
-            ArrayList<byte[]> tuples = (ArrayList<byte[]>) deserializedLeave.tuples.get(i);
-            for (int j = 0; j < tuples.size(); ++j) {
-                byte[] serializedTuple = tuples.get(j);
-                Values value = schema.deserialize(serializedTuple);
-                System.out.println(value);
-            }
-        }
-
-    }*/
-
 
 
 
