@@ -13,7 +13,7 @@ public class TopologyConfig {
     public static final int TEMPLATE_SIZE = 64000 * 4;
 //    public static final int TEMPLATE_SIZE = 64000 ;
 
-    public static final int NUMBER_TUPLES_OF_A_CHUNK = 100000;
+    public static final int NUMBER_TUPLES_OF_A_CHUNK = 600000;
 //    public static final int NUMBER_TUPLES_OF_A_CHUNK = 2000;
 
     public static final double KER_RANGE_COVERAGE = 0.2;
@@ -28,7 +28,7 @@ public class TopologyConfig {
 
     public static final double LOAD_BALANCE_THRESHOLD = 0.2;
 
-    public static boolean HDFSFlag = true;
+    public static boolean HDFSFlag = false;
 
     public static String dataDir = "/home/lzj";
 

@@ -1,12 +1,12 @@
 package indexingTopology.bolt;
 
-import backtype.storm.task.OutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.topology.base.BaseRichBolt;
-import backtype.storm.tuple.Fields;
-import backtype.storm.tuple.Tuple;
-import backtype.storm.tuple.Values;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.topology.base.BaseRichBolt;
+import org.apache.storm.tuple.Fields;
+import org.apache.storm.tuple.Tuple;
+import org.apache.storm.tuple.Values;
 import indexingTopology.Config.TopologyConfig;
 import indexingTopology.DataSchema;
 import indexingTopology.FileSystemHandler.FileSystemHandler;
@@ -275,8 +275,10 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
                 e.printStackTrace();
             } catch (InterruptedException e) {
                 e.printStackTrace();
+            } finally {
+
+                collector.ack(tuple);
             }
-            collector.ack(tuple);
         } else {
 //            System.out.println("The stream is " + NormalDistributionIndexingTopology.BPlusTreeQueryStream);
 //            System.out.println("The bolt id is " + context.getThisTaskId());
@@ -410,7 +412,7 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
 //                            final Integer offset = (Integer) pair.getValue();
                         final byte[] serializedTuple = (byte[]) pair.getValue();
 //                            System.out.println("insert");
-                        indexedData.insert(indexValue, serializedTuple);
+                        indexedData.insert(indexValue, serializedTuple); // for testing
 //                            indexedData.insert(indexValue, offset);
                     }
                     executed.getAndAdd(drainer.size());

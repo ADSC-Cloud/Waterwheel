@@ -1,6 +1,6 @@
 package indexingTopology.util;
 
-import backtype.storm.tuple.Tuple;
+import org.apache.storm.tuple.Tuple;
 import indexingTopology.exception.UnsupportedGenericException;
 import org.apache.commons.lang.SerializationUtils;
 

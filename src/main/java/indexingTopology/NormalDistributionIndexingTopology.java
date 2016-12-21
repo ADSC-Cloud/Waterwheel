@@ -1,8 +1,8 @@
 package indexingTopology;
 
-import backtype.storm.Config;
-import backtype.storm.StormSubmitter;
-import backtype.storm.topology.TopologyBuilder;
+import org.apache.storm.Config;
+import org.apache.storm.StormSubmitter;
+import org.apache.storm.topology.TopologyBuilder;
 import indexingTopology.Config.TopologyConfig;
 import indexingTopology.Streams.Streams;
 import indexingTopology.bolt.*;
