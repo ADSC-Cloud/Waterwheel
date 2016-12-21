@@ -119,9 +119,6 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declareStream(Streams.BPlusTreeQueryStream, new Fields("queryId", "leftKey"
-                , "rightKey"));
-
         List<String> fields = schema.getFieldsObject().toList();
         fields.add("timeStamp");
 
