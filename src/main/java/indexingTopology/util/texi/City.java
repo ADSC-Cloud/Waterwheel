@@ -42,6 +42,10 @@ public class City implements Serializable {
         return zOrderCoding.getIntervalsOfCodesInRectangle(xPartition1, xPartition2, yPartition1, yPartition2);
     }
 
+    public int getMaxZCode() {
+        return zOrderCoding.getMaxZCode();
+    }
+
     public void store(Car car) {
         int code = getZCodeForALocation(car.x, car.y);
         database.put(code, car);

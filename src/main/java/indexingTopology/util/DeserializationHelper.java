@@ -1,7 +1,7 @@
 package indexingTopology.util;
 
-import backtype.storm.tuple.Tuple;
-import backtype.storm.tuple.Values;
+import org.apache.storm.tuple.Tuple;
+import org.apache.storm.tuple.Values;
 import com.sun.prism.shader.Solid_TextureYV12_AlphaTest_Loader;
 import indexingTopology.DataSchema;
 import indexingTopology.FileSystemHandler.FileSystemHandler;

@@ -13,7 +13,7 @@ public class ZOrderCoding implements Serializable {
     int xBits;
     int yBits;
     public ZOrderCoding(int max) {
-        xBits = (int) Math.ceil(Math.log(max));
+        xBits = (int) Math.ceil(Math.log(max)/Math.log(2));
         yBits = xBits;
     }
 
@@ -49,6 +49,12 @@ public class ZOrderCoding implements Serializable {
         }
         return intervals;
     }
+
+
+    public int getMaxZCode() {
+        return (int)Math.pow(2, xBits + yBits);
+    }
+
 
 
     static public void main(String[] args) {

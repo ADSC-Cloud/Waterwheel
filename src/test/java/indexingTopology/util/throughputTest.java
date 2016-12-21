@@ -1,6 +1,6 @@
 package indexingTopology.util;
 
-import backtype.storm.utils.Utils;
+import org.apache.storm.utils.Utils;
 import indexingTopology.Config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
 import javafx.util.Pair;

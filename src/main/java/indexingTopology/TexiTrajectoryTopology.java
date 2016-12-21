@@ -1,8 +1,8 @@
 package indexingTopology;
 
-import backtype.storm.Config;
-import backtype.storm.StormSubmitter;
-import backtype.storm.topology.TopologyBuilder;
+import org.apache.storm.Config;
+import org.apache.storm.StormSubmitter;
+import org.apache.storm.topology.TopologyBuilder;
 import indexingTopology.Config.TopologyConfig;
 import indexingTopology.Streams.Streams;
 import indexingTopology.bolt.*;
@@ -57,6 +57,8 @@ public class TexiTrajectoryTopology {
         List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, String.class));
         DataSchema schema = new DataSchema(fieldNames, valueTypes, "zcode");
 
+        final int payloadSize = 10;
+
         final double x1 = 0;
         final double x2 = 1000;
         final double y1 = 0;
@@ -69,21 +71,23 @@ public class TexiTrajectoryTopology {
 
         Double lowerBound = 0.0;
 
-        Double upperBound = 10000.0;
+        Double upperBound = (double)city.getMaxZCode();
 
         String path = "/home/acelzj";
 
         boolean enableLoadBalance = false;
 
 
-        builder.setSpout(TupleGenerator, new TexiTrajectoryGenerator(schema, generator, 10, city), 1);
+        builder.setSpout(TupleGenerator, new TexiTrajectoryGenerator(schema, generator, payloadSize, city), 11);
 
-        builder.setBolt(RangeQueryDispatcherBolt, new RangeQueryDispatcherBolt(schema, lowerBound, upperBound, enableLoadBalance), 1)
+        builder.setBolt(RangeQueryDispatcherBolt, new RangeQueryDispatcherBolt(schema, lowerBound, upperBound, enableLoadBalance), 11)
                 .shuffleGrouping(TupleGenerator, Streams.IndexStream)
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 
-        builder.setBolt(IndexerBolt, new NormalDistributionIndexAndRangeQueryBolt(schema.getIndexField(), schema, TopologyConfig.BTREE_OREDER, 65000000, path, enableLoadBalance), 1)
+
+        builder.setBolt(IndexerBolt, new NormalDistributionIndexAndRangeQueryBolt(schema.getIndexField(), schema, TopologyConfig.BTREE_OREDER, 65000000, path, enableLoadBalance), 88)
+
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream); // direct grouping should be used.
         // And RangeQueryDecompositionBolt should emit to this stream via directEmit!!!!!
@@ -113,7 +117,7 @@ public class TexiTrajectoryTopology {
 
         Config conf = new Config();
         conf.setDebug(false);
-        conf.setNumWorkers(2);
+        conf.setNumWorkers(44);
 
 //        LocalCluster cluster = new LocalCluster();
 //        LocalCluster cluster = new LocalCluster();

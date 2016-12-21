@@ -27,9 +27,23 @@ public class TrajectoryUniformGenerator implements TrajectoryGenerator {
     }
 
     static public void main(String[] args) {
-        TrajectoryUniformGenerator generator = new TrajectoryUniformGenerator(100, 500, 1000, 10000, 20000);
+        final double x1 = 0;
+        final double x2 = 1000;
+        final double y1 = 0;
+        final double y2 = 500;
+        final int partitions = 100;
+
+        TrajectoryUniformGenerator generator = new TrajectoryUniformGenerator(100, x1, x2, y1, y2);
+        City city = new City(x1, x2, y1, y2, partitions);
+
+        System.out.println(String.format("Max ZCode: %d", city.getMaxZCode()));
+
+        System.out.println(String.format("ZCode: %d", city.getZCodeForALocation(2000,1000)));
+
         for (int i = 0; i < 100; i++) {
-            System.out.println(generator.generate());
+            final Car car = generator.generate();
+            System.out.println(car);
+            System.out.println(String.format("ZCode: %d", city.getZCodeForALocation(car.x, car.y)));
         }
     }
 
