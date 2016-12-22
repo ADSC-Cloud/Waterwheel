@@ -120,7 +120,11 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
                     putCacheData(cacheData, mappingKey);
                 }
                 searchStartTime = System.currentTimeMillis();
-                ArrayList<byte[]> tuples = leaf.rangeSearchAndGetTuples(timestampLowerBound, timestampUpperBound);
+
+                ArrayList<byte[]> tuples = getTuplesWithinTimeStamp(leaf, timestampLowerBound,
+                        timestampUpperBound);
+
+//                ArrayList<byte[]> tuples = leaf.rangeSearchAndGetTuples(timestampLowerBound, timestampUpperBound);
                 timeCostOfSearching += (System.currentTimeMillis() - searchStartTime);
                 if (tuples.size() != 0) {
                     serializedTuples.addAll(tuples);
@@ -193,6 +197,25 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
         CacheUnit cacheUnit = new CacheUnit();
         cacheUnit.setCacheData(cacheData);
         cacheMapping.put(mappingKey, cacheUnit);
+    }
+
+
+    private ArrayList<byte[]> getTuplesWithinTimeStamp(BTreeLeafNode leaf, Long timestampLowerBound, Long timestampUpperBound)
+            throws IOException {
+
+        ArrayList<byte[]> serializedTuples = new ArrayList<>();
+
+        ArrayList<byte[]> tuples = leaf.getTuples();
+
+        for (int i = 0; i < tuples.size(); ++i) {
+            Values deserializedTuple = DeserializationHelper.deserialize(tuples.get(i));
+            if (timestampLowerBound <= (Long) deserializedTuple.get(8) &&
+                    timestampUpperBound >= (Long) deserializedTuple.get(8)) {
+                serializedTuples.add(tuples.get(i));
+            }
+        }
+
+        return serializedTuples;
     }
 
 

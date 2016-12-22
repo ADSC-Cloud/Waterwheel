@@ -112,8 +112,13 @@ public class ChunkScannerBolt extends BaseRichBolt {
                 }
 
                 searchStartTime = System.currentTimeMillis();
-                ArrayList<byte[]> serializedTuples = leaf.searchAndGetTuplesWithinTimestampRange(
-                        key, timestampLowerBound, timestampUpperBound);
+
+                ArrayList<byte[]> tuples = leaf.searchAndGetTuples(key);
+
+                ArrayList<byte[]> serializedTuples = getTuplesWithinTimeStamp(tuples, timestampLowerBound, timestampUpperBound);
+
+//                ArrayList<byte[]> serializedTuples = leaf.searchAndGetTuplesWithinTimestampRange(
+//                        key, timestampLowerBound, timestampUpperBound);
                 timeCostOfSearching += (System.currentTimeMillis() - searchStartTime);
 
                 metrics.setTotalTime(System.currentTimeMillis() - startTime);
@@ -195,6 +200,22 @@ public class ChunkScannerBolt extends BaseRichBolt {
         CacheUnit cacheUnit = new CacheUnit();
         cacheUnit.setCacheData(cacheData);
         cacheMapping.put(mappingKey, cacheUnit);
+    }
+
+    private ArrayList<byte[]> getTuplesWithinTimeStamp(ArrayList<byte[]> tuples, Long timestampLowerBound, Long timestampUpperBound)
+            throws IOException {
+
+        ArrayList<byte[]> serializedTuples = new ArrayList<>();
+
+        for (int i = 0; i < tuples.size(); ++i) {
+            Values deserializedTuple = DeserializationHelper.deserialize(tuples.get(i));
+            if (timestampLowerBound <= (Long) deserializedTuple.get(8) &&
+                    timestampUpperBound >= (Long) deserializedTuple.get(8)) {
+                serializedTuples.add(tuples.get(i));
+            }
+        }
+
+        return serializedTuples;
     }
 
 

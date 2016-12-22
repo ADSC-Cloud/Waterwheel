@@ -182,7 +182,6 @@ public class IndexerBolt extends BaseRichBolt {
 //            tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
             Pair pair = new Pair(indexValue, offset);
 //            queue.put(pair);
-            bulkLoader.addRecord(pair);
 //            tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
             es.submit(new IndexerThread(indexedData, indexValue, offset));
         } else {
@@ -280,7 +279,6 @@ public class IndexerBolt extends BaseRichBolt {
         //    tm.endTiming(Constants.TIME_SERIALIZATION_WRITE.str);
         //    dumplicateKeys = 0;
             Pair pair = new Pair(indexValue, offset);
-            bulkLoader.addRecord(pair);
 //            queue.put(pair);
 //            bulkLoader.addRecord(indexValue, offset);
             ++chunkId;

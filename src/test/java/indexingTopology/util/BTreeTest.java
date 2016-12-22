@@ -10,10 +10,7 @@ import org.junit.Test;
 
 import java.io.*;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -30,116 +27,193 @@ public class BTreeTest {
 
     @Test
     public void testSearchTuples() throws Exception, UnsupportedGenericException {
-        BTree bTree = new BTree(4, TimingModule.createNew(), SplitCounterModule.createNew());
-        for (int i = 0; i < 10; ++i) {
+        int order = 32;
+        BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
+
+        int numberOfTuples = 2048;
+
+        Random random = new Random();
+
+        List<Integer> keys = new ArrayList<>();
+
+        for (int i = 0; i < numberOfTuples; ++i) {
+            Integer key = random.nextInt();
+            keys.add(key);
+        }
+
+        for (Integer key : keys) {
             List<Double> values = new ArrayList<>();
-            values.add((double) i);
+            values.add((double) key);
             for (int j = 0; j < fieldNames.size() + 1; ++j) {
                 values.add((double) j);
             }
             byte[] bytes = serializeIndexValue(values);
-            bTree.insert(i, bytes);
+            bTree.insert(key, bytes);
         }
 
-        for (int i = 0; i < 10; ++i) {
-            assertEquals(1, bTree.searchTuples(1).size());
+        for (Integer key : keys) {
+            assertEquals(1, bTree.searchTuples(key).size());
         }
 
         //Test template mode
-        bTree = new BTree(4, TimingModule.createNew(), SplitCounterModule.createNew());
-        bTree.setTemplateMode();
+        BulkLoader bulkLoader = new BulkLoader(order, TimingModule.createNew(), SplitCounterModule.createNew());
+        BTree newBTree = bulkLoader.createTreeWithBulkLoading(bTree);
 
-        for (int i = 0; i < 10; ++i) {
+        for (Integer key : keys) {
             List<Double> values = new ArrayList<>();
-            values.add((double) i);
+            values.add((double) key);
             for (int j = 0; j < fieldNames.size() + 1; ++j) {
                 values.add((double) j);
             }
             byte[] bytes = serializeIndexValue(values);
-            bTree.insert(i, bytes);
+            newBTree.insert(key, bytes);
         }
 
-        for (int i = 0; i < 10; ++i) {
-            List<byte[]> bytes = bTree.searchTuples(i);
-            assertEquals(1, bTree.searchTuples(i).size());
-            for (int j = 0; j < bytes.size(); ++j) {
-                System.out.println(DeserializationHelper.deserialize(bytes.get(j)));
-            }
+        for (Integer key : keys) {
+            assertEquals(1, bTree.searchTuples(key).size());
         }
     }
 
     @Test
     public void testSearchRangeLeftKeyAndRightKeyTheSame() throws Exception, UnsupportedGenericException {
-        BTree bTree = new BTree(4, TimingModule.createNew(), SplitCounterModule.createNew());
-        for (int i = 0; i < 10; ++i) {
+        int order = 32;
+        BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
+
+        int numberOfTuples = 2048;
+
+        Random random = new Random();
+
+        List<Integer> keys = new ArrayList<>();
+
+        for (int i = 0; i < numberOfTuples; ++i) {
+            Integer key = random.nextInt();
+            keys.add(key);
+        }
+
+        for (Integer key : keys) {
             List<Double> values = new ArrayList<>();
-            values.add((double) i);
+            values.add((double) key);
             for (int j = 0; j < fieldNames.size() + 1; ++j) {
                 values.add((double) j);
             }
             byte[] bytes = serializeIndexValue(values);
-            bTree.insert(i, bytes);
+            bTree.insert(key, bytes);
         }
 
-        for (int i = 0; i < 10; ++i) {
-            List<byte[]> bytes = bTree.searchRange(i, i);
-            assertEquals(1, bytes.size());
-            for (int j = 0; j < bytes.size(); ++j) {
-                System.out.println(DeserializationHelper.deserialize(bytes.get(j)));
-            }
+        for (Integer key : keys) {
+            assertEquals(1, bTree.searchRange(key, key).size());
         }
     }
 
 
     @Test
     public void testSearchRangeLeftKeyAndRightAllTuples() throws Exception, UnsupportedGenericException {
-        BTree bTree = new BTree(4, TimingModule.createNew(), SplitCounterModule.createNew());
-        for (int i = 0; i < 10; ++i) {
+        int order = 32;
+        BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
+
+        int numberOfTuples = 2048;
+
+        Random random = new Random();
+
+        List<Integer> keys = new ArrayList<>();
+
+        Integer min = Integer.MAX_VALUE;
+
+        Integer max = Integer.MIN_VALUE;
+
+        for (int i = 0; i < numberOfTuples; ++i) {
+            Integer key = random.nextInt();
+            min = Math.min(min, key);
+            max = Math.max(max, key);
+            keys.add(key);
+        }
+
+        for (Integer key : keys) {
             List<Double> values = new ArrayList<>();
-            values.add((double) i);
+            values.add((double) key);
             for (int j = 0; j < fieldNames.size() + 1; ++j) {
                 values.add((double) j);
             }
             byte[] bytes = serializeIndexValue(values);
-            bTree.insert(i, bytes);
+            bTree.insert(key, bytes);
         }
 
-        List<byte[]> bytes = bTree.searchRange(-1, 20);
-        assertEquals(10, bytes.size());
+        assertEquals(numberOfTuples, bTree.searchRange(min, max).size());
 
     }
 
     @Test
-    public void testSearchRangeLeftKeyAndRightSomeTuples() throws Exception, UnsupportedGenericException {
-        BTree bTree = new BTree(4, TimingModule.createNew(), SplitCounterModule.createNew());
-        for (int i = 0; i < 10; ++i) {
+    public void testSearchRangeSomeTuples() throws Exception, UnsupportedGenericException {
+        int order = 32;
+        BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
+
+        int numberOfTuples = 2048;
+
+        Random random = new Random();
+
+        List<Integer> keys = new ArrayList<>();
+
+        Integer min = Integer.MAX_VALUE;
+
+        Integer max = Integer.MIN_VALUE;
+
+        for (int i = 0; i < numberOfTuples; ++i) {
+            Integer key = random.nextInt();
+            min = Math.min(min, key);
+            max = Math.max(max, key);
+            keys.add(key);
+        }
+
+        for (Integer key : keys) {
             List<Double> values = new ArrayList<>();
-            values.add((double) i);
+            values.add((double) key);
             for (int j = 0; j < fieldNames.size() + 1; ++j) {
                 values.add((double) j);
             }
             byte[] bytes = serializeIndexValue(values);
-            bTree.insert(i, bytes);
+            bTree.insert(key, bytes);
         }
 
-        List<byte[]> bytes = bTree.searchRange(3, 8);
-        assertEquals(6, bytes.size());
+        Collections.sort(keys);
+
+        List<byte[]> tuples = bTree.searchRange(keys.get(300), keys.get(512));
+        assertEquals(213, tuples.size());
+
+        tuples = bTree.searchRange(keys.get(1022), keys.get(1023));
+        assertEquals(2, tuples.size());
+
+        tuples = bTree.searchRange(keys.get(0), keys.get(1));
+        assertEquals(2, tuples.size());
 
     }
 
 
     @Test
     public void clearPayload() throws Exception, UnsupportedGenericException {
-        BTree bTree = new BTree(4, TimingModule.createNew(), SplitCounterModule.createNew());
-        for (int i = 0; i < 10; ++i) {
+        int order = 32;
+        BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
+
+        int numberOfTuples = 2048;
+
+        Random random = new Random();
+
+        List<Integer> keys = new ArrayList<>();
+
+        for (int i = 0; i < numberOfTuples; ++i) {
+            Integer key = random.nextInt();
+            keys.add(key);
+        }
+
+        for (Integer key : keys) {
             List<Double> values = new ArrayList<>();
-            values.add((double) i);
+            values.add((double) key);
             for (int j = 0; j < fieldNames.size() + 1; ++j) {
                 values.add((double) j);
             }
             byte[] bytes = serializeIndexValue(values);
-            bTree.insert(i, bytes);
+            bTree.insert(key, bytes);
         }
+
         bTree.clearPayload();
         BTreeLeafNode leaf = bTree.getLeftMostLeaf();
         while (leaf != null) {
@@ -153,31 +227,43 @@ public class BTreeTest {
 
     @Test
     public void clearPayloadInTemplateMode() throws Exception, UnsupportedGenericException {
-        BTree bTree = new BTree(4, TimingModule.createNew(), SplitCounterModule.createNew());
-        for (int i = 0; i < 10; ++i) {
+        int order = 32;
+        BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
+
+        int numberOfTuples = 2048;
+
+        Random random = new Random();
+
+        List<Integer> keys = new ArrayList<>();
+
+        for (int i = 0; i < numberOfTuples; ++i) {
+            Integer key = random.nextInt();
+            keys.add(key);
+        }
+
+        for (Integer key : keys) {
             List<Double> values = new ArrayList<>();
-            values.add((double) i);
+            values.add((double) key);
             for (int j = 0; j < fieldNames.size() + 1; ++j) {
                 values.add((double) j);
             }
             byte[] bytes = serializeIndexValue(values);
-            bTree.insert(i, bytes);
+            bTree.insert(key, bytes);
         }
 
         bTree.clearPayload();
 
-        for (int i = 0; i < 10; ++i) {
+        for (Integer key : keys) {
             List<Double> values = new ArrayList<>();
-            values.add((double) i);
+            values.add((double) key);
             for (int j = 0; j < fieldNames.size() + 1; ++j) {
                 values.add((double) j);
             }
             byte[] bytes = serializeIndexValue(values);
-            bTree.insert(i, bytes);
+            bTree.insert(key, bytes);
         }
 
         bTree.clearPayload();
-
         BTreeLeafNode leaf = bTree.getLeftMostLeaf();
         while (leaf != null) {
             assertEquals(0, leaf.bytesCount);
@@ -189,21 +275,6 @@ public class BTreeTest {
 
     }
 
-
-    public List<Double> getValuesObject(String [] valuesAsString) throws IOException {
-
-        List<Double> values = new ArrayList<Double>();
-        ArrayList valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
-                Double.class, Double.class, Double.class, Double.class, Double.class));
-        for (int i=0;i < valueTypes.size();i++) {
-            if (valueTypes.get(i).equals(Double.class)) {
-                values.add(Double.parseDouble(valuesAsString[i]));
-            }
-        }
-
-
-        return values;
-    }
 
     public byte[] serializeIndexValue(List<Double> values) throws IOException{
         ByteArrayOutputStream bos = new ByteArrayOutputStream();

@@ -210,11 +210,17 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
         child.leftSibling = prechild;
         prechild.rightSibling = child;
     }
+
+
+    /**
+     * use an optimized bulk loading to build a new B+ tree.
+     * @param oldBTree, requires that the height of oldBTree > 1
+     * @return a new BTree whose leaves have no keys
+     */
     public BTree createTreeWithBulkLoading(BTree oldBTree) {
         List<BTreeInnerNode> innerNodes = createInnerNodes(oldBTree);
         int count = 0;
         bt = new BTree(this.order, tm, sm);
-        BTreeInnerNode preNode = new BTreeInnerNode(this.order, counter);
         BTreeInnerNode root = new BTreeInnerNode(this.order, counter);
         for (BTreeInnerNode node : innerNodes) {
             ++count;
@@ -222,7 +228,6 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
                 BTreeInnerNode parent = root;
                 parent.setChild(0, node);
                 node.setParent(parent);
-                preNode = node;
                 counter.increaseHeightCount();
                 bt.setRoot(root);
             } else {
@@ -245,9 +250,6 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
         }
         bt.setRoot(root);
         return bt;
-    }
-    public List<Pair<TKey, TValue>> getRecords() {
-        return record;
     }
 
 }

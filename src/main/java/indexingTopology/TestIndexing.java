@@ -366,7 +366,6 @@ public class TestIndexing {
                     bulkLoader.resetRecord();
                     System.out.println("A chunk full " + indexValue);
                     Pair pair = new Pair(indexValue, serializedTuple);
-                    bulkLoader.addRecord(pair);
                     sm.resetCounter();
                     try {
                         queue.put(pair);

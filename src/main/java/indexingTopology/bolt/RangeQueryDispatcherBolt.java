@@ -9,19 +9,13 @@ import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 import indexingTopology.DataSchema;
 import indexingTopology.NormalDistributionIndexingAndRangeQueryTopology;
-import indexingTopology.NormalDistributionIndexingTopology;
-import indexingTopology.MetaData.TaskMetaData;
-import indexingTopology.MetaData.TaskPartitionSchemaManager;
 import indexingTopology.Streams.Streams;
 import indexingTopology.util.BalancedPartition;
 import indexingTopology.util.Histogram;
-import indexingTopology.util.PartitionFunction;
-import indexingTopology.util.RangeQuerySubQuery;
-import javafx.util.Pair;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.Semaphore;
+
 
 /**
  * Created by parijatmazumdar on 14/09/15.

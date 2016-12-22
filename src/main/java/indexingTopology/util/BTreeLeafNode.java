@@ -674,4 +674,14 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
         return tuples;
     }
 
+    public ArrayList<byte[]> getTuples() {
+        ArrayList<byte[]> tuples = new ArrayList<byte[]>();
+
+        for (int i = 0; i < keys.size(); ++i) {
+            tuples.addAll(getTuples(i));
+        }
+
+        return tuples;
+    }
+
 }

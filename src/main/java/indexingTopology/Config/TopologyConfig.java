@@ -13,8 +13,8 @@ public class TopologyConfig {
     public static final int TEMPLATE_SIZE = 64000 * 4;
 //    public static final int TEMPLATE_SIZE = 64000 ;
 
-//    public static final int NUMBER_TUPLES_OF_A_CHUNK = 600000;
-    public static final int NUMBER_TUPLES_OF_A_CHUNK = 20000;
+    public static final int NUMBER_TUPLES_OF_A_CHUNK = 600000;
+//    public static final int NUMBER_TUPLES_OF_A_CHUNK = 20000;
 //    public static final int NUMBER_TUPLES_OF_A_CHUNK = 2000;
 
     public static final double KER_RANGE_COVERAGE = 0.2;

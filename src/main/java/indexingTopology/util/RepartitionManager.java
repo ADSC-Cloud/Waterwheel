@@ -34,14 +34,6 @@ public class RepartitionManager {
 
         Long totalWeight = 0L;
 
-//        System.out.println("ball to weight " + ballToWeight);
-
-//        System.out.println("*****bin*****");
-
-//        for (int i = 0; i < bins.size(); ++i) {
-//            System.out.println("bin " + i + " " + bins.get(i));
-//        }
-
         int bin = 0;
 
         for (Object ball : balls) {

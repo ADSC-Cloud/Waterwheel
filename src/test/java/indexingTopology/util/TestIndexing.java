@@ -146,7 +146,6 @@ public class TestIndexing {
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-                        bulkLoader.addRecord(pair);
                     } else {
                         while (!queue.isEmpty()) {
                             try {
@@ -180,7 +179,6 @@ public class TestIndexing {
                             e.printStackTrace();
                         }
                         Pair pair = new Pair(indexValue, offset);
-                        bulkLoader.addRecord(pair);
                         sm.resetCounter();
                         try {
                             queue.put(pair);
