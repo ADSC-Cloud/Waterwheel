@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class TestIndexing {
     private LinkedBlockingQueue<Pair> queue = new LinkedBlockingQueue<Pair>();
-    private BTree<Double, Integer> indexedData;
+    private BTree indexedData;
 
     private File inputFile;
     private File outputFile;
@@ -34,7 +34,6 @@ public class TestIndexing {
     private SplitCounterModule sm;
     private TimingModule tm;
     private FileOutputStream fop;
-    private FileOutputStream queryFileOutput;
     //    CopyOnWriteArrayList<Long> timer = new CopyOnWriteArrayList<Long>();
     private int bytesLimit;
     private int choiceOfMethod;
@@ -44,27 +43,19 @@ public class TestIndexing {
     private int chunkId;
     private double indexValue;
     private int numTuplesBeforeWritting;
-//    private int numberOfQueries;
-    private long numberOfQueries;
+
     private AtomicLong totalTime;
 
     private BulkLoader bulkLoader;
     private BTree<Double, Integer> copyOfIndexedData;
     private BufferedReader bufferedReader;
-    private BufferedReader bufferedReaderInQueryThread;
     private MemChunk chunk;
 
-    private Random random;
-
-    private int count;
 
     private List<String> fieldNames;
     private List<Class> valueTypes;
 
     private List<Double> values;
-
-    private Semaphore s1;
-    private Semaphore s2;
 
     private IndexingRunnable indexingRunnable;
     private int numberOfIndexingThreads = 1;
@@ -81,22 +72,13 @@ public class TestIndexing {
 
     private Semaphore chuckFilled = new Semaphore(0);
 
-    private AtomicLong queryLantency;
-
     private boolean finished;
 
     private long startTime;
 
-    private double averageThroughput;
-    private double totalThroughput;
-
     private int numberOfProcessedTuples = 0;
 
-    private long totalBuildTime = 0;
-
     private boolean treeRebuilt = false;
-
-    private KeyRangeRecorder keyRangeRecorder = new KeyRangeRecorder();
 
     private Double minIndexValue = Double.MAX_VALUE;
     private Double maxIndexValue = Double.MIN_VALUE;
@@ -114,13 +96,9 @@ public class TestIndexing {
         numTuples = 0;
         numTuplesBeforeWritting = 1;
         this.choiceOfMethod = choiceOfMethod;
-//        bytesLimit = 650000;
         bytesLimit = 65000000;
-        count = 0;
         finished = false;
         startTime = System.nanoTime();
-        totalThroughput = 0;
-        numberOfQueries = 0;
         inputFile = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/input_data");
 
         if (choiceOfMethod == 0) {
@@ -144,22 +122,15 @@ public class TestIndexing {
         indexedData = new BTree<Double, Integer>(btreeOrder, tm, sm);
         bulkLoader = new BulkLoader(btreeOrder, tm, sm);
 
-        s2 = new Semaphore(2);
-
         fieldNames = new ArrayList<String>(Arrays.asList("user_id", "id_1", "id_2", "ts_epoch",
                 "date", "time", "latitude", "longitude"));
         valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
                 Double.class, Double.class, Double.class, Double.class, Double.class));
 
-        random = new Random(1000);
-
         totalTime = new AtomicLong(0);
-
-        queryLantency = new AtomicLong(0);
 
         try {
             bufferedReader = new BufferedReader(new FileReader(inputFile));
-            bufferedReaderInQueryThread = new BufferedReader(new FileReader(inputFile));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -187,11 +158,6 @@ public class TestIndexing {
             e.printStackTrace();
         }
 
-        try {
-            queryFileOutput = new FileOutputStream(queryOutputFile);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     private void createEmitThread() {
@@ -295,7 +261,7 @@ public class TestIndexing {
                     chunk.changeToLeaveNodesStartPosition();
                     indexedData.writeLeavesIntoChunk(chunk);
                     chunk.changeToStartPosition();
-                    byte[] serializedTree = indexedData.serializeTree();
+                    byte[] serializedTree = SerializationHelper.serializeTree(indexedData);
                     chunk.write(serializedTree);
 
                     FileSystemHandler fileSystemHandler = null;
@@ -307,7 +273,6 @@ public class TestIndexing {
                         e.printStackTrace();
                     }
 //
-                    keyRangeRecorder.addKeyRangeToFile("chunk" + chunkId, minIndexValue, maxIndexValue);
                     numberOfProcessedTuples = 0;
                     ++chunkId;
 //                    System.out.println("In the emit thread, the chunkId is " + chunkId);
@@ -605,7 +570,7 @@ public class TestIndexing {
 
                             fileSystemHandler.readBytesFromFile(serializedTree);
 //                            file.read(serializedTree, 0, TopologyConfig.TEMPLATE_SIZE);
-                            BTree deserializedTree = DeserializationHelper.deserializeBTree(fileSystemHandler, btreeOrder, counter);
+
                             System.out.println("***********************************************************");
 //                            break;
                             /*
@@ -708,7 +673,6 @@ public class TestIndexing {
 //            indexedData = bulkLoader.createTreeWithBulkLoading();
             long duration = System.currentTimeMillis() - startTime;
             System.out.println(String.format("The time used to build the tree is %d ms", duration));
-            totalBuildTime += duration;
             treeRebuilt = true;
 //            indexedData.printBtree();
         }

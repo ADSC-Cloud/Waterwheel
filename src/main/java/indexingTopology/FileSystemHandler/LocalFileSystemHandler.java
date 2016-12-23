@@ -90,29 +90,4 @@ public class LocalFileSystemHandler implements FileSystemHandler {
         }
     }
 
-    public long getLengthOfFile(String relativePath, String fileName) {
-        long length = 0;
-        try {
-            length = randomAccessFile.length();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return length;
-    }
-
-    public char readChar() throws IOException {
-        return randomAccessFile.readChar();
-    }
-
-    public int readInt() throws IOException {
-        return randomAccessFile.readInt();
-    }
-
-    public double readDouble() throws IOException {
-        return randomAccessFile.readDouble();
-    }
-
-    public Long readLong() throws IOException {
-        return randomAccessFile.readLong();
-    }
 }

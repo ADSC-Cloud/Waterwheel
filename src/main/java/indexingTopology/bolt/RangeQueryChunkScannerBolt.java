@@ -34,16 +34,6 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
 
     private transient LRUCache<CacheMappingKey, CacheUnit> cacheMapping;
 
-    private String path;
-
-    private boolean enableHdfs;
-
-    public RangeQueryChunkScannerBolt(String path, boolean enableHdfs) {
-        this.path = path;
-        System.out.println("path" + this.path);
-        this.enableHdfs = enableHdfs;
-    }
-
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
         bTreeOder = 4;
@@ -82,10 +72,10 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
 
         try {
             FileSystemHandler fileSystemHandler = null;
-            if (enableHdfs) {
-                fileSystemHandler = new HdfsFileSystemHandler(path);
+            if (TopologyConfig.HDFSFlag) {
+                fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
             } else {
-                fileSystemHandler = new LocalFileSystemHandler(path);
+                fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
 
             }
 

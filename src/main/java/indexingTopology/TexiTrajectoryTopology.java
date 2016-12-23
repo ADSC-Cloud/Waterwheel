@@ -86,7 +86,7 @@ public class TexiTrajectoryTopology {
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 
 
-        builder.setBolt(IndexerBolt, new NormalDistributionIndexAndRangeQueryBolt(schema.getIndexField(), schema, TopologyConfig.BTREE_OREDER, 65000000, path, enableLoadBalance), 88)
+        builder.setBolt(IndexerBolt, new NormalDistributionIndexAndRangeQueryBolt(schema.getIndexField(), schema, TopologyConfig.BTREE_OREDER, 65000000), 88)
 
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream); // direct grouping should be used.
@@ -99,7 +99,7 @@ public class TexiTrajectoryTopology {
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.TimeStampUpdateStream);
 
-        builder.setBolt(RangeQueryChunkScannerBolt, new RangeQueryChunkScannerBolt(path, enableLoadBalance), 1)
+        builder.setBolt(RangeQueryChunkScannerBolt, new RangeQueryChunkScannerBolt(), 1)
 //                .fieldsGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream, new Fields("fileName"));
                 .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream);
 //                .shuffleGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream);

@@ -23,15 +23,4 @@ public interface FileSystemHandler {
 
     void closeFile();
 
-    long getLengthOfFile(String relativePath, String fileName);
-
-    char readChar() throws IOException;
-
-    int readInt() throws IOException;
-
-    double readDouble() throws IOException;
-
-
-    Long readLong() throws IOException;
-
 }

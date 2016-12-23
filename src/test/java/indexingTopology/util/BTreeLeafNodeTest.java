@@ -25,6 +25,51 @@ public class BTreeLeafNodeTest {
     private DataSchema schema = new DataSchema(fieldNames, valueTypes, "user_id");
 
     @Test
+    public void testSearch() throws Exception, UnsupportedGenericException {
+
+        int order = 1024;
+
+        int numberOfTuples = 1024;
+
+        BTreeLeafNode leaf = new BTreeLeafNode(order, new BytesCounter());
+
+        Random random = new Random();
+
+        List<Integer> keys = new ArrayList<>();
+
+        Integer min = Integer.MAX_VALUE;
+
+        Integer max = Integer.MIN_VALUE;
+
+        for (int i = 0; i < numberOfTuples; ++i) {
+            Integer key = random.nextInt();
+            keys.add(key);
+            min = Math.min(min, key);
+            max = Math.max(max, key);
+        }
+
+        for (Integer key : keys) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) key);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            leaf.insertKeyValue(key, bytes);
+        }
+
+        Collections.sort(keys);
+
+        for (int i = 0; i < keys.size(); ++i) {
+            Integer index = i;
+            assertEquals(index, (Integer) leaf.search(keys.get(i)));
+        }
+
+        assertTrue(-1 == leaf.search(min - 1));
+        assertTrue(-1 == leaf.search(max + 1));
+    }
+
+    @Test
     public void testSplit() throws Exception, UnsupportedGenericException {
 
         int order = 1024;

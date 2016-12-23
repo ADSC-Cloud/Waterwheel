@@ -67,9 +67,9 @@ public class NormalDistributionIndexingTopology {
 
         boolean enableLoadBlance = true;
 
-        String path = "/home/acelzj";
+        TopologyConfig.dataDir = "/home/acelzj";
 
-        boolean enableHdfs = false;
+        TopologyConfig.HDFSFlag = false;
 
         builder.setSpout(TupleGenerator, new NormalDistributionGenerator(schema), 1).setNumTasks(1);
 //        builder.setBolt("Dispatcher",new RangeQueryDispatcherBolt("Indexer","longitude",schema),1).shuffleGrouping("TupleGenerator");
@@ -80,7 +80,7 @@ public class NormalDistributionIndexingTopology {
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 
 
-        builder.setBolt(IndexerBolt, new NormalDistributionIndexerBolt("user_id", schema, TopologyConfig.BTREE_OREDER, 65000000, path, enableHdfs),1)
+        builder.setBolt(IndexerBolt, new NormalDistributionIndexerBolt("user_id", schema, TopologyConfig.BTREE_OREDER, 65000000),1)
                 .setNumTasks(4)
                 .directGrouping(DispatcherBolt, Streams.IndexStream)
                 .directGrouping(QueryDecompositionBolt, Streams.BPlusTreeQueryStream);
@@ -92,7 +92,7 @@ public class NormalDistributionIndexingTopology {
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.TimeStampUpdateStream);
 
-        builder.setBolt(ChunkScannerBolt, new ChunkScannerBolt(path, enableHdfs)).setNumTasks(2)
+        builder.setBolt(ChunkScannerBolt, new ChunkScannerBolt()).setNumTasks(2)
 //                .fieldsGrouping(QueryDecompositionBolt, FileSystemQueryStream, new Fields("fileName"));
                 .directGrouping(QueryDecompositionBolt, Streams.FileSystemQueryStream);
 //                .shuffleGrouping(QueryDecompositionBolt, FileSystemQueryStream);

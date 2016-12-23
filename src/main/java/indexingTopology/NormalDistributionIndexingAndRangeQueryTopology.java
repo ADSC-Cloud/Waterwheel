@@ -84,7 +84,7 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 
-        builder.setBolt(IndexerBolt, new NormalDistributionIndexAndRangeQueryBolt("user_id", schema, TopologyConfig.BTREE_OREDER, 65000000, TopologyConfig.dataDir, TopologyConfig.HDFSFlag),4)
+        builder.setBolt(IndexerBolt, new NormalDistributionIndexAndRangeQueryBolt("user_id", schema, TopologyConfig.BTREE_OREDER, 65000000),4)
                 .setNumTasks(1)
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream);
@@ -96,7 +96,7 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.TimeStampUpdateStream);
 
-        builder.setBolt(RangeQueryChunkScannerBolt, new RangeQueryChunkScannerBolt(TopologyConfig.dataDir, TopologyConfig.HDFSFlag), 2).setNumTasks(1)
+        builder.setBolt(RangeQueryChunkScannerBolt, new RangeQueryChunkScannerBolt(), 2).setNumTasks(1)
 //                .fieldsGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream, new Fields("fileName"));
                 .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream);
 //                .shuffleGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream);

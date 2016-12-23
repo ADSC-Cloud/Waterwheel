@@ -34,15 +34,6 @@ public class ChunkScannerBolt extends BaseRichBolt {
 
     private transient int numberOfCacheUnit;
 
-    private String path;
-
-    private boolean enableHdfs;
-
-    public ChunkScannerBolt(String path, boolean enableHdfs) {
-        this.path = path;
-        this.enableHdfs = enableHdfs;
-    }
-
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
         bTreeOder = 4;
@@ -78,12 +69,13 @@ public class ChunkScannerBolt extends BaseRichBolt {
 //        RandomAccessFile file = null;
 //        for (String fileName : fileNames) {
             try {
-                FileSystemHandler fileSystemHandler;
-                if (enableHdfs) {
-                    fileSystemHandler = new HdfsFileSystemHandler(path);
+                FileSystemHandler fileSystemHandler = null;
+                if (TopologyConfig.HDFSFlag) {
+                    fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
                 } else {
-                    fileSystemHandler = new LocalFileSystemHandler(path);
+                    fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
                 }
+
                 CacheMappingKey mappingKey = new CacheMappingKey(fileName, 0);
                 BTree deserializedTree = (BTree) getFromCache(mappingKey);
                 if (deserializedTree == null) {
@@ -97,8 +89,6 @@ public class ChunkScannerBolt extends BaseRichBolt {
                 Long searchStartTime = System.currentTimeMillis();
                 int offset = deserializedTree.getOffsetOfLeaveNodeShouldContainKey(key);
                 timeCostOfSearching += (System.currentTimeMillis() - searchStartTime);
-
-                mappingKey = new CacheMappingKey(fileName, offset);
 
                 BTreeLeafNode leaf;
 

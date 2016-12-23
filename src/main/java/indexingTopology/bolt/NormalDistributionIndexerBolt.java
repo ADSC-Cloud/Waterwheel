@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * Created by acelzj on 7/27/16.
  */
 public class NormalDistributionIndexerBolt extends BaseRichBolt {
-    private static final int maxTuples=43842;
     private final static int numberOfIndexingThreads = 1;
 
     private final DataSchema schema;
@@ -42,11 +41,7 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
     private BTree<Double, Integer> indexedData;
     private BTree<Double, Integer> copyOfIndexedData;
 
-    private FileSystemHandler fileSystemHandler;
-
     private int numTuples;
-    private int numTuplesBeforeWritting;
-    private int numWritten;
     private int chunkId;
 
     private boolean isTreeBuilt;
@@ -83,18 +78,11 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
 
     private TopologyContext context;
 
-    String path;
-
-    boolean enableHdfs;
-
-    public NormalDistributionIndexerBolt(String indexField, DataSchema schema, int btreeOrder, int bytesLimit,
-                                         String path, boolean enableHdfs) {
+    public NormalDistributionIndexerBolt(String indexField, DataSchema schema, int btreeOrder, int bytesLimit) {
         this.schema = schema;
         this.btreeOrder = btreeOrder;
         this.bytesLimit = bytesLimit;
         this.indexField = indexField;
-        this.path = path;
-        this.enableHdfs = enableHdfs;
     }
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
@@ -108,8 +96,6 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
         chunk = MemChunk.createNew(this.bytesLimit);
 
         this.numTuples = 0;
-        this.numTuplesBeforeWritting = 1;
-        this.numWritten = 0;
         this.processingTime = 0;
         this.chunkId = 0;
 
@@ -166,13 +152,9 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
         if (tuple.getSourceStreamId().equals(Streams.IndexStream)) {
             Double indexValue = tuple.getDoubleByField(indexField);
             Long timeStamp = tuple.getLong(8);
-//            Double indexValue = tuple.getDouble(0);
-//            System.out.println("The stream is " + NormalDistributionIndexingTopology.IndexStream);
             try {
                 if (numTuples < TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK) {
-//                    if (chunkId == 0) {
-//                        System.out.println("Num tuples " + numTuples + " " + indexValue);
-//                    }
+
                     if (indexValue < minIndexValue) {
                         minIndexValue = indexValue;
                     }
@@ -205,11 +187,11 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
                     terminateIndexingThreads();
 
                     double percentage = (double) sm.getCounter() * 100 / (double) numTuples;
-//                    indexedData.printBtree();
+
                     chunk.changeToLeaveNodesStartPosition();
                     indexedData.writeLeavesIntoChunk(chunk);
                     chunk.changeToStartPosition();
-//                    byte[] serializedTree = indexedData.serializeTree();
+
                     byte[] serializedTree = SerializationHelper.serializeTree(indexedData);
                     chunk.write(serializedTree);
 
@@ -224,12 +206,12 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
                     FileSystemHandler fileSystemHandler = null;
                     String fileName = null;
                     try {
-                        if (enableHdfs) {
-                            fileSystemHandler = new HdfsFileSystemHandler(path);
+                        if (TopologyConfig.HDFSFlag) {
+                            fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
                         } else {
-                            fileSystemHandler = new LocalFileSystemHandler(this.path);
+                            fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
                         }
-//
+
                         int taskId = context.getThisTaskId();
                         fileName = "taskId" + taskId + "chunk" + chunkId;
                         fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
@@ -280,17 +262,12 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
                 e.printStackTrace();
             }
         } else {
-//            System.out.println("The stream is " + NormalDistributionIndexingTopology.BPlusTreeQueryStream);
-//            System.out.println("The bolt id is " + context.getThisTaskId());
             Long queryId = tuple.getLong(0);
             Double key = tuple.getDouble(1);
-//            System.out.println("The key is " + key);
+
             List<byte[]> serializedTuples = indexedData.searchTuples(key);
-//            System.out.println("The tuple is " + serializedTuples);
-//            if (serializedTuples != null) {
-                collector.emit(Streams.BPlusTreeQueryStream,
-                        new Values(queryId, serializedTuples));
-//            }
+
+            collector.emit(Streams.BPlusTreeQueryStream, new Values(queryId, serializedTuples));
         }
     }
 
@@ -315,51 +292,14 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
         }
     }
 
-    private void debugPrint(int numFailedInsert, Double indexValue) {
-        if (numFailedInsert%1000==0) {
-            System.out.println("[FAILED_INSERT] : "+indexValue);
-            indexedData.printBtree();
-        }
-    }
-
-/*
-    private long buildOneTree(Double indexValue, byte[] serializedTuple) {
-        if (numTuples<43842) {
-            try {
-                indexedData.insert(indexValue, serializedTuple);
-            } catch (UnsupportedGenericException e) {
-                e.printStackTrace();
-            }
-        }
-
-        else if (numTuples==43842) {
-            System.out.println("number of tuples processed : " + numTuples);
-            System.out.println("**********************Tree Written***************************");
-            indexedDataWoTemplate.printBtree();
-            System.out.println("**********************Tree Written***************************");
-        }
-
-        return 0;
-    }
-*/
-
-    private void writeIndexedDataToHDFS() {
-        // todo write this to hdfs
-        chunk.serializeAndRefresh();
-//        try {
-//            hdfs.writeToNewFile(indexedData.serializeTree(),"testname"+System.currentTimeMillis()+".dat");
-//            System.out.println("**********************************WRITTEN*******************************");
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-    }
 
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
-//        outputFieldsDeclarer.declare(new Fields("num_tuples","wo_template_time","template_time","wo_template_written","template_written"));
         outputFieldsDeclarer.declareStream(Streams.FileInformationUpdateStream,
                 new Fields("fileName", "keyRange", "timestampRange"));
+
         outputFieldsDeclarer.declareStream(Streams.BPlusTreeQueryStream,
                 new Fields("queryId", "serializedTuples"));
+
         outputFieldsDeclarer.declareStream(Streams.TimeStampUpdateStream,
                 new Fields("timestamp"));
     }
@@ -406,11 +346,8 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
                     for(Pair pair: drainer) {
                         localCount++;
                         final Double indexValue = (Double) pair.getKey();
-//                            final Integer offset = (Integer) pair.getValue();
                         final byte[] serializedTuple = (byte[]) pair.getValue();
-//                            System.out.println("insert");
                         indexedData.insert(indexValue, serializedTuple);
-//                            indexedData.insert(indexValue, offset);
                     }
                     executed.getAndAdd(drainer.size());
                     drainer.clear();

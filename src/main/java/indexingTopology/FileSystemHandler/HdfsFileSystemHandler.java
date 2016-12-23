@@ -100,29 +100,4 @@ public class HdfsFileSystemHandler implements FileSystemHandler {
         }
     }
 
-    public long getLengthOfFile(String relativePath, String fileName) {
-        long length = 0;
-        try {
-            length = fileSystem.getFileStatus(new Path(this.path + relativePath + fileName)).getLen();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return length;
-    }
-
-    public char readChar() throws IOException {
-        return fsDataInputStream.readChar();
-    }
-
-    public int readInt() throws IOException {
-        return fsDataInputStream.readInt();
-    }
-
-    public double readDouble() throws IOException {
-        return fsDataInputStream.readDouble();
-    }
-
-    public Long readLong() throws IOException {
-        return fsDataInputStream.readLong();
-    }
 }

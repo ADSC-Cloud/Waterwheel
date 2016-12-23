@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
 
-    private static final int maxTuples=43842;
     private final static int numberOfIndexingThreads = 1;
 
     private final DataSchema schema;
@@ -47,11 +46,8 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
     private BTree<Double, Integer> indexedData;
     private BTree<Double, Integer> copyOfIndexedData;
 
-    private FileSystemHandler fileSystemHandler;
-
     private int numTuples;
-    private int numTuplesBeforeWritting;
-    private int numWritten;
+
     private int chunkId;
 
     private boolean isTreeBuilt;
@@ -60,10 +56,6 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
 
     private TimingModule tm;
     private SplitCounterModule sm;
-
-    private long processingTime;
-
-    private long totalTime;
 
     private BulkLoader bulkLoader;
 
@@ -88,18 +80,12 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
 
     private TopologyContext context;
 
-    private String path;
-
-    private boolean enableHdfs;
-
     public NormalDistributionIndexAndRangeQueryBolt(String indexField, DataSchema schema, int btreeOrder,
-                                                    int bytesLimit, String path, boolean enableHdfs) {
+                                                    int bytesLimit) {
         this.schema = schema;
         this.btreeOrder = btreeOrder;
         this.bytesLimit = bytesLimit;
         this.indexField = indexField;
-        this.path = path;
-        this.enableHdfs = enableHdfs;
     }
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
@@ -113,9 +99,7 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
         chunk = MemChunk.createNew(this.bytesLimit);
 
         this.numTuples = 0;
-        this.numTuplesBeforeWritting = 1;
-        this.numWritten = 0;
-        this.processingTime = 0;
+
         this.chunkId = 0;
 
         this.context = topologyContext;
@@ -210,11 +194,11 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
                     terminateIndexingThreads();
 
                     double percentage = (double) sm.getCounter() * 100 / (double) numTuples;
-//                    indexedData.printBtree();
+
                     chunk.changeToLeaveNodesStartPosition();
                     indexedData.writeLeavesIntoChunk(chunk);
                     chunk.changeToStartPosition();
-//                    byte[] serializedTree = indexedData.serializeTree();
+
                     byte[] serializedTree = SerializationHelper.serializeTree(indexedData);
                     chunk.write(serializedTree);
 
@@ -230,10 +214,10 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
                     FileSystemHandler fileSystemHandler = null;
                     String fileName = null;
                     try {
-                        if (enableHdfs) {
-                            fileSystemHandler = new HdfsFileSystemHandler(path);
+                        if (TopologyConfig.HDFSFlag) {
+                            fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
                         } else {
-                            fileSystemHandler = new LocalFileSystemHandler(path);
+                            fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
                         }
                         int taskId = context.getThisTaskId();
                         fileName = "taskId" + taskId + "chunk" + chunkId;
@@ -287,18 +271,12 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
                 collector.ack(tuple);
             }
         } else {
-//            System.out.println("The stream is " + NormalDistributionIndexingTopology.BPlusTreeQueryStream);
-//            System.out.println("The bolt id is " + context.getThisTaskId());
             Long queryId = tuple.getLong(0);
             Double leftKey = tuple.getDouble(1);
             Double rightKey = tuple.getDouble(2);
-//            System.out.println("The key is " + key);
             List<byte[]> serializedTuples = indexedData.searchRange(leftKey, rightKey);
-//            System.out.println("The tuple is " + serializedTuples);
-//            if (serializedTuples != null) {
-                collector.emit(Streams.BPlusTreeQueryStream,
-                        new Values(queryId, serializedTuples));
-//            }
+
+            collector.emit(Streams.BPlusTreeQueryStream, new Values(queryId, serializedTuples));
         }
     }
 
@@ -332,13 +310,12 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
 
 
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
-//        outputFieldsDeclarer.declare(new Fields("num_tuples","wo_template_time","template_time","wo_template_written","template_written"));
         outputFieldsDeclarer.declareStream(Streams.FileInformationUpdateStream,
                 new Fields("fileName", "keyRange", "timeStampRange"));
-//        outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.BPlusTreeQueryStream,
-//                new Fields("leftKey", "rightKey", "serializedTuples"));
+
         outputFieldsDeclarer.declareStream(Streams.BPlusTreeQueryStream,
                 new Fields("queryId", "serializedTuples"));
+
         outputFieldsDeclarer.declareStream(Streams.TimeStampUpdateStream,
                 new Fields("timestamp"));
     }
@@ -385,11 +362,8 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
                     for(Pair pair: drainer) {
                         localCount++;
                         final Double indexValue = (Double) pair.getKey();
-//                            final Integer offset = (Integer) pair.getValue();
                         final byte[] serializedTuple = (byte[]) pair.getValue();
-//                            System.out.println("insert");
                         indexedData.insert(indexValue, serializedTuple); // for testing
-//                            indexedData.insert(indexValue, offset);
                     }
                     executed.getAndAdd(drainer.size());
                     drainer.clear();
