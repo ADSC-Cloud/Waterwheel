@@ -90,7 +90,7 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
         this.tm = TimingModule.createNew();
         this.sm = SplitCounterModule.createNew();
 
-        indexedData = new BTree<Double,Integer>(btreeOrder,tm, sm);
+        indexedData = new BTree(btreeOrder,tm, sm);
         copyOfIndexedData = indexedData;
 
         chunk = MemChunk.createNew(this.bytesLimit);

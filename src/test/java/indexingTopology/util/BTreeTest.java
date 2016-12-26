@@ -14,6 +14,34 @@ import static org.junit.Assert.*;
  * Created by acelzj on 21/12/16.
  */
 public class BTreeTest {
+    @Test
+    public void writeLeavesIntoChunk() throws Exception, UnsupportedGenericException {
+        int order = 32;
+        BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
+
+        int numberOfTuples = 2048;
+
+        Random random = new Random();
+
+        List<Integer> keys = new ArrayList<>();
+
+        for (int i = 0; i < numberOfTuples; ++i) {
+            Integer key = random.nextInt();
+            keys.add(key);
+        }
+
+        for (Integer key : keys) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) key);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            bTree.insert((double) key, bytes);
+        }
+
+    }
+
     private List<String> fieldNames = new ArrayList<String>(Arrays.asList("user_id", "id_1", "id_2", "ts_epoch",
             "date", "time", "latitude", "longitude"));
     private ArrayList valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,

@@ -19,10 +19,6 @@ public class DataSchema implements Serializable {
     private final List<Class> valueTypes;
     private final String indexField;
 
-    private class SerializationIntermediate {
-
-    }
-
     public DataSchema(List<String> fieldNames,List<Class> valueTypes, String indexField) {
         assert fieldNames.size()==valueTypes.size() : "number of fields should be " +
                 "same as the number of value types provided";
@@ -119,7 +115,7 @@ public class DataSchema implements Serializable {
         }
 
         //As we add timestamp for a field, so we need to serialize the timestamp
-        byte [] b = ByteBuffer.allocate(Long.SIZE / Byte.SIZE).putDouble(t.getLong(valueTypes.size())).array();
+        byte [] b = ByteBuffer.allocate(Long.SIZE / Byte.SIZE).putLong(t.getLong(valueTypes.size())).array();
         bos.write(b);
 
         return bos.toByteArray();
