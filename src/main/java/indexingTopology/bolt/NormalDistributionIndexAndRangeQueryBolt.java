@@ -57,7 +57,7 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
     private TimingModule tm;
     private SplitCounterModule sm;
 
-    private BulkLoader bulkLoader;
+    private TemplateUpdater templateUpdater;
 
     private Double minIndexValue = Double.MAX_VALUE;
     private Double maxIndexValue = Double.MIN_VALUE;
@@ -106,7 +106,7 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
 
         this.isTreeBuilt = false;
 
-        this.bulkLoader = new BulkLoader(btreeOrder, tm, sm);
+        this.templateUpdater = new TemplateUpdater(btreeOrder, tm, sm);
 
         this.queue = new LinkedBlockingQueue<Pair>(1024);
 //        this.outputFile = new File("/home/lzj/IndexTopology_experiment/NormalDistribution/query_latency_without_rebuild_but_split_256");
@@ -297,7 +297,7 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
         if (percentage > TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
             System.out.println("New tree has been built");
             isTreeBuilt = true;
-            indexedData = bulkLoader.createTreeWithBulkLoading(indexedData);
+            indexedData = templateUpdater.createTreeWithBulkLoading(indexedData);
         }
     }
 

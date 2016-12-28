@@ -4,7 +4,7 @@ package indexingTopology.Config;
  * Created by acelzj on 7/21/16.
  */
 public class TopologyConfig {
-    public static final double REBUILD_TEMPLATE_PERCENTAGE = 20;
+    public static final double REBUILD_TEMPLATE_PERCENTAGE = 0.2;
 
     public static final double TEMPLATE_OVERFLOW_PERCENTAGE = 1;
 
@@ -32,5 +32,7 @@ public class TopologyConfig {
     public static boolean HDFSFlag = false;
 
     public static String dataDir = "/home/acelzj";
+
+    public static final int NUM_TUPLES_TO_CHECK_TEMPLATE = 200000;
 
 }

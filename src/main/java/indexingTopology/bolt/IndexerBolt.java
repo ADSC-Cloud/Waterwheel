@@ -46,7 +46,7 @@ public class IndexerBolt extends BaseRichBolt {
     private ExecutorService es;
     private final static int numThreads = 2;
     private int numSplit;
-    private BulkLoader bulkLoader;
+    private TemplateUpdater templateUpdater;
     private int dumplicateKeys;
     private int chunkId;
     private File file;
@@ -92,7 +92,7 @@ public class IndexerBolt extends BaseRichBolt {
         this.numTuplesBeforeWritting = 0;
         this.numWritten=0;
         this.processingTime=0;
-        this.bulkLoader = new BulkLoader(btreeOrder, tm, sm);
+        this.templateUpdater = new TemplateUpdater(btreeOrder, tm, sm);
         this.chunkId = 0;
         this.queue = new LinkedBlockingQueue<Pair>();
 //        this.insertThread = new Thread(new Runnable() {
@@ -227,9 +227,9 @@ public class IndexerBolt extends BaseRichBolt {
 //            System.out.println("Before rebuild the BTree: ");
 
          //   List keysBeforeRebuild = indexedData.printBtree();
-         //   System.out.println("The number of record is " + bulkLoader.getNumberOfRecord());
+         //   System.out.println("The number of record is " + templateUpdater.getNumberOfRecord());
 //            if (percentage > TopologyConfig.rebuildTemplatePercentage) {
-//                indexedData = bulkLoader.createTreeWithBulkLoading();
+//                indexedData = templateUpdater.createTreeWithBulkLoading();
 //                copyOfIndexedData = indexedData;
 //                System.out.println("New template has been built");
 //            }// else {
@@ -265,11 +265,10 @@ public class IndexerBolt extends BaseRichBolt {
          //   indexedData.printBtree();
          //   sm.resetCounter();
          //   indexedData.clearPayload();
-         //   percentage = bulkLoader.checkNewTree(indexedData, sm);
+         //   percentage = templateUpdater.checkNewTree(indexedData, sm);
          //   System.out.println("After rebuilt the tree, the insert failure is " + percentage);
             sm.resetCounter();
             tm.reset();
-            bulkLoader.resetRecord();
         //    System.out.println("After rebuild the BTree: ");
          //   List keysAfterRebuild = indexedData.printBtree();
           //  for ()
@@ -280,7 +279,7 @@ public class IndexerBolt extends BaseRichBolt {
         //    dumplicateKeys = 0;
             Pair pair = new Pair(indexValue, offset);
 //            queue.put(pair);
-//            bulkLoader.addRecord(indexValue, offset);
+//            templateUpdater.addRecord(indexValue, offset);
             ++chunkId;
             es.submit(new IndexerThread(indexedData,indexValue,offset));
         }
@@ -296,7 +295,7 @@ public class IndexerBolt extends BaseRichBolt {
 
     private void createNewTree(double percentage) {
         if (percentage > TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
-            indexedData = bulkLoader.createTreeWithBulkLoading(indexedData);
+            indexedData = templateUpdater.createTreeWithBulkLoading(indexedData);
         }
     }
 

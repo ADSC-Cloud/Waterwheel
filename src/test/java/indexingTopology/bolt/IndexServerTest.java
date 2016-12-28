@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class IndexServerTest {
 
-    private final static int numberOfIndexingThreads = 1;
+    private final static int numberOfIndexingThreads = 3;
 
     private BufferedReader bufferedReader;
 
@@ -53,7 +53,7 @@ public class IndexServerTest {
 
     private long totalTime;
 
-    private static BulkLoader bulkLoader;
+    private static TemplateUpdater templateUpdater;
 
     private Double minIndexValue = Double.MAX_VALUE;
     private Double maxIndexValue = Double.MIN_VALUE;
@@ -82,7 +82,7 @@ public class IndexServerTest {
         this.tm = TimingModule.createNew();
         this.sm = SplitCounterModule.createNew();
         this.chunk = MemChunk.createNew(bytesLimit);
-        this.bulkLoader = new BulkLoader(btreeOrder, tm, sm);
+        this.templateUpdater = new TemplateUpdater(btreeOrder, tm, sm);
         indexedData = new BTree(btreeOrder, tm, sm);
     }
 
@@ -183,14 +183,7 @@ public class IndexServerTest {
                         byte[] serializedTree = SerializationHelper.serializeTree(indexedData);
                         chunk.write(serializedTree);
 
-                        createNewTemplate(percentage);
                         indexedData.clearPayload();
-                        if (!isTreeBuilt) {
-                            indexedData.clearPayload();
-                        } else {
-                            isTreeBuilt = false;
-                            indexedData.setTemplateMode();
-                        }
 
                         FileSystemHandler fileSystemHandler = null;
                         String fileName = null;
@@ -240,6 +233,7 @@ public class IndexServerTest {
         AtomicLong executed;
         Long startTime;
         AtomicInteger threadIndex = new AtomicInteger(0);
+        AtomicBoolean isCreatingTemplate;
 
         Object syn = new Object();
 
@@ -253,6 +247,8 @@ public class IndexServerTest {
                 }
                 if (executed == null)
                     executed = new AtomicLong(0);
+                if (isCreatingTemplate == null)
+                    isCreatingTemplate = new AtomicBoolean(false);
             }
             long localCount = 0;
             ArrayList<Pair> drainer = new ArrayList<Pair>();
@@ -262,6 +258,10 @@ public class IndexServerTest {
 //                        if (pair == null) {
 //                        if(!first)
 //                            Thread.sleep(100);
+                    if (isCreatingTemplate.get() == true) {
+                        continue;
+                    }
+
                     queue.drainTo(drainer,256);
 //                        Pair pair = queue.poll(10, TimeUnit.MILLISECONDS);
                     if(drainer.size() == 0) {
@@ -280,7 +280,21 @@ public class IndexServerTest {
 //                            indexedData.insert(indexValue, offset);
                     }
                     executed.getAndAdd(drainer.size());
+
                     drainer.clear();
+
+                    if (executed.get() >= TopologyConfig.NUM_TUPLES_TO_CHECK_TEMPLATE) {
+                        if (indexedData.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
+                            if (first) {
+                                isCreatingTemplate.set(true);
+                                createNewTemplate();
+                                isCreatingTemplate.set(false);
+                                executed.set(0L);
+                            }
+//                            System.out.println(Thread.currentThread().getName() + " " + drainer.size());
+                        }
+                    }
+
                 } catch (UnsupportedGenericException e) {
                     e.printStackTrace();
                 } catch (Exception e) {
@@ -295,12 +309,9 @@ public class IndexServerTest {
         }
     }
 
-    private static void createNewTemplate(double percentage) {
-        if (percentage > TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
-            System.out.println("New tree has been built");
-            isTreeBuilt = true;
-            indexedData = bulkLoader.createTreeWithBulkLoading(indexedData);
-        }
+    private static void createNewTemplate() {
+        indexedData = templateUpdater.createTreeWithBulkLoading(indexedData);
+        System.out.println("template has been built");
     }
 
 

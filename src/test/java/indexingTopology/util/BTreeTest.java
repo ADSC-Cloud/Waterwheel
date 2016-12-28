@@ -75,8 +75,6 @@ public class BTreeTest {
             bTree.insert(key, bytes);
         }
 
-        bTree.printBtree();
-
         Collections.sort(keys);
 
         BTreeLeafNode leaf = bTree.getLeftMostLeaf();

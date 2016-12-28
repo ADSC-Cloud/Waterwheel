@@ -1,5 +1,6 @@
 package indexingTopology.bolt;
 
+import org.apache.storm.Config;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -55,7 +56,7 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
 
     private long totalTime;
 
-    private BulkLoader bulkLoader;
+    private TemplateUpdater templateUpdater;
 
     private Double minIndexValue = Double.MAX_VALUE;
     private Double maxIndexValue = Double.MIN_VALUE;
@@ -103,7 +104,7 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
 
         this.isTreeBuilt = false;
 
-        this.bulkLoader = new BulkLoader(btreeOrder, tm, sm);
+        this.templateUpdater = new TemplateUpdater(btreeOrder, tm, sm);
 
         this.queue = new LinkedBlockingQueue<Pair>(1024);
         this.outputFile = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/query_latency_with_nothing_4");
@@ -195,13 +196,7 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
                     byte[] serializedTree = SerializationHelper.serializeTree(indexedData);
                     chunk.write(serializedTree);
 
-                    createNewTemplate(percentage);
-                    if (!isTreeBuilt) {
-                        indexedData.clearPayload();
-                    } else {
-                        isTreeBuilt = false;
-                        indexedData.setTemplateMode();
-                    }
+                    indexedData.clearPayload();
 
                     FileSystemHandler fileSystemHandler = null;
                     String fileName = null;
@@ -284,12 +279,9 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
     }
 
 
-    private void createNewTemplate(double percentage) {
-        if (percentage > TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
-            System.out.println("New tree has been built");
-            isTreeBuilt = true;
-            indexedData = bulkLoader.createTreeWithBulkLoading(indexedData);
-        }
+    private void createNewTemplate() {
+        indexedData = templateUpdater.createTreeWithBulkLoading(indexedData);
+        indexedData.clearPayload();
     }
 
 
@@ -336,6 +328,7 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
 //                        if(!first)
 //                            Thread.sleep(100);
                     queue.drainTo(drainer,256);
+
 //                        Pair pair = queue.poll(10, TimeUnit.MILLISECONDS);
                     if(drainer.size() == 0) {
                         if(inputExhausted)
@@ -343,12 +336,25 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
                         else
                             continue;
                     }
+
+                    localCount += drainer.size();
+
+
                     for(Pair pair: drainer) {
                         localCount++;
                         final Double indexValue = (Double) pair.getKey();
                         final byte[] serializedTuple = (byte[]) pair.getValue();
                         indexedData.insert(indexValue, serializedTuple);
                     }
+
+
+                    if (localCount > TopologyConfig.NUM_TUPLES_TO_CHECK_TEMPLATE) {
+                        if (indexedData.getSkewnessFactor() > TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
+                            createNewTemplate();
+                        }
+                    }
+
+
                     executed.getAndAdd(drainer.size());
                     drainer.clear();
                 } catch (UnsupportedGenericException e) {

@@ -118,6 +118,7 @@ public class TexiTrajectoryTopology {
         Config conf = new Config();
         conf.setDebug(false);
         conf.setNumWorkers(44);
+        
 
 //        LocalCluster cluster = new LocalCluster();
 //        LocalCluster cluster = new LocalCluster();

@@ -15,7 +15,7 @@ import java.util.concurrent.Semaphore;
 /**
  * Created by acelzj on 7/15/16.
  */
-public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
+public class TemplateUpdater<TKey extends Comparable<TKey>, TValue> {
 
     private int order;
 
@@ -27,27 +27,19 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
 
     private SplitCounterModule sm;
 
-    private int numberOfLeaves;
-
     private BytesCounter counter;
 
-    private boolean templateMode;
 
-
-    public BulkLoader(int btreeOrder, TimingModule tm, SplitCounterModule sm) {
+    public TemplateUpdater(int btreeOrder, TimingModule tm, SplitCounterModule sm) {
         order = btreeOrder;
         this.tm = tm;
         this.sm = sm;
-        templateMode = false;
 //        record = new TreeMap<TKey, TValue>();
         record = new ArrayList<Pair<TKey, TValue>>();
         counter = new BytesCounter();
         counter.increaseHeightCount();
     }
 
-    public synchronized void addRecord(Pair pair) {
-        record.add(pair);
-    }
 
     public synchronized List<TValue> pointSearch(TKey key) {
         List<TValue> list = new ArrayList<TValue>();
@@ -57,13 +49,6 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
             }
         }
         return list;
-    }
-
-    public int getNumberOfRecord() {
-        return record.size();
-    }
-    public void resetRecord() {
-        record.clear();
     }
 
     public LinkedList<BTreeLeafNode> createLeaves() {
@@ -200,6 +185,7 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
             currentLeave = (BTreeLeafNode) currentLeave.rightSibling;
         }
         child = new BTreeLeafNode(order, counter);
+        assert prechild != null;
         setSiblingsOfChild(prechild, child);
         node.setChild(node.getKeyCount(), child);
         innerNodes.add(node);
@@ -249,7 +235,29 @@ public class BulkLoader <TKey extends Comparable<TKey>, TValue> {
             }
         }
         bt.setRoot(root);
+        bt.setTemplateMode();
+        try {
+            insertKeysToTemplate(bt, oldBTree);
+        } catch (UnsupportedGenericException e) {
+            e.printStackTrace();
+        }
         return bt;
+    }
+
+    private void insertKeysToTemplate(BTree template, BTree oldBTree) throws UnsupportedGenericException {
+        BTreeLeafNode currentLeave = oldBTree.getLeftMostLeaf();
+        while (currentLeave != null) {
+            List<TKey> keys = currentLeave.getKeys();
+
+            for (TKey key : keys) {
+                List<byte[]> tuples = currentLeave.searchAndGetTuples(key);
+                for (int i = 0; i < tuples.size(); ++i) {
+                    template.insert(key, tuples.get(i));
+                }
+            }
+
+            currentLeave = (BTreeLeafNode) currentLeave.rightSibling;
+        }
     }
 
 }

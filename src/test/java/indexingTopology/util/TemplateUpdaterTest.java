@@ -17,7 +17,7 @@ import static org.junit.Assert.*;
 /**
  * Created by acelzj on 12/21/16.
  */
-public class BulkLoaderTest {
+public class TemplateUpdaterTest {
 
     private List<String> fieldNames = new ArrayList<String>(Arrays.asList("user_id", "id_1", "id_2", "ts_epoch",
             "date", "time", "latitude", "longitude"));
@@ -28,9 +28,9 @@ public class BulkLoaderTest {
     @Test
     public void testCreateTreeWithBulkLoading() throws Exception, UnsupportedGenericException {
 
-        int numberOfTuples = 1024;
+        int numberOfTuples = 2048;
 
-        int order = 4;
+        int order = 128;
 
         BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
 
@@ -56,20 +56,9 @@ public class BulkLoaderTest {
             bTree.insert(key, bytes);
         }
 
+        TemplateUpdater templateUpdater = new TemplateUpdater(4, TimingModule.createNew(), SplitCounterModule.createNew());
 
-        BulkLoader bulkLoader = new BulkLoader(4, TimingModule.createNew(), SplitCounterModule.createNew());
-
-        BTree newTree = bulkLoader.createTreeWithBulkLoading(bTree);
-
-        for (Integer key : keys) {
-            List<Double> values = new ArrayList<>();
-            values.add((double) key);
-            for (int j = 0; j < fieldNames.size() + 1; ++j) {
-                values.add((double) j);
-            }
-            byte[] bytes = serializeIndexValue(values);
-            newTree.insert(key, bytes);
-        }
+        BTree newTree = templateUpdater.createTreeWithBulkLoading(bTree);
 
         for (Integer key : keys) {
             assertEquals(1, newTree.searchTuples(key).size());

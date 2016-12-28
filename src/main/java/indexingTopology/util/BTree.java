@@ -540,5 +540,36 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		return offsets;
 	}
 
+	public double getSkewnessFactor() {
+		BTreeLeafNode leaf = getLeftMostLeaf();
+
+		int maxNumberOfTuples = Integer.MIN_VALUE;
+
+		int sum = 0;
+
+		int numberOfLeaves = 0;
+
+		while (leaf != null) {
+
+			int numberOfTuples = leaf.getTuples().size();
+
+			if (numberOfTuples > maxNumberOfTuples) {
+				maxNumberOfTuples = numberOfTuples;
+			}
+
+			sum += numberOfTuples;
+
+			++numberOfLeaves;
+
+			leaf = (BTreeLeafNode) leaf.rightSibling;
+		}
+
+		double averageNumberOfTuples = sum / (double) numberOfLeaves;
+
+//		System.out.println("The skewness factor is " + (maxNumberOfTuples - averageNumberOfTuples) / averageNumberOfTuples);
+
+		return (maxNumberOfTuples - averageNumberOfTuples) / averageNumberOfTuples;
+	}
+
 }
 
