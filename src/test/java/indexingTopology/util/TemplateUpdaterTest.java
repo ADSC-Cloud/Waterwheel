@@ -56,7 +56,7 @@ public class TemplateUpdaterTest {
             bTree.insert(key, bytes);
         }
 
-        TemplateUpdater templateUpdater = new TemplateUpdater(4, TimingModule.createNew(), SplitCounterModule.createNew());
+        TemplateUpdater templateUpdater = new TemplateUpdater(order, TimingModule.createNew(), SplitCounterModule.createNew());
 
         BTree newTree = templateUpdater.createTreeWithBulkLoading(bTree);
 

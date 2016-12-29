@@ -263,6 +263,26 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
         ++keyCount;
     }
 
+    public void insertKeyValueInTemplateUpdater(TKey key, byte[] serilizedTuple) throws UnsupportedGenericException{
+        int index = searchIndex(key);
+        if (index < this.keys.size() && this.getKey(index).compareTo(key) == 0) {
+            this.tuples.get(index).add(serilizedTuple);
+            addBytesCount(serilizedTuple.length);
+            this.offsets.get(index).add(serilizedTuple.length);
+            addBytesCount(Integer.SIZE / Byte.SIZE);
+        } else {
+            this.keys.add(index, key);
+            addBytesCount(UtilGenerics.sizeOf(key.getClass()));
+            this.tuples.add(index, new ArrayList<byte[]>());
+            this.tuples.get(index).add(serilizedTuple);
+            addBytesCount(serilizedTuple.length);
+            this.offsets.add(index, new ArrayList<Integer>());
+            this.offsets.get(index).add(serilizedTuple.length);
+            addBytesCount(Integer.SIZE / Byte.SIZE);
+            ++this.keyCount;
+        }
+    }
+
 
     /**
 	 * When splits a leaf node, the middle key is kept on new node and be pushed to parent node.

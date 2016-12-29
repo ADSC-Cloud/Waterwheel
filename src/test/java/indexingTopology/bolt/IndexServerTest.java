@@ -161,6 +161,7 @@ public class IndexServerTest {
                     Values values = new Values((double) car.id, (double) ZCode,
                             new String(new char[payloadSize]), timestamp);
                     byte[] serializedTuples = serializeValues(values);
+
                     ++numTuples;
                     if (numTuples < TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK) {
                         queue.put(new Pair((double) ZCode, serializedTuples));
@@ -181,6 +182,7 @@ public class IndexServerTest {
                         chunk.changeToStartPosition();
 
                         byte[] serializedTree = SerializationHelper.serializeTree(indexedData);
+
                         chunk.write(serializedTree);
 
                         indexedData.clearPayload();
@@ -231,9 +233,9 @@ public class IndexServerTest {
         }
 
         AtomicLong executed;
+        AtomicLong totalExecuted;
         Long startTime;
         AtomicInteger threadIndex = new AtomicInteger(0);
-        AtomicBoolean isCreatingTemplate;
 
         Object syn = new Object();
 
@@ -247,8 +249,9 @@ public class IndexServerTest {
                 }
                 if (executed == null)
                     executed = new AtomicLong(0);
-                if (isCreatingTemplate == null)
-                    isCreatingTemplate = new AtomicBoolean(false);
+
+                if (totalExecuted == null)
+                    totalExecuted = new AtomicLong(0);
             }
             long localCount = 0;
             ArrayList<Pair> drainer = new ArrayList<Pair>();
@@ -258,42 +261,47 @@ public class IndexServerTest {
 //                        if (pair == null) {
 //                        if(!first)
 //                            Thread.sleep(100);
-                    if (isCreatingTemplate.get() == true) {
-                        continue;
-                    }
+                    synchronized (syn) {
 
-                    queue.drainTo(drainer,256);
+                        queue.drainTo(drainer, 256);
 //                        Pair pair = queue.poll(10, TimeUnit.MILLISECONDS);
-                    if(drainer.size() == 0) {
-                        if(inputExhausted)
-                            break;
-                        else
-                            continue;
-                    }
-                    for(Pair pair: drainer) {
-                        localCount++;
-                        final Double indexValue = (Double) pair.getKey();
-//                            final Integer offset = (Integer) pair.getValue();
-                        final byte[] serializedTuple = (byte[]) pair.getValue();
-//                            System.out.println("insert");
-                        indexedData.insert(indexValue, serializedTuple);
-//                            indexedData.insert(indexValue, offset);
-                    }
-                    executed.getAndAdd(drainer.size());
-
-                    drainer.clear();
-
-                    if (executed.get() >= TopologyConfig.NUM_TUPLES_TO_CHECK_TEMPLATE) {
-                        if (indexedData.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
-                            if (first) {
-                                isCreatingTemplate.set(true);
-                                createNewTemplate();
-                                isCreatingTemplate.set(false);
-                                executed.set(0L);
-                            }
-//                            System.out.println(Thread.currentThread().getName() + " " + drainer.size());
+                        if (drainer.size() == 0) {
+                            if (inputExhausted)
+                                break;
+                            else
+                                continue;
                         }
+
+                        for (Pair pair : drainer) {
+                            localCount++;
+                            final Double indexValue = (Double) pair.getKey();
+//                            final Integer offset = (Integer) pair.getValue();
+                            final byte[] serializedTuple = (byte[]) pair.getValue();
+//                            System.out.println("insert");
+                            indexedData.insert(indexValue, serializedTuple);
+//                            indexedData.insert(indexValue, offset);
+                        }
+
+                        if (executed.addAndGet(drainer.size()) >= TopologyConfig.NUM_TUPLES_TO_CHECK_TEMPLATE) {
+                            if (indexedData.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
+                                if (first) {
+                                    System.out.println(indexedData.getSkewnessFactor());
+                                    Long start = System.currentTimeMillis();
+                                    createNewTemplate();
+                                    syn.notifyAll();
+                                    System.out.println("rebuild time " + (System.currentTimeMillis() - start));
+                                    executed.set(0L);
+                                } else {
+                                    syn.wait();
+                                }
+                            }
+                        }
+
+                        totalExecuted.getAndAdd(drainer.size());
+
+                        drainer.clear();
                     }
+
 
                 } catch (UnsupportedGenericException e) {
                     e.printStackTrace();
@@ -302,7 +310,7 @@ public class IndexServerTest {
                 }
             }
             if(first) {
-                System.out.println(String.format("Index throughput = %f tuple / s", executed.get() / (double) (System.currentTimeMillis() - startTime) * 1000));
+                System.out.println(String.format("Index throughput = %f tuple / s", totalExecuted.get() / (double) (System.currentTimeMillis() - startTime) * 1000));
                 System.out.println("Thread execution time: " + (System.currentTimeMillis() - startTime) + " ms.");
             }
 //                System.out.println("Indexing thread " + Thread.currentThread().getId() + " is terminated with " + localCount + " tuples processed!");
@@ -311,7 +319,6 @@ public class IndexServerTest {
 
     private static void createNewTemplate() {
         indexedData = templateUpdater.createTreeWithBulkLoading(indexedData);
-        System.out.println("template has been built");
     }
 
 
@@ -338,5 +345,32 @@ public class IndexServerTest {
         return bos.toByteArray();
     }
 
+    public static Values deserialize(byte [] b) throws IOException {
+        Values values = new Values();
+        int offset = 0;
+        for (int i = 0; i < valueTypes.size(); i++) {
+            if (valueTypes.get(i).equals(Double.class)) {
+                int len = Double.SIZE/Byte.SIZE;
+                double val = ByteBuffer.wrap(b, offset, len).getDouble();
+                values.add(val);
+                offset += len;
+            } else if (valueTypes.get(i).equals(String.class)) {
+                int len = Integer.SIZE/Byte.SIZE;
+                int sizeHeader = ByteBuffer.wrap(b, offset, len).getInt();
+                offset += len;
+                len = sizeHeader;
+                String val = new String(b, offset, len);
+                values.add(val);
+                offset += len;
+            } else {
+                throw new IOException("Only classes supported till now are string and double");
+            }
+        }
+
+        int len = Long.SIZE / Byte.SIZE;
+        Long val = ByteBuffer.wrap(b, offset, len).getLong();
+        values.add(val);
+        return values;
+    }
 
 }

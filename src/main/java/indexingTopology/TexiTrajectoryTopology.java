@@ -78,15 +78,15 @@ public class TexiTrajectoryTopology {
         boolean enableLoadBalance = false;
 
 
-        builder.setSpout(TupleGenerator, new TexiTrajectoryGenerator(schema, generator, payloadSize, city), 11);
+        builder.setSpout(TupleGenerator, new TexiTrajectoryGenerator(schema, generator, payloadSize, city), 1);
 
-        builder.setBolt(RangeQueryDispatcherBolt, new RangeQueryDispatcherBolt(schema, lowerBound, upperBound, enableLoadBalance), 11)
+        builder.setBolt(RangeQueryDispatcherBolt, new RangeQueryDispatcherBolt(schema, lowerBound, upperBound, enableLoadBalance), 1)
                 .shuffleGrouping(TupleGenerator, Streams.IndexStream)
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 
 
-        builder.setBolt(IndexerBolt, new NormalDistributionIndexAndRangeQueryBolt(schema.getIndexField(), schema, TopologyConfig.BTREE_OREDER, 65000000), 88)
+        builder.setBolt(IndexerBolt, new NormalDistributionIndexAndRangeQueryBolt(schema.getIndexField(), schema, TopologyConfig.BTREE_OREDER, 65000000), 2)
 
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream); // direct grouping should be used.
@@ -94,30 +94,30 @@ public class TexiTrajectoryTopology {
 
         builder.setBolt(RangeQueryDecompositionBolt, new RangeQueryDeCompositionBolt(lowerBound, upperBound), 1)
                 .shuffleGrouping(ResultMergeBolt, Streams.NewQueryStream)
-                .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSubQueryFinishStream)
+//                .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSubQueryFinishStream)
                 .shuffleGrouping(MetadataServer, Streams.FileInformationUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.TimeStampUpdateStream);
 
-        builder.setBolt(RangeQueryChunkScannerBolt, new RangeQueryChunkScannerBolt(), 1)
+        builder.setBolt(RangeQueryChunkScannerBolt, new RangeQueryChunkScannerBolt(), 4)
 //                .fieldsGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream, new Fields("fileName"));
-                .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream);
-//                .shuffleGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream);
+//                .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream);
+                .shuffleGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream);
 
-        builder.setBolt(ResultMergeBolt, new RangeQueryResultMergeBolt(schema)).setNumTasks(1)
+        builder.setBolt(ResultMergeBolt, new RangeQueryResultMergeBolt(schema), 1)
                 .allGrouping(RangeQueryChunkScannerBolt, Streams.FileSystemQueryStream)
                 .allGrouping(IndexerBolt, Streams.BPlusTreeQueryStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryInformationStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryInformationStream);
 
-        builder.setBolt(MetadataServer, new MetadataServer(lowerBound, upperBound)).setNumTasks(1)
+        builder.setBolt(MetadataServer, new MetadataServer(lowerBound, upperBound), 1)
                 .shuffleGrouping(RangeQueryDispatcherBolt, Streams.StatisticsReportStream)
                 .shuffleGrouping(IndexerBolt, Streams.TimeStampUpdateStream)
                 .shuffleGrouping(IndexerBolt, Streams.FileInformationUpdateStream);
 
         Config conf = new Config();
         conf.setDebug(false);
-        conf.setNumWorkers(44);
+        conf.setNumWorkers(1);
         
 
 //        LocalCluster cluster = new LocalCluster();

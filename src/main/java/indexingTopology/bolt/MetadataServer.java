@@ -88,8 +88,6 @@ public class MetadataServer extends BaseRichBolt {
 
         if (tuple.getSourceStreamId().equals(Streams.StatisticsReportStream)) {
 
-            System.out.println(tuple.getSourceStreamId());
-
             Histogram histogram = (Histogram) tuple.getValue(0);
 
             if (numberOfStaticsReceived < numberOfDispatchers) {
@@ -156,9 +154,7 @@ public class MetadataServer extends BaseRichBolt {
 //        }
 
         Long sum = getTotalWorkLoad(histogram);
-        System.out.println("sum " + sum);
         Long maxWorkload = getMaxWorkLoad(histogram);
-        System.out.println("max " + maxWorkload);
         double averageLoad = sum / (double) numberOfPartitions;
 
         return maxWorkload / averageLoad;

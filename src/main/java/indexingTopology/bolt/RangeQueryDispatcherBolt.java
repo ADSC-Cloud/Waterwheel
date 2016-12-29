@@ -93,8 +93,6 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
             balancedPartition.setIntervalToPartitionMapping(intervalToPartitionMapping);
         } else if (tuple.getSourceStreamId().equals(Streams.StaticsRequestStream)){
 
-            System.out.println(balancedPartition.getIntervalDistribution().getHistogram());
-
             collector.emit(Streams.StatisticsReportStream,
                     new Values(new Histogram(balancedPartition.getIntervalDistribution().getHistogram())));
 

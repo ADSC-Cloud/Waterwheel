@@ -245,6 +245,9 @@ public class TemplateUpdater<TKey extends Comparable<TKey>, TValue> {
     }
 
     private void insertKeysToTemplate(BTree template, BTree oldBTree) throws UnsupportedGenericException {
+
+//        Long start = System.currentTimeMillis();
+
         BTreeLeafNode currentLeave = oldBTree.getLeftMostLeaf();
         while (currentLeave != null) {
             List<TKey> keys = currentLeave.getKeys();
@@ -252,12 +255,14 @@ public class TemplateUpdater<TKey extends Comparable<TKey>, TValue> {
             for (TKey key : keys) {
                 List<byte[]> tuples = currentLeave.searchAndGetTuples(key);
                 for (int i = 0; i < tuples.size(); ++i) {
-                    template.insert(key, tuples.get(i));
+                    template.insertInTemplateUpdater(key, tuples.get(i));
                 }
             }
 
             currentLeave = (BTreeLeafNode) currentLeave.rightSibling;
         }
+
+//        System.out.println("Insertion time: " + (System.currentTimeMillis() - start));
     }
 
 }

@@ -154,6 +154,9 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
     public void execute(Tuple tuple) {
         if (tuple.getSourceStreamId().equals(Streams.IndexStream)) {
             Double indexValue = tuple.getDoubleByField(indexField);
+            Double id = tuple.getDouble(0);
+            String s = tuple.getString(2);
+
             Long timeStamp = tuple.getLong(schema.getNumberOfFileds());
 //            Double indexValue = tuple.getDouble(0);
 //            System.out.println("The stream is " + NormalDistributionIndexingTopology.IndexStream);
@@ -177,6 +180,7 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
                     }
 
                     byte[] serializedTuple = schema.serializeTuple(tuple);
+
                     Pair pair = new Pair(indexValue, serializedTuple);
                     queue.put(pair);
 

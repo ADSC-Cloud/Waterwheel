@@ -71,43 +71,43 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
 
         Double upperBound = 1000.0;
 
-        boolean enableLoadBalance = true;
+        boolean enableLoadBalance = false;
 
 
         TopologyConfig.dataDir = "/home/acelzj";
         TopologyConfig.HDFSFlag = false;
 
-        builder.setSpout(TupleGenerator, new NormalDistributionGenerator(schema), 1).setNumTasks(1);
+        builder.setSpout(TupleGenerator, new NormalDistributionGenerator(schema), 1);
 
-        builder.setBolt(RangeQueryDispatcherBolt, new RangeQueryDispatcherBolt(schema, lowerBound, upperBound, enableLoadBalance)).setNumTasks(1)
+        builder.setBolt(RangeQueryDispatcherBolt, new RangeQueryDispatcherBolt(schema, lowerBound, upperBound, enableLoadBalance))
                 .shuffleGrouping(TupleGenerator, Streams.IndexStream)
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 
-        builder.setBolt(IndexerBolt, new NormalDistributionIndexAndRangeQueryBolt("user_id", schema, TopologyConfig.BTREE_OREDER, 65000000),4)
+        builder.setBolt(IndexerBolt, new NormalDistributionIndexAndRangeQueryBolt("user_id", schema, TopologyConfig.BTREE_OREDER, 65000000),2)
                 .setNumTasks(1)
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream);
 
-        builder.setBolt(RangeQueryDecompositionBolt, new RangeQueryDeCompositionBolt(lowerBound, upperBound)).setNumTasks(1)
+        builder.setBolt(RangeQueryDecompositionBolt, new RangeQueryDeCompositionBolt(lowerBound, upperBound), 1)
                 .shuffleGrouping(ResultMergeBolt, Streams.NewQueryStream)
                 .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSubQueryFinishStream)
                 .shuffleGrouping(MetadataServer, Streams.FileInformationUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.TimeStampUpdateStream);
 
-        builder.setBolt(RangeQueryChunkScannerBolt, new RangeQueryChunkScannerBolt(), 2).setNumTasks(1)
+        builder.setBolt(RangeQueryChunkScannerBolt, new RangeQueryChunkScannerBolt(), 4)
 //                .fieldsGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream, new Fields("fileName"));
                 .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream);
 //                .shuffleGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream);
 
-        builder.setBolt(ResultMergeBolt, new RangeQueryResultMergeBolt(schema)).setNumTasks(1)
+        builder.setBolt(ResultMergeBolt, new RangeQueryResultMergeBolt(schema))
                 .allGrouping(RangeQueryChunkScannerBolt, Streams.FileSystemQueryStream)
                 .allGrouping(IndexerBolt, Streams.BPlusTreeQueryStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryInformationStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryInformationStream);
 
-        builder.setBolt(MetadataServer, new MetadataServer(lowerBound, upperBound)).setNumTasks(1)
+        builder.setBolt(MetadataServer, new MetadataServer(lowerBound, upperBound))
                 .shuffleGrouping(RangeQueryDispatcherBolt, Streams.StatisticsReportStream)
                 .shuffleGrouping(IndexerBolt, Streams.TimeStampUpdateStream)
                 .shuffleGrouping(IndexerBolt, Streams.FileInformationUpdateStream);
@@ -115,21 +115,13 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
         Config conf = new Config();
         conf.setNumWorkers(1);
         conf.setDebug(false);
-        conf.setMaxTaskParallelism(4);
+        conf.setMaxTaskParallelism(1);
         conf.put(Constants.HDFS_CORE_SITE.str, "/Users/parijatmazumdar" +
                 "/Desktop/thesis/hadoop-2.7.1/etc/hadoop/core-site.xml");
         conf.put(Constants.HDFS_HDFS_SITE.str,"/Users/parijatmazumdar/" +
                 "Desktop/thesis/hadoop-2.7.1/etc/hadoop/hdfs-site.xml");
 
-//        LocalCluster cluster = new LocalCluster();
-//        LocalCluster cluster = new LocalCluster();
-//        cluster.submitTopology("generatorTest", conf, builder.createTopology());
         StormSubmitter.submitTopologyWithProgressBar(args[0], conf, builder.createTopology());
-//        BufferedReader in=new BufferedReader(new InputStreamReader(System.in));
-//        System.out.println("Type anything to stop the cluster");
-//        in.readLine();
-        //   cluster.shutdown();
-        //    cluster.shutdown();
     }
 
 }

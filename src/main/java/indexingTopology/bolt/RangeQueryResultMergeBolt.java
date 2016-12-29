@@ -164,8 +164,7 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
     private void sendNewQueryPermit(Long queryId) {
         FileScanMetrics metrics = queryIdToFileScanMetrics.get(queryId);
         int numberOfFilesToScan = queryIdToNumberOfFilesToScan.get(queryId);
-        collector.emit(Streams.NewQueryStream,
-                new Values(queryId, new String("New query can be executed"),
+        collector.emit(Streams.NewQueryStream, new Values(queryId, new String("New query can be executed"),
                         metrics, numberOfFilesToScan));
     }
 

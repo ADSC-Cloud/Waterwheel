@@ -34,6 +34,18 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
 
     private transient LRUCache<CacheMappingKey, CacheUnit> cacheMapping;
 
+
+    Long startTime;
+
+    Long timeCostOfReadFile;
+
+    Long timeCostOfSearching;
+
+    Long timeCostOfDeserializationATree;
+
+    Long timeCostOfDeserializationALeaf;
+
+
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
         bTreeOder = 4;
@@ -58,17 +70,13 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
 
         Long startTime = System.currentTimeMillis();
 
-        Long startTimeOfReadFile;
-        Long timeCostOfReadFile = ((long) 0);
+        timeCostOfReadFile = ((long) 0);
 
-        BytesCounter counter = new BytesCounter();
+        timeCostOfSearching = ((long) 0);
 
+        timeCostOfDeserializationATree = ((long) 0);
 
-        Long timeCostOfSearching = ((long) 0);
-
-        Long timeCostOfDeserializationATree = ((long) 0);
-
-        Long timeCostOfDeserializationALeaf = ((long) 0);
+        timeCostOfDeserializationALeaf = ((long) 0);
 
         try {
             FileSystemHandler fileSystemHandler = null;
@@ -127,7 +135,7 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
             metrics.setSearchTime(timeCostOfSearching);
             collector.emit(Streams.FileSystemQueryStream, new Values(queryId, serializedTuples, metrics));
 
-            collector.emit(Streams.FileSubQueryFinishStream, new Values("finished"));
+//            collector.emit(Streams.FileSubQueryFinishStream, new Values("finished"));
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             } catch (IOException e) {
@@ -161,24 +169,25 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
     }
 
     private BTree getTemplateFromExternalStorage(FileSystemHandler fileSystemHandler, String fileName) {
-//        startTimeOfReadFile = System.currentTimeMillis();
+        Long startTimeOfReadFile = System.currentTimeMillis();
         fileSystemHandler.openFile("/", fileName);
-//        timeCostOfReadFile = System.currentTimeMillis() - startTimeOfReadFile;
+        timeCostOfReadFile = System.currentTimeMillis() - startTimeOfReadFile;
 
         byte[] serializedTree = new byte[TopologyConfig.TEMPLATE_SIZE];
-//                DeserializationHelper deserializationHelper = new DeserializationHelper();
+
         BytesCounter counter = new BytesCounter();
 
-//        startTimeOfReadFile = System.currentTimeMillis();
+        startTimeOfReadFile = System.currentTimeMillis();
         fileSystemHandler.readBytesFromFile(0, serializedTree);
-//        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
+        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
 
-//        Long startTimeOfDeserializationATree = System.currentTimeMillis();
+        Long startTimeOfDeserializationATree = System.currentTimeMillis();
           BTree deserializedTree = DeserializationHelper.deserializeBTree(serializedTree, bTreeOder, counter);
-//        timeCostOfDeserializationATree = System.currentTimeMillis() - startTimeOfDeserializationATree;
-//        startTimeOfReadFile = System.currentTimeMillis();
+        timeCostOfDeserializationATree = System.currentTimeMillis() - startTimeOfDeserializationATree;
+
+        startTimeOfReadFile = System.currentTimeMillis();
         fileSystemHandler.closeFile();
-//        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
+        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
 
         return deserializedTree;
     }
@@ -199,8 +208,8 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
 
         for (int i = 0; i < tuples.size(); ++i) {
             Values deserializedTuple = DeserializationHelper.deserialize(tuples.get(i));
-            if (timestampLowerBound <= (Long) deserializedTuple.get(8) &&
-                    timestampUpperBound >= (Long) deserializedTuple.get(8)) {
+            if (timestampLowerBound <= (Long) deserializedTuple.get(3) &&
+                    timestampUpperBound >= (Long) deserializedTuple.get(3)) {
                 serializedTuples.add(tuples.get(i));
             }
         }
@@ -212,30 +221,37 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
     private BTreeLeafNode getLeafFromExternalStorage(FileSystemHandler fileSystemHandler, String fileName, int offset)
             throws IOException {
         byte[] lengthInByte = new byte[4];
-//        startTimeOfReadFile = System.currentTimeMillis();
+        Long startTimeOfReadFile = System.currentTimeMillis();
         fileSystemHandler.openFile("/", fileName);
-//        timeCostOfReadFile = System.currentTimeMillis() - startTimeOfReadFile;
-//                        startTimeOfReadFile = System.currentTimeMillis();
+        timeCostOfReadFile = System.currentTimeMillis() - startTimeOfReadFile;
+
+        startTimeOfReadFile = System.currentTimeMillis();
         fileSystemHandler.seek(offset);
-//                        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
-//        startTimeOfReadFile = System.currentTimeMillis();
+        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
+
+        startTimeOfReadFile = System.currentTimeMillis();
         fileSystemHandler.readBytesFromFile(offset, lengthInByte);
-//        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
+        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
+
         int lengthOfLeaveInBytes = ByteBuffer.wrap(lengthInByte, 0, 4).getInt();
         byte[] leafInByte = new byte[lengthOfLeaveInBytes];
-//                        startTimeOfReadFile = System.currentTimeMillis();
+
+        startTimeOfReadFile = System.currentTimeMillis();
         fileSystemHandler.seek(offset + 4);
-//                        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
+        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
 
 
-//        startTimeOfReadFile = System.currentTimeMillis();
+        startTimeOfReadFile = System.currentTimeMillis();
         fileSystemHandler.readBytesFromFile(offset + 4, leafInByte);
-//        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
-//        Long startTimeOfDeserializationALeaf = System.currentTimeMillis();
+        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
+
+        Long startTimeOfDeserializationALeaf = System.currentTimeMillis();
         BytesCounter counter = new BytesCounter();
         BTreeLeafNode leaf = DeserializationHelper.deserializeLeaf(leafInByte, bTreeOder, counter);
+        timeCostOfDeserializationALeaf += (System.currentTimeMillis() - startTimeOfDeserializationALeaf);
+
         fileSystemHandler.closeFile();
         return leaf;
-//        timeCostOfDeserializationALeaf += (System.currentTimeMillis() - startTimeOfDeserializationALeaf);
+
     }
 }

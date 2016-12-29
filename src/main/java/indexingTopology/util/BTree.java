@@ -128,9 +128,9 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		if (templateMode) {
 			leaf = findLeafNodeShouldContainKeyInTemplate(key);
 			leaf.insertKeyValueInTemplateMode(key, serializedTuple);
-			if (leaf.isOverflow()) {
-				sm.addCounter();
-			}
+//			if (leaf.isOverflow()) {
+//				sm.addCounter();
+//			}
 		} else {
 			leaf = findLeafNodeShouldContainKeyInUpdaterWithProtocolTwo(key);
 			ArrayList<BTreeNode> ancestors = new ArrayList<BTreeNode>();
@@ -149,6 +149,12 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 			ancestors.clear();
 		}
 	}
+
+	public void insertInTemplateUpdater(TKey key, byte[] serializedTuple) throws UnsupportedGenericException {
+        BTreeLeafNode<TKey, TValue> leaf = null;
+        leaf = findLeafNodeShouldContainKeyInTemplate(key);
+        leaf.insertKeyValueInTemplateUpdater(key, serializedTuple);
+    }
 
 	//The method below are changed to check the paper which is about concurrency in B tree
 

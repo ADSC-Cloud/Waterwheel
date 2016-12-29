@@ -4,7 +4,7 @@ package indexingTopology.Config;
  * Created by acelzj on 7/21/16.
  */
 public class TopologyConfig {
-    public static final double REBUILD_TEMPLATE_PERCENTAGE = 0.2;
+    public static final double REBUILD_TEMPLATE_PERCENTAGE = 0.5;
 
     public static final double TEMPLATE_OVERFLOW_PERCENTAGE = 1;
 
@@ -14,7 +14,7 @@ public class TopologyConfig {
 //    public static final int TEMPLATE_SIZE = 64000 ;
 
     public static final int NUMBER_TUPLES_OF_A_CHUNK = 600000;
-//    public static final int NUMBER_TUPLES_OF_A_CHUNK = 20000;
+//    public static final int NUMBER_TUPLES_OF_A_CHUNK = 200000;
 //    public static final int NUMBER_TUPLES_OF_A_CHUNK = 2000;
 
     public static final double KER_RANGE_COVERAGE = 0.2;
