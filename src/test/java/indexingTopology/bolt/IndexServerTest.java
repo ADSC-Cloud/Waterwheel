@@ -23,6 +23,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by acelzj on 12/23/16.
@@ -237,6 +239,8 @@ public class IndexServerTest {
         Long startTime;
         AtomicInteger threadIndex = new AtomicInteger(0);
 
+        Lock lock;
+
         Object syn = new Object();
 
         @Override
@@ -252,6 +256,9 @@ public class IndexServerTest {
 
                 if (totalExecuted == null)
                     totalExecuted = new AtomicLong(0);
+
+                if (lock == null)
+                    lock = new ReentrantLock();
             }
             long localCount = 0;
             ArrayList<Pair> drainer = new ArrayList<Pair>();
@@ -261,9 +268,29 @@ public class IndexServerTest {
 //                        if (pair == null) {
 //                        if(!first)
 //                            Thread.sleep(100);
-                    synchronized (syn) {
+                        try {
+                            lock.lock();
 
-                        queue.drainTo(drainer, 256);
+                            int size = queue.size() > 256 ? 256 : queue.size();
+
+                            if (executed.addAndGet(size) >= TopologyConfig.NUM_TUPLES_TO_CHECK_TEMPLATE) {
+                                if (indexedData.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
+//                                    System.out.println(indexedData.getSkewnessFactor());
+                                    Long start = System.currentTimeMillis();
+                                    createNewTemplate();
+//                                    System.out.println("rebuild time " + (System.currentTimeMillis() - start));
+                                    executed.set(0L);
+                                }
+                            }
+
+                            queue.drainTo(drainer, 256);
+                            executed.addAndGet(drainer.size());
+
+                        } finally {
+                            lock.unlock();
+                        }
+
+
 //                        Pair pair = queue.poll(10, TimeUnit.MILLISECONDS);
                         if (drainer.size() == 0) {
                             if (inputExhausted)
@@ -282,26 +309,9 @@ public class IndexServerTest {
 //                            indexedData.insert(indexValue, offset);
                         }
 
-                        if (executed.addAndGet(drainer.size()) >= TopologyConfig.NUM_TUPLES_TO_CHECK_TEMPLATE) {
-                            if (indexedData.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
-                                if (first) {
-                                    System.out.println(indexedData.getSkewnessFactor());
-                                    Long start = System.currentTimeMillis();
-                                    createNewTemplate();
-                                    syn.notifyAll();
-                                    System.out.println("rebuild time " + (System.currentTimeMillis() - start));
-                                    executed.set(0L);
-                                } else {
-                                    syn.wait();
-                                }
-                            }
-                        }
-
                         totalExecuted.getAndAdd(drainer.size());
 
                         drainer.clear();
-                    }
-
 
                 } catch (UnsupportedGenericException e) {
                     e.printStackTrace();
