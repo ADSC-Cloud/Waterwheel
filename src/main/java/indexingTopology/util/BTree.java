@@ -549,15 +549,15 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	public double getSkewnessFactor() {
 		BTreeLeafNode leaf = getLeftMostLeaf();
 
-		int maxNumberOfTuples = Integer.MIN_VALUE;
+		long maxNumberOfTuples = Long.MIN_VALUE;
 
-		int sum = 0;
+		long sum = 0;
 
-		int numberOfLeaves = 0;
+		long numberOfLeaves = 0;
 
 		while (leaf != null) {
 
-			int numberOfTuples = leaf.getTuples().size();
+			long numberOfTuples = leaf.getTupleCount();
 
 			if (numberOfTuples > maxNumberOfTuples) {
 				maxNumberOfTuples = numberOfTuples;

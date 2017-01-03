@@ -127,16 +127,14 @@ public class Indexer {
 
                         terminateIndexingThreads();
 
-                        long start = System.currentTimeMillis();
-
                         indexedData = templateUpdater.createTreeWithBulkLoading(indexedData);
 
-//                        System.out.println("Time used to update template " + (System.currentTimeMillis() - start));
-
-//                        System.out.println("New tree has been built");
-
+                        System.out.println("Time used to update template " + (System.currentTimeMillis() - start));
+//
+                        System.out.println("New tree has been built");
+//
                         executed.set(0L);
-
+//
                         createIndexingThread();
                     }
                 }
@@ -176,6 +174,8 @@ public class Indexer {
                     start = System.currentTimeMillis();
 
                     numTuples = 0;
+
+                    ++chunkId;
                 }
 
 //                try {
@@ -198,6 +198,8 @@ public class Indexer {
                 }
 
                 numTuples += drainer.size();
+
+                drainer.clear();
 
             }
         }

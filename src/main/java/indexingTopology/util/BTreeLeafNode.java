@@ -16,6 +16,7 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
 	protected ArrayList<ArrayList<byte []>> tuples;
 	protected ArrayList<ArrayList<Integer>> offsets;
 	protected int bytesCount;
+    private AtomicLong tupleCount;
 
 	public BTreeLeafNode(int order, BytesCounter counter) {
 		super(order,counter);
@@ -23,6 +24,7 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
 		this.values = new ArrayList<ArrayList<TValue>>(order + 1);
 		this.tuples = new ArrayList<ArrayList<byte []>>(order + 1);
 		this.offsets = new ArrayList<ArrayList<Integer>>(order + 1);
+		tupleCount = new AtomicLong(0);
 		bytesCount = 0;
 	}
 
@@ -203,6 +205,7 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
                 addBytesCount(Integer.SIZE / Byte.SIZE);
                 ++this.keyCount;
             }
+            tupleCount.incrementAndGet();
         } finally {
             releaseWriteLock();
         }
@@ -229,6 +232,8 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
             addBytesCount(Integer.SIZE / Byte.SIZE);
             ++this.keyCount;
         }
+
+        tupleCount.incrementAndGet();
 
         if (isOverflow()) {
             node = dealOverflow();
@@ -440,6 +445,8 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
         this.offsets.clear();
 
         this.keyCount = 0;
+
+        tupleCount.set(0);
 	}
 
 
@@ -691,6 +698,10 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
             }
         }
         return tuples;
+    }
+
+    public long getTupleCount() {
+        return tupleCount.get();
     }
 
 
