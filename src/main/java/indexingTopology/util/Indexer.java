@@ -152,6 +152,14 @@ public class Indexer {
 
                     FileSystemHandler fileSystemHandler = null;
                     String fileName = null;
+
+                    chunk.changeToLeaveNodesStartPosition();
+                    indexedData.writeLeavesIntoChunk(chunk);
+
+                    chunk.changeToStartPosition();
+                    byte[] serializedTree = SerializationHelper.serializeTree(indexedData);
+                    chunk.write(serializedTree);
+
                     try {
                         if (TopologyConfig.HDFSFlag) {
                             fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
