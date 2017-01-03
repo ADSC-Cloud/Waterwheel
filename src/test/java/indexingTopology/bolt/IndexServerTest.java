@@ -64,13 +64,15 @@ public class IndexServerTest {
     private Long maxTimeStamp = Long.MIN_VALUE;
 
 
-    private static ArrayBlockingQueue<Pair> queue;
+    private static ArrayBlockingQueue<Pair> inputQueue;
 
     private static BTree indexedData;
 
-    private static List<Thread> indexingThreads = new ArrayList<Thread>();
+//    private static List<Thread> indexingThreads = new ArrayList<Thread>();
 
-    private static IndexingRunnable indexingRunnable;
+//    private static IndexingRunnable indexingRunnable;
+
+    private static Indexer indexer;
 
     static List<String> fieldNames = new ArrayList<String>(Arrays.asList("id", "zcode", "payload"));
     static List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, String.class));
@@ -80,48 +82,19 @@ public class IndexServerTest {
         this.schema = schema;
         this.btreeOrder = btreeOrder;
         this.bytesLimit = bytesLimit;
-        this.queue = new ArrayBlockingQueue<Pair>(1024);
+        this.inputQueue = new ArrayBlockingQueue<Pair>(1024);
         this.tm = TimingModule.createNew();
         this.sm = SplitCounterModule.createNew();
         this.chunk = MemChunk.createNew(bytesLimit);
         this.templateUpdater = new TemplateUpdater(btreeOrder, tm, sm);
         indexedData = new BTree(btreeOrder, tm, sm);
+        indexer = new Indexer(inputQueue, indexedData, chunk);
     }
 
 
     private static void createGenerateThread() {
         Thread generateThread = new Thread(new GenerateRunnable());
         generateThread.start();
-    }
-
-    private static void createIndexingThread() {
-        createIndexingThread(numberOfIndexingThreads);
-    }
-
-    private static void createIndexingThread(int n) {
-        if(indexingRunnable == null) {
-            indexingRunnable = new IndexingRunnable();
-        }
-        for(int i = 0; i < n; i++) {
-            Thread indexThread = new Thread(indexingRunnable);
-            indexThread.start();
-            System.out.println(String.format("Thread %d is created!", indexThread.getId()));
-            indexingThreads.add(indexThread);
-        }
-    }
-
-    private static void terminateIndexingThreads() {
-        try {
-            indexingRunnable.setInputExhausted();
-            for (Thread thread : indexingThreads) {
-                thread.join();
-            }
-            indexingThreads.clear();
-            indexingRunnable = new IndexingRunnable();
-            System.out.println("All the indexing threads are terminated!");
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
     }
 
     public static void main(String[] args) {
@@ -135,8 +108,6 @@ public class IndexServerTest {
         IndexServerTest indexServerTest = new IndexServerTest("user_id", schema, btreeOrder, bytesLimit);
 
         createGenerateThread();
-
-        createIndexingThread();
 
     }
 
@@ -164,171 +135,18 @@ public class IndexServerTest {
                             new String(new char[payloadSize]), timestamp);
                     byte[] serializedTuples = serializeValues(values);
 
-                    ++numTuples;
-                    if (numTuples < TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK) {
-                        queue.put(new Pair((double) ZCode, serializedTuples));
-                    } else {
-                        while (!queue.isEmpty()) {
-                            try {
-                                Thread.sleep(1);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                        terminateIndexingThreads();
+                    inputQueue.put(new Pair((double) ZCode, serializedTuples));
 
-                        double percentage = (double) sm.getCounter() * 100 / (double) numTuples;
-
-                        chunk.changeToLeaveNodesStartPosition();
-                        indexedData.writeLeavesIntoChunk(chunk);
-                        chunk.changeToStartPosition();
-
-                        byte[] serializedTree = SerializationHelper.serializeTree(indexedData);
-
-                        chunk.write(serializedTree);
-
-                        indexedData.clearPayload();
-
-                        FileSystemHandler fileSystemHandler = null;
-                        String fileName = null;
-                        try {
-                            if (TopologyConfig.HDFSFlag) {
-                                fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
-                            } else {
-                                fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
-                            }
-                            fileName = "chunk" + chunkId;
-                            fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-
-                        numTuples = 0;
-                        chunk = MemChunk.createNew(bytesLimit);
-                        sm.resetCounter();
-                        byte[] serializedTuple = serializeValues(values);
-                        Pair pair = new Pair((double) ZCode, serializedTuple);
-                        queue.put(pair);
-                        createIndexingThread();
-                        ++numTuples;
-                        ++chunkId;
-                    }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
 
-
             }
 
         }
 
-    }
-
-    static class IndexingRunnable implements Runnable {
-
-        boolean inputExhausted = false;
-
-        public void setInputExhausted() {
-            inputExhausted = true;
-        }
-
-        AtomicLong executed;
-        AtomicLong totalExecuted;
-        Long startTime;
-        AtomicInteger threadIndex = new AtomicInteger(0);
-
-        Lock lock;
-
-        Object syn = new Object();
-
-        @Override
-        public void run() {
-            boolean first = false;
-            synchronized (syn) {
-                if (startTime == null) {
-                    startTime = System.currentTimeMillis();
-                    first = true;
-                }
-                if (executed == null)
-                    executed = new AtomicLong(0);
-
-                if (totalExecuted == null)
-                    totalExecuted = new AtomicLong(0);
-
-                if (lock == null)
-                    lock = new ReentrantLock();
-            }
-            long localCount = 0;
-            ArrayList<Pair> drainer = new ArrayList<Pair>();
-            while (true) {
-                try {
-//                        Pair pair = queue.poll(1, TimeUnit.MILLISECONDS);
-//                        if (pair == null) {
-//                        if(!first)
-//                            Thread.sleep(100);
-                        try {
-                            lock.lock();
-
-                            int size = queue.size() > 256 ? 256 : queue.size();
-
-                            if (executed.addAndGet(size) >= TopologyConfig.NUM_TUPLES_TO_CHECK_TEMPLATE) {
-                                if (indexedData.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
-//                                    System.out.println(indexedData.getSkewnessFactor());
-                                    Long start = System.currentTimeMillis();
-                                    createNewTemplate();
-//                                    System.out.println("rebuild time " + (System.currentTimeMillis() - start));
-                                    executed.set(0L);
-                                }
-                            }
-
-                            queue.drainTo(drainer, 256);
-                            executed.addAndGet(drainer.size());
-
-                        } finally {
-                            lock.unlock();
-                        }
-
-
-//                        Pair pair = queue.poll(10, TimeUnit.MILLISECONDS);
-                        if (drainer.size() == 0) {
-                            if (inputExhausted)
-                                break;
-                            else
-                                continue;
-                        }
-
-                        for (Pair pair : drainer) {
-                            localCount++;
-                            final Double indexValue = (Double) pair.getKey();
-//                            final Integer offset = (Integer) pair.getValue();
-                            final byte[] serializedTuple = (byte[]) pair.getValue();
-//                            System.out.println("insert");
-                            indexedData.insert(indexValue, serializedTuple);
-//                            indexedData.insert(indexValue, offset);
-                        }
-
-                        totalExecuted.getAndAdd(drainer.size());
-
-                        drainer.clear();
-
-                } catch (UnsupportedGenericException e) {
-                    e.printStackTrace();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            if(first) {
-                System.out.println(String.format("Index throughput = %f tuple / s", totalExecuted.get() / (double) (System.currentTimeMillis() - startTime) * 1000));
-                System.out.println("Thread execution time: " + (System.currentTimeMillis() - startTime) + " ms.");
-            }
-//                System.out.println("Indexing thread " + Thread.currentThread().getId() + " is terminated with " + localCount + " tuples processed!");
-        }
-    }
-
-    private static void createNewTemplate() {
-        indexedData = templateUpdater.createTreeWithBulkLoading(indexedData);
     }
 
 
