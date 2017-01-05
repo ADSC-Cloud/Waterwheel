@@ -1,10 +1,9 @@
 package indexingTopology.util;
 
-import org.apache.storm.tuple.Tuple;
+import com.esotericsoftware.kryo.io.Input;
+import indexingTopology.config.TopologyConfig;
 import org.apache.storm.tuple.Values;
-import com.sun.prism.shader.Solid_TextureYV12_AlphaTest_Loader;
 import indexingTopology.DataSchema;
-import indexingTopology.FileSystemHandler.FileSystemHandler;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -16,19 +15,20 @@ import java.util.*;
 public class DeserializationHelper <TKey extends Comparable<TKey>,TValue>{
 
 
-//    static List<String> fieldNames = new ArrayList<String>(Arrays.asList("user_id", "id_1", "id_2", "ts_epoch",
-//            "date", "time", "latitude", "longitude"));
-//    static List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
-//            Double.class, Double.class, Double.class, Double.class, Double.class));
+    static List<String> fieldNames = new ArrayList<String>(Arrays.asList("user_id", "id_1", "id_2", "ts_epoch",
+            "date", "time", "latitude", "longitude"));
+    static List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
+            Double.class, Double.class, Double.class, Double.class, Double.class));
 
-    static List<String> fieldNames = new ArrayList<String>(Arrays.asList("id", "zcode", "payload"));
-    static List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, String.class));
+//    static List<String> fieldNames = new ArrayList<String>(Arrays.asList("id", "zcode", "payload"));
+//    static List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, String.class));
 
     private static DataSchema schema = new DataSchema(fieldNames, valueTypes, "zcode");
 
     private DeserializationHelper() {
         schema = new DataSchema(fieldNames, valueTypes, "user_id");
     }
+
 
     public static BTreeLeafNode deserializeLeaf(byte [] b, int BTreeOrder, BytesCounter counter) throws IOException {
         BTreeLeafNode leaf = new BTreeLeafNode(BTreeOrder, counter);
@@ -68,6 +68,54 @@ public class DeserializationHelper <TKey extends Comparable<TKey>,TValue>{
         return leaf;
     }
 
+
+    public BTreeLeafNode deserializeLeaf(byte[] serializedLeaf) {
+
+        Input input = new Input(serializedLeaf);
+
+        BTreeLeafNode leaf = new BTreeLeafNode(TopologyConfig.BTREE_OREDER, new BytesCounter());
+
+        int keyCount = input.readInt();
+
+        System.out.println(keyCount);
+
+        ArrayList keys = null;
+
+        if (TopologyConfig.KEY_TPYE.equals("double")) {
+            keys = new ArrayList<Double>();
+
+            for (int i = 0; i < keyCount; ++i) {
+                Double key = input.readDouble();
+                keys.add(key);
+            }
+
+            leaf.setKeys(keys);
+        } else if (TopologyConfig.KEY_TPYE.equals("int")) {
+            keys = new ArrayList<Integer>();
+
+            for (int i = 0; i < keyCount; ++i) {
+                Integer key = input.readInt();
+                keys.add(key);
+            }
+
+            leaf.setKeys(keys);
+        }
+
+        ArrayList<ArrayList<byte[]>> tuples = new ArrayList<ArrayList<byte[]>>();
+        for (int i = 0; i < keys.size();i++) {
+            int tupleCount = input.readInt();
+            tuples.add(new ArrayList<>());
+            for (int j = 0; j < tupleCount; ++j) {
+                int lengthOfTuple = input.readInt();
+                byte[] tuple = input.readBytes(lengthOfTuple);
+                tuples.get(i).add(tuple);
+            }
+        }
+
+        leaf.setTuples(tuples);
+
+        return leaf;
+    }
 
     public static BTree deserializeBTree(byte[] serializedTree, int BTreeOrder, BytesCounter counter) {
         BTreeInnerNode root = null;

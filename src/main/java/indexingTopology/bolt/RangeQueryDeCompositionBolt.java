@@ -8,12 +8,12 @@ import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 import com.google.common.util.concurrent.AtomicDouble;
-import indexingTopology.Config.TopologyConfig;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.NormalDistributionIndexingAndRangeQueryTopology;
 import indexingTopology.NormalDistributionIndexingTopology;
-import indexingTopology.MetaData.FilePartitionSchemaManager;
-import indexingTopology.MetaData.FileMetaData;
-import indexingTopology.Streams.Streams;
+import indexingTopology.metadata.FilePartitionSchemaManager;
+import indexingTopology.metadata.FileMetaData;
+import indexingTopology.streams.Streams;
 import indexingTopology.util.BalancedPartition;
 import indexingTopology.util.FileScanMetrics;
 import indexingTopology.util.RangeQuerySubQuery;
@@ -171,9 +171,9 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
             sendSubqueryToTask(taskId);
             */
 
-            /*our method
+//            /*our method
             sendSubquery(taskId);
-            */
+//            */
 
         } else if (tuple.getSourceStreamId().equals(Streams.QueryGenerateStream)) {
 
@@ -323,30 +323,32 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 
                 generateTreeSubQuery(leftKey, rightKey, endTimeStamp);
 
-                int numberOfSubqueries = 10;
+//                int numberOfSubqueries = 10;
 
-                if (fileNames.size() < numberOfSubqueries) {
-                    newQueryRequest.release();
-                    continue;
-                }
+//                if (fileNames.size() < numberOfSubqueries) {
+//                    newQueryRequest.release();
+//                    continue;
+//                }
                 
 
 
                 int numberOfFilesToScan = fileNames.size();
+
+                int numberOfSubqueries = numberOfFilesToScan;
 
                 /* taskQueueModel
                    putSubqueriesToTaskQueue(numberOfSubqueries, leftKey, rightKey, fileNames, startTimeStamp, endTimeStamp);
                    sendSubqueriesFromTaskQueue();
                 */
 
-//                /* shuffleGrouping
+                /* shuffleGrouping
                    sendSubqueriesByshuffleGrouping(numberOfSubqueries, leftKey, rightKey, fileNames, startTimeStamp, endTimeStamp);
-//                 */
+                 */
 
-                /* our method
+//                /* our method
                 putSubquerisToTaskQueues(numberOfSubqueries, leftKey, rightKey, fileNames, startTimeStamp, endTimeStamp);
                 sendSubqueriesFromTaskQueues();
-                 */
+//                 */
 
                 collector.emit(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryInformationStream,
                         new Values(queryId, numberOfSubqueries));

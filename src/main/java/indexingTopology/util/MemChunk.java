@@ -1,6 +1,6 @@
 package indexingTopology.util;
 
-import indexingTopology.Config.TopologyConfig;
+import indexingTopology.config.TopologyConfig;
 
 import java.nio.ByteBuffer;
 

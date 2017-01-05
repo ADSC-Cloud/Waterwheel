@@ -1,4 +1,4 @@
-package indexingTopology.Cache;
+package indexingTopology.cache;
 
 import indexingTopology.util.BTreeLeafNode;
 

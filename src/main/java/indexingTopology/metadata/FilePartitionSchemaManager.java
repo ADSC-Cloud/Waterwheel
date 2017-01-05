@@ -1,10 +1,9 @@
-package indexingTopology.MetaData;
+package indexingTopology.metadata;
 
 import com.github.davidmoten.rtree.Entry;
 import com.github.davidmoten.rtree.RTree;
 import com.github.davidmoten.rtree.geometry.Geometries;
 import com.github.davidmoten.rtree.geometry.Rectangle;
-import indexingTopology.MetaData.FileMetaData;
 import rx.Observable;
 
 import java.util.ArrayList;

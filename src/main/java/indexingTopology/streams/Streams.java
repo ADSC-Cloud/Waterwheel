@@ -1,4 +1,4 @@
-package indexingTopology.Streams;
+package indexingTopology.streams;
 
 /**
  * Created by acelzj on 12/19/16.

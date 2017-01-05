@@ -7,10 +7,10 @@ import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
-import indexingTopology.MetaData.FileMetaData;
-import indexingTopology.MetaData.FilePartitionSchemaManager;
+import indexingTopology.metadata.FileMetaData;
+import indexingTopology.metadata.FilePartitionSchemaManager;
 import indexingTopology.NormalDistributionIndexingTopology;
-import indexingTopology.Streams.Streams;
+import indexingTopology.streams.Streams;
 import indexingTopology.util.BalancedPartition;
 import indexingTopology.util.Histogram;
 import indexingTopology.util.RepartitionManager;
@@ -198,7 +198,7 @@ public class MetadataServer extends BaseRichBolt {
                     sum += count;
                 }
 
-                System.out.println(String.format("Overall Throughput: %f tuple / second", sum / (double)sleepTimeInSecond));
+//                System.out.println(String.format("Overall Throughput: %f tuple / second", sum / (double)sleepTimeInSecond));
 
                 histogram.clear();
 

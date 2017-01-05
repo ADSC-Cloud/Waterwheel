@@ -74,6 +74,10 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 		return node;
 	}
 
+	public ArrayList<BTreeNode<TKey>> getChildren() {
+		return children;
+	}
+
 	public BTreeNode<TKey> getChildWithSpecificIndex(TKey key) {
 		BTreeNode node;
         int index = search(key);
@@ -426,4 +430,11 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 		return node;
 	}
 
+	public void setKeys(ArrayList<TKey> keys) {
+		this.keys = keys;
+	}
+
+	public void setOffsets(ArrayList<Integer> offsets) {
+		this.offsets = offsets;
+	}
 }

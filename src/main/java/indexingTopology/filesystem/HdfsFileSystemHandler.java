@@ -1,6 +1,6 @@
-package indexingTopology.FileSystemHandler;
+package indexingTopology.filesystem;
 
-import indexingTopology.Config.TopologyConfig;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.util.MemChunk;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;

@@ -1,4 +1,4 @@
-package indexingTopology.Config;
+package indexingTopology.config;
 
 /**
  * Created by acelzj on 7/21/16.
@@ -13,8 +13,8 @@ public class TopologyConfig {
     public static final int TEMPLATE_SIZE = 64000 * 4;
 //    public static final int TEMPLATE_SIZE = 64000 ;
 
-    public static final int NUMBER_TUPLES_OF_A_CHUNK = 600000;
-//    public static final int NUMBER_TUPLES_OF_A_CHUNK = 200000;
+//    public static final int NUMBER_TUPLES_OF_A_CHUNK = 600000;
+    public static final int NUMBER_TUPLES_OF_A_CHUNK = 200000;
 //    public static final int NUMBER_TUPLES_OF_A_CHUNK = 2000;
 
     public static final double KER_RANGE_COVERAGE = 0.2;
@@ -35,4 +35,5 @@ public class TopologyConfig {
 
     public static final int NUM_TUPLES_TO_CHECK_TEMPLATE = 200000;
 
+    public static final String KEY_TPYE = "double";
 }

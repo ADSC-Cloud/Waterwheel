@@ -1,6 +1,5 @@
-package indexingTopology.FileSystemHandler;
+package indexingTopology.filesystem;
 
-import indexingTopology.FileSystemHandler.FileSystemHandler;
 import indexingTopology.util.MemChunk;
 
 import java.io.*;

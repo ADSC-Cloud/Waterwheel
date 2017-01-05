@@ -1,9 +1,9 @@
 package indexingTopology.util;
 
-import indexingTopology.Config.TopologyConfig;
-import indexingTopology.FileSystemHandler.FileSystemHandler;
-import indexingTopology.FileSystemHandler.HdfsFileSystemHandler;
-import indexingTopology.FileSystemHandler.LocalFileSystemHandler;
+import indexingTopology.config.TopologyConfig;
+import indexingTopology.filesystem.FileSystemHandler;
+import indexingTopology.filesystem.HdfsFileSystemHandler;
+import indexingTopology.filesystem.LocalFileSystemHandler;
 import indexingTopology.exception.UnsupportedGenericException;
 import javafx.util.Pair;
 

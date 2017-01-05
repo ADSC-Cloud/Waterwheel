@@ -1,18 +1,20 @@
 package indexingTopology.util;
 
-import indexingTopology.Config.TopologyConfig;
+import com.esotericsoftware.kryo.io.Output;
+import indexingTopology.config.TopologyConfig;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 
 /**
  * Created by acelzj on 12/4/16.
  */
-public class SerializationHelper {
+public class SerializationHelper<TKey extends Comparable<TKey>> {
 
     public static byte[] serializeTree(BTree bTree) {
         ByteBuffer b = ByteBuffer.allocate(TopologyConfig.TEMPLATE_SIZE);
@@ -64,6 +66,7 @@ public class SerializationHelper {
         return bos.toByteArray();
     }
 
+
     public static byte[] serializeLeafNode(BTreeLeafNode leaf) {
 
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -88,8 +91,42 @@ public class SerializationHelper {
                 writeToByteArrayOutputStream(bos, ((ArrayList<byte []>) leaf.tuples.get(i)).get(j));
             }
         }
+
         return bos.toByteArray();
     }
+
+
+    /*
+    public byte[] serializeLeafNode(BTreeLeafNode leaf) {
+
+        int totalBytes = leaf.getBytesCount() + (1 + leaf.getKeys().size()) * (Integer.SIZE / Byte.SIZE);
+
+        Output output = new Output(totalBytes + 4, totalBytes + 5);
+
+        output.write(totalBytes);
+
+        List<TKey> keys = leaf.getKeys();
+        output.writeInt(keys.size());
+
+        for (TKey key : keys) {
+            if (key instanceof Integer) {
+                output.writeInt((Integer) key);
+            } else if (key instanceof Double) {
+                output.writeDouble((Double) key);
+            }
+        }
+
+        for (int i = 0; i < leaf.getKeys().size(); i++) {
+            output.writeInt((leaf.getTuples(i)).size());
+            for (int j = 0; j < ((ArrayList<byte []>) leaf.getTuples(i)).size(); ++j) {
+                output.writeInt(((ArrayList<Integer>)leaf.getOffsets(i)).get(j));
+                output.write(((ArrayList<byte []>) leaf.getTuples(i)).get(j));
+            }
+        }
+
+        return output.toBytes();
+    }
+    */
 
     private static void writeToByteArrayOutputStream(ByteArrayOutputStream bos, byte[] b) {
         try {

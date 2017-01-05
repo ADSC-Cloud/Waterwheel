@@ -1,10 +1,10 @@
 package indexingTopology.util;
 
-import indexingTopology.Config.TopologyConfig;
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Output;
 import indexingTopology.exception.UnsupportedGenericException;
 
 import java.io.*;
-import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
@@ -498,6 +498,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		templateMode = true;
 	}
 
+
 	public void writeLeavesIntoChunk(MemChunk chunk) {
 		BTreeLeafNode leave = getLeftMostLeaf();
 		int count = 0;
@@ -509,6 +510,40 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
             ((BTreeInnerNode)leave.getParent()).putOffset(offset);
             leave = (BTreeLeafNode) leave.rightSibling;
 		}
+	}
+
+	public byte[] serializeLeaves() {
+		BTreeLeafNode leaf = getLeftMostLeaf();
+		int offset;
+		Output output = new Output(65000000);
+		Kryo kryo = new Kryo();
+		kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
+		int count = 0;
+		while (leaf != null) {
+			offset = output.position();
+
+            int totalBytes = leaf.bytesCount + (1 + leaf.tuples.size()) * (Integer.SIZE / Byte.SIZE);
+
+            output.writeInt(totalBytes);
+
+//            if (count == 0) {
+//                System.out.println(output.position());
+//            }
+
+			kryo.writeObject(output, leaf);
+
+			((BTreeInnerNode)leaf.getParent()).putOffset(offset);
+
+			leaf = (BTreeLeafNode) leaf.rightSibling;
+
+//			if (count == 0) {
+//			    System.out.println(offset);
+//                System.out.println("total bytes " + totalBytes);
+//                System.out.println("position" + output.position());
+//			    ++count;
+//            }
+		}
+		return output.toBytes();
 	}
 
 	public BytesCounter getCounter() {
@@ -538,7 +573,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		List<Integer> offsets = new ArrayList<Integer>();
 		BTreeInnerNode<TKey> currentNode = (BTreeInnerNode) mostLeftNode;
 		while (currentNode != mostRightNode) {
-//			currentNode.print();
+			currentNode.print();
 			offsets.addAll(currentNode.offsets);
 			currentNode = (BTreeInnerNode) currentNode.rightSibling;
 		}

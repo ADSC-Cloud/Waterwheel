@@ -1,5 +1,7 @@
 package indexingTopology.util;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
 import indexingTopology.DataSchema;
 import indexingTopology.exception.UnsupportedGenericException;
 import org.junit.Test;
@@ -14,6 +16,45 @@ import static org.junit.Assert.*;
  * Created by acelzj on 21/12/16.
  */
 public class BTreeTest {
+    @Test
+    public void serializeLeaves() throws Exception, UnsupportedGenericException {
+        int order = 32;
+        BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
+
+        int numberOfTuples = 2048;
+
+        Random random = new Random();
+
+        List<Integer> keys = new ArrayList<>();
+
+        for (int i = 0; i < numberOfTuples; ++i) {
+            Integer key = random.nextInt();
+            keys.add(key);
+        }
+
+        for (Integer key : keys) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) key);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            bTree.insert((double) key, bytes);
+        }
+
+        byte[] serializedLeaves = bTree.serializeLeaves();
+
+        Input input = new Input(serializedLeaves);
+
+        Kryo kryo = new Kryo();
+        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
+
+        while (true) {
+            BTreeLeafNode leaf = kryo.readObject(input, BTreeLeafNode.class);
+            leaf.print();
+        }
+    }
+
     @Test
     public void writeLeavesIntoChunk() throws Exception, UnsupportedGenericException {
         int order = 32;

@@ -3,15 +3,11 @@ package indexingTopology;
 import org.apache.storm.Config;
 import org.apache.storm.StormSubmitter;
 import org.apache.storm.topology.TopologyBuilder;
-import indexingTopology.Config.TopologyConfig;
-import indexingTopology.Streams.Streams;
+import indexingTopology.config.TopologyConfig;
+import indexingTopology.streams.Streams;
 import indexingTopology.bolt.*;
 import indexingTopology.spout.NormalDistributionGenerator;
-import indexingTopology.spout.TexiTrajectoryGenerator;
 import indexingTopology.util.Constants;
-import indexingTopology.util.texi.City;
-import indexingTopology.util.texi.TrajectoryGenerator;
-import indexingTopology.util.texi.TrajectoryUniformGenerator;
 
 import java.util.ArrayList;
 import java.util.Arrays;

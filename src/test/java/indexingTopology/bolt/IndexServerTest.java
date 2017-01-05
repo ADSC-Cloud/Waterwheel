@@ -1,11 +1,6 @@
 package indexingTopology.bolt;
 
-import indexingTopology.Config.TopologyConfig;
 import indexingTopology.DataSchema;
-import indexingTopology.FileSystemHandler.FileSystemHandler;
-import indexingTopology.FileSystemHandler.HdfsFileSystemHandler;
-import indexingTopology.FileSystemHandler.LocalFileSystemHandler;
-import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.util.*;
 import indexingTopology.util.texi.Car;
 import indexingTopology.util.texi.City;
@@ -20,11 +15,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by acelzj on 12/23/16.

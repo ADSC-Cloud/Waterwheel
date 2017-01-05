@@ -1,5 +1,7 @@
 package indexingTopology.bolt;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Output;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -7,12 +9,12 @@ import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
-import indexingTopology.Config.TopologyConfig;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.DataSchema;
-import indexingTopology.FileSystemHandler.FileSystemHandler;
-import indexingTopology.FileSystemHandler.HdfsFileSystemHandler;
-import indexingTopology.FileSystemHandler.LocalFileSystemHandler;
-import indexingTopology.Streams.Streams;
+import indexingTopology.filesystem.FileSystemHandler;
+import indexingTopology.filesystem.HdfsFileSystemHandler;
+import indexingTopology.filesystem.LocalFileSystemHandler;
+import indexingTopology.streams.Streams;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.util.*;
 import javafx.util.Pair;
@@ -80,6 +82,8 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
 
     private TopologyContext context;
 
+    private Kryo kryo;
+
     public NormalDistributionIndexAndRangeQueryBolt(String indexField, DataSchema schema, int btreeOrder,
                                                     int bytesLimit) {
         this.schema = schema;
@@ -142,6 +146,10 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
 //            e.printStackTrace();
 //        }
 
+        kryo = new Kryo();
+        kryo.register(BTree.class, new KryoTemplateSerializer());
+        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
+
         createIndexingThread();
 
     }
@@ -154,12 +162,9 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
     public void execute(Tuple tuple) {
         if (tuple.getSourceStreamId().equals(Streams.IndexStream)) {
             Double indexValue = tuple.getDoubleByField(indexField);
-            Double id = tuple.getDouble(0);
-            String s = tuple.getString(2);
 
-            Long timeStamp = tuple.getLong(schema.getNumberOfFileds());
-//            Double indexValue = tuple.getDouble(0);
-//            System.out.println("The stream is " + NormalDistributionIndexingTopology.IndexStream);
+//            Long timeStamp = tuple.getLong(schema.getNumberOfFileds());
+            Long timeStamp = tuple.getLong(8);
             try {
                 if (numTuples < TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK) {
 //                    if (chunkId == 0) {
@@ -199,12 +204,14 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
 
                     double percentage = (double) sm.getCounter() * 100 / (double) numTuples;
 
-                    chunk.changeToLeaveNodesStartPosition();
-                    indexedData.writeLeavesIntoChunk(chunk);
-                    chunk.changeToStartPosition();
+                    writeTreeIntoChunk();
 
-                    byte[] serializedTree = SerializationHelper.serializeTree(indexedData);
-                    chunk.write(serializedTree);
+//                    chunk.changeToLeaveNodesStartPosition();
+//                    indexedData.writeLeavesIntoChunk(chunk);
+//                    chunk.changeToStartPosition();
+//
+//                    byte[] serializedTree = SerializationHelper.serializeTree(indexedData);
+//                    chunk.write(serializedTree);
 
 //                    createNewTemplate(percentage);
                     indexedData.clearPayload();
@@ -416,6 +423,30 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    private void writeTreeIntoChunk() {
+        Output output = new Output(65000000);
+
+        byte[] leavesInBytes = indexedData.serializeLeaves();
+
+        kryo.writeObject(output, indexedData);
+
+        byte[] bytes = output.toBytes();
+
+        int lengthOfTemplate = bytes.length;
+
+        output = new Output(4);
+
+        output.writeInt(lengthOfTemplate);
+
+        byte[] lengthInBytes = output.toBytes();
+
+        chunk.write(lengthInBytes );
+
+        chunk.write(bytes);
+
+        chunk.write(leavesInBytes);
     }
 
 }

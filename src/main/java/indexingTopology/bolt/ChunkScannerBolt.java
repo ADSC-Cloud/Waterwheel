@@ -1,5 +1,8 @@
 package indexingTopology.bolt;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
+import javafx.util.Pair;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -7,12 +10,12 @@ import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
-import indexingTopology.Cache.*;
-import indexingTopology.Config.TopologyConfig;
-import indexingTopology.FileSystemHandler.FileSystemHandler;
-import indexingTopology.FileSystemHandler.HdfsFileSystemHandler;
-import indexingTopology.FileSystemHandler.LocalFileSystemHandler;
-import indexingTopology.Streams.Streams;
+import indexingTopology.cache.*;
+import indexingTopology.config.TopologyConfig;
+import indexingTopology.filesystem.FileSystemHandler;
+import indexingTopology.filesystem.HdfsFileSystemHandler;
+import indexingTopology.filesystem.LocalFileSystemHandler;
+import indexingTopology.streams.Streams;
 import indexingTopology.util.*;
 
 import java.io.FileNotFoundException;
@@ -34,10 +37,15 @@ public class ChunkScannerBolt extends BaseRichBolt {
 
     private transient int numberOfCacheUnit;
 
+    private transient Kryo kryo;
+
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
         bTreeOder = 4;
         numberOfCacheUnit = 0;
+        kryo = new Kryo();
+        kryo.register(BTree.class, new KryoTemplateSerializer());
+        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
         cacheMapping = new LRUCache<CacheMappingKey, CacheUnit>(TopologyConfig.CACHE_SIZE);
     }
 
@@ -76,18 +84,29 @@ public class ChunkScannerBolt extends BaseRichBolt {
                     fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
                 }
 
-                CacheMappingKey mappingKey = new CacheMappingKey(fileName, 0);
-                BTree deserializedTree = (BTree) getFromCache(mappingKey);
-                if (deserializedTree == null) {
-                    deserializedTree = getTemplateFromExternalStorage(fileSystemHandler, fileName);
+                System.out.println("file name " + fileName);
 
-                    CacheData cacheData = new TemplateCacheData(deserializedTree);
+                CacheMappingKey mappingKey = new CacheMappingKey(fileName, 0);
+
+                Pair data = (Pair) getFromCache(mappingKey);
+
+                if (data == null) {
+                    data = getTemplateFromExternalStorage(fileSystemHandler, fileName);
+
+                    CacheData cacheData = new TemplateCacheData(data);
 
                     putCacheData(cacheData, mappingKey);
                 }
 
+                BTree deserializedTree = (BTree) data.getKey();
+
+                Integer length = (Integer) data.getValue();
+
                 Long searchStartTime = System.currentTimeMillis();
                 int offset = deserializedTree.getOffsetOfLeaveNodeShouldContainKey(key);
+
+                offset += (length + 4);
+
                 timeCostOfSearching += (System.currentTimeMillis() - searchStartTime);
 
                 BTreeLeafNode leaf;
@@ -163,12 +182,18 @@ public class ChunkScannerBolt extends BaseRichBolt {
         return cacheMapping.get(mappingKey).getCacheData().getData();
     }
 
-    private BTree getTemplateFromExternalStorage(FileSystemHandler fileSystemHandler, String fileName) {
+    private Pair getTemplateFromExternalStorage(FileSystemHandler fileSystemHandler, String fileName) {
 //        startTimeOfReadFile = System.currentTimeMillis();
         fileSystemHandler.openFile("/", fileName);
 //        timeCostOfReadFile = System.currentTimeMillis() - startTimeOfReadFile;
+        byte[] temlateLengthInBytes = new byte[4];
+        fileSystemHandler.readBytesFromFile(temlateLengthInBytes);
 
-        byte[] serializedTree = new byte[TopologyConfig.TEMPLATE_SIZE];
+        Input input = new Input(temlateLengthInBytes);
+        int length = input.readInt();
+
+//        byte[] serializedTree = new byte[TopologyConfig.TEMPLATE_SIZE];
+        byte[] serializedTree = new byte[length];
 //                DeserializationHelper deserializationHelper = new DeserializationHelper();
         BytesCounter counter = new BytesCounter();
 
@@ -177,13 +202,15 @@ public class ChunkScannerBolt extends BaseRichBolt {
 //        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
 
 //        Long startTimeOfDeserializationATree = System.currentTimeMillis();
-        BTree deserializedTree = DeserializationHelper.deserializeBTree(serializedTree, bTreeOder, counter);
+//        BTree deserializedTree = DeserializationHelper.deserializeBTree(serializedTree, bTreeOder, counter);
+        input = new Input(serializedTree);
+        BTree deserializedTree = kryo.readObject(input, BTree.class);
 //        timeCostOfDeserializationATree = System.currentTimeMillis() - startTimeOfDeserializationATree;
 //        startTimeOfReadFile = System.currentTimeMillis();
         fileSystemHandler.closeFile();
 //        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
 
-        return deserializedTree;
+        return new Pair(deserializedTree, length);
     }
 
     private void putCacheData(CacheData cacheData, CacheMappingKey mappingKey) {
@@ -212,31 +239,39 @@ public class ChunkScannerBolt extends BaseRichBolt {
     private BTreeLeafNode getLeafFromExternalStorage(FileSystemHandler fileSystemHandler, String fileName, int offset)
             throws IOException {
         byte[] lengthInByte = new byte[4];
-//        startTimeOfReadFile = System.currentTimeMillis();
+//        Long startTimeOfReadFile = System.currentTimeMillis();
         fileSystemHandler.openFile("/", fileName);
 //        timeCostOfReadFile = System.currentTimeMillis() - startTimeOfReadFile;
-//                        startTimeOfReadFile = System.currentTimeMillis();
+
+//        startTimeOfReadFile = System.currentTimeMillis();
         fileSystemHandler.seek(offset);
-//                        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
+//        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
+
 //        startTimeOfReadFile = System.currentTimeMillis();
         fileSystemHandler.readBytesFromFile(offset, lengthInByte);
 //        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
+
         int lengthOfLeaveInBytes = ByteBuffer.wrap(lengthInByte, 0, 4).getInt();
-        byte[] leafInByte = new byte[lengthOfLeaveInBytes];
-//                        startTimeOfReadFile = System.currentTimeMillis();
-//                        fileSystemHandler.seek(offset + 4);
-//                        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
+        byte[] leafInByte = new byte[lengthOfLeaveInBytes+1];
+
+//        startTimeOfReadFile = System.currentTimeMillis();
+        fileSystemHandler.seek(offset + 4);
+//        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
 
 
 //        startTimeOfReadFile = System.currentTimeMillis();
         fileSystemHandler.readBytesFromFile(offset + 4, leafInByte);
 //        timeCostOfReadFile += (System.currentTimeMillis() - startTimeOfReadFile);
+
 //        Long startTimeOfDeserializationALeaf = System.currentTimeMillis();
-        BytesCounter counter = new BytesCounter();
-        BTreeLeafNode leaf = DeserializationHelper.deserializeLeaf(leafInByte, bTreeOder, counter);
+//        BytesCounter counter = new BytesCounter();
+//        BTreeLeafNode leaf = DeserializationHelper.deserializeLeaf(leafInByte, bTreeOder, counter);
+        Input input = new Input(leafInByte);
+        BTreeLeafNode leaf = kryo.readObject(input, BTreeLeafNode.class);
+//        timeCostOfDeserializationALeaf += (System.currentTimeMillis() - startTimeOfDeserializationALeaf);
+
         fileSystemHandler.closeFile();
         return leaf;
-//        timeCostOfDeserializationALeaf += (System.currentTimeMillis() - startTimeOfDeserializationALeaf);
     }
 
 }

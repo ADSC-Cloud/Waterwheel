@@ -3,12 +3,10 @@ package indexingTopology;
 import org.apache.storm.Config;
 import org.apache.storm.StormSubmitter;
 import org.apache.storm.topology.TopologyBuilder;
-import indexingTopology.Config.TopologyConfig;
-import indexingTopology.Streams.Streams;
+import indexingTopology.config.TopologyConfig;
+import indexingTopology.streams.Streams;
 import indexingTopology.bolt.*;
-import indexingTopology.spout.NormalDistributionGenerator;
 import indexingTopology.spout.TexiTrajectoryGenerator;
-import indexingTopology.util.Constants;
 import indexingTopology.util.texi.City;
 import indexingTopology.util.texi.TrajectoryGenerator;
 import indexingTopology.util.texi.TrajectoryUniformGenerator;
@@ -94,14 +92,14 @@ public class TexiTrajectoryTopology {
 
         builder.setBolt(RangeQueryDecompositionBolt, new RangeQueryDeCompositionBolt(lowerBound, upperBound), 1)
                 .shuffleGrouping(ResultMergeBolt, Streams.NewQueryStream)
-//                .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSubQueryFinishStream)
+//                .shuffleGrouping(RangeQueryChunkScannerBolt, streams.FileSubQueryFinishStream)
                 .shuffleGrouping(MetadataServer, Streams.FileInformationUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.TimeStampUpdateStream);
 
         builder.setBolt(RangeQueryChunkScannerBolt, new RangeQueryChunkScannerBolt(), 4)
 //                .fieldsGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream, new Fields("fileName"));
-//                .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream);
+//                .directGrouping(RangeQueryDecompositionBolt, streams.FileSystemQueryStream);
                 .shuffleGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream);
 
         builder.setBolt(ResultMergeBolt, new RangeQueryResultMergeBolt(schema), 1)

@@ -1,4 +1,4 @@
-package indexingTopology.MetaData;
+package indexingTopology.metadata;
 
 /**
  * Created by acelzj on 11/24/16.

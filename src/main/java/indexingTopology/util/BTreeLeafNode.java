@@ -704,6 +704,15 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
         return tupleCount.get();
     }
 
+    public int getBytesCount() {
+        return bytesCount;
+    }
 
+    public void setKeys(ArrayList<TKey> keys) {
+        this.keys = keys;
+    }
 
+    public void setTuples(ArrayList<ArrayList<byte[]>> tuples) {
+        this.tuples = tuples;
+    }
 }

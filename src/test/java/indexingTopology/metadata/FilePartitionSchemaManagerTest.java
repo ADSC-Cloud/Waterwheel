@@ -1,4 +1,4 @@
-package indexingTopology.MetaData;
+package indexingTopology.metadata;
 
 import org.junit.Test;
 

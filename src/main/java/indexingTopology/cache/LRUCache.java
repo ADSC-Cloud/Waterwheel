@@ -1,4 +1,4 @@
-package indexingTopology.Cache;
+package indexingTopology.cache;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

@@ -3,8 +3,8 @@ package indexingTopology;
 import org.apache.storm.Config;
 import org.apache.storm.StormSubmitter;
 import org.apache.storm.topology.TopologyBuilder;
-import indexingTopology.Config.TopologyConfig;
-import indexingTopology.Streams.Streams;
+import indexingTopology.config.TopologyConfig;
+import indexingTopology.streams.Streams;
 import indexingTopology.bolt.*;
 import indexingTopology.spout.NormalDistributionGenerator;
 
@@ -81,7 +81,6 @@ public class NormalDistributionIndexingTopology {
 
 
         builder.setBolt(IndexerBolt, new NormalDistributionIndexerBolt("user_id", schema, TopologyConfig.BTREE_OREDER, 65000000),1)
-                .setNumTasks(4)
                 .directGrouping(DispatcherBolt, Streams.IndexStream)
                 .directGrouping(QueryDecompositionBolt, Streams.BPlusTreeQueryStream);
 
@@ -92,7 +91,7 @@ public class NormalDistributionIndexingTopology {
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.TimeStampUpdateStream);
 
-        builder.setBolt(ChunkScannerBolt, new ChunkScannerBolt()).setNumTasks(2)
+        builder.setBolt(ChunkScannerBolt, new ChunkScannerBolt(), 2)
 //                .fieldsGrouping(QueryDecompositionBolt, FileSystemQueryStream, new Fields("fileName"));
                 .directGrouping(QueryDecompositionBolt, Streams.FileSystemQueryStream);
 //                .shuffleGrouping(QueryDecompositionBolt, FileSystemQueryStream);

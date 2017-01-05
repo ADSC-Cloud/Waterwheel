@@ -7,11 +7,11 @@ import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
-import indexingTopology.Config.TopologyConfig;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.NormalDistributionIndexingTopology;
-import indexingTopology.MetaData.FilePartitionSchemaManager;
-import indexingTopology.MetaData.FileMetaData;
-import indexingTopology.Streams.Streams;
+import indexingTopology.metadata.FilePartitionSchemaManager;
+import indexingTopology.metadata.FileMetaData;
+import indexingTopology.streams.Streams;
 import indexingTopology.util.BalancedPartition;
 import indexingTopology.util.FileScanMetrics;
 import indexingTopology.util.SubQuery;
@@ -117,8 +117,8 @@ public class QueryDecompositionBolt extends BaseRichBolt {
 
 
 
-//        QueryThread = new Thread(new QueryRunnable());
-//        QueryThread.start();
+        QueryThread = new Thread(new QueryRunnable());
+        QueryThread.start();
     }
 
     public void execute(Tuple tuple) {

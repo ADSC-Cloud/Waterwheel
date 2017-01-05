@@ -1,4 +1,4 @@
-package indexingTopology.FileSystemHandler;
+package indexingTopology.filesystem;
 
 import indexingTopology.util.MemChunk;
 

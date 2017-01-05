@@ -1,6 +1,7 @@
 package indexingTopology.bolt;
 
-import org.apache.storm.Config;
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Output;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -8,12 +9,12 @@ import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
-import indexingTopology.Config.TopologyConfig;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.DataSchema;
-import indexingTopology.FileSystemHandler.FileSystemHandler;
-import indexingTopology.FileSystemHandler.HdfsFileSystemHandler;
-import indexingTopology.FileSystemHandler.LocalFileSystemHandler;
-import indexingTopology.Streams.Streams;
+import indexingTopology.filesystem.FileSystemHandler;
+import indexingTopology.filesystem.HdfsFileSystemHandler;
+import indexingTopology.filesystem.LocalFileSystemHandler;
+import indexingTopology.streams.Streams;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.util.*;
 import javafx.util.Pair;
@@ -79,6 +80,8 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
 
     private TopologyContext context;
 
+    private Kryo kryo;
+
     public NormalDistributionIndexerBolt(String indexField, DataSchema schema, int btreeOrder, int bytesLimit) {
         this.schema = schema;
         this.btreeOrder = btreeOrder;
@@ -95,6 +98,10 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
         copyOfIndexedData = indexedData;
 
         chunk = MemChunk.createNew(this.bytesLimit);
+
+        kryo = new Kryo();
+        kryo.register(BTree.class, new KryoTemplateSerializer());
+        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
 
         this.numTuples = 0;
         this.processingTime = 0;
@@ -171,10 +178,12 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
                     }
 
                     byte[] serializedTuple = schema.serializeTuple(tuple);
+
                     Pair pair = new Pair(indexValue, serializedTuple);
                     queue.put(pair);
 
                     ++numTuples;
+
                 } else {
 
                     while (!queue.isEmpty()) {
@@ -189,12 +198,14 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
 
                     double percentage = (double) sm.getCounter() * 100 / (double) numTuples;
 
-                    chunk.changeToLeaveNodesStartPosition();
-                    indexedData.writeLeavesIntoChunk(chunk);
-                    chunk.changeToStartPosition();
 
-                    byte[] serializedTree = SerializationHelper.serializeTree(indexedData);
-                    chunk.write(serializedTree);
+                    writeTreeIntoChunk();
+//                    chunk.changeToLeaveNodesStartPosition();
+//                    indexedData.writeLeavesIntoChunk(chunk);
+//                    chunk.changeToStartPosition();
+
+//                    byte[] serializedTree = SerializationHelper.serializeTree(indexedData);
+//                    chunk.write(serializedTree);
 
                     indexedData.clearPayload();
 
@@ -209,6 +220,7 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
 
                         int taskId = context.getThisTaskId();
                         fileName = "taskId" + taskId + "chunk" + chunkId;
+                        System.out.println("file name " + fileName);
                         fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -255,6 +267,9 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
                 e.printStackTrace();
             } catch (InterruptedException e) {
                 e.printStackTrace();
+            } finally {
+
+                collector.ack(tuple);
             }
         } else {
             Long queryId = tuple.getLong(0);
@@ -328,7 +343,6 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
 //                        if(!first)
 //                            Thread.sleep(100);
                     queue.drainTo(drainer,256);
-
 //                        Pair pair = queue.poll(10, TimeUnit.MILLISECONDS);
                     if(drainer.size() == 0) {
                         if(inputExhausted)
@@ -336,25 +350,12 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
                         else
                             continue;
                     }
-
-                    localCount += drainer.size();
-
-
                     for(Pair pair: drainer) {
                         localCount++;
                         final Double indexValue = (Double) pair.getKey();
                         final byte[] serializedTuple = (byte[]) pair.getValue();
-                        indexedData.insert(indexValue, serializedTuple);
+                        indexedData.insert(indexValue, serializedTuple); // for testing
                     }
-
-
-                    if (localCount > TopologyConfig.NUM_TUPLES_TO_CHECK_TEMPLATE) {
-                        if (indexedData.getSkewnessFactor() > TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
-                            createNewTemplate();
-                        }
-                    }
-
-
                     executed.getAndAdd(drainer.size());
                     drainer.clear();
                 } catch (UnsupportedGenericException e) {
@@ -404,6 +405,29 @@ public class NormalDistributionIndexerBolt extends BaseRichBolt {
         }
     }
 
+    private void writeTreeIntoChunk() {
+        Output output = new Output(65000000);
+
+        byte[] leavesInBytes = indexedData.serializeLeaves();
+
+        kryo.writeObject(output, indexedData);
+
+        byte[] bytes = output.toBytes();
+
+        int lengthOfTemplate = bytes.length;
+
+        output = new Output(4);
+
+        output.writeInt(lengthOfTemplate);
+
+        byte[] lengthInBytes = output.toBytes();
+
+        chunk.write(lengthInBytes );
+
+        chunk.write(bytes);
+
+        chunk.write(leavesInBytes);
+    }
 
 }
 

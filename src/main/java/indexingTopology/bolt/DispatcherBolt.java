@@ -9,7 +9,7 @@ import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 import indexingTopology.DataSchema;
 import indexingTopology.NormalDistributionIndexingTopology;
-import indexingTopology.Streams.Streams;
+import indexingTopology.streams.Streams;
 import indexingTopology.util.BalancedPartition;
 import indexingTopology.util.Histogram;
 
@@ -83,7 +83,6 @@ public class DispatcherBolt extends BaseRichBolt{
 
 //                updateBound(indexValue);
 
-
             balancedPartition.record(indexValue);
 
 //            int intervalId = balancedPartition.getIntervalId(indexValue);
@@ -100,16 +99,13 @@ public class DispatcherBolt extends BaseRichBolt{
             }
 
             collector.emitDirect(taskId, Streams.IndexStream, values);
+            collector.ack(tuple);
 
         } else if (tuple.getSourceStreamId().equals(Streams.IntervalPartitionUpdateStream)){
             Map<Integer, Integer> intervalToPartitionMapping = (Map) tuple.getValueByField("newIntervalPartition");
             balancedPartition.setIntervalToPartitionMapping(intervalToPartitionMapping);
 
         } else if (tuple.getSourceStreamId().equals(Streams.StaticsRequestStream)){
-
-
-            System.out.println(balancedPartition.getIntervalDistribution().getHistogram());
-
 
             collector.emit(Streams.StatisticsReportStream,
                     new Values(new Histogram(balancedPartition.getIntervalDistribution().getHistogram())));
