@@ -64,10 +64,11 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
             int numberOfTasksToSearch = tuple.getInteger(1);
             Long queryId = tuple.getLong(0);
 
-            System.out.println("queryId" + queryId + "number of tasks to search " + numberOfTasksToSearch);
+//            System.out.println("queryId" + queryId + " number of tasks to search " + numberOfTasksToSearch);
             queryIdToNumberOfTasksToSearch.put(queryId, numberOfTasksToSearch);
 
             if (isQueryFinshed(queryId)) {
+                System.out.println(tuple.getSourceStreamId());
                 sendNewQueryPermit(queryId);
                 removeQueryIdFromMappings(queryId);
             }
@@ -76,10 +77,11 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
                 .equals(Streams.FileSystemQueryInformationStream)) {
             int numberOfFilesToScan = tuple.getInteger(1);
             Long queryId = tuple.getLong(0);
-            System.out.println("queryId" + queryId + "number of files to scan " + numberOfFilesToScan);
+//            System.out.println("queryId" + queryId + " number of files to scan " + numberOfFilesToScan);
             queryIdToNumberOfFilesToScan.put(queryId, numberOfFilesToScan);
 
             if (isQueryFinshed(queryId)) {
+                System.out.println(tuple.getSourceStreamId());
                 sendNewQueryPermit(queryId);
                 removeQueryIdFromMappings(queryId);
             }
@@ -89,8 +91,8 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
             long queryId = tuple.getLong(0);
 
             if (tuple.getSourceStreamId().equals(Streams.FileSystemQueryStream)) {
-                FileScanMetrics metrics = (FileScanMetrics) tuple.getValue(2);
-                putFileScanMetrics(queryId, metrics);
+//                FileScanMetrics metrics = (FileScanMetrics) tuple.getValue(2);
+//                putFileScanMetrics(queryId, metrics);
             }
 
             Integer counter = queryIdToCounter.get(queryId);
@@ -101,18 +103,18 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
             }
             ArrayList<byte[]> serializedTuples = (ArrayList) tuple.getValue(1);
 
-            if (tuple.getSourceStreamId().equals(Streams.FileSystemQueryStream)) {
-                for (int i = 0; i < serializedTuples.size(); ++i) {
-                    Values deserializedTuple = null;
-                    try {
+//            if (tuple.getSourceStreamId().equals(Streams.FileSystemQueryStream)) {
+//                for (int i = 0; i < serializedTuples.size(); ++i) {
+//                    Values deserializedTuple = null;
+//                    try {
 //                    deserializedTuple = schema.deserialize(serializedTuples.get(i));
-                        deserializedTuple = DeserializationHelper.deserialize(serializedTuples.get(i));
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    System.out.println(deserializedTuple);
-                }
-            }
+//                        deserializedTuple = DeserializationHelper.deserialize(serializedTuples.get(i));
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
+//                    System.out.println(deserializedTuple);
+//                }
+//            }
 
 
             Integer numberOfTuples = queryIdToNumberOfTuples.get(queryId);
@@ -123,6 +125,7 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
             queryIdToCounter.put(queryId, counter);
 
             if (isQueryFinshed(queryId)) {
+                System.out.println(tuple.getSourceStreamId());
                 sendNewQueryPermit(queryId);
                 removeQueryIdFromMappings(queryId);
             }
@@ -156,6 +159,10 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
             int counter = queryIdToCounter.get(queryId);
             int numberOfFilesToScan = queryIdToNumberOfFilesToScan.get(queryId);
             int tasksToSearch = queryIdToNumberOfTasksToSearch.get(queryId);
+            System.out.println("query id " + queryId);
+            System.out.println("counter " + counter);
+            System.out.println("files " + numberOfFilesToScan);
+            System.out.println("tasks " + tasksToSearch);
             if (numberOfFilesToScan + tasksToSearch == counter) {
                 return true;
             }
@@ -184,7 +191,7 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
         if (fileScanMetrics == null) {
             queryIdToFileScanMetrics.put(queryId, metrics);
         } else {
-            fileScanMetrics.addWithAnotherMetrics(metrics);
+//            fileScanMetrics.addWithAnotherMetrics(metrics);
             queryIdToFileScanMetrics.put(queryId, fileScanMetrics);
         }
     }

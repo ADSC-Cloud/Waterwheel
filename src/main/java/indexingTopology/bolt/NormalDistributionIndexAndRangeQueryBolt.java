@@ -141,8 +141,8 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
         if (tuple.getSourceStreamId().equals(Streams.IndexStream)) {
             Double indexValue = tuple.getDoubleByField(indexField);
 
-//            Long timeStamp = tuple.getLong(schema.getNumberOfFileds());
-            Long timeStamp = tuple.getLong(3);
+            Long timeStamp = tuple.getLong(schema.getNumberOfFileds());
+//            Long timeStamp = tuple.getLong(3);
             try {
 //                if (numTuples < TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK) {
 //                    if (chunkId == 0) {
@@ -264,7 +264,15 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
             Long queryId = tuple.getLong(0);
             Double leftKey = tuple.getDouble(1);
             Double rightKey = tuple.getDouble(2);
-            List<byte[]> serializedTuples = indexedData.searchRange(leftKey, rightKey);
+            List<byte[]> serializedTuples = null;
+
+            if (leftKey.compareTo(rightKey) == 0) {
+                serializedTuples = indexedData.searchTuples(leftKey);
+            } else {
+                serializedTuples = indexedData.searchRange(leftKey, rightKey);
+            }
+
+//            System.out.println("query id " + serializedTuples.size());
 
             collector.emit(Streams.BPlusTreeQueryStream, new Values(queryId, serializedTuples));
         }

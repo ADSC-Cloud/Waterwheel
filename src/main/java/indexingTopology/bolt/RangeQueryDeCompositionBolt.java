@@ -298,8 +298,8 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 
 //                String [] tuple = text.split(" ");
 //
-                Double leftKey = 0.0;
-                Double rightKey = 1000.0;
+                Double leftKey = 994.0;
+                Double rightKey = 994.0;
                 Double min = minIndexValue.get();
                 Double max = maxIndexValue.get();
 
@@ -387,24 +387,22 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 
         int numberOfTasksToSearch = 0;
 
-//        int leftIntervalId = balancedPartition.getIntervalId(leftKey);
-//        int rightIntervalId = balancedPartition.getIntervalId(rightKey);
-
-//        Integer startPartitionId = balancedPartition.getPartitionId(leftKey);
-//        Integer endPartitionId = balancedPartition.getPartitionId(rightKey);
+        Integer startPartitionId = balancedPartition.getPartitionId(leftKey);
+        Integer endPartitionId = balancedPartition.getPartitionId(rightKey);
 
 
-//        Integer startTaskId = indexServers.get(startPartitionId);
-//        Integer endTaskId = indexServers.get(endPartitionId);
+        Integer startTaskId = indexServers.get(startPartitionId);
+        Integer endTaskId = indexServers.get(endPartitionId);
 
-//        for (Integer taskId = startTaskId; taskId <= endTaskId; ++taskId) {
-//            Long timestamp = indexTaskToTimestampMapping.get(taskId);
-//            if (timestamp <= endTimeStamp) {
-//                collector.emitDirect(taskId, NormalDistributionIndexingTopology.BPlusTreeQueryStream,
-//                        new Values(queryId, leftKey, rightKey));
-//                ++numberOfTasksToSearch;
-//            }
-//        }
+        for (Integer taskId = startTaskId; taskId <= endTaskId; ++taskId) {
+            Long timestamp = indexTaskToTimestampMapping.get(taskId);
+            if (timestamp <= endTimeStamp) {
+                collector.emitDirect(taskId, NormalDistributionIndexingTopology.BPlusTreeQueryStream,
+                        new Values(queryId, leftKey, rightKey));
+                ++numberOfTasksToSearch;
+            }
+        }
+
         collector.emit(NormalDistributionIndexingTopology.BPlusTreeQueryInformationStream,
                 new Values(queryId, numberOfTasksToSearch));
     }

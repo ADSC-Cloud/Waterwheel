@@ -2,6 +2,7 @@ package indexingTopology.bolt;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
+import indexingTopology.DataSchema;
 import javafx.util.Pair;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -39,6 +40,8 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
 
     private transient Kryo kryo;
 
+    private DataSchema schema;
+
     Long startTime;
 
     Long timeCostOfReadFile;
@@ -49,6 +52,10 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
 
     Long timeCostOfDeserializationALeaf;
 
+
+    public RangeQueryChunkScannerBolt(DataSchema schema) {
+        this.schema = schema;
+    }
 
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
@@ -73,7 +80,6 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
         System.out.println("file name " + fileName);
 
         RandomAccessFile file = null;
-        ArrayList<byte[]> serializedTuples = new ArrayList<byte[]>();
 
         FileScanMetrics metrics = new FileScanMetrics();
 
@@ -87,6 +93,12 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
 
         timeCostOfDeserializationALeaf = ((long) 0);
 
+        System.out.println("left key " + leftKey);
+
+        System.out.println("right key " + rightKey);
+
+
+        /*
         try {
             FileSystemHandler fileSystemHandler = null;
             if (TopologyConfig.HDFSFlag) {
@@ -130,7 +142,8 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
                 mappingKey = new CacheMappingKey(fileName, offset + length + 4);
                 leaf = (BTreeLeafNode) getFromCache(mappingKey);
                 if (leaf == null) {
-                    leaf = getLeafFromExternalStorage(fileSystemHandler, fileName, offset + length + 4);
+//                    leaf = getLeafFromExternalStorage(fileSystemHandler, fileName, offset + length + 4);
+                    leaf = getLeafFromExternalStorage(fileName, offset + length + 4);
                 } else {
                     CacheData cacheData = new LeafNodeCacheData(leaf);
                     putCacheData(cacheData, mappingKey);
@@ -159,6 +172,21 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            */
+        if (leftKey.compareTo(rightKey) == 0) {
+            try {
+                executePointQuery(queryId, leftKey, fileName, timestampLowerBound, timestampUpperBound);
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }
+        } else {
+            try {
+                executeRangeQuery(queryId, leftKey, rightKey, fileName, timestampLowerBound, timestampUpperBound);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
     }
 
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
@@ -179,12 +207,100 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
 
     }
 
+    private void executeRangeQuery(Long queryId, Double leftKey, Double rightKey, String fileName, Long timestampLowerBound, Long timestampUpperBound) throws IOException {
+
+        System.out.println("range query");
+
+        FileScanMetrics metrics = new FileScanMetrics();
+
+        ArrayList<byte[]> serializedTuples = new ArrayList<byte[]>();
+
+        Pair data = getTreeData(fileName);
+
+        BTree deserializedTree = (BTree) data.getKey();
+
+        Integer length = (Integer) data.getValue();
+
+        BTreeNode mostLeftNode = deserializedTree.findLeafNodeShouldContainKeyInDeserializedTemplate(leftKey);
+
+        BTreeNode mostRightNode = deserializedTree.findLeafNodeShouldContainKeyInDeserializedTemplate(rightKey);
+
+        List<Integer> offsets = deserializedTree.getOffsetsOfLeaveNodesShouldContainKeys(mostLeftNode, mostRightNode);
+
+        BTreeLeafNode leaf;
+
+        for (Integer offset : offsets) {
+            CacheMappingKey mappingKey = new CacheMappingKey(fileName, offset + length + 4);
+            leaf = (BTreeLeafNode) getFromCache(mappingKey);
+            if (leaf == null) {
+                leaf = getLeafFromExternalStorage(fileName, offset + length + 4);
+            } else {
+                CacheData cacheData = new LeafNodeCacheData(leaf);
+                putCacheData(cacheData, mappingKey);
+            }
+
+            ArrayList<byte[]> allTuples = leaf.getTuples(leftKey, rightKey);
+
+            ArrayList<byte[]> tuples = getTuplesWithinTimeStamp(allTuples, timestampLowerBound, timestampUpperBound);
+
+            if (tuples.size() != 0) {
+                serializedTuples.addAll(tuples);
+            }
+        }
+
+        collector.emit(Streams.FileSystemQueryStream, new Values(queryId, serializedTuples, metrics));
+
+        collector.emit(Streams.FileSubQueryFinishStream, new Values("finished"));
+
+    }
+
+    private void executePointQuery(Long queryId, Double key, String fileName, Long timestampLowerBound, Long timestampUpperBound) throws IOException {
+
+        System.out.println("point query");
+
+        FileScanMetrics metrics = new FileScanMetrics();
+
+        Pair data = getTreeData(fileName);
+
+        BTree deserializedTree = (BTree) data.getKey();
+
+        Integer length = (Integer) data.getValue();
+
+        int offset = deserializedTree.getOffsetOfLeaveNodeShouldContainKey(key);
+
+        offset += (length + 4);
+
+        BTreeLeafNode leaf;
+
+        CacheMappingKey mappingKey = new CacheMappingKey(fileName, offset);
+
+        leaf = (BTreeLeafNode) getFromCache(mappingKey);
+
+        if (leaf == null) {
+            leaf = getLeafFromExternalStorage(fileName, offset);
+        } else {
+            CacheData cacheData = new LeafNodeCacheData(leaf);
+            putCacheData(cacheData, mappingKey);
+        }
+
+        ArrayList<byte[]> tuples = leaf.searchAndGetTuples(key);
+
+        ArrayList<byte[]> serializedTuples = getTuplesWithinTimeStamp(tuples, timestampLowerBound, timestampUpperBound);
+
+        collector.emit(Streams.FileSystemQueryStream,
+                new Values(queryId, serializedTuples, metrics));
+
+        collector.emit(Streams.FileSubQueryFinishStream,
+                new Values("finished"));
+    }
+
     private Object getFromCache(CacheMappingKey mappingKey) {
         if (cacheMapping.get(mappingKey) == null) {
             return null;
         }
         return cacheMapping.get(mappingKey).getCacheData().getData();
     }
+
 
     private Pair getTemplateFromExternalStorage(FileSystemHandler fileSystemHandler, String fileName) {
         //        startTimeOfReadFile = System.currentTimeMillis();
@@ -217,6 +333,7 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
         return new Pair(deserializedTree, length);
     }
 
+
     private void putCacheData(CacheData cacheData, CacheMappingKey mappingKey) {
         CacheUnit cacheUnit = new CacheUnit();
         cacheUnit.setCacheData(cacheData);
@@ -224,12 +341,12 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
     }
 
 
-    private ArrayList<byte[]> getTuplesWithinTimeStamp(BTreeLeafNode leaf, Long timestampLowerBound, Long timestampUpperBound)
+    private ArrayList<byte[]> getTuplesWithinTimeStamp(BTreeLeafNode leaf, Long timestampLowerBound, Long timestampUpperBound, Double leftKey, Double rightKey)
             throws IOException {
 
         ArrayList<byte[]> serializedTuples = new ArrayList<>();
 
-        ArrayList<byte[]> tuples = leaf.getTuples();
+        List<byte[]> tuples = leaf.getTuples(leftKey, rightKey);
 
         for (int i = 0; i < tuples.size(); ++i) {
             Values deserializedTuple = DeserializationHelper.deserialize(tuples.get(i));
@@ -242,7 +359,23 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
         return serializedTuples;
     }
 
+    private ArrayList<byte[]> getTuplesWithinTimeStamp(ArrayList<byte[]> tuples, Long timestampLowerBound, Long timestampUpperBound)
+            throws IOException {
 
+        ArrayList<byte[]> serializedTuples = new ArrayList<>();
+
+        for (int i = 0; i < tuples.size(); ++i) {
+            Values deserializedTuple = DeserializationHelper.deserialize(tuples.get(i));
+            if (timestampLowerBound <= (Long) deserializedTuple.get(schema.getNumberOfFileds()) &&
+                    timestampUpperBound >= (Long) deserializedTuple.get(schema.getNumberOfFileds())) {
+                serializedTuples.add(tuples.get(i));
+            }
+        }
+
+        return serializedTuples;
+    }
+
+    /*
     private BTreeLeafNode getLeafFromExternalStorage(FileSystemHandler fileSystemHandler, String fileName, int offset)
             throws IOException {
         byte[] lengthInByte = new byte[4];
@@ -280,5 +413,66 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
         fileSystemHandler.closeFile();
         return leaf;
 
+    }
+    */
+
+    private BTreeLeafNode getLeafFromExternalStorage(String fileName, int offset)
+            throws IOException {
+
+        FileSystemHandler fileSystemHandler = null;
+        if (TopologyConfig.HDFSFlag) {
+            fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
+        } else {
+            fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
+        }
+
+        byte[] lengthInByte = new byte[4];
+        fileSystemHandler.openFile("/", fileName);
+
+        fileSystemHandler.seek(offset);
+
+        fileSystemHandler.readBytesFromFile(offset, lengthInByte);
+
+        int lengthOfLeaveInBytes = ByteBuffer.wrap(lengthInByte, 0, 4).getInt();
+        byte[] leafInByte = new byte[lengthOfLeaveInBytes+1];
+
+        fileSystemHandler.seek(offset + 4);
+
+        fileSystemHandler.readBytesFromFile(offset + 4, leafInByte);
+
+        Input input = new Input(leafInByte);
+        BTreeLeafNode leaf = kryo.readObject(input, BTreeLeafNode.class);
+
+        fileSystemHandler.closeFile();
+        return leaf;
+    }
+
+
+    private Pair getTreeData(String fileName) {
+        Pair data = null;
+        try {
+            FileSystemHandler fileSystemHandler = null;
+            if (TopologyConfig.HDFSFlag) {
+                fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
+            } else {
+                fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
+            }
+
+            CacheMappingKey mappingKey = new CacheMappingKey(fileName, 0);
+
+            data = (Pair) getFromCache(mappingKey);
+
+            if (data == null) {
+                data = getTemplateFromExternalStorage(fileSystemHandler, fileName);
+
+                CacheData cacheData = new TemplateCacheData(data);
+
+                putCacheData(cacheData, mappingKey);
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return data;
     }
 }
