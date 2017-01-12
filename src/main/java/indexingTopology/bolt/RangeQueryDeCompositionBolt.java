@@ -74,23 +74,23 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
 
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
-        file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/input_data");
+//        file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/input_data");
+//
+//        try {
+//            File file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/shuffle_grouping");
+//
+//            if (!file.exists()) {
+//                file.createNewFile();
+//            }
 
-        try {
-            File file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/shuffle_grouping");
-
-            if (!file.exists()) {
-                file.createNewFile();
-            }
-
-            FileWriter fileWriter = new FileWriter(file,true);
-
-            bufferedWriter = new BufferedWriter(fileWriter);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//            FileWriter fileWriter = new FileWriter(file,true);
+//
+//            bufferedWriter = new BufferedWriter(fileWriter);
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
         newQueryRequest = new Semaphore(MAX_NUMBER_OF_CONCURRENT_QUERIES);
         queryId = 0;
@@ -123,13 +123,13 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
         maxIndexValue = new AtomicDouble(0);
 
 
-        try {
-            bufferedReader = new BufferedReader(new FileReader(file));
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            bufferedReader = new BufferedReader(new FileReader(file));
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
         setTimestamps();
 
@@ -149,18 +149,18 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
             filePartitionSchemaManager.add(new FileMetaData(fileName, (Double) keyRange.getKey(),
                     (Double)keyRange.getValue(), (Long) timeStampRange.getKey(), (Long) timeStampRange.getValue()));
         } else if (tuple.getSourceStreamId().equals(Streams.NewQueryStream)) {
-            Long queryId = tuple.getLong(0);
+//            Long queryId = tuple.getLong(0);
 //            Long timeCostInMillis = System.currentTimeMillis() - queryIdToTimeCostInMillis.get(queryId);
 
-            FileScanMetrics metrics = (FileScanMetrics) tuple.getValue(2);
+//            FileScanMetrics metrics = (FileScanMetrics) tuple.getValue(2);
 
-            int numberOfFilesToScan = tuple.getInteger(3);
+//            int numberOfFilesToScan = tuple.getInteger(3);
 
-            try {
-                writeToFile(metrics, numberOfFilesToScan);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+//            try {
+//                writeToFile(metrics, numberOfFilesToScan);
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
 
             newQueryRequest.release();
         } else if (tuple.getSourceStreamId().equals(Streams.FileSubQueryFinishStream)) {
@@ -283,17 +283,17 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
                     e.printStackTrace();
                 }
 
-                String text = null;
-                try {
-                    text = bufferedReader.readLine();
-                    if (text == null) {
+//                String text = null;
+//                try {
+//                    text = bufferedReader.readLine();
+//                    if (text == null) {
 //                        bufferedReader.close();
-                        bufferedReader = new BufferedReader(new FileReader(file));
-                        text = bufferedReader.readLine();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+//                        bufferedReader = new BufferedReader(new FileReader(file));
+//                        text = bufferedReader.readLine();
+//                    }
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
 
 
 //                String [] tuple = text.split(" ");
@@ -302,6 +302,9 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
                 Double rightKey = 1000.0;
                 Double min = minIndexValue.get();
                 Double max = maxIndexValue.get();
+
+                System.out.println("new query");
+
 //                while (min > max) {
 //                    min = minIndexValue.get();
 //                    max = maxIndexValue.get();
@@ -349,6 +352,8 @@ public class RangeQueryDeCompositionBolt extends BaseRichBolt {
                 putSubquerisToTaskQueues(numberOfSubqueries, leftKey, rightKey, fileNames, startTimeStamp, endTimeStamp);
                 sendSubqueriesFromTaskQueues();
 //                 */
+
+                System.out.println("query Id " + queryId + " " + numberOfFilesToScan + " files in decompositionbolt");
 
                 collector.emit(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryInformationStream,
                         new Values(queryId, numberOfSubqueries));

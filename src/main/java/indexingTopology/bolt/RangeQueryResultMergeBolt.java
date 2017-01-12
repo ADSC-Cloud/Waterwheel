@@ -64,7 +64,7 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
             int numberOfTasksToSearch = tuple.getInteger(1);
             Long queryId = tuple.getLong(0);
 
-//            System.out.println("queryId" + queryId + "number of tasks to search " + numberOfTasksToSearch);
+            System.out.println("queryId" + queryId + "number of tasks to search " + numberOfTasksToSearch);
             queryIdToNumberOfTasksToSearch.put(queryId, numberOfTasksToSearch);
 
             if (isQueryFinshed(queryId)) {
@@ -76,7 +76,7 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
                 .equals(Streams.FileSystemQueryInformationStream)) {
             int numberOfFilesToScan = tuple.getInteger(1);
             Long queryId = tuple.getLong(0);
-//            System.out.println("queryId" + queryId + "number of files to scan " + numberOfFilesToScan);
+            System.out.println("queryId" + queryId + "number of files to scan " + numberOfFilesToScan);
             queryIdToNumberOfFilesToScan.put(queryId, numberOfFilesToScan);
 
             if (isQueryFinshed(queryId)) {
@@ -127,7 +127,6 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
                 removeQueryIdFromMappings(queryId);
             }
 
-            collector.ack(tuple);
         }
     }
 
@@ -147,6 +146,11 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
         } else if (queryIdToNumberOfTasksToSearch.get(queryId) == null) {
             return false;
         } else if (queryIdToCounter.get(queryId) == null) {
+            int numberOfFilesToScan = queryIdToNumberOfFilesToScan.get(queryId);
+            int tasksToSearch = queryIdToNumberOfTasksToSearch.get(queryId);
+            if (tasksToSearch == 0 && numberOfFilesToScan == 0) {
+                return true;
+            }
             return false;
         } else {
             int counter = queryIdToCounter.get(queryId);
@@ -160,10 +164,12 @@ public class RangeQueryResultMergeBolt extends BaseRichBolt {
     }
 
     private void sendNewQueryPermit(Long queryId) {
-        FileScanMetrics metrics = queryIdToFileScanMetrics.get(queryId);
-        int numberOfFilesToScan = queryIdToNumberOfFilesToScan.get(queryId);
+//        FileScanMetrics metrics = queryIdToFileScanMetrics.get(queryId);
+//        int numberOfFilesToScan = queryIdToNumberOfFilesToScan.get(queryId);
+//        collector.emit(Streams.NewQueryStream, new Values(queryId, new String("New query can be executed"),
         collector.emit(Streams.NewQueryStream, new Values(queryId, new String("New query can be executed"),
-                        metrics, numberOfFilesToScan));
+                        null, 0));
+//                        metrics, numberOfFilesToScan));
     }
 
     private void removeQueryIdFromMappings(Long queryId) {

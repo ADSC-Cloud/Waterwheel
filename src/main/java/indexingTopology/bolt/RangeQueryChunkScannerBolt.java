@@ -233,8 +233,8 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
 
         for (int i = 0; i < tuples.size(); ++i) {
             Values deserializedTuple = DeserializationHelper.deserialize(tuples.get(i));
-            if (timestampLowerBound <= (Long) deserializedTuple.get(8) &&
-                    timestampUpperBound >= (Long) deserializedTuple.get(8)) {
+            if (timestampLowerBound <= (Long) deserializedTuple.get(3) &&
+                    timestampUpperBound >= (Long) deserializedTuple.get(3)) {
                 serializedTuples.add(tuples.get(i));
             }
         }

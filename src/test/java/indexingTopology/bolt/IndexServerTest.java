@@ -78,7 +78,7 @@ public class IndexServerTest {
         this.chunk = MemChunk.createNew(bytesLimit);
         this.templateUpdater = new TemplateUpdater(btreeOrder, tm, sm);
         indexedData = new BTree(btreeOrder, tm, sm);
-        indexer = new Indexer(inputQueue, indexedData, chunk);
+//        indexer = new Indexer(inputQueue, indexedData, chunk);
     }
 
 

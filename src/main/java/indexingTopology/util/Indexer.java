@@ -1,11 +1,18 @@
 package indexingTopology.util;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Output;
+import indexingTopology.DataSchema;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.filesystem.FileSystemHandler;
 import indexingTopology.filesystem.HdfsFileSystemHandler;
 import indexingTopology.filesystem.LocalFileSystemHandler;
 import indexingTopology.exception.UnsupportedGenericException;
+import indexingTopology.streams.Streams;
 import javafx.util.Pair;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.tuple.Tuple;
+import org.apache.storm.tuple.Values;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,7 +29,7 @@ public class Indexer {
 
     private ArrayBlockingQueue<Pair> pendingQueue;
 
-    private ArrayBlockingQueue<Pair> inputQueue;
+    private ArrayBlockingQueue<Tuple> inputQueue;
 
     private BTree indexedData;
 
@@ -46,7 +53,23 @@ public class Indexer {
 
     private long start;
 
-    public Indexer(ArrayBlockingQueue<Pair> inputQueue, BTree indexedData, MemChunk chunk) {
+    private String indexField;
+
+    private Kryo kryo;
+
+    private Double minIndexValue = Double.MAX_VALUE;
+    private Double maxIndexValue = Double.MIN_VALUE;
+
+    private Long minTimeStamp = Long.MAX_VALUE;
+    private Long maxTimeStamp = Long.MIN_VALUE;
+
+    private DataSchema schema;
+
+    private OutputCollector collector;
+
+    private int taskId;
+
+    public Indexer(int taskId, ArrayBlockingQueue<Tuple> inputQueue, BTree indexedData, MemChunk chunk, String indexedField, DataSchema schema, OutputCollector collector) {
         pendingQueue = new ArrayBlockingQueue<>(1024);
 
         this.inputQueue = inputQueue;
@@ -72,6 +95,18 @@ public class Indexer {
 
         this.chunk = chunk;
 
+        this.indexField = indexedField;
+
+        this.schema = schema;
+
+        kryo = new Kryo();
+        kryo.register(BTree.class, new KryoTemplateSerializer());
+        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
+
+        this.collector = collector;
+
+        this.taskId = taskId;
+
         createIndexingThread();
     }
 
@@ -83,7 +118,7 @@ public class Indexer {
             }
             indexingThreads.clear();
             indexingRunnable = new IndexingRunnable();
-            System.out.println("All the indexing threads are terminated!");
+//            System.out.println("All the indexing threads are terminated!");
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -100,7 +135,7 @@ public class Indexer {
         for(int i = 0; i < n; i++) {
             Thread indexThread = new Thread(indexingRunnable);
             indexThread.start();
-            System.out.println(String.format("Thread %d is created!", indexThread.getId()));
+//            System.out.println(String.format("Thread %d is created!", indexThread.getId()));
             indexingThreads.add(indexThread);
         }
     }
@@ -111,7 +146,7 @@ public class Indexer {
         @Override
         public void run() {
 
-            ArrayList<Pair> drainer = new ArrayList<Pair>();
+            ArrayList<Tuple> drainer = new ArrayList<>();
 
             while (true) {
 
@@ -129,9 +164,9 @@ public class Indexer {
 
                         indexedData = templateUpdater.createTreeWithBulkLoading(indexedData);
 
-                        System.out.println("Time used to update template " + (System.currentTimeMillis() - start));
+//                        System.out.println("Time used to update template " + (System.currentTimeMillis() - start));
 //
-                        System.out.println("New tree has been built");
+//                        System.out.println("New tree has been built");
 //
                         executed.set(0L);
 //
@@ -153,12 +188,7 @@ public class Indexer {
                     FileSystemHandler fileSystemHandler = null;
                     String fileName = null;
 
-                    chunk.changeToLeaveNodesStartPosition();
-                    indexedData.writeLeavesIntoChunk(chunk);
-
-                    chunk.changeToStartPosition();
-                    byte[] serializedTree = SerializationHelper.serializeTree(indexedData);
-                    chunk.write(serializedTree);
+                    writeTreeIntoChunk();
 
                     try {
                         if (TopologyConfig.HDFSFlag) {
@@ -166,14 +196,18 @@ public class Indexer {
                         } else {
                             fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
                         }
-                        fileName = "chunk" + chunkId;
+                        fileName = fileName = "taskId" + taskId + "chunk" + chunkId;
                         fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
 
+                    Pair keyRange = new Pair(minIndexValue, maxIndexValue);
+                    Pair timeStampRange = new Pair(minTimeStamp, maxTimeStamp);
 
-                    System.out.println(String.format("Index throughput = %f tuple / s in a chunk", numTuples / (double) (System.currentTimeMillis() - start) * 1000));
+                    collector.emit(Streams.FileInformationUpdateStream, new Values(fileName, keyRange, timeStampRange));
+
+                    collector.emit(Streams.TimeStampUpdateStream, new Values(maxTimeStamp));
 
                     indexedData.clearPayload();
 
@@ -197,10 +231,31 @@ public class Indexer {
 //                }
                 inputQueue.drainTo(drainer, 256);
 
-                for (Pair pair : drainer) {
+                for (Tuple tuple: drainer) {
                     try {
+                        Double indexValue = tuple.getDoubleByField(indexField);
+                        Long timeStamp = tuple.getLong(3);
+                        if (indexValue < minIndexValue) {
+                            minIndexValue = indexValue;
+                        }
+                        if (indexValue > maxIndexValue) {
+                            maxIndexValue = indexValue;
+                        }
+
+                        if (timeStamp < minTimeStamp) {
+                            minTimeStamp = timeStamp;
+                        }
+                        if (timeStamp > maxTimeStamp) {
+                            maxTimeStamp = timeStamp;
+                        }
+                        byte[] serializedTuple = schema.serializeTuple(tuple);
+
+                        Pair pair = new Pair(indexValue, serializedTuple);
+
                         pendingQueue.put(pair);
                     } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
                         e.printStackTrace();
                     }
                 }
@@ -281,5 +336,32 @@ public class Indexer {
 //            }
 //                System.out.println("Indexing thread " + Thread.currentThread().getId() + " is terminated with " + localCount + " tuples processed!");
         }
+    }
+
+
+    private void writeTreeIntoChunk() {
+        Output output = new Output(65000000, 20000000);
+
+        byte[] leavesInBytes = indexedData.serializeLeaves();
+
+        kryo.writeObject(output, indexedData);
+
+        byte[] bytes = output.toBytes();
+
+        int lengthOfTemplate = bytes.length;
+
+        output = new Output(4);
+
+        output.writeInt(lengthOfTemplate);
+
+        byte[] lengthInBytes = output.toBytes();
+
+        chunk = MemChunk.createNew(leavesInBytes.length + 4 + lengthOfTemplate);
+
+        chunk.write(lengthInBytes );
+
+        chunk.write(bytes);
+
+        chunk.write(leavesInBytes);
     }
 }

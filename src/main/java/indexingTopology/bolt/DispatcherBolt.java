@@ -54,7 +54,7 @@ public class DispatcherBolt extends BaseRichBolt{
 
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
-        outputFile = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/number_of_tasks.txt");
+//        outputFile = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/number_of_tasks.txt");
         Set<String> componentIds = topologyContext.getThisTargets()
                 .get(NormalDistributionIndexingTopology.IndexStream).keySet();
         targetTasks = new ArrayList<>();
@@ -68,11 +68,11 @@ public class DispatcherBolt extends BaseRichBolt{
 
         intervalToPartitionMapping = balancedPartition.getIntervalToPartitionMapping();
 
-        try {
-            fop = new FileOutputStream(outputFile);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            fop = new FileOutputStream(outputFile);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
     }
 

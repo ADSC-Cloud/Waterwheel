@@ -92,7 +92,7 @@ public class TexiTrajectoryTopology {
 
         builder.setBolt(RangeQueryDecompositionBolt, new RangeQueryDeCompositionBolt(lowerBound, upperBound), 1)
                 .shuffleGrouping(ResultMergeBolt, Streams.NewQueryStream)
-//                .shuffleGrouping(RangeQueryChunkScannerBolt, streams.FileSubQueryFinishStream)
+                .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSubQueryFinishStream)
                 .shuffleGrouping(MetadataServer, Streams.FileInformationUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.TimeStampUpdateStream);
@@ -100,7 +100,7 @@ public class TexiTrajectoryTopology {
         builder.setBolt(RangeQueryChunkScannerBolt, new RangeQueryChunkScannerBolt(), 4)
 //                .fieldsGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream, new Fields("fileName"));
 //                .directGrouping(RangeQueryDecompositionBolt, streams.FileSystemQueryStream);
-                .shuffleGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream);
+                .directGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream);
 
         builder.setBolt(ResultMergeBolt, new RangeQueryResultMergeBolt(schema), 1)
                 .allGrouping(RangeQueryChunkScannerBolt, Streams.FileSystemQueryStream)

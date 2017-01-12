@@ -15,13 +15,13 @@ import java.util.*;
 public class DeserializationHelper <TKey extends Comparable<TKey>,TValue>{
 
 
-    static List<String> fieldNames = new ArrayList<String>(Arrays.asList("user_id", "id_1", "id_2", "ts_epoch",
-            "date", "time", "latitude", "longitude"));
-    static List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
-            Double.class, Double.class, Double.class, Double.class, Double.class));
+//    static List<String> fieldNames = new ArrayList<String>(Arrays.asList("user_id", "id_1", "id_2", "ts_epoch",
+//            "date", "time", "latitude", "longitude"));
+//    static List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
+//            Double.class, Double.class, Double.class, Double.class, Double.class));
 
-//    static List<String> fieldNames = new ArrayList<String>(Arrays.asList("id", "zcode", "payload"));
-//    static List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, String.class));
+    static List<String> fieldNames = new ArrayList<String>(Arrays.asList("id", "zcode", "payload"));
+    static List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, String.class));
 
     private static DataSchema schema = new DataSchema(fieldNames, valueTypes, "zcode");
 

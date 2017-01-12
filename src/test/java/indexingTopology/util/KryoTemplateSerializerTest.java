@@ -94,10 +94,12 @@ public class KryoTemplateSerializerTest {
 
         }
 
+        bTree.printBtree();
+
 
         byte[] leavesInBytes = bTree.serializeLeaves();
 
-        Output output = new Output(500000);
+        Output output = new Output(500000, 20000000);
 
         Kryo kryo = new Kryo();
         kryo.register(BTree.class, new KryoTemplateSerializer());
@@ -107,8 +109,6 @@ public class KryoTemplateSerializerTest {
 
         byte[] bytes = output.toBytes();
 
-        MemChunk chunk = MemChunk.createNew(6500000);
-
         int lengthOfTemplate = bytes.length;
 
         output = new Output(4);
@@ -116,6 +116,8 @@ public class KryoTemplateSerializerTest {
         output.writeInt(lengthOfTemplate);
 
         byte[] lengthInBytes = output.toBytes();
+
+        MemChunk chunk = MemChunk.createNew(4 + lengthOfTemplate + leavesInBytes.length);
 
         chunk.write(lengthInBytes );
 
@@ -158,10 +160,11 @@ public class KryoTemplateSerializerTest {
 
         bTree = kryo.readObject(input, BTree.class);
 
+        bTree.printBtree();
+
         BTreeNode mostLeftNode = bTree.findLeafNodeShouldContainKeyInDeserializedTemplate(0.0);
         BTreeNode mostRightNode = bTree.findLeafNodeShouldContainKeyInDeserializedTemplate(60.0);
 
-        Long searchStartTime = System.currentTimeMillis();
         List<Integer> offsets = bTree.getOffsetsOfLeaveNodesShouldContainKeys(mostLeftNode
                 , mostRightNode);
 

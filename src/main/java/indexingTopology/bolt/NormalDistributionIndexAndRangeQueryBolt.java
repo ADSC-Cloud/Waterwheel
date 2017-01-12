@@ -8,6 +8,7 @@ import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
+import org.apache.storm.tuple.TupleImpl;
 import org.apache.storm.tuple.Values;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.DataSchema;
@@ -25,6 +26,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -84,6 +86,10 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
 
     private Kryo kryo;
 
+    private Indexer indexer;
+
+    private ArrayBlockingQueue<Tuple> inputQueue;
+
     public NormalDistributionIndexAndRangeQueryBolt(String indexField, DataSchema schema, int btreeOrder,
                                                     int bytesLimit) {
         this.schema = schema;
@@ -100,7 +106,7 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
         indexedData = new BTree<Double,Integer>(btreeOrder,tm, sm);
         copyOfIndexedData = indexedData;
 
-        chunk = MemChunk.createNew(this.bytesLimit);
+//        chunk = MemChunk.createNew(this.bytesLimit);
 
         this.numTuples = 0;
 
@@ -113,42 +119,14 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
         this.templateUpdater = new TemplateUpdater(btreeOrder, tm, sm);
 
         this.queue = new LinkedBlockingQueue<Pair>(1024);
-//        this.outputFile = new File("/home/lzj/IndexTopology_experiment/NormalDistribution/query_latency_without_rebuild_but_split_256");
-//        this.outputFile = new File("/home/lzj/IndexTopology_experiment/NormalDistribution/query_latency_with_rebuild_and_split_4");
-//        try {
-//            this.outputFile = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/query_latency_with_nothing_4");
-//            if (!outputFile.exists()) {
-//                outputFile.createNewFile();
-//            }
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//        try {
-//            queryFileOutPut = new FileOutputStream(outputFile);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-
-//        file = new File("/home/lzj/IndexTopology_experiment/NormalDistribution/specific_time_with_rebuild_and_split_with_query_4_64M");
-//        file = new File("/home/lzj/IndexTopology_experiment/NormalDistribution/specific_time_without_rebuild_but_split_with_query_256_64M");
-//        try {
-//            file = new File("/home/acelzj/IndexTopology_experiment/NormalDistribution/specific_time_with_nothing_4_64M");
-//            if (!file.exists()) {
-//                file.createNewFile();
-//            }
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//        try {
-//            fop = new FileOutputStream(file);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
 
         kryo = new Kryo();
         kryo.register(BTree.class, new KryoTemplateSerializer());
         kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
+
+        this.inputQueue = new ArrayBlockingQueue<Tuple>(1024);
+
+        Indexer indexer = new Indexer(topologyContext.getThisTaskId(), inputQueue, indexedData, chunk, indexField, schema, outputCollector);
 
         createIndexingThread();
 
@@ -164,48 +142,49 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
             Double indexValue = tuple.getDoubleByField(indexField);
 
 //            Long timeStamp = tuple.getLong(schema.getNumberOfFileds());
-            Long timeStamp = tuple.getLong(8);
+            Long timeStamp = tuple.getLong(3);
             try {
-                if (numTuples < TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK) {
+//                if (numTuples < TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK) {
 //                    if (chunkId == 0) {
 //                        System.out.println("Num tuples " + numTuples + " " + indexValue);
 //                    }
-                    if (indexValue < minIndexValue) {
-                        minIndexValue = indexValue;
-                    }
-                    if (indexValue > maxIndexValue) {
-                        maxIndexValue = indexValue;
-                    }
-
-                    if (timeStamp < minTimeStamp) {
-                        minTimeStamp = timeStamp;
-                    }
-                    if (timeStamp > maxTimeStamp) {
-                        maxTimeStamp = timeStamp;
-                    }
-
-                    byte[] serializedTuple = schema.serializeTuple(tuple);
-
-                    Pair pair = new Pair(indexValue, serializedTuple);
-                    queue.put(pair);
-
-                    ++numTuples;
-                } else {
-
-                    while (!queue.isEmpty()) {
-                        try {
-                            Thread.sleep(1);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-                    terminateIndexingThreads();
-
-                    double percentage = (double) sm.getCounter() * 100 / (double) numTuples;
-
-                    writeTreeIntoChunk();
-
+//                    if (indexValue < minIndexValue) {
+//                        minIndexValue = indexValue;
+//                    }
+//                    if (indexValue > maxIndexValue) {
+//                        maxIndexValue = indexValue;
+//                    }
+//
+//                    if (timeStamp < minTimeStamp) {
+//                        minTimeStamp = timeStamp;
+//                    }
+//                    if (timeStamp > maxTimeStamp) {
+//                        maxTimeStamp = timeStamp;
+//                    }
+//
+//                    byte[] serializedTuple = schema.serializeTuple(tuple);
+//
+//                    Pair pair = new Pair(indexValue, serializedTuple);
+//                    queue.put(pair);
+//
+//                    ++numTuples;
+                inputQueue.put(tuple);
+//                } else {
+//
+//                    while (!queue.isEmpty()) {
+//                        try {
+//                            Thread.sleep(1);
+//                        } catch (InterruptedException e) {
+//                            e.printStackTrace();
+//                        }
+//                    }
+//
+//                    terminateIndexingThreads();
+//
+//                    double percentage = (double) sm.getCounter() * 100 / (double) numTuples;
+//
+//                    writeTreeIntoChunk();
+//
 //                    chunk.changeToLeaveNodesStartPosition();
 //                    indexedData.writeLeavesIntoChunk(chunk);
 //                    chunk.changeToStartPosition();
@@ -214,7 +193,7 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
 //                    chunk.write(serializedTree);
 
 //                    createNewTemplate(percentage);
-                    indexedData.clearPayload();
+//                    indexedData.clearPayload();
 //                    if (!isTreeBuilt) {
 //                        indexedData.clearPayload();
 //                    } else {
@@ -222,59 +201,59 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
 //                        indexedData.setTemplateMode();
 //                    }
 
-                    FileSystemHandler fileSystemHandler = null;
-                    String fileName = null;
-                    try {
-                        if (TopologyConfig.HDFSFlag) {
-                            fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
-                        } else {
-                            fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
-                        }
-                        int taskId = context.getThisTaskId();
-                        fileName = "taskId" + taskId + "chunk" + chunkId;
-                        fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                    Pair keyRange = new Pair(minIndexValue, maxIndexValue);
-                    Pair timeStampRange = new Pair(minTimeStamp, maxTimeStamp);
-
-                    collector.emit(Streams.FileInformationUpdateStream, new Values(fileName, keyRange, timeStampRange));
-
-                    collector.emit(Streams.TimeStampUpdateStream, new Values(maxTimeStamp));
-
-                    numTuples = 0;
-
-                    chunk = MemChunk.createNew(bytesLimit);
-                    sm.resetCounter();
-                    byte[] serializedTuple = schema.serializeTuple(tuple);
-                    Pair pair = new Pair(indexValue, serializedTuple);
-                    queue.put(pair);
-                    createIndexingThread();
-                    ++numTuples;
-                    ++chunkId;
-
-                    minIndexValue = Double.MAX_VALUE;
-                    maxIndexValue = Double.MIN_VALUE;
-                    if (indexValue < minIndexValue) {
-                        minIndexValue = indexValue;
-                    }
-                    if (indexValue > maxIndexValue) {
-                        maxIndexValue = indexValue;
-                    }
-
-                    minTimeStamp = Long.MAX_VALUE;
-                    maxTimeStamp = Long.MIN_VALUE;
-                    if (timeStamp < minTimeStamp) {
-                        minTimeStamp = timeStamp;
-                    }
-                    if (timeStamp > maxTimeStamp) {
-                        maxTimeStamp = timeStamp;
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+//                    FileSystemHandler fileSystemHandler = null;
+//                    String fileName = null;
+//                    try {
+//                        if (TopologyConfig.HDFSFlag) {
+//                            fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
+//                        } else {
+//                            fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
+//                        }
+//                        int taskId = context.getThisTaskId();
+//                        fileName = "taskId" + taskId + "chunk" + chunkId;
+//                        fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
+//
+//                    Pair keyRange = new Pair(minIndexValue, maxIndexValue);
+//                    Pair timeStampRange = new Pair(minTimeStamp, maxTimeStamp);
+//
+//                    collector.emit(Streams.FileInformationUpdateStream, new Values(fileName, keyRange, timeStampRange));
+//
+//                    collector.emit(Streams.TimeStampUpdateStream, new Values(maxTimeStamp));
+//
+//                    numTuples = 0;
+//
+//                    chunk = MemChunk.createNew(bytesLimit);
+//                    sm.resetCounter();
+//                    byte[] serializedTuple = schema.serializeTuple(tuple);
+//                    Pair pair = new Pair(indexValue, serializedTuple);
+//                    queue.put(pair);
+//                    createIndexingThread();
+//                    ++numTuples;
+//                    ++chunkId;
+//
+//                    minIndexValue = Double.MAX_VALUE;
+//                    maxIndexValue = Double.MIN_VALUE;
+//                    if (indexValue < minIndexValue) {
+//                        minIndexValue = indexValue;
+//                    }
+//                    if (indexValue > maxIndexValue) {
+//                        maxIndexValue = indexValue;
+//                    }
+//
+//                    minTimeStamp = Long.MAX_VALUE;
+//                    maxTimeStamp = Long.MIN_VALUE;
+//                    if (timeStamp < minTimeStamp) {
+//                        minTimeStamp = timeStamp;
+//                    }
+//                    if (timeStamp > maxTimeStamp) {
+//                        maxTimeStamp = timeStamp;
+//                    }
+//                }
+//            } catch (IOException e) {
+//                e.printStackTrace();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } finally {
