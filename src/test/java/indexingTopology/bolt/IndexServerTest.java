@@ -1,12 +1,18 @@
 package indexingTopology.bolt;
 
 import indexingTopology.DataSchema;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.util.*;
 import indexingTopology.util.texi.Car;
 import indexingTopology.util.texi.City;
 import indexingTopology.util.texi.TrajectoryGenerator;
 import indexingTopology.util.texi.TrajectoryUniformGenerator;
 import javafx.util.Pair;
+import org.apache.storm.task.GeneralTopologyContext;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.tuple.Tuple;
+import org.apache.storm.tuple.TupleImpl;
 import org.apache.storm.tuple.Values;
 
 import java.io.*;
@@ -53,6 +59,8 @@ public class IndexServerTest {
     private Long minTimeStamp = Long.MAX_VALUE;
     private Long maxTimeStamp = Long.MIN_VALUE;
 
+    private long queryId;
+
 
     private static ArrayBlockingQueue<Pair> inputQueue;
 
@@ -62,7 +70,7 @@ public class IndexServerTest {
 
 //    private static IndexingRunnable indexingRunnable;
 
-    private static Indexer indexer;
+    private static IndexerCopy indexer;
 
     static List<String> fieldNames = new ArrayList<String>(Arrays.asList("id", "zcode", "payload"));
     static List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, String.class));
@@ -72,13 +80,14 @@ public class IndexServerTest {
         this.schema = schema;
         this.btreeOrder = btreeOrder;
         this.bytesLimit = bytesLimit;
-        this.inputQueue = new ArrayBlockingQueue<Pair>(1024);
+        this.inputQueue = new ArrayBlockingQueue<>(1024);
         this.tm = TimingModule.createNew();
         this.sm = SplitCounterModule.createNew();
         this.chunk = MemChunk.createNew(bytesLimit);
         this.templateUpdater = new TemplateUpdater(btreeOrder, tm, sm);
         indexedData = new BTree(btreeOrder, tm, sm);
-//        indexer = new Indexer(inputQueue, indexedData, chunk);
+        queryId = 0;
+        indexer = new IndexerCopy(0, inputQueue, indexedData, chunk, "user_id", schema);
     }
 
 
@@ -91,7 +100,7 @@ public class IndexServerTest {
 
         DataSchema schema = new DataSchema(fieldNames, valueTypes, "user_id");
 
-        final int btreeOrder = 4;
+        final int btreeOrder = TopologyConfig.BTREE_OREDER;
 
         final int bytesLimit = 65000000;
 
@@ -114,18 +123,24 @@ public class IndexServerTest {
 
             int numTuples = 0;
 
+            long timestamp = 0;
+
             TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
             City city = new City(x1, x2, y1, y2, partitions);
             while (true) {
                 Car car = generator.generate();
                 try {
                     int ZCode = city.getZCodeForALocation(car.x, car.y);
-                    Long timestamp = System.currentTimeMillis();
-                    Values values = new Values((double) car.id, (double) ZCode,
-                            new String(new char[payloadSize]), timestamp);
+                    List<Object> values = new ArrayList<>();
+                    values.add((double) car.id);
+                    values.add((double) ZCode);
+                    values.add(new String(new char[payloadSize]));
+                    values.add(timestamp);
                     byte[] serializedTuples = serializeValues(values);
 
-                    inputQueue.put(new Pair((double) ZCode, serializedTuples));
+                    inputQueue.put(new Pair((double) car.id, serializedTuples));
+
+                    ++timestamp;
 
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -139,8 +154,7 @@ public class IndexServerTest {
 
     }
 
-
-    public static byte[] serializeValues(Values values) throws IOException {
+    public static byte[] serializeValues(List<Object> values) throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         for (int i=0;i < valueTypes.size();i++) {
             if (valueTypes.get(i).equals(Double.class)) {

@@ -16,22 +16,7 @@ import java.util.List;
 /**
  * Created by acelzj on 11/15/16.
  */
-public class NormalDistributionIndexingAndRangeQueryTopology {
-
-    public static final String FileSystemQueryStream = "FileSystemQueryStream";
-    public static final String BPlusTreeQueryStream = "BPlusTreeQueryStream";
-    public static final String FileInformationUpdateStream = "FileInformationUpdateStream";
-    public static final String IndexStream = "IndexStream";
-    public static final String BPlusTreeQueryInformationStream = "BPlusTreeQueryInformationStream";
-    public static final String FileSystemQueryInformationStream = "FileSystemQueryInformationStream";
-    public static final String NewQueryStream = "NewQueryStream";
-    public static final String TimeStampUpdateStream = "TimeStampUpdateStream";
-    public static final String QueryGenerateStream = "QueryGenerateStream";
-    public static final String FileSubQueryFinishStream = "FileSubQueryFinishStream";
-    public static final String StatisticsReportStream = "StatisticsReportStream";
-    public static final String IntervalPartitionUpdateStream = "IntervalPartitionUpdateStream";
-    public static final String StaticsRequestStream = "StaticsRequestStream";
-
+public class NormalDistributionTopology {
 
     static final String TupleGenerator = "TupleGenerator";
     static final String RangeQueryDispatcherBolt = "DispatcherBolt";
@@ -75,29 +60,29 @@ public class NormalDistributionIndexingAndRangeQueryTopology {
 
         builder.setSpout(TupleGenerator, new NormalDistributionGenerator(schema), 1);
 
-        builder.setBolt(RangeQueryDispatcherBolt, new RangeQueryDispatcherBolt(schema, lowerBound, upperBound, enableLoadBalance))
+        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher(schema, lowerBound, upperBound, enableLoadBalance))
                 .shuffleGrouping(TupleGenerator, Streams.IndexStream)
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 
-        builder.setBolt(IndexerBolt, new NormalDistributionIndexAndRangeQueryBolt("user_id", schema, TopologyConfig.BTREE_OREDER, 65000000),2)
+        builder.setBolt(IndexerBolt, new Indexer("user_id", schema, TopologyConfig.BTREE_OREDER, 65000000),2)
                 .setNumTasks(1)
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream);
 
-        builder.setBolt(RangeQueryDecompositionBolt, new RangeQueryDeCompositionBolt(lowerBound, upperBound), 1)
+        builder.setBolt(RangeQueryDecompositionBolt, new QueryCoordinator(lowerBound, upperBound), 1)
                 .shuffleGrouping(ResultMergeBolt, Streams.NewQueryStream)
                 .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSubQueryFinishStream)
                 .shuffleGrouping(MetadataServer, Streams.FileInformationUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.TimeStampUpdateStream);
 
-        builder.setBolt(RangeQueryChunkScannerBolt, new RangeQueryChunkScannerBolt(schema), 4)
+        builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner(schema), 4)
 //                .fieldsGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream, new Fields("fileName"));
                 .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream);
 //                .shuffleGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream);
 
-        builder.setBolt(ResultMergeBolt, new RangeQueryResultMergeBolt(schema))
+        builder.setBolt(ResultMergeBolt, new ResultMerger(schema))
                 .allGrouping(RangeQueryChunkScannerBolt, Streams.FileSystemQueryStream)
                 .allGrouping(IndexerBolt, Streams.BPlusTreeQueryStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryInformationStream)

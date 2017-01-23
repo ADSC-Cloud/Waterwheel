@@ -20,21 +20,6 @@ import java.util.List;
  */
 public class TexiTrajectoryTopology {
 
-    public static final String FileSystemQueryStream = "FileSystemQueryStream";
-    public static final String BPlusTreeQueryStream = "BPlusTreeQueryStream";
-    public static final String FileInformationUpdateStream = "FileInformationUpdateStream";
-    public static final String IndexStream = "IndexStream";
-    public static final String BPlusTreeQueryInformationStream = "BPlusTreeQueryInformationStream";
-    public static final String FileSystemQueryInformationStream = "FileSystemQueryInformationStream";
-    public static final String NewQueryStream = "NewQueryStream";
-    public static final String TimeStampUpdateStream = "TimeStampUpdateStream";
-    public static final String QueryGenerateStream = "QueryGenerateStream";
-    public static final String FileSubQueryFinishStream = "FileSubQueryFinishStream";
-    public static final String StatisticsReportStream = "StatisticsReportStream";
-    public static final String IntervalPartitionUpdateStream = "IntervalPartitionUpdateStream";
-    public static final String StaticsRequestStream = "StaticsRequestStream";
-
-
     static final String TupleGenerator = "TupleGenerator";
     static final String RangeQueryDispatcherBolt = "DispatcherBolt";
     static final String RangeQueryDecompositionBolt = "QueryDeCompositionBolt";
@@ -43,12 +28,7 @@ public class TexiTrajectoryTopology {
     static final String ResultMergeBolt = "GResultMergeBolt";
     static final String MetadataServer = "MetadataServer";
 
-
     public static void main(String[] args) throws Exception {
-
-
-
-        //
 
         TopologyBuilder builder = new TopologyBuilder();
         List<String> fieldNames = new ArrayList<String>(Arrays.asList("id", "zcode", "payload"));
@@ -73,36 +53,36 @@ public class TexiTrajectoryTopology {
 
         String path = "/home/acelzj";
 
-        boolean enableLoadBalance = false;
+        boolean enableLoadBalance = true;
 
 
         builder.setSpout(TupleGenerator, new TexiTrajectoryGenerator(schema, generator, payloadSize, city), 1);
 
-        builder.setBolt(RangeQueryDispatcherBolt, new RangeQueryDispatcherBolt(schema, lowerBound, upperBound, enableLoadBalance), 1)
+        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher(schema, lowerBound, upperBound, enableLoadBalance), 1)
                 .shuffleGrouping(TupleGenerator, Streams.IndexStream)
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 
 
-        builder.setBolt(IndexerBolt, new NormalDistributionIndexAndRangeQueryBolt(schema.getIndexField(), schema, TopologyConfig.BTREE_OREDER, 65000000), 2)
+        builder.setBolt(IndexerBolt, new Indexer(schema.getIndexField(), schema, TopologyConfig.BTREE_OREDER, 65000000), 4)
 
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
-                .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream); // direct grouping should be used.
+                .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream) // direct grouping should be used.
+                .directGrouping(RangeQueryDecompositionBolt, Streams.TreeCleanStream);
         // And RangeQueryDecompositionBolt should emit to this stream via directEmit!!!!!
 
-        builder.setBolt(RangeQueryDecompositionBolt, new RangeQueryDeCompositionBolt(lowerBound, upperBound), 1)
+        builder.setBolt(RangeQueryDecompositionBolt, new QueryCoordinator(lowerBound, upperBound), 1)
                 .shuffleGrouping(ResultMergeBolt, Streams.NewQueryStream)
                 .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSubQueryFinishStream)
                 .shuffleGrouping(MetadataServer, Streams.FileInformationUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.TimeStampUpdateStream);
 
-        builder.setBolt(RangeQueryChunkScannerBolt, new RangeQueryChunkScannerBolt(schema), 4)
-//                .fieldsGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream, new Fields("fileName"));
-//                .directGrouping(RangeQueryDecompositionBolt, streams.FileSystemQueryStream);
-                .directGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream);
+        builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner(schema), 4)
+                .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream);
+//                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream); //make comparision with our method.
 
-        builder.setBolt(ResultMergeBolt, new RangeQueryResultMergeBolt(schema), 1)
+        builder.setBolt(ResultMergeBolt, new ResultMerger(schema), 1)
                 .allGrouping(RangeQueryChunkScannerBolt, Streams.FileSystemQueryStream)
                 .allGrouping(IndexerBolt, Streams.BPlusTreeQueryStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryInformationStream)
@@ -111,22 +91,14 @@ public class TexiTrajectoryTopology {
         builder.setBolt(MetadataServer, new MetadataServer(lowerBound, upperBound), 1)
                 .shuffleGrouping(RangeQueryDispatcherBolt, Streams.StatisticsReportStream)
                 .shuffleGrouping(IndexerBolt, Streams.TimeStampUpdateStream)
-                .shuffleGrouping(IndexerBolt, Streams.FileInformationUpdateStream);
+                .shuffleGrouping(IndexerBolt, Streams.FileInformationUpdateStream)
+                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.EableRepartitionStream);
 
         Config conf = new Config();
         conf.setDebug(false);
         conf.setNumWorkers(1);
-        
 
-//        LocalCluster cluster = new LocalCluster();
-//        LocalCluster cluster = new LocalCluster();
-//        cluster.submitTopology("generatorTest", conf, builder.createTopology());
         StormSubmitter.submitTopologyWithProgressBar(args[0], conf, builder.createTopology());
-//        BufferedReader in=new BufferedReader(new InputStreamReader(System.in));
-//        System.out.println("Type anything to stop the cluster");
-//        in.readLine();
-        //   cluster.shutdown();
-        //    cluster.shutdown();
     }
 
 }

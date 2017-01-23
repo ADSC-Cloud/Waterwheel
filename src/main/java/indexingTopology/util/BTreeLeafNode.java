@@ -16,7 +16,7 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
     protected ArrayList<ArrayList<byte []>> tuples;
     protected ArrayList<ArrayList<Integer>> offsets;
     protected int bytesCount;
-    private AtomicLong tupleCount;
+    protected AtomicLong tupleCount;
 
     public BTreeLeafNode(int order, BytesCounter counter) {
         super(order,counter);
@@ -94,6 +94,7 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
     }
 
     public void setTupleList(int index, ArrayList<byte[]> tuples) {
+        this.tupleCount.addAndGet(tuples.size());
         if (index < this.tuples.size())
             this.tuples.set(index, tuples);
         else if (index == this.tuples.size()) {
@@ -171,74 +172,26 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
 
     }
 
-    public void insertKeyValueInTemplateMode(TKey key, TValue value) throws UnsupportedGenericException{
-        acquireWriteLock();
-        try {
-            int index = searchIndex(key);
-            if (index < this.keys.size() && this.getKey(index).compareTo(key) == 0) {
-                this.values.get(index).add(value);
-            } else {
-                this.keys.add(index, key);
-                this.values.add(index, new ArrayList<TValue>());
-                this.values.get(index).add(value);
-                ++this.keyCount;
-            }
-        } finally {
-            releaseWriteLock();
-        }
-    }
-
-    public void insertKeyValueInTemplateMode(TKey key, byte[] serilizedTuple) throws UnsupportedGenericException{
-        acquireWriteLock();
-        try {
-            int index = searchIndex(key);
-            if (index < this.keys.size() && this.getKey(index).compareTo(key) == 0) {
-                this.tuples.get(index).add(serilizedTuple);
-                addBytesCount(serilizedTuple.length);
-                this.offsets.get(index).add(serilizedTuple.length);
-                addBytesCount(Integer.SIZE / Byte.SIZE);
-            } else {
-                this.keys.add(index, key);
-                addBytesCount(UtilGenerics.sizeOf(key.getClass()));
-                this.tuples.add(index, new ArrayList<byte[]>());
-                this.tuples.get(index).add(serilizedTuple);
-                addBytesCount(serilizedTuple.length);
-                this.offsets.add(index, new ArrayList<Integer>());
-                this.offsets.get(index).add(serilizedTuple.length);
-                addBytesCount(Integer.SIZE / Byte.SIZE);
-                ++this.keyCount;
-            }
-            tupleCount.incrementAndGet();
-        } finally {
-            releaseWriteLock();
-        }
-    }
-
-
-    public BTreeNode insertKeyValue(TKey key, byte[] serilizedTuple) throws UnsupportedGenericException{
+    public BTreeNode insertKeyValue(TKey key, byte[] serilizedTuple, boolean templateMode) throws UnsupportedGenericException{
         BTreeNode node = null;
 
         int index = searchIndex(key);
-        if (index < this.keys.size() && this.getKey(index).compareTo(key) == 0) {
-            this.tuples.get(index).add(serilizedTuple);
-            addBytesCount(serilizedTuple.length);
-            this.offsets.get(index).add(serilizedTuple.length);
-            addBytesCount(Integer.SIZE / Byte.SIZE);
-        } else {
+
+        if (!(index < this.keys.size() && this.getKey(index).compareTo(key) == 0)) {
             this.keys.add(index, key);
             addBytesCount(UtilGenerics.sizeOf(key.getClass()));
             this.tuples.add(index, new ArrayList<byte[]>());
-            this.tuples.get(index).add(serilizedTuple);
-            addBytesCount(serilizedTuple.length);
             this.offsets.add(index, new ArrayList<Integer>());
-            this.offsets.get(index).add(serilizedTuple.length);
-            addBytesCount(Integer.SIZE / Byte.SIZE);
             ++this.keyCount;
         }
 
         tupleCount.incrementAndGet();
+        this.tuples.get(index).add(serilizedTuple);
+        this.offsets.get(index).add(serilizedTuple.length);
+        addBytesCount(serilizedTuple.length);
+        addBytesCount(Integer.SIZE / Byte.SIZE);
 
-        if (isOverflow()) {
+        if (!templateMode && isOverflow()) {
             node = dealOverflow();
         }
 
@@ -271,26 +224,6 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
         ++keyCount;
     }
 
-    public void insertKeyValueInTemplateUpdater(TKey key, byte[] serilizedTuple) throws UnsupportedGenericException{
-        int index = searchIndex(key);
-        if (index < this.keys.size() && this.getKey(index).compareTo(key) == 0) {
-            this.tuples.get(index).add(serilizedTuple);
-            addBytesCount(serilizedTuple.length);
-            this.offsets.get(index).add(serilizedTuple.length);
-            addBytesCount(Integer.SIZE / Byte.SIZE);
-        } else {
-            this.keys.add(index, key);
-            addBytesCount(UtilGenerics.sizeOf(key.getClass()));
-            this.tuples.add(index, new ArrayList<byte[]>());
-            this.tuples.get(index).add(serilizedTuple);
-            addBytesCount(serilizedTuple.length);
-            this.offsets.add(index, new ArrayList<Integer>());
-            this.offsets.get(index).add(serilizedTuple.length);
-            addBytesCount(Integer.SIZE / Byte.SIZE);
-            ++this.keyCount;
-        }
-    }
-
 
     /**
      * When splits a leaf node, the middle key is kept on new node and be pushed to parent node.
@@ -312,6 +245,8 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
                 e.printStackTrace();
             }
             newRNode.setTupleList(i - midIndex, this.getTuples(i));
+
+            this.tupleCount.addAndGet(-this.getTuples(i).size());
 
             newRNode.setOffsetList(i - midIndex, this.getOffsets(i));
         }
@@ -340,17 +275,6 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
         return true;
     }
 
-    public void deleteKeyValue(TKey key, TValue value) throws UnsupportedGenericException {
-        int index = 0;
-        while (index < this.getKeyCount() && this.getKey(index).compareTo(key) < 0)
-            ++index;
-
-        if (index < this.keys.size() && this.getKey(index).compareTo(key) == 0) {
-            int indexLast = this.values.get(index).lastIndexOf(value);
-            this.values.get(index).remove(indexLast);
-        }
-    }
-
     private void deleteAt(int index) {
         try {
             substactBytesCount(UtilGenerics.sizeOf(this.keys.get(index).getClass()));
@@ -363,10 +287,10 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
             substactBytesCount(tuples.get(index).get(i).length);
         }
 
-        this.tuples.remove(index); //Added for tuples
+        this.tuples.remove(index);
 
         substactBytesCount(this.offsets.get(index).size() * (Integer.SIZE / Byte.SIZE));
-        this.offsets.remove(index); //Added for tuples
+        this.offsets.remove(index);
         --this.keyCount;
     }
 
@@ -452,48 +376,32 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
         tupleCount.set(0);
     }
 
-
-
-    public Object clone(BTreeNode oldNode) throws CloneNotSupportedException{
-        BTreeLeafNode node = new BTreeLeafNode(ORDER, (BytesCounter) counter.clone());
+    @Override
+    public BTreeNode deepCopy(List<BTreeNode> nodes) {
+        BTreeLeafNode node = new BTreeLeafNode(ORDER, counter.clone());
         node.keyCount = keyCount;
-        if (parentNode != null) {
-            node.parentNode = oldNode;
-        }
-        if (leftSibling != null) {
-            node.leftSibling = new BTreeLeafNode(leftSibling);
-        }
-        if (rightSibling != null) {
-            node.rightSibling = new BTreeLeafNode(rightSibling);
-        }
 
-        node.keys.addAll(keys);
+        node.keys = (ArrayList) keys.clone();
 
+        node.tuples = (ArrayList) tuples.clone();
+
+        node.offsets = (ArrayList) offsets.clone();
+
+        node.tupleCount.set(this.tupleCount.get());
+
+        node.bytesCount = bytesCount;
+
+        nodes.add(node);
         return node;
     }
 
 
     /* The code below is used to support search operation.*/
-    public ArrayList<TValue> searchAndGetValues(TKey key) {
-        ArrayList<TValue> values;
-        int index = search(key);
-        values = (index == -1 ? null : getValueList(index));
-        return values;
-    }
-
     public ArrayList<byte []> searchAndGetTuples(TKey key) {
         ArrayList<byte[]> tuples = new ArrayList<byte[]>();
         int index = search(key);
         tuples = (index == -1 ? new ArrayList<byte[]>() : getTuples(index));
         return tuples;
-    }
-
-
-    public ArrayList<TValue> searchAndGetValuesInTemplate(TKey key) {
-        ArrayList<TValue> values;
-        int index = search(key);
-        values = (index == -1 ? null : getValueList(index));
-        return values;
     }
 
     public ArrayList<byte []> searchAndGetTuplesInTemplate(TKey key) {
@@ -505,17 +413,12 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
 
     public List<byte[]> searchRange(TKey leftKey, TKey rightKey){
         // find first index satisfying range
-        int firstIndex;
         Lock lastLock = this.getrLock();
-        for (firstIndex = 0; firstIndex < this.getKeyCount(); firstIndex++) {
-            int cmp = this.getKey(firstIndex).compareTo(leftKey);
-            if (cmp >= 0)
-                break;
-        }
+        int firstIndex = searchIndex(leftKey);
         List<byte[]> retList = new ArrayList<byte[]>();
-        BTreeLeafNode<TKey,TValue> currLeaf = this;
-        BTreeNode<TKey> currRightSibling = this;
-        BTreeNode<TKey> tmpNode = this;
+        BTreeLeafNode currLeaf = this;
+        BTreeNode currRightSibling = this;
+        BTreeNode tmpNode = this;
 
         int currIndex = firstIndex;
 
@@ -523,7 +426,7 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
 
         // case when all keys in the node are smaller than leftKey - shift to next rightSibling
         if (firstIndex >= this.getKeyCount()) {
-            currLeaf = (BTreeLeafNode<TKey,TValue>) this.rightSibling;
+            currLeaf = (BTreeLeafNode) this.rightSibling;
             if (currLeaf != null) {
                 tmpNode = this;
                 currRightSibling = this.rightSibling;
@@ -532,9 +435,30 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
                     lastLock.unlock();
                 }
                 lastLock = currLeaf.getrLock();
+
+                while (currRightSibling != currLeaf) {
+                    currRightSibling = tmpNode.rightSibling;
+
+                    lastLock.unlock();
+                    currLeaf = (BTreeLeafNode) tmpNode.rightSibling;
+
+                    currLeaf.acquireReadLock();
+                    lastLock = currLeaf.getrLock();
+                }
             }
+
+            while (currLeaf != null && currLeaf.getKeyCount() == 0) {
+                if (currLeaf.rightSibling != null) {
+                    currLeaf.rightSibling.acquireReadLock();
+                    lastLock.unlock();
+                    lastLock = currLeaf.rightSibling.getrLock();
+                }
+                currLeaf = (BTreeLeafNode<TKey,TValue>) currLeaf.rightSibling;
+            }
+
             currIndex = 0;
         }
+
         while (currLeaf != null && currLeaf.getKey(currIndex).compareTo(rightKey) <= 0) {
             assert currLeaf.lock.getReadLockCount() > 0;
             retList.addAll(currLeaf.getTuples(currIndex));
@@ -542,6 +466,7 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
             if (currIndex >= currLeaf.getKeyCount()) {
 
                 if (currLeaf.rightSibling != null) {
+
                     tmpNode = currLeaf;
 
                     currRightSibling = currLeaf.rightSibling;
@@ -553,8 +478,9 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
 
                     lastLock = currRightSibling.getrLock();
 
-                    currLeaf = (BTreeLeafNode<TKey,TValue>) currLeaf.rightSibling;
-                    while (currRightSibling != currLeaf) {
+                    currLeaf = (BTreeLeafNode) tmpNode.rightSibling;
+
+                    while (currLeaf != null && currRightSibling != null && currRightSibling != currLeaf) {
                         currRightSibling = tmpNode.rightSibling;
 
                         lastLock.unlock();
@@ -563,8 +489,18 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
                         currLeaf.acquireReadLock();
                         lastLock = currLeaf.getrLock();
                     }
+
+                    while (currLeaf != null && currLeaf.getKeyCount() == 0) {
+                        if (currLeaf.rightSibling != null) {
+                            currLeaf.rightSibling.acquireReadLock();
+                            lastLock.unlock();
+                            lastLock = currLeaf.rightSibling.getrLock();
+                        }
+                        currLeaf = (BTreeLeafNode<TKey,TValue>) currLeaf.rightSibling;
+                    }
+
                 } else {
-                    currLeaf = (BTreeLeafNode<TKey, TValue>) currLeaf.rightSibling;
+                    break;
                 }
                 if (currLeaf != null) {
                     assert currLeaf.lock.getReadLockCount() > 0;
@@ -580,127 +516,12 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>, TValue> extends BTreeN
         return retList;
     }
 
-
-
-    public List<byte[]> searchRangeInTemplate(TKey leftKey, TKey rightKey) {
-        int firstIndex;
-        BTreeLeafNode<TKey,TValue> currLeaf = this;
-        Lock lastLock = this.getrLock();
-
-        while (currLeaf.rightSibling != null && currLeaf.getKeyCount() == 0) {
-            if (currLeaf.rightSibling != null) {
-                currLeaf.rightSibling.acquireReadLock();
-                lastLock.unlock();
-                lastLock = currLeaf.rightSibling.getrLock();
-            }
-            currLeaf = (BTreeLeafNode<TKey,TValue>) currLeaf.rightSibling;
-        }
-
-        for (firstIndex = 0; firstIndex < currLeaf.getKeyCount(); firstIndex++) {
-            int cmp = currLeaf.getKey(firstIndex).compareTo(leftKey);
-            if (cmp >= 0)
-                break;
-        }
-
-        List<byte[]> retList = new ArrayList<byte[]>();
-        int currIndex = firstIndex;
-        // case when all keys in the node are smaller than leftKey - shift to next rightSibling
-        if (firstIndex >= currLeaf.getKeyCount()) {
-            currLeaf = (BTreeLeafNode<TKey,TValue>) currLeaf.rightSibling;
-            if (currLeaf != null) {
-                currLeaf.acquireReadLock();
-                if (lastLock != null) {
-                    lastLock.unlock();
-                }
-                lastLock = currLeaf.getrLock();
-            }
-
-            while (currLeaf != null && currLeaf.getKeyCount() == 0) {
-                if (currLeaf.rightSibling != null) {
-                    currLeaf.rightSibling.acquireReadLock();
-                    lastLock.unlock();
-                    lastLock = currLeaf.rightSibling.getrLock();
-                }
-                currLeaf = (BTreeLeafNode<TKey,TValue>) currLeaf.rightSibling;
-            }
-            currIndex = 0;
-        }
-        while (currLeaf != null && currLeaf.getKey(currIndex).compareTo(rightKey) <= 0) {
-            retList.addAll(currLeaf.getTuples(currIndex));
-            currIndex++;
-            if (currIndex >= currLeaf.getKeyCount()) {
-
-                if (currLeaf.rightSibling != null) {
-                    currLeaf.rightSibling.acquireReadLock();
-                    if (lastLock != null) {
-                        lastLock.unlock();
-                    }
-                    lastLock = currLeaf.rightSibling.getrLock();
-                }
-                currLeaf = (BTreeLeafNode<TKey,TValue>) currLeaf.rightSibling;
-                while (currLeaf != null && currLeaf.getKeyCount() == 0) {
-                    if (currLeaf.rightSibling != null) {
-                        currLeaf.rightSibling.acquireReadLock();
-                        lastLock.unlock();
-                        lastLock = currLeaf.rightSibling.getrLock();
-                    }
-                    currLeaf = (BTreeLeafNode<TKey,TValue>) currLeaf.rightSibling;
-                }
-                currIndex = 0;
-            }
-        }
-        if (lastLock != null) {
-            lastLock.unlock();
-        }
-        return retList;
-    }
-
     public void addBytesCount(int len) {
         bytesCount += len;
     }
 
     public void substactBytesCount(int len) {
         bytesCount -= len;
-    }
-
-    public ArrayList<byte[]> rangeSearchAndGetTuples(Long timestampLowerBound, Long timestampUpperBound) {
-        ArrayList<byte[]> tuples = new ArrayList<byte[]>();
-        for (int i = 0; i < keys.size(); ++i) {
-            ArrayList<byte[]> serializedTuples = getTuples(i);
-            for (int j = 0; j < serializedTuples.size(); ++j) {
-                try {
-                    Values deserializedTuple = DeserializationHelper.deserialize(serializedTuples.get(j));
-                    if (timestampLowerBound <= (Long) deserializedTuple.get(8) &&
-                            timestampUpperBound >= (Long) deserializedTuple.get(8)) {
-                        tuples.add(serializedTuples.get(j));
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return tuples;
-    }
-
-    public ArrayList<byte []> searchAndGetTuplesWithinTimestampRange(
-            TKey key, Long timestampLowerBound, Long timestampUpperBound) {
-        ArrayList<byte[]> tuples = new ArrayList<byte[]>();
-        int index = search(key);
-        if (index != -1) {
-            ArrayList<byte[]> serializedTuples = getTuples(index);
-            for (int i = 0; i < serializedTuples.size(); ++i) {
-                try {
-                    Values deserializedTuple = DeserializationHelper.deserialize(serializedTuples.get(i));
-                    if (timestampLowerBound <= (Long) deserializedTuple.get(8) &&
-                            timestampUpperBound >= (Long) deserializedTuple.get(8)) {
-                        tuples.add(serializedTuples.get(i));
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return tuples;
     }
 
     public long getTupleCount() {

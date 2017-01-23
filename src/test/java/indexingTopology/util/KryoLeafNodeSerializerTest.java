@@ -37,7 +37,7 @@ public class KryoLeafNodeSerializerTest {
 
         BTreeLeafNode leaf = new BTreeLeafNode(TopologyConfig.BTREE_OREDER, new BytesCounter());
 
-        for (int i = 0; i < 1024; ++i) {
+        for (int i = 0; i < 4; ++i) {
             List<Double> values = new ArrayList<>();
 
             for (int j = 0; j < fieldNames.size(); ++j) {
@@ -47,30 +47,28 @@ public class KryoLeafNodeSerializerTest {
 
             byte[] bytes = serializeIndexValue(values);
 
-            leaf.insertKeyValue(i, bytes);
+            leaf.insertKeyValue((double) i, bytes);
         }
 
 
-        int totalBytes = leaf.getBytesCount() + (1 + leaf.getKeys().size()) * (Integer.SIZE / Byte.SIZE);
+//        int totalBytes = leaf.getBytesCount() + (1 + leaf.getKeys().size()) * (Integer.SIZE / Byte.SIZE);
 
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+//        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
-        Output output = new Output(byteArrayOutputStream);
+        Output output = new Output(200000, 2000000);
 
         kryo.writeObject(output, leaf);
 
-        output.close();
+//        output.close();
 
-        byte[] bytes = byteArrayOutputStream.toByteArray();
-
-        System.out.println(bytes.length);
+        byte[] bytes = output.toBytes();
 
         Input input = new Input(bytes);
 
         leaf = kryo.readObject(input, BTreeLeafNode.class);
 
         for (int i = 0; i < 1024; ++i) {
-            ArrayList<byte[]> serializedTuples = leaf.searchAndGetTuples(i);
+            ArrayList<byte[]> serializedTuples = leaf.searchAndGetTuples((double) i);
             for (int j = 0; j < serializedTuples.size(); ++j) {
                 System.out.println(deserialize(serializedTuples.get(j)));
             }

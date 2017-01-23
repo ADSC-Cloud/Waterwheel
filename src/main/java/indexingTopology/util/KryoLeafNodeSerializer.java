@@ -57,8 +57,6 @@ public class KryoLeafNodeSerializer<TKey extends Comparable<TKey>> extends Seria
 
         int keyCount = input.readInt();
 
-        System.out.println(keyCount);
-
         ArrayList keys = null;
 
         if (TopologyConfig.KEY_TPYE.equals("double")) {

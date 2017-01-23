@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -29,33 +28,23 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Created by acelzj on 1/3/17.
  */
-public class Indexer {
+public class IndexerCopy {
 
     private ArrayBlockingQueue<Pair> pendingQueue;
 
-    private ArrayBlockingQueue<Tuple> inputQueue;
-
-    private ArrayBlockingQueue<Pair> queryPendingQueue;
-
-    private Map<Domain, BTree> domainToBTreeMapping;
+    private ArrayBlockingQueue<Pair> inputQueue;
 
     private BTree indexedData;
 
     private IndexingRunnable indexingRunnable;
 
-    private QueryRunnable queryRunnable;
-
     private List<Thread> indexingThreads;
-
-    private List<Thread> queryThreads;
 
     private TemplateUpdater templateUpdater;
 
     private Thread inputProcessingThread;
 
     private final static int numberOfIndexingThreads = 3;
-
-    private final static int numberOfQueryThreads = 1;
 
     private AtomicLong executed;
 
@@ -79,23 +68,31 @@ public class Indexer {
 
     private DataSchema schema;
 
+    long queryId = 0;
+
     private OutputCollector collector;
 
     private int taskId;
 
     private Semaphore processQuerySemaphore;
 
-    private BTree clonedIndexedData;
+    private Map<Domain, BTree> domainToBTreeMapping;
 
-    public Indexer(int taskId, ArrayBlockingQueue<Tuple> inputQueue, String indexedField, DataSchema schema, OutputCollector collector, ArrayBlockingQueue<Pair> queryPendingQueue) {
+    public IndexerCopy(int taskId, ArrayBlockingQueue<Pair> inputQueue, BTree indexedData, MemChunk chunk, String indexedField, DataSchema schema) {
         pendingQueue = new ArrayBlockingQueue<>(1024);
 
         this.inputQueue = inputQueue;
+
+        this.indexedData = indexedData;
 
         templateUpdater = new TemplateUpdater(TopologyConfig.BTREE_OREDER, TimingModule.createNew(),
                 SplitCounterModule.createNew());
 
         start = System.currentTimeMillis();
+
+        inputProcessingThread = new Thread(new InputProcessingRunnable());
+
+        inputProcessingThread.start();
 
         executed = new AtomicLong(0);
 
@@ -103,8 +100,9 @@ public class Indexer {
 
         chunkId = 0;
 
+        queryId = 0;
+
         indexingThreads = new ArrayList<>();
-        queryThreads = new ArrayList<>();
 
         this.chunk = chunk;
 
@@ -114,8 +112,6 @@ public class Indexer {
 
         this.processQuerySemaphore = new Semaphore(1);
 
-        this.indexedData = new BTree(TopologyConfig.BTREE_OREDER, TimingModule.createNew(), SplitCounterModule.createNew());
-
         kryo = new Kryo();
         kryo.register(BTree.class, new KryoTemplateSerializer());
         kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
@@ -124,35 +120,12 @@ public class Indexer {
 
         this.taskId = taskId;
 
-        this.queryPendingQueue = queryPendingQueue;
-
-        this.domainToBTreeMapping = new HashMap<>();
-
-        inputProcessingThread = new Thread(new InputProcessingRunnable());
-
-        inputProcessingThread.start();
+        domainToBTreeMapping = new HashMap<>();
 
         createIndexingThread();
 
-        createQueryThread();
-    }
-
-    private void createQueryThread() {
-        createQueryThread(numberOfQueryThreads);
-    }
-
-    private void createQueryThread(int n) {
-        if(queryRunnable == null) {
-            queryRunnable = new QueryRunnable();
-        }
-
-        for(int i = 0; i < n; i++) {
-            Thread queryThread = new Thread(queryRunnable);
-            queryThread.start();
-//            System.out.println(String.format("Thread %d is created!", indexThread.getId()));
-//            System.out.println("query thread has been created!!!");
-            queryThreads.add(queryThread);
-        }
+        Thread queryThread = new Thread(new QueryRunnable());
+        queryThread.start();
     }
 
     private void terminateIndexingThreads() {
@@ -185,64 +158,54 @@ public class Indexer {
         }
     }
 
+    public BTree getIndexedData() {
+        return indexedData;
+    }
+
 
     class InputProcessingRunnable implements Runnable {
 
         @Override
         public void run() {
 
-            ArrayList<Tuple> drainer = new ArrayList<>();
+            ArrayList<Pair> drainer = new ArrayList<>();
 
             while (true) {
 
-
-                if (executed.get() >= TopologyConfig.NUM_TUPLES_TO_CHECK_TEMPLATE) {
-                    if (indexedData.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
-                        while (!pendingQueue.isEmpty()) {
-                            try {
-                                Thread.sleep(1);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                        }
-
-//                        System.out.println("pengding queue has been empty, the template can be rebuilt!!!");
-
+//                if (executed.get() >= TopologyConfig.NUM_TUPLES_TO_CHECK_TEMPLATE) {
+//                    if (indexedData.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
+//                        while (!pendingQueue.isEmpty()) {
+//                            try {
+//                                Thread.sleep(1);
+//                            } catch (InterruptedException e) {
+//                                e.printStackTrace();
+//                            }
+//                        }
+//
 //                        terminateIndexingThreads();
-
-//                        System.out.println("indexing threads have been terminated!!!");
-
+//
+//                        long start = System.currentTimeMillis();
+//
 //                        try {
-//                            System.out.println("trying to acquire the semaphore");
-//                            System.out.println("queue length " + processQuerySemaphore.getQueueLength() + "processing runnable");
 //                            processQuerySemaphore.acquire();
-                            if (processQuerySemaphore.tryAcquire()) {
-//                            System.out.println("semaphore has been acquired in input processing runnable!!!");
 //                        } catch (InterruptedException e) {
 //                            e.printStackTrace();
 //                        }
-                                terminateIndexingThreads();
-
-                                System.out.println("begin to rebuild the template!!!");
-
-                                long start = System.currentTimeMillis();
-
-                                indexedData = templateUpdater.createTreeWithBulkLoading(indexedData);
-
-                                processQuerySemaphore.release();
-
-                                System.out.println("Time used to update template " + (System.currentTimeMillis() - start));
-
+//
+//                        indexedData = templateUpdater.createTreeWithBulkLoading(indexedData);
+//
+//                        System.out.println("Time used to update template " + (System.currentTimeMillis() - start));
+//
+//                        processQuerySemaphore.release();
+//
+//
 //                        System.out.println("New tree has been built");
 //
-                                executed.set(0L);
+//                        executed.set(0L);
 //
-                                createIndexingThread();
-                            }
-                    }
-                }
-
-
+//                        createIndexingThread();
+//                    }
+//                }
 
                 if (numTuples >= TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK) {
                     while (!pendingQueue.isEmpty()) {
@@ -255,45 +218,42 @@ public class Indexer {
 
                     terminateIndexingThreads();
 
-                    System.out.println(chunkId + " has been full!!!");
-
                     FileSystemHandler fileSystemHandler = null;
                     String fileName = null;
 
                     writeTreeIntoChunk();
-
+//
                     try {
                         if (TopologyConfig.HDFSFlag) {
                             fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
                         } else {
                             fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
                         }
-                        fileName = fileName = "taskId" + taskId + "chunk" + chunkId;
+                        fileName =  "taskId" + taskId + "chunk" + chunkId;
                         fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
 
-                    Pair keyRange = new Pair(minIndexValue, maxIndexValue);
-                    Pair timeStampRange = new Pair(minTimeStamp, maxTimeStamp);
+//                    Pair keyRange = new Pair(minIndexValue, maxIndexValue);
+//                    Pair timeStampRange = new Pair(minTimeStamp, maxTimeStamp);
 
-                    domainToBTreeMapping.put(new Domain(minTimeStamp, maxTimeStamp, minIndexValue, maxIndexValue), indexedData);
+//                    Domain domain = new Domain(maxTimeStamp, maxTimeStamp, minIndexValue, maxIndexValue);
+
+//                    domainToBTreeMapping.put(domain, indexedData);
+
+//                    System.out.println("a chunk has been full");
 
 //                    indexedData = indexedData.clone();
-                    clonedIndexedData = indexedData.clone();
-
-                    collector.emit(Streams.FileInformationUpdateStream, new Values(fileName, keyRange, timeStampRange));
-
-                    collector.emit(Streams.TimeStampUpdateStream, new Values(timeStampRange, keyRange));
 
 //                    indexedData.clearPayload();
-                    clonedIndexedData.clearPayload();
+                    createNewTemplate();
 
                     executed.set(0L);
 
                     createIndexingThread();
 
-                    System.out.println(chunkId + " has create new indexing threads!!!");
+//                    domainToBTreeMapping.remove(domain);
 
                     start = System.currentTimeMillis();
 
@@ -313,31 +273,10 @@ public class Indexer {
 //                }
                 inputQueue.drainTo(drainer, 256);
 
-                for (Tuple tuple: drainer) {
+                for (Pair pair: drainer) {
                     try {
-                        Double indexValue = tuple.getDoubleByField(indexField);
-                        Long timeStamp = tuple.getLong(3);
-                        if (indexValue < minIndexValue) {
-                            minIndexValue = indexValue;
-                        }
-                        if (indexValue > maxIndexValue) {
-                            maxIndexValue = indexValue;
-                        }
-
-                        if (timeStamp < minTimeStamp) {
-                            minTimeStamp = timeStamp;
-                        }
-                        if (timeStamp > maxTimeStamp) {
-                            maxTimeStamp = timeStamp;
-                        }
-                        byte[] serializedTuple = schema.serializeTuple(tuple);
-
-                        Pair pair = new Pair(indexValue, serializedTuple);
-
                         pendingQueue.put(pair);
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    } catch (IOException e) {
                         e.printStackTrace();
                     }
                 }
@@ -348,6 +287,10 @@ public class Indexer {
 
             }
         }
+    }
+
+    private void createNewTemplate() {
+        indexedData = new BTree(TopologyConfig.BTREE_OREDER, TimingModule.createNew(), SplitCounterModule.createNew());
     }
 
     class IndexingRunnable implements Runnable {
@@ -384,9 +327,6 @@ public class Indexer {
 
                     pendingQueue.drainTo(drainer, 256);
 
-//                    System.out.println(String.format("%d executed ", executed.get()));
-//                    System.out.println(String.format("%d tuples have been drained to drainer ", drainer.size()));
-
 //                        Pair pair = queue.poll(10, TimeUnit.MILLISECONDS);
                     if (drainer.size() == 0) {
                         if (inputExhausted)
@@ -400,22 +340,12 @@ public class Indexer {
                         final Double indexValue = (Double) pair.getKey();
 //                            final Integer offset = (Integer) pair.getValue();
                         final byte[] serializedTuple = (byte[]) pair.getValue();
-//                            System.out.println("local count " + localCount + " insert");
-                        if (clonedIndexedData != null) {
-                            clonedIndexedData.insert(indexValue, serializedTuple);
-                        } else {
-                            indexedData.insert(indexValue, serializedTuple);
-                        }
-
-//                        System.out.println("insert has been finished!!!");
+//                            System.out.println("insert");
+                        indexedData.insert(indexValue, serializedTuple);
 //                            indexedData.insert(indexValue, offset);
                     }
 
                     executed.addAndGet(drainer.size());
-
-//                    if (executed.get() > 500000) {
-//                        System.out.println(String.format("%d tuples have been inserted to the tree ", executed.get()));
-//                    }
 
                     drainer.clear();
 
@@ -433,83 +363,65 @@ public class Indexer {
         }
     }
 
+
     class QueryRunnable implements Runnable {
         @Override
         public void run() {
             while (true) {
 
+//                Long queryId = (Long) pair.getKey();
+//
+//                Pair keyRange = (Pair) pair.getValue();
+//
+//                Double leftKey = (Double) keyRange.getKey();
+//
+//                Double rightKey = (Double) keyRange.getValue();
+//
+//                List<byte[]> serializedTuples = null;
+//
+//                if (leftKey.compareTo(rightKey) == 0) {
+//                    serializedTuples = indexedData.searchTuples(leftKey);
+//                } else {
+//                    serializedTuples = indexedData.searchRange(leftKey, rightKey);
+//                }
+
                 try {
-                    System.out.println("queue length " + processQuerySemaphore.getQueueLength() + "query runnable");
                     processQuerySemaphore.acquire();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
 
-                Pair pair = null;
-
-                try {
-                    pair = queryPendingQueue.take();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-
-                Long queryId = (Long) pair.getKey();
-
-                System.out.println("semaphore " + queryId + " has been acquired in query runnable!!!");
-
-                System.out.println("query id " + queryId + "in indexer has been taken from query pending queue!!!");
-
-                Pair keyRange = (Pair) pair.getValue();
-
-                Double leftKey = (Double) keyRange.getKey();
-
-                Double rightKey = (Double) keyRange.getValue();
 
                 List<byte[]> serializedTuples = null;
+                serializedTuples = indexedData.searchRange(0.0, 1000.0);
 
-//                if (leftKey.compareTo(rightKey) == 0) {
-//                    serializedTuples = indexedData.searchTuples(leftKey);
-//                } else {
-                    serializedTuples = indexedData.searchRange(leftKey, rightKey);
-//                }
+                for (int i = 0; i < serializedTuples.size(); ++i) {
+                    Values deserializedTuple = null;
+                    try {
+                        deserializedTuple = schema.deserialize(serializedTuples.get(i));
+                        deserializedTuple = DeserializationHelper.deserialize(serializedTuples.get(i));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    System.out.println(deserializedTuple);
+                }
 
                 processQuerySemaphore.release();
 
-                System.out.println("semaphore " + queryId + " has been released in query runnable!!!");
+                System.out.println(queryId + " query has been finished!!!");
 
-                collector.emit(Streams.BPlusTreeQueryStream, new Values(queryId, serializedTuples));
-
-                System.out.println("query id " + queryId + "in indexer has been finished!!!");
+                ++queryId;
             }
         }
     }
 
-    public void cleanTree(Domain domain) {
-        System.out.println("a tree has been removed!!!");
-        indexedData = clonedIndexedData;
-        clonedIndexedData = null;
-        domainToBTreeMapping.remove(domain);
-    }
-
 
     private void writeTreeIntoChunk() {
-
-        BTree bTree = clonedIndexedData == null ? indexedData : clonedIndexedData;
-
         Output output = new Output(65000000, 20000000);
 
-//        System.out.println("****begin serialize the leaves*****");
+        byte[] leavesInBytes = indexedData.serializeLeaves();
 
-//        byte[] leavesInBytes = indexedData.serializeLeaves();
-        byte[] leavesInBytes = bTree.serializeLeaves();
-
-//        System.out.println("leaves have been serialized!!!");
-
-//        kryo.writeObject(output, indexedData);
-        kryo.writeObject(output, bTree);
-
-//        System.out.println("template has been serialized!!!");
+        kryo.writeObject(output, indexedData);
 
         byte[] bytes = output.toBytes();
 

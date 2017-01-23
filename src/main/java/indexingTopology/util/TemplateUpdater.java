@@ -1,15 +1,9 @@
 package indexingTopology.util;
 
-import org.apache.storm.tuple.Tuple;
-import clojure.lang.Ref;
-import indexingTopology.DataSchema;
 import indexingTopology.exception.UnsupportedGenericException;
 import javafx.util.Pair;
 
-import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Semaphore;
 
 
 /**
@@ -19,7 +13,7 @@ public class TemplateUpdater<TKey extends Comparable<TKey>, TValue> {
 
     private int order;
 
-    private BTree bt;
+    private BTree<Double, Integer> bt;
 
     private List<Pair<TKey, TValue>> record;
 
@@ -40,157 +34,55 @@ public class TemplateUpdater<TKey extends Comparable<TKey>, TValue> {
         counter.increaseHeightCount();
     }
 
-
-    public synchronized List<TValue> pointSearch(TKey key) {
-        List<TValue> list = new ArrayList<TValue>();
-        for(Pair<TKey, TValue> pair: record) {
-            if(pair.getKey().equals(key)) {
-                list.add(pair.getValue());
-            }
-        }
-        return list;
-    }
-
-    public LinkedList<BTreeLeafNode> createLeaves() {
-        BTreeLeafNode leaf = new BTreeLeafNode(order, counter);
-        Collections.sort(record, new Comparator<Pair>() {
-            public int compare(Pair pair1, Pair pair2)
-            {
-                return  ((Double) pair1.getKey()).compareTo(((Double) pair2.getKey()));
-            }
-        });
-        LinkedList<BTreeLeafNode> leaves = new LinkedList<BTreeLeafNode>();
-        BTreeLeafNode lastLeaf = leaf;
-        Pair lastPair = record.get(0);
-        int count = 0;
-        for (Pair pair : record) {
-            TKey key = (TKey) pair.getKey();
-            if (leaf.isOverflowIntemplate()) {
-                leaf.delete((TKey) lastPair.getKey());
-                leaves.add(leaf);
-                leaf = new BTreeLeafNode(order, counter);
-                try {
-                    leaf.insertKeyValueInBulkLoading((TKey) lastPair.getKey(), lastPair.getValue());
-                    leaf.insertKeyValueInBulkLoading((Double) pair.getKey(),  pair.getValue());
-                } catch (UnsupportedGenericException e) {
-                    e.printStackTrace();
-                }
-            } else {
-                try {
-                    leaf.insertKeyValueInBulkLoading(key, pair.getValue());
-                    lastPair = pair;
-                } catch (UnsupportedGenericException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        if (leaf.isOverflowIntemplate()) {
-            leaf.delete((TKey) lastPair.getKey());
-            leaves.add(leaf);
-            leaf = new BTreeLeafNode(order, counter);
-            try {
-                leaf.insertKeyValueInBulkLoading((TKey) lastPair.getKey(), lastPair.getValue());
-            } catch (UnsupportedGenericException e) {
-                e.printStackTrace();
-            }
-            leaves.add(leaf);
-        } else {
-            leaves.add(leaf);
-        }
-        return leaves;
-    }
-
-    public BTree createTreeWithBulkLoading() {
-        LinkedList<BTreeLeafNode> leaves = createLeaves();
-        //    for (BTreeLeafNode leaf : leaves) {
-        //        leaf.print();
-        //    }
-        int count = 0;
-        bt = new BTree(this.order, tm, sm);
-        BTreeNode preNode = new BTreeLeafNode(this.order, counter);
-        BTreeInnerNode root = new BTreeInnerNode(this.order, counter);
-        for (BTreeLeafNode leaf : leaves) {
-            //    leaf.print();
-            ++count;
-            if (count == 1) {
-                BTreeInnerNode parent = root;
-                parent.setChild(0, leaf);
-                leaf.setParent(parent);
-                preNode = leaf;
-                counter.increaseHeightCount();
-            } else {
-                leaf.leftSibling = preNode;
-                preNode.rightSibling = leaf;
-                try {
-                    BTreeInnerNode parent = root.getRightMostChildTest();
-                    int index = parent.getKeyCount();
-                    // System.out.println("count: = " + count + "index: = " + index + " ");
-                    //  parent.print();
-                    parent.setKey(index, leaf.getKey(0));
-                    parent.setChild(index+1, leaf);
-                    preNode = leaf;
-                    //  parent.print();
-                    if (parent.isOverflow()) {
-                        root = (BTreeInnerNode) parent.dealOverflow();
-                    }
-                    bt.setHeight(counter.getHeightCount());
-                    bt.setRoot(root);
-                } catch (UnsupportedGenericException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        bt.setRoot(root);
-        return bt;
-    }
-
     private List<BTreeInnerNode> createInnerNodes(BTree oldBTree) {
         BTreeLeafNode currentLeave = oldBTree.getLeftMostLeaf();
-        List<BTreeInnerNode> innerNodes = new ArrayList<BTreeInnerNode>();
-        BTreeInnerNode node = new BTreeInnerNode(order, counter);
-        int minIndexOfCurrentNode = 0;
-        int count = 1;
-        BTreeLeafNode child = null;
-        BTreeLeafNode prechild = child;
+
+        BTreeLeafNode copyOfCurrentLeave = currentLeave;
+
+        int totalKeyCount = 0;
+        int numberOfLeaves = 0;
+
         while (currentLeave != null) {
-            int index = order * count - minIndexOfCurrentNode;
-            while (index < currentLeave.getKeyCount()) {
-                if (node.isSafe()) {
-                    node.insertKey(currentLeave.getKey(index));
-                    child = new BTreeLeafNode(order, counter);
-                    node.setChild(node.getKeyCount() - 1, child);
-                    if (prechild != null) {
-                        setSiblingsOfChild(prechild, child);
-                    }
-                    prechild = child;
-                    index += order;
-                    count += 1;
-                } else {
-                    child = new BTreeLeafNode(order, counter);
-                    setSiblingsOfChild(prechild, child);
-                    prechild = child;
-                    node.setChild(node.getKeyCount(), child);
-                    innerNodes.add(node);
-                    node = new BTreeInnerNode(order, counter);
-                    node.insertKey(currentLeave.getKey(index));
-                    child = new BTreeLeafNode(order, counter);
-                    setSiblingsOfChild(prechild, child);
-                    prechild = child;
-                    node.setChild(node.getKeyCount() - 1, child);
-                    index += order;
-                    count += 1;
-                }
-            }
-            minIndexOfCurrentNode += currentLeave.getKeyCount();
+            ++numberOfLeaves;
+            totalKeyCount += currentLeave.getKeyCount();
             currentLeave = (BTreeLeafNode) currentLeave.rightSibling;
         }
-        child = new BTreeLeafNode(order, counter);
-        assert prechild != null;
-        setSiblingsOfChild(prechild, child);
-        node.setChild(node.getKeyCount(), child);
+
+        int averageKeyCount = totalKeyCount / numberOfLeaves;
+
+        ArrayList<BTreeLeafNode> leaves = createLeaves(copyOfCurrentLeave, averageKeyCount, numberOfLeaves, totalKeyCount);
+
+        List<BTreeInnerNode> innerNodes = new ArrayList<BTreeInnerNode>();
+        BTreeInnerNode node = new BTreeInnerNode(order, counter);
+        int index = 0;
+        BTreeLeafNode preChild = leaves.get(index);
+        node.setChild(0, preChild);
+        ++index;
+
+        while (index < leaves.size()) {
+            BTreeLeafNode child = leaves.get(index);
+            if (node.isSafe()) {
+                node.insertKey(child.getKey(0));
+                node.setChild(node.getKeyCount(), child);
+                setSiblingsOfChild(preChild, child);
+                preChild = child;
+            } else {
+                setSiblingsOfChild(preChild, child);
+                preChild = child;
+                innerNodes.add(node);
+                node = new BTreeInnerNode(order, counter);
+                child = leaves.get(index);
+                node.setChild(0, child);
+            }
+            ++index;
+        }
+
         innerNodes.add(node);
+
         return innerNodes;
     }
+
+
 
     private void setSiblingsOfChild(BTreeLeafNode prechild, BTreeLeafNode child) {
         child.leftSibling = prechild;
@@ -201,10 +93,12 @@ public class TemplateUpdater<TKey extends Comparable<TKey>, TValue> {
     /**
      * use an optimized bulk loading to build a new B+ tree.
      * @param oldBTree, requires that the height of oldBTree > 1
-     * @return a new BTree whose leaves have no keys
+     * @return a new BTree
      */
-    public BTree createTreeWithBulkLoading(BTree oldBTree) {
+
+    public BTree<Double, Integer> createTreeWithBulkLoading(BTree oldBTree) {
         List<BTreeInnerNode> innerNodes = createInnerNodes(oldBTree);
+
         int count = 0;
         bt = new BTree(this.order, tm, sm);
         BTreeInnerNode root = new BTreeInnerNode(this.order, counter);
@@ -220,10 +114,8 @@ public class TemplateUpdater<TKey extends Comparable<TKey>, TValue> {
                 try {
                     BTreeInnerNode parent = root.getRightMostChild();
                     int index = parent.getKeyCount();
-                    // System.out.println("count: = " + count + "index: = " + index + " ");
-                    parent.setKey(index, node.getKey(0));
+                    parent.setKey(index, node.getChild(0).getKey(0));
                     parent.setChild(index+1, node);
-                    //  parent.print();
                     if (parent.isOverflow()) {
                         root = (BTreeInnerNode) parent.dealOverflow();
                     }
@@ -234,35 +126,79 @@ public class TemplateUpdater<TKey extends Comparable<TKey>, TValue> {
                 }
             }
         }
+
         bt.setRoot(root);
         bt.setTemplateMode();
-        try {
-            insertKeysToTemplate(bt, oldBTree);
-        } catch (UnsupportedGenericException e) {
-            e.printStackTrace();
-        }
         return bt;
     }
 
-    private void insertKeysToTemplate(BTree template, BTree oldBTree) throws UnsupportedGenericException {
+    public ArrayList<BTreeLeafNode> createLeaves(BTreeLeafNode mostLeafLeave, int averageKeyCount, int numberOfLeaves, int totalKeyCount) {
+        BTreeLeafNode currentLeaf = mostLeafLeave;
 
-//        Long start = System.currentTimeMillis();
+        ArrayList<BTreeLeafNode> leaves = new ArrayList<>(numberOfLeaves);
 
-        BTreeLeafNode currentLeave = oldBTree.getLeftMostLeaf();
-        while (currentLeave != null) {
-            List<TKey> keys = currentLeave.getKeys();
+        int index = 0;
 
-            for (TKey key : keys) {
-                List<byte[]> tuples = currentLeave.searchAndGetTuples(key);
-                for (int i = 0; i < tuples.size(); ++i) {
-                    template.insertInTemplateUpdater(key, tuples.get(i));
+        BTreeLeafNode preNode = null;
+
+        int remainderIndex = totalKeyCount - (numberOfLeaves) * averageKeyCount;
+
+        for (int i = 0; i < numberOfLeaves; ++i) {
+
+            int keyCount = i < remainderIndex ? averageKeyCount + 1 : averageKeyCount;
+
+            BTreeLeafNode leaf = new BTreeLeafNode(keyCount, counter);
+
+            if (i == 0) {
+                preNode = leaf;
+            } else {
+                leaf.leftSibling = preNode;
+                preNode.rightSibling = leaf;
+                preNode = leaf;
+            }
+
+            while (leaf.getKeyCount() < keyCount && currentLeaf != null) {
+                if (index == currentLeaf.getKeyCount()) {
+                    currentLeaf = (BTreeLeafNode) currentLeaf.rightSibling;
+                    index = 0;
+                }
+
+                if (currentLeaf != null) {
+                    insertTuplesIntoLeaf(currentLeaf, leaf, index, leaf.getKeyCount());
+                    ++index;
                 }
             }
 
-            currentLeave = (BTreeLeafNode) currentLeave.rightSibling;
+            leaves.add(leaf);
         }
 
-//        System.out.println("Insertion time: " + (System.currentTimeMillis() - start));
+        return leaves;
+    }
+
+    private void insertTuplesIntoLeaf(BTreeLeafNode currentLeave, BTreeLeafNode leaf, int index, int indexOfKey) {
+        leaf.keys.add(currentLeave.getKey(index));
+        leaf.tuples.add(new ArrayList<byte[]>());
+        leaf.offsets.add(new ArrayList<Integer>());
+
+        try {
+            leaf.bytesCount += UtilGenerics.sizeOf(currentLeave.getKey(index).getClass());
+        } catch (UnsupportedGenericException e) {
+            e.printStackTrace();
+        }
+
+        ArrayList<byte[]> tuples = currentLeave.getTuples(index);
+        ArrayList<Integer> offsets = currentLeave.getOffsets(index);
+
+        ((ArrayList) leaf.tuples.get(indexOfKey)).addAll(tuples);
+        leaf.tupleCount.addAndGet(tuples.size());
+
+        ((ArrayList) leaf.offsets.get(indexOfKey)).addAll(offsets);
+
+        for (int i = 0; i < tuples.size(); ++i) {
+            leaf.bytesCount += tuples.get(i).length;
+            leaf.bytesCount += (Integer.SIZE / Byte.SIZE);
+        }
+
     }
 
 }

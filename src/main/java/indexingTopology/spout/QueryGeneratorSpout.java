@@ -1,12 +1,12 @@
 package indexingTopology.spout;
 
+import indexingTopology.streams.Streams;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichSpout;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
-import indexingTopology.NormalDistributionIndexingTopology;
 
 import java.io.*;
 import java.util.Map;
@@ -50,7 +50,7 @@ public class QueryGeneratorSpout extends BaseRichSpout{
     }
 
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
-        outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.QueryGenerateStream,
+        outputFieldsDeclarer.declareStream(Streams.QueryGenerateStream,
                 new Fields("queryId", "key", "startTimestamp", "endTimestamp"));
     }
 
@@ -85,7 +85,7 @@ public class QueryGeneratorSpout extends BaseRichSpout{
 //                Long endTimeStamp = System.currentTimeMillis();
                 Long endTimeStamp = Long.MAX_VALUE;
 
-                collector.emit(NormalDistributionIndexingTopology.QueryGenerateStream,
+                collector.emit(Streams.QueryGenerateStream,
                         new Values(queryId, key, startTimeStamp, endTimeStamp));
 
                 ++queryId;

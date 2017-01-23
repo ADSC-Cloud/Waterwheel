@@ -31,9 +31,9 @@ public class BalancedPartition {
 
     public BalancedPartition(int numberOfPartitions, Double lowerBound, Double upperBound, boolean enableRecord) {
         this(numberOfPartitions, lowerBound, upperBound);
+        histogram = new Histogram();
         if (enableRecord) {
             setEnableRecord();
-            histogram = new Histogram();
         }
     }
 
@@ -89,6 +89,10 @@ public class BalancedPartition {
 
     public int getPartitionId(Double key) {
         return intervalToPartitionMapping.get(getIntervalId(key));
+    }
+
+    public int getPartitionId(Integer intervalId) {
+        return intervalToPartitionMapping.get(intervalId);
     }
 
     public void setEnableRecord() {

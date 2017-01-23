@@ -1,5 +1,6 @@
 package indexingTopology.spout;
 
+import indexingTopology.streams.Streams;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.IRichSpout;
@@ -9,7 +10,6 @@ import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
 import org.apache.storm.utils.Utils;
 import indexingTopology.DataSchema;
-import indexingTopology.NormalDistributionIndexingTopology;
 import org.apache.commons.math3.distribution.NormalDistribution;
 
 import java.io.*;
@@ -52,7 +52,7 @@ public class NormalDistributionGenerator extends BaseRichSpout {
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         List<String> fields = schema.getFieldsObject().toList();
         fields.add("timeStamp");
-        declarer.declareStream(NormalDistributionIndexingTopology.IndexStream, new Fields(fields));
+        declarer.declareStream(Streams.IndexStream, new Fields(fields));
     }
 
     public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
@@ -120,7 +120,7 @@ public class NormalDistributionGenerator extends BaseRichSpout {
             Values values = schema.getValuesObject(tuple);
             values.add(timeStamp);
 
-            collector_.emit(NormalDistributionIndexingTopology.IndexStream, values, msgId);
+            collector_.emit(Streams.IndexStream, values, msgId);
             if (counter.get() == Integer.MAX_VALUE) {
                 counter.set(0);
             }

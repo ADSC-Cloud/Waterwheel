@@ -5,6 +5,7 @@ import indexingTopology.exception.UnsupportedGenericException;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.*;
@@ -116,15 +117,6 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 
 	public boolean isSafe() {
 		return this.getKeyCount() < this.ORDER;
-	}
-
-	public boolean willOverflowOnInsert(TKey key) {
-		for (TKey k : this.keys) {
-			if (k.compareTo(key)==0)
-				return false;
-		}
-
-		return this.getKeyCount() == this.ORDER;
 	}
 
 	public BTreeNode<TKey> dealOverflow() {
@@ -251,30 +243,6 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 
 	}
 
-	public boolean isOverflowIntemplate() {
-		double threshold = this.ORDER * TopologyConfig.TEMPLATE_OVERFLOW_PERCENTAGE;
-		return ((double) this.getKeyCount() > threshold);
-	}
-
-	public abstract Object clone(BTreeNode oldNode) throws CloneNotSupportedException;
-
-
-	public static Object deepClone(Object object) {
-		try {
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			ObjectOutputStream oos = new ObjectOutputStream(baos);
-			oos.writeObject(object);
-			ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
-			ObjectInputStream ois = new ObjectInputStream(bais);
-			return ois.readObject();
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-			return null;
-		}
-	}
-
-
 	public void acquireReadLock() {
 		rLock.lock();
 //		System.out.println("The keys are : " + keys);
@@ -304,6 +272,8 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 	public Lock getrLock() {
 		return rLock;
 	}
+
+	public abstract BTreeNode deepCopy(List<BTreeNode> nodes);
 
 	class MyWriteLock implements Lock {
 
@@ -376,18 +346,6 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 
 	long readLockThreadId;
 	long writeLockThreadId;
-
-	public void checkIfCurrentHoldAnyLock() {
-
-//
-//		final long tid = Thread.currentThread().getId();
-//		final boolean condition = tid == readLockThreadId || tid == writeLockThreadId;
-//		assert condition: String.format("Thread %d does not get any lock on node %d", Thread.currentThread().getId(), getId());
-//
-//		if(!condition) {
-//			System.out.println("Hello world!");
-//		}
-	}
 
 	static public class NodeLock {
 		Lock lock;

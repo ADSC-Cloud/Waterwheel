@@ -5,10 +5,7 @@ import org.omg.Messaging.SYNC_WITH_TRANSPORT;
 
 import java.io.*;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> implements Serializable {
 	protected ArrayList<BTreeNode<TKey>> children;
@@ -407,30 +404,23 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 	}
 
 
-	public Object clone(BTreeNode oldNode) throws CloneNotSupportedException{
-		BTreeInnerNode node = new BTreeInnerNode(ORDER, (BytesCounter) counter.clone());
-		node.keyCount = keyCount;
+    @Override
+    public BTreeNode deepCopy(List<BTreeNode> nodes) {
+        BTreeInnerNode node = new BTreeInnerNode(ORDER, counter.clone());
+        node.keys = (ArrayList) this.keys.clone();
+        BTreeNode preNode = null;
 
-		if (parentNode != null) {
-			node.parentNode = oldNode;
-		}
-		if (leftSibling != null) {
-			node.leftSibling = oldNode.leftSibling;
-		}
-		if (rightSibling != null) {
-			node.rightSibling = oldNode.rightSibling;
-		}
+        for (BTreeNode child : children) {
+            BTreeNode newNode = child.deepCopy(nodes);
+            node.children.add(newNode);
 
-		node.keys.addAll(keys);
+            newNode.parentNode = node;
+        }
 
-		for (BTreeNode child : children) {
-			BTreeNode newNode = (BTreeNode) child.clone(node);
-			node.children.add(newNode);
-		}
-		return node;
-	}
+        return node;
+    }
 
-	public void setKeys(ArrayList<TKey> keys) {
+    public void setKeys(ArrayList<TKey> keys) {
 		this.keys = keys;
 	}
 

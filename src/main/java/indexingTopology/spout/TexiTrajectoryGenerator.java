@@ -1,12 +1,12 @@
 package indexingTopology.spout;
 
+import indexingTopology.streams.Streams;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichSpout;
 import org.apache.storm.tuple.Fields;
 import indexingTopology.DataSchema;
-import indexingTopology.NormalDistributionIndexingTopology;
 import indexingTopology.util.texi.Car;
 import indexingTopology.util.texi.City;
 import indexingTopology.util.texi.TrajectoryGenerator;
@@ -34,6 +34,8 @@ public class TexiTrajectoryGenerator extends BaseRichSpout {
 
     private int payloadSize;
 
+    private long timestamp;
+
 
     public TexiTrajectoryGenerator(DataSchema schema, TrajectoryGenerator generator, int payloadSize, City city)
             throws FileNotFoundException {
@@ -46,7 +48,7 @@ public class TexiTrajectoryGenerator extends BaseRichSpout {
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         List<String> fields = schema.getFieldsObject().toList();
         fields.add("timeStamp");
-        declarer.declareStream(NormalDistributionIndexingTopology.IndexStream, new Fields(fields));
+        declarer.declareStream(Streams.IndexStream, new Fields(fields));
     }
 
     public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
@@ -55,8 +57,9 @@ public class TexiTrajectoryGenerator extends BaseRichSpout {
 
     public void nextTuple() {
         Car car = generator.generate();
-        final long timestamp = System.currentTimeMillis();
-        collector_.emit(NormalDistributionIndexingTopology.IndexStream, new Values((double)car.id, (double)city.getZCodeForALocation(car.x
+//        final long timestamp = System.currentTimeMillis();
+        collector_.emit(Streams.IndexStream, new Values((double)car.id, (double)city.getZCodeForALocation(car.x
         , car.y), new String(new char[payloadSize]), timestamp), new Object());
+        ++timestamp;
     }
 }

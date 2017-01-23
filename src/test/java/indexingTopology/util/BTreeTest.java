@@ -17,6 +17,69 @@ import static org.junit.Assert.*;
  */
 public class BTreeTest {
     @Test
+    public void testClone() throws Exception, UnsupportedGenericException {
+        int order = 4;
+        BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
+
+        int numberOfTuples = 60;
+
+        Random random = new Random();
+
+        List<Integer> keys = new ArrayList<>();
+
+        for (int i = 0; i < numberOfTuples; ++i) {
+//            Integer key = random.nextInt();
+//            while (keys.contains(key)) {
+//                key = random.nextInt();
+//            }
+//            keys.add(key);
+            keys.add(i);
+        }
+
+        for (Integer key : keys) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) key);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            bTree.insert((double) key, bytes);
+        }
+
+
+        BTree newBTree = bTree.clone();
+
+        System.out.println(newBTree == bTree);
+
+        bTree.getRoot().keys = null;
+
+        newBTree.printBtree();
+
+        for (Integer key : keys) {
+            assertEquals(1, newBTree.searchRange((double) key, (double) key).size());
+        }
+
+        BTreeLeafNode leaf = newBTree.getLeftMostLeaf();
+
+        while (leaf != null) {
+            leaf.print();
+            leaf.parentNode.print();
+            leaf = (BTreeLeafNode) leaf.rightSibling;
+        }
+
+        newBTree.clearPayload();
+
+        leaf = newBTree.getLeftMostLeaf();
+        while (leaf != null) {
+            assertEquals(0, leaf.bytesCount);
+            assertEquals(0, leaf.keyCount);
+            assertEquals(0, leaf.tuples.size());
+            assertEquals(0, leaf.offsets.size());
+            leaf = (BTreeLeafNode) leaf.rightSibling;
+        }
+    }
+
+    @Test
     public void serializeLeaves() throws Exception, UnsupportedGenericException {
         int order = 32;
         BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
@@ -44,14 +107,15 @@ public class BTreeTest {
 
         byte[] serializedLeaves = bTree.serializeLeaves();
 
-        Input input = new Input(serializedLeaves);
+        Input input = new Input(serializedLeaves, 4, serializedLeaves.length);
 
         Kryo kryo = new Kryo();
         kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
 
-        while (true) {
+        while (input.position() < serializedLeaves.length) {
             BTreeLeafNode leaf = kryo.readObject(input, BTreeLeafNode.class);
-            leaf.print();
+//            leaf.print();
+            input.setPosition(input.position() + 4);
         }
     }
 
@@ -157,7 +221,7 @@ public class BTreeTest {
         }
 
         for (Integer key : keys) {
-            assertEquals(1, bTree.searchTuples(key).size());
+            assertEquals(1, bTree.searchRange(key, key).size());
         }
 
         //Test template mode
@@ -174,7 +238,7 @@ public class BTreeTest {
         }
 
         for (Integer key : keys) {
-            assertEquals(1, bTree.searchTuples(key).size());
+            assertEquals(1, bTree.searchRange(key, key).size());
         }
     }
 
@@ -324,88 +388,6 @@ public class BTreeTest {
 
     }
 
-    /*
-     * Testing strategy
-     *
-     * Partition the insertions as follows:
-     * key insertion : the key is inserted continuously, the key is inserted uncontinuously.
-     * Include continuous key insertion and uncontinuous key insertion because after the payload is cleared
-     * some of the leaves may be empty.
-     */
-
-
-    @Test
-    public void testSearchRangeSomeTuplesInTemplateMode() throws Exception, UnsupportedGenericException {
-        int order = 32;
-        BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
-
-        int numberOfTuples = 2048;
-
-        Random random = new Random();
-
-        List<Integer> keys = new ArrayList<>();
-
-        Integer min = Integer.MAX_VALUE;
-
-        Integer max = Integer.MIN_VALUE;
-
-        for (int i = 0; i < numberOfTuples; ++i) {
-            Integer key = random.nextInt();
-            min = Math.min(min, key);
-            max = Math.max(max, key);
-            keys.add(key);
-        }
-
-        for (Integer key : keys) {
-            List<Double> values = new ArrayList<>();
-            values.add((double) key);
-            for (int j = 0; j < fieldNames.size() + 1; ++j) {
-                values.add((double) j);
-            }
-            byte[] bytes = serializeIndexValue(values);
-            bTree.insert(key, bytes);
-        }
-
-        Collections.sort(keys);
-
-        bTree.clearPayload();
-
-        for (int i = 0; i < numberOfTuples; i += 32) {
-            List<Double> values = new ArrayList<>();
-            values.add((double) keys.get(i));
-            for (int j = 0; j < fieldNames.size() + 1; ++j) {
-                values.add((double) j);
-            }
-            byte[] bytes = serializeIndexValue(values);
-            bTree.insert(keys.get(i), bytes);
-        }
-
-        List<byte[]> tuples = bTree.searchRange(keys.get(0), keys.get(2047));
-        assertEquals(64, tuples.size());
-
-        bTree.clearPayload();
-
-        for (Integer key : keys) {
-            List<Double> values = new ArrayList<>();
-            values.add((double) key);
-            for (int j = 0; j < fieldNames.size() + 1; ++j) {
-                values.add((double) j);
-            }
-            byte[] bytes = serializeIndexValue(values);
-            bTree.insert(key, bytes);
-        }
-
-        tuples = bTree.searchRange(keys.get(300), keys.get(512));
-        assertEquals(213, tuples.size());
-
-        tuples = bTree.searchRange(keys.get(1022), keys.get(1023));
-        assertEquals(2, tuples.size());
-
-        tuples = bTree.searchRange(keys.get(0), keys.get(1));
-        assertEquals(2, tuples.size());
-
-    }
-
     @Test
     public void clearPayload() throws Exception, UnsupportedGenericException {
         int order = 32;
@@ -469,17 +451,21 @@ public class BTreeTest {
             bTree.insert(key, bytes);
         }
 
-        bTree.clearPayload();
+//        bTree.clearPayload();
 
-        for (Integer key : keys) {
-            List<Double> values = new ArrayList<>();
-            values.add((double) key);
-            for (int j = 0; j < fieldNames.size() + 1; ++j) {
-                values.add((double) j);
-            }
-            byte[] bytes = serializeIndexValue(values);
-            bTree.insert(key, bytes);
-        }
+//        for (Integer key : keys) {
+//            List<Double> values = new ArrayList<>();
+//            values.add((double) key);
+//            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+//                values.add((double) j);
+//            }
+//            byte[] bytes = serializeIndexValue(values);
+//            bTree.insert(key, bytes);
+//        }
+
+        TemplateUpdater templateUpdater = new TemplateUpdater(32, TimingModule.createNew(), SplitCounterModule.createNew());
+        bTree = templateUpdater.createTreeWithBulkLoading(bTree);
+
 
         bTree.clearPayload();
         BTreeLeafNode leaf = bTree.getLeftMostLeaf();

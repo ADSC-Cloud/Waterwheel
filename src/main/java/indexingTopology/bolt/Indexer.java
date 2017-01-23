@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Created by acelzj on 11/15/16.
  */
-public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
+public class Indexer extends BaseRichBolt {
 
     private final static int numberOfIndexingThreads = 1;
 
@@ -86,12 +86,16 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
 
     private Kryo kryo;
 
-    private Indexer indexer;
+    private IndexerBuilder indexerBuilder;
+
+    private indexingTopology.util.Indexer indexer;
 
     private ArrayBlockingQueue<Tuple> inputQueue;
 
-    public NormalDistributionIndexAndRangeQueryBolt(String indexField, DataSchema schema, int btreeOrder,
-                                                    int bytesLimit) {
+    private ArrayBlockingQueue<Pair> queryPendingQueue;
+
+    public Indexer(String indexField, DataSchema schema, int btreeOrder,
+                   int bytesLimit) {
         this.schema = schema;
         this.btreeOrder = btreeOrder;
         this.bytesLimit = bytesLimit;
@@ -118,7 +122,7 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
 
         this.templateUpdater = new TemplateUpdater(btreeOrder, tm, sm);
 
-        this.queue = new LinkedBlockingQueue<Pair>(1024);
+//        this.queue = new LinkedBlockingQueue<Pair>(1024);
 
         kryo = new Kryo();
         kryo.register(BTree.class, new KryoTemplateSerializer());
@@ -126,9 +130,21 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
 
         this.inputQueue = new ArrayBlockingQueue<Tuple>(1024);
 
-        Indexer indexer = new Indexer(topologyContext.getThisTaskId(), inputQueue, indexedData, chunk, indexField, schema, outputCollector);
+        this.queryPendingQueue = new ArrayBlockingQueue<Pair>(1024);
 
-        createIndexingThread();
+//        Indexer indexer = new Indexer(topologyContext.getThisTaskId(), inputQueue, indexField, schema, outputCollector, queryPendingQueue);
+        indexerBuilder = new IndexerBuilder();
+
+        indexer = indexerBuilder
+                .setTaskId(topologyContext.getThisTaskId())
+                .setDataSchema(schema)
+                .setIndexField(indexField)
+                .setInputQueue(inputQueue)
+                .setQueryPendingQueue(queryPendingQueue)
+                .setOutputCollector(collector)
+                .getIndexer();
+
+//        createIndexingThread();
 
     }
 
@@ -139,9 +155,11 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
 
     public void execute(Tuple tuple) {
         if (tuple.getSourceStreamId().equals(Streams.IndexStream)) {
-            Double indexValue = tuple.getDoubleByField(indexField);
+//            Double indexValue = tuple.getDoubleByField(indexField);
 
             Long timeStamp = tuple.getLong(schema.getNumberOfFileds());
+
+
 //            Long timeStamp = tuple.getLong(3);
             try {
 //                if (numTuples < TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK) {
@@ -167,8 +185,11 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
 //                    Pair pair = new Pair(indexValue, serializedTuple);
 //                    queue.put(pair);
 //
-//                    ++numTuples;
+
+//                System.out.println(timeStamp + " " + inputQueue.size());
                 inputQueue.put(tuple);
+                ++numTuples;
+//                System.out.println(numTuples + " has been put to input queue");
 //                } else {
 //
 //                    while (!queue.isEmpty()) {
@@ -257,32 +278,50 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } finally {
-
                 collector.ack(tuple);
             }
-        } else {
+        } else if (tuple.getSourceStreamId().equals(Streams.BPlusTreeQueryStream)){
             Long queryId = tuple.getLong(0);
             Double leftKey = tuple.getDouble(1);
             Double rightKey = tuple.getDouble(2);
-            List<byte[]> serializedTuples = null;
+//            System.out.println("query id " + queryId + " has been received!!!");
+//            List<byte[]> serializedTuples = null;
 
-            if (leftKey.compareTo(rightKey) == 0) {
-                serializedTuples = indexedData.searchTuples(leftKey);
-            } else {
-                serializedTuples = indexedData.searchRange(leftKey, rightKey);
-            }
+//            if (leftKey.compareTo(rightKey) == 0) {
+//                System.out.println("query id " + queryId + " B+ tree point query is executing!");
+//                serializedTuples = indexedData.searchTuples(leftKey);
+//            } else {
+//                serializedTuples = indexedData.searchRange(leftKey, rightKey);
+//            }
 
 //            System.out.println("query id " + serializedTuples.size());
+            Pair pair = new Pair(queryId, new Pair(leftKey, rightKey));
 
-            collector.emit(Streams.BPlusTreeQueryStream, new Values(queryId, serializedTuples));
+            try {
+                queryPendingQueue.put(pair);
+                System.out.println("query id " + queryId + " has been put to pending queue!!!");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+//            collector.emit(Streams.BPlusTreeQueryStream, new Values(queryId, serializedTuples));
+        } else if (tuple.getSourceStreamId().equals(Streams.TreeCleanStream)) {
+
+            Pair keyRange = (Pair) tuple.getValueByField("keyRange");
+            Pair timestampRange = (Pair) tuple.getValueByField("timestampRange");
+            Double keyRangeLowerBound = (Double) keyRange.getKey();
+            Double keyRangeUpperBound = (Double) keyRange.getValue();
+            Long startTimestamp = (Long) timestampRange.getKey();
+            Long endTimestamp = (Long) timestampRange.getValue();
+            indexer.cleanTree(new Domain(startTimestamp, endTimestamp, keyRangeLowerBound, keyRangeUpperBound));
         }
     }
 
     private void copyTemplate(int chunkId) throws CloneNotSupportedException {
         if (chunkId == 0) {
-            copyOfIndexedData = (BTree) indexedData.clone(indexedData);
+            copyOfIndexedData = (BTree) indexedData.clone();
         } else {
-            indexedData = (BTree) copyOfIndexedData.clone(copyOfIndexedData);
+            indexedData = (BTree) copyOfIndexedData.clone();
         }
     }
 
@@ -315,7 +354,7 @@ public class NormalDistributionIndexAndRangeQueryBolt extends BaseRichBolt {
                 new Fields("queryId", "serializedTuples"));
 
         outputFieldsDeclarer.declareStream(Streams.TimeStampUpdateStream,
-                new Fields("timestamp"));
+                new Fields("timestampRange", "keyRange"));
     }
 
     class IndexingRunnable implements Runnable {

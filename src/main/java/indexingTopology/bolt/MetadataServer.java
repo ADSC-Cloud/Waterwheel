@@ -9,7 +9,6 @@ import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 import indexingTopology.metadata.FileMetaData;
 import indexingTopology.metadata.FilePartitionSchemaManager;
-import indexingTopology.NormalDistributionIndexingTopology;
 import indexingTopology.streams.Streams;
 import indexingTopology.util.BalancedPartition;
 import indexingTopology.util.Histogram;
@@ -51,6 +50,8 @@ public class MetadataServer extends BaseRichBolt {
 
     private Thread staticsRequestSendingThread;
 
+    private boolean repartitionEnabled;
+
 
     public MetadataServer(Double lowerBound, Double upperBound) {
         this.lowerBound = lowerBound;
@@ -79,6 +80,8 @@ public class MetadataServer extends BaseRichBolt {
 
         histogram = new Histogram();
 
+        repartitionEnabled = true;
+
         staticsRequestSendingThread = new Thread(new StatisticsRequestSendingRunnable());
         staticsRequestSendingThread.start();
     }
@@ -94,23 +97,28 @@ public class MetadataServer extends BaseRichBolt {
                 partitionLoads = new long[numberOfPartitions];
                 this.histogram.merge(histogram);
                 ++numberOfStaticsReceived;
-                if (numberOfStaticsReceived == numberOfDispatchers) {
+                if (repartitionEnabled && (numberOfStaticsReceived == numberOfDispatchers)) {
                     Double skewnessFactor = getSkewnessFactor(this.histogram);
                     if (skewnessFactor > 2) {
+                        System.out.println("skewness detected!!!");
                         RepartitionManager manager = new RepartitionManager(numberOfPartitions, intervalToPartitionMapping,
                                 histogram.getHistogram(), getTotalWorkLoad(histogram));
                         this.intervalToPartitionMapping = manager.getRepartitionPlan();
                         this.balancedPartition = new BalancedPartition(numberOfPartitions, lowerBound, upperBound,
                                 intervalToPartitionMapping);
-                        collector.emit(NormalDistributionIndexingTopology.IntervalPartitionUpdateStream,
-                                new Values(this.balancedPartition.getIntervalToPartitionMapping()));
+                        repartitionEnabled = false;
+                        collector.emit(Streams.IntervalPartitionUpdateStream,
+//                                new Values(this.balancedPartition.getIntervalToPartitionMapping()));
+                                new Values(this.balancedPartition));
+                    } else {
+                        System.out.println("skewness is not detected!!!");
                     }
 
                     numberOfStaticsReceived = 0;
                 }
             }
 
-        } else if (tuple.getSourceStreamId().equals(NormalDistributionIndexingTopology.FileInformationUpdateStream)) {
+        } else if (tuple.getSourceStreamId().equals(Streams.FileInformationUpdateStream)) {
             String fileName = tuple.getString(0);
             Pair keyRange = (Pair) tuple.getValue(1);
             Pair timeStampRange = (Pair) tuple.getValue(2);
@@ -122,11 +130,15 @@ public class MetadataServer extends BaseRichBolt {
                     new Values(fileName, keyRange, timeStampRange));
         } else if (tuple.getSourceStreamId().equals(Streams.TimeStampUpdateStream)) {
             int taskId = tuple.getSourceTask();
-            Long timestamp = tuple.getLongByField("timestamp");
+            Pair timestampRange = (Pair) tuple.getValueByField("timestampRange");
+            Pair keyRange = (Pair) tuple.getValueByField("keyRange");
+            Long endTimestamp = (Long) timestampRange.getValue();
 
-            indexTaskToTimestampMapping.put(taskId, timestamp);
+            indexTaskToTimestampMapping.put(taskId, endTimestamp);
 
-            collector.emit(Streams.TimeStampUpdateStream, new Values(taskId, timestamp));
+            collector.emit(Streams.TimeStampUpdateStream, new Values(taskId, keyRange, timestampRange));
+        } else if (tuple.getSourceStreamId().equals(Streams.EableRepartitionStream)) {
+            repartitionEnabled = true;
         }
     }
 
@@ -139,7 +151,7 @@ public class MetadataServer extends BaseRichBolt {
                 new Fields("fileName", "keyRange", "timeStampRange"));
 
         outputFieldsDeclarer.declareStream(Streams.TimeStampUpdateStream,
-                new Fields("taskId", "timestamp"));
+                new Fields("taskId", "keyRange", "timestampRange"));
 
         outputFieldsDeclarer.declareStream(Streams.StaticsRequestStream,
                 new Fields("Statics Request"));
@@ -198,6 +210,7 @@ public class MetadataServer extends BaseRichBolt {
                     sum += count;
                 }
 
+                System.out.println("statics request has been sent!!!");
 //                System.out.println(String.format("Overall Throughput: %f tuple / second", sum / (double)sleepTimeInSecond));
 
                 histogram.clear();

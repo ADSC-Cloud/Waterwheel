@@ -18,6 +18,7 @@ public class Streams {
     public static final String StatisticsReportStream = "StatisticsReportStream";
     public static final String IntervalPartitionUpdateStream = "IntervalPartitionUpdateStream";
     public static final String StaticsRequestStream = "StaticsRequestStream";
-
+    public static final String TreeCleanStream = "TreeCleanStream";
+    public static final String EableRepartitionStream = "EableRepartitionStream";
 }
 

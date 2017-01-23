@@ -8,7 +8,6 @@ import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 import indexingTopology.DataSchema;
-import indexingTopology.NormalDistributionIndexingAndRangeQueryTopology;
 import indexingTopology.streams.Streams;
 import indexingTopology.util.BalancedPartition;
 import indexingTopology.util.Histogram;
@@ -20,7 +19,7 @@ import java.util.*;
 /**
  * Created by parijatmazumdar on 14/09/15.
  */
-public class RangeQueryDispatcherBolt extends BaseRichBolt {
+public class IngestionDispatcher extends BaseRichBolt {
     OutputCollector collector;
 
     private final DataSchema schema;
@@ -33,23 +32,22 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
 
     private BalancedPartition balancedPartition;
 
-    private boolean enableLoadBlance;
+    private boolean enableLoadBalance;
 
     private int numberOfPartitions;
 
-
-    public RangeQueryDispatcherBolt(DataSchema schema, Double lowerBound, Double upperBound, boolean enableLoadBlance) {
+    public IngestionDispatcher(DataSchema schema, Double lowerBound, Double upperBound, boolean enableLoadBalance) {
         this.schema = schema;
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
-        this.enableLoadBlance = enableLoadBlance;
+        this.enableLoadBalance = enableLoadBalance;
     }
 
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
 
         Set<String> componentIds = topologyContext.getThisTargets()
-                .get(NormalDistributionIndexingAndRangeQueryTopology.IndexStream).keySet();
+                .get(Streams.IndexStream).keySet();
         targetTasks = new ArrayList<Integer>();
 
         for (String componentId : componentIds) {
@@ -58,7 +56,7 @@ public class RangeQueryDispatcherBolt extends BaseRichBolt {
 
         numberOfPartitions = targetTasks.size();
 
-        balancedPartition = new BalancedPartition(numberOfPartitions, lowerBound, upperBound, true);
+        balancedPartition = new BalancedPartition(numberOfPartitions, lowerBound, upperBound, enableLoadBalance);
 
     }
 

@@ -1,6 +1,7 @@
 package indexingTopology.util;
 
 import indexingTopology.DataSchema;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
 import org.junit.Test;
 
@@ -28,9 +29,9 @@ public class TemplateUpdaterTest {
     @Test
     public void testCreateTreeWithBulkLoading() throws Exception, UnsupportedGenericException {
 
-        int numberOfTuples = 2048;
+        int numberOfTuples = TopologyConfig.NUM_TUPLES_TO_CHECK_TEMPLATE;
 
-        int order = 128;
+        int order = TopologyConfig.BTREE_OREDER;
 
         BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
 

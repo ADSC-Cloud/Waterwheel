@@ -75,7 +75,7 @@ public class KryoTemplateSerializer<TKey extends Comparable<TKey>> extends Seria
 
     private byte[] serializeInnerNode(BTreeInnerNode node) {
 
-        Output output = new Output(50000);
+        Output output = new Output(500000, 6500000);
 
         ArrayList<TKey> keys = node.getKeys();
 

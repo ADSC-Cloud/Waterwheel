@@ -30,7 +30,7 @@ import java.util.Map;
 /**
  * Created by acelzj on 11/15/16.
  */
-public class RangeQueryChunkScannerBolt extends BaseRichBolt{
+public class ChunkScanner extends BaseRichBolt{
 
     OutputCollector collector;
 
@@ -53,7 +53,7 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
     Long timeCostOfDeserializationALeaf;
 
 
-    public RangeQueryChunkScannerBolt(DataSchema schema) {
+    public ChunkScanner(DataSchema schema) {
         this.schema = schema;
     }
 
@@ -77,8 +77,6 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
         Long timestampLowerBound = subQuery.getStartTimestamp();
         Long timestampUpperBound = subQuery.getEndTimestamp();
 
-        System.out.println("file name " + fileName);
-
         RandomAccessFile file = null;
 
         FileScanMetrics metrics = new FileScanMetrics();
@@ -92,10 +90,6 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
         timeCostOfDeserializationATree = ((long) 0);
 
         timeCostOfDeserializationALeaf = ((long) 0);
-
-        System.out.println("left key " + leftKey);
-
-        System.out.println("right key " + rightKey);
 
 
         /*
@@ -173,26 +167,26 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
                 e.printStackTrace();
             }
             */
-        if (leftKey.compareTo(rightKey) == 0) {
-            try {
-                executePointQuery(queryId, leftKey, fileName, timestampLowerBound, timestampUpperBound);
-            } catch (IOException e1) {
-                e1.printStackTrace();
-            }
-        } else {
+//        if (leftKey.compareTo(rightKey) == 0) {
+//            try {
+//                executePointQuery(queryId, leftKey, fileName, timestampLowerBound, timestampUpperBound);
+//            } catch (IOException e1) {
+//                e1.printStackTrace();
+//            }
+//        } else {
             try {
                 executeRangeQuery(queryId, leftKey, rightKey, fileName, timestampLowerBound, timestampUpperBound);
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }
+//        }
 
     }
 
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
 //        outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.FileSystemQueryStream,
 //                new Fields("leftKey", "rightKey", "serializedTuples"));
-//        outputFieldsDeclarer.declareStream(NormalDistributionIndexingAndRangeQueryTopology.FileSystemQueryStream,
+//        outputFieldsDeclarer.declareStream(NormalDistributionTopology.FileSystemQueryStream,
 //                new Fields("queryId", "serializedTuples"));
 
 //        outputFieldsDeclarer.declareStream(NormalDistributionIndexingTopology.FileSystemQueryStream,
@@ -208,8 +202,6 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
     }
 
     private void executeRangeQuery(Long queryId, Double leftKey, Double rightKey, String fileName, Long timestampLowerBound, Long timestampUpperBound) throws IOException {
-
-        System.out.println("range query");
 
         FileScanMetrics metrics = new FileScanMetrics();
 
@@ -234,7 +226,6 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
             leaf = (BTreeLeafNode) getFromCache(mappingKey);
             if (leaf == null) {
                 leaf = getLeafFromExternalStorage(fileName, offset + length + 4);
-            } else {
                 CacheData cacheData = new LeafNodeCacheData(leaf);
                 putCacheData(cacheData, mappingKey);
             }
@@ -252,46 +243,6 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
 
         collector.emit(Streams.FileSubQueryFinishStream, new Values("finished"));
 
-    }
-
-    private void executePointQuery(Long queryId, Double key, String fileName, Long timestampLowerBound, Long timestampUpperBound) throws IOException {
-
-        System.out.println("point query");
-
-        FileScanMetrics metrics = new FileScanMetrics();
-
-        Pair data = getTreeData(fileName);
-
-        BTree deserializedTree = (BTree) data.getKey();
-
-        Integer length = (Integer) data.getValue();
-
-        int offset = deserializedTree.getOffsetOfLeaveNodeShouldContainKey(key);
-
-        offset += (length + 4);
-
-        BTreeLeafNode leaf;
-
-        CacheMappingKey mappingKey = new CacheMappingKey(fileName, offset);
-
-        leaf = (BTreeLeafNode) getFromCache(mappingKey);
-
-        if (leaf == null) {
-            leaf = getLeafFromExternalStorage(fileName, offset);
-        } else {
-            CacheData cacheData = new LeafNodeCacheData(leaf);
-            putCacheData(cacheData, mappingKey);
-        }
-
-        ArrayList<byte[]> tuples = leaf.searchAndGetTuples(key);
-
-        ArrayList<byte[]> serializedTuples = getTuplesWithinTimeStamp(tuples, timestampLowerBound, timestampUpperBound);
-
-        collector.emit(Streams.FileSystemQueryStream,
-                new Values(queryId, serializedTuples, metrics));
-
-        collector.emit(Streams.FileSubQueryFinishStream,
-                new Values("finished"));
     }
 
     private Object getFromCache(CacheMappingKey mappingKey) {
@@ -338,25 +289,6 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
         CacheUnit cacheUnit = new CacheUnit();
         cacheUnit.setCacheData(cacheData);
         cacheMapping.put(mappingKey, cacheUnit);
-    }
-
-
-    private ArrayList<byte[]> getTuplesWithinTimeStamp(BTreeLeafNode leaf, Long timestampLowerBound, Long timestampUpperBound, Double leftKey, Double rightKey)
-            throws IOException {
-
-        ArrayList<byte[]> serializedTuples = new ArrayList<>();
-
-        List<byte[]> tuples = leaf.getTuples(leftKey, rightKey);
-
-        for (int i = 0; i < tuples.size(); ++i) {
-            Values deserializedTuple = DeserializationHelper.deserialize(tuples.get(i));
-            if (timestampLowerBound <= (Long) deserializedTuple.get(3) &&
-                    timestampUpperBound >= (Long) deserializedTuple.get(3)) {
-                serializedTuples.add(tuples.get(i));
-            }
-        }
-
-        return serializedTuples;
     }
 
     private ArrayList<byte[]> getTuplesWithinTimeStamp(ArrayList<byte[]> tuples, Long timestampLowerBound, Long timestampUpperBound)
@@ -434,6 +366,7 @@ public class RangeQueryChunkScannerBolt extends BaseRichBolt{
         fileSystemHandler.readBytesFromFile(offset, lengthInByte);
 
         int lengthOfLeaveInBytes = ByteBuffer.wrap(lengthInByte, 0, 4).getInt();
+
         byte[] leafInByte = new byte[lengthOfLeaveInBytes+1];
 
         fileSystemHandler.seek(offset + 4);

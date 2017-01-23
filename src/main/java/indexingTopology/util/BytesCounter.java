@@ -5,7 +5,7 @@ import java.io.*;
 /**
  * Created by parijatmazumdar on 09/10/15.
  */
-public class BytesCounter implements Serializable{
+public class BytesCounter implements Serializable, Cloneable{
     /**
      * 4 bytes for storing number of keys
      * 1 byte for storing node type - internal/leaf
@@ -79,10 +79,13 @@ public class BytesCounter implements Serializable{
         return height;
     }
 
-    public Object clone() throws CloneNotSupportedException {
-        BytesCounter newCounter = new BytesCounter();
-        newCounter.bytesCountOfTemplate = bytesCountOfTemplate;
-        newCounter.height = height;
+    public BytesCounter clone() {
+        BytesCounter newCounter = null;
+        try {
+            newCounter = (BytesCounter) super.clone();
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
         return newCounter;
     }
 
