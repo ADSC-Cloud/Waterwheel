@@ -91,10 +91,6 @@ public class BalancedPartition {
         return intervalToPartitionMapping.get(getIntervalId(key));
     }
 
-    public int getPartitionId(Integer intervalId) {
-        return intervalToPartitionMapping.get(intervalId);
-    }
-
     public void setEnableRecord() {
         enableRecord = true;
     }
@@ -119,5 +115,4 @@ public class BalancedPartition {
     public void clearHistogram() {
         histogram.clear();
     }
-
 }

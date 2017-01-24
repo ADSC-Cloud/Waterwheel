@@ -7,8 +7,7 @@ import com.esotericsoftware.kryo.io.Output;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.util.BTreeInnerNode;
 import indexingTopology.util.BTreeLeafNode;
-import indexingTopology.util.BytesCounter;
-import indexingTopology.util.DeserializationHelper;
+
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -53,7 +52,7 @@ public class KryoLeafNodeSerializer<TKey extends Comparable<TKey>> extends Seria
     @Override
     public BTreeLeafNode read(Kryo kryo, Input input, Class<BTreeLeafNode> aClass) {
 
-        BTreeLeafNode leaf = new BTreeLeafNode(TopologyConfig.BTREE_OREDER, new BytesCounter());
+        BTreeLeafNode leaf = new BTreeLeafNode(TopologyConfig.BTREE_OREDER);
 
         int keyCount = input.readInt();
 

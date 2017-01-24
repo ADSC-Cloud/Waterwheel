@@ -19,7 +19,7 @@ public class BTreeTest {
     @Test
     public void testClone() throws Exception, UnsupportedGenericException {
         int order = 4;
-        BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
+        BTree bTree = new BTree(order);
 
         int numberOfTuples = 60;
 
@@ -82,7 +82,7 @@ public class BTreeTest {
     @Test
     public void serializeLeaves() throws Exception, UnsupportedGenericException {
         int order = 32;
-        BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
+        BTree bTree = new BTree(order);
 
         int numberOfTuples = 2048;
 
@@ -122,7 +122,7 @@ public class BTreeTest {
     @Test
     public void writeLeavesIntoChunk() throws Exception, UnsupportedGenericException {
         int order = 32;
-        BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
+        BTree bTree = new BTree(order);
 
         int numberOfTuples = 2048;
 
@@ -157,7 +157,7 @@ public class BTreeTest {
     @Test
     public void testInsert() throws Exception, UnsupportedGenericException {
         int order = 32;
-        BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
+        BTree bTree = new BTree(order);
 
         int numberOfTuples = 2048;
 
@@ -197,7 +197,7 @@ public class BTreeTest {
     @Test
     public void testSearchTuples() throws Exception, UnsupportedGenericException {
         int order = 32;
-        BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
+        BTree bTree = new BTree(order);
 
         int numberOfTuples = 2048;
 
@@ -245,7 +245,7 @@ public class BTreeTest {
     @Test
     public void testSearchRangeLeftKeyAndRightKeyTheSame() throws Exception, UnsupportedGenericException {
         int order = 32;
-        BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
+        BTree bTree = new BTree(order);
 
         int numberOfTuples = 2048;
 
@@ -295,7 +295,7 @@ public class BTreeTest {
     @Test
     public void testSearchRangeLeftKeyAndRightAllTuples() throws Exception, UnsupportedGenericException {
         int order = 32;
-        BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
+        BTree bTree = new BTree(order);
 
         int numberOfTuples = 2048;
 
@@ -346,7 +346,7 @@ public class BTreeTest {
     @Test
     public void testSearchRangeSomeTuples() throws Exception, UnsupportedGenericException {
         int order = 32;
-        BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
+        BTree bTree = new BTree(order);
 
         int numberOfTuples = 2048;
 
@@ -391,7 +391,7 @@ public class BTreeTest {
     @Test
     public void clearPayload() throws Exception, UnsupportedGenericException {
         int order = 32;
-        BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
+        BTree bTree = new BTree(order);
 
         int numberOfTuples = 2048;
 
@@ -428,7 +428,7 @@ public class BTreeTest {
     @Test
     public void clearPayloadInTemplateMode() throws Exception, UnsupportedGenericException {
         int order = 32;
-        BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
+        BTree bTree = new BTree(order);
 
         int numberOfTuples = 2048;
 
@@ -463,7 +463,7 @@ public class BTreeTest {
 //            bTree.insert(key, bytes);
 //        }
 
-        TemplateUpdater templateUpdater = new TemplateUpdater(32, TimingModule.createNew(), SplitCounterModule.createNew());
+        TemplateUpdater templateUpdater = new TemplateUpdater(32);
         bTree = templateUpdater.createTreeWithBulkLoading(bTree);
 
 

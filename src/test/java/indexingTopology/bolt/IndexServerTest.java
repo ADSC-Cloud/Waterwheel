@@ -44,9 +44,6 @@ public class IndexServerTest {
 
     private static MemChunk chunk;
 
-    private TimingModule tm;
-    private static SplitCounterModule sm;
-
     private long processingTime;
 
     private long totalTime;
@@ -66,10 +63,6 @@ public class IndexServerTest {
 
     private static BTree indexedData;
 
-//    private static List<Thread> indexingThreads = new ArrayList<Thread>();
-
-//    private static IndexingRunnable indexingRunnable;
-
     private static IndexerCopy indexer;
 
     static List<String> fieldNames = new ArrayList<String>(Arrays.asList("id", "zcode", "payload"));
@@ -81,15 +74,12 @@ public class IndexServerTest {
         this.btreeOrder = btreeOrder;
         this.bytesLimit = bytesLimit;
         this.inputQueue = new ArrayBlockingQueue<>(1024);
-        this.tm = TimingModule.createNew();
-        this.sm = SplitCounterModule.createNew();
         this.chunk = MemChunk.createNew(bytesLimit);
-        this.templateUpdater = new TemplateUpdater(btreeOrder, tm, sm);
-        indexedData = new BTree(btreeOrder, tm, sm);
+        this.templateUpdater = new TemplateUpdater(btreeOrder);
+        indexedData = new BTree(btreeOrder);
         queryId = 0;
         indexer = new IndexerCopy(0, inputQueue, indexedData, chunk, "user_id", schema);
     }
-
 
     private static void createGenerateThread() {
         Thread generateThread = new Thread(new GenerateRunnable());

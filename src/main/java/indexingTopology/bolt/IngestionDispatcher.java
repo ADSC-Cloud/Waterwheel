@@ -61,16 +61,12 @@ public class IngestionDispatcher extends BaseRichBolt {
     }
 
     public void execute(Tuple tuple) {
-//        double partitionValue = tuple.getDoubleByField(rangePartitionField);
-
         if (tuple.getSourceStreamId().equals(Streams.IndexStream)){
 
             Double indexValue = tuple.getDoubleByField(schema.getIndexField());
 
 //                updateBound(indexValue);
             balancedPartition.record(indexValue);
-
-//            int intervalId = balancedPartition.getIntervalId(indexValue);
 
             int partitionId = balancedPartition.getPartitionId(indexValue);
 

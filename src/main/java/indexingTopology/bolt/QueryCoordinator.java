@@ -1,5 +1,6 @@
 package indexingTopology.bolt;
 
+import indexingTopology.util.SubQuery;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -14,7 +15,6 @@ import indexingTopology.metadata.FileMetaData;
 import indexingTopology.streams.Streams;
 import indexingTopology.util.BalancedPartition;
 import indexingTopology.util.FileScanMetrics;
-import indexingTopology.util.RangeQuerySubQuery;
 import javafx.util.Pair;
 
 import java.io.*;
@@ -49,9 +49,9 @@ public class QueryCoordinator extends BaseRichBolt {
 
     private transient Map<Integer, Long> indexTaskToTimestampMapping;
 
-    private ArrayBlockingQueue<RangeQuerySubQuery> taskQueue;
+    private ArrayBlockingQueue<SubQuery> taskQueue;
 
-    private transient Map<Integer, ArrayBlockingQueue<RangeQuerySubQuery>> taskIdToTaskQueue;
+    private transient Map<Integer, ArrayBlockingQueue<SubQuery>> taskIdToTaskQueue;
 
     private BalancedPartition balancedPartition;
 
@@ -96,12 +96,12 @@ public class QueryCoordinator extends BaseRichBolt {
         queryId = 0;
         filePartitionSchemaManager = new FilePartitionSchemaManager();
 
-        taskQueue = new ArrayBlockingQueue<RangeQuerySubQuery>(TopologyConfig.TASK_QUEUE_CAPACITY);
-//        taskQueue = new LinkedBlockingQueue<RangeQuerySubQuery>(TopologyConfig.FILE_QUERY_TASK_WATINING_QUEUE_CAPACITY);
+        taskQueue = new ArrayBlockingQueue<SubQuery>(TopologyConfig.TASK_QUEUE_CAPACITY);
+//        taskQueue = new LinkedBlockingQueue<SubQuery>(TopologyConfig.FILE_QUERY_TASK_WATINING_QUEUE_CAPACITY);
 
         Set<String> componentIds = topologyContext.getThisTargets().get(Streams.FileSystemQueryStream).keySet();
 
-        taskIdToTaskQueue = new HashMap<Integer, ArrayBlockingQueue<RangeQuerySubQuery>>();
+        taskIdToTaskQueue = new HashMap<Integer, ArrayBlockingQueue<SubQuery>>();
 
         queryServers = new ArrayList<Integer>();
 
@@ -202,7 +202,7 @@ public class QueryCoordinator extends BaseRichBolt {
 
 
             for (String fileName : fileNames) {
-                RangeQuerySubQuery subQuery = new RangeQuerySubQuery(queryId, leftKey, rightKey, fileName, startTimeStamp, endTimeStamp);
+                SubQuery subQuery = new SubQuery(queryId, leftKey, rightKey, fileName, startTimeStamp, endTimeStamp);
                 try {
                     taskQueue.put(subQuery);
                 } catch (InterruptedException e) {
@@ -211,7 +211,7 @@ public class QueryCoordinator extends BaseRichBolt {
             }
 
             for (Integer taskId : queryServers) {
-                RangeQuerySubQuery subQuery = taskQueue.poll();
+                SubQuery subQuery = taskQueue.poll();
                 if (subQuery != null) {
                     collector.emitDirect(taskId, Streams.FileSystemQueryStream
                             , new Values(subQuery));
@@ -419,7 +419,7 @@ public class QueryCoordinator extends BaseRichBolt {
 
     private void createTaskQueues(List<Integer> targetTasks) {
         for (Integer taskId : targetTasks) {
-            ArrayBlockingQueue<RangeQuerySubQuery> taskQueue = new ArrayBlockingQueue<RangeQuerySubQuery>(TopologyConfig.TASK_QUEUE_CAPACITY);
+            ArrayBlockingQueue<SubQuery> taskQueue = new ArrayBlockingQueue<SubQuery>(TopologyConfig.TASK_QUEUE_CAPACITY);
             taskIdToTaskQueue.put(taskId, taskQueue);
         }
     }
@@ -427,7 +427,7 @@ public class QueryCoordinator extends BaseRichBolt {
     private void putSubqueriesToTaskQueue(int numberOfSubqueries, Double leftKey
             , Double rightKey, List<String> fileNames, Long startTimeStamp, Long endTimeStamp) {
         for (int i = 0; i < numberOfSubqueries; ++i) {
-            RangeQuerySubQuery subQuery = new RangeQuerySubQuery(queryId, leftKey,  rightKey, fileNames.get(i), startTimeStamp, endTimeStamp);
+            SubQuery subQuery = new SubQuery(queryId, leftKey,  rightKey, fileNames.get(i), startTimeStamp, endTimeStamp);
             try {
                 taskQueue.put(subQuery);
             } catch (InterruptedException e) {
@@ -519,10 +519,10 @@ public class QueryCoordinator extends BaseRichBolt {
             String fileName = fileNames.get(i);
             int index = Math.abs(fileName.hashCode()) % queryServers.size();
             Integer taskId = queryServers.get(index);
-            ArrayBlockingQueue<RangeQuerySubQuery> taskQueue = taskIdToTaskQueue.get(taskId);
-            RangeQuerySubQuery subQuery = new RangeQuerySubQuery(queryId, leftKey,  rightKey, fileName, startTimeStamp, endTimeStamp);
+            ArrayBlockingQueue<SubQuery> taskQueue = taskIdToTaskQueue.get(taskId);
+            SubQuery subQuery = new SubQuery(queryId, leftKey,  rightKey, fileName, startTimeStamp, endTimeStamp);
             if (taskQueue == null) {
-                taskQueue = new ArrayBlockingQueue<RangeQuerySubQuery>(TopologyConfig.TASK_QUEUE_CAPACITY);
+                taskQueue = new ArrayBlockingQueue<SubQuery>(TopologyConfig.TASK_QUEUE_CAPACITY);
             }
             try {
                 taskQueue.put(subQuery);
@@ -536,7 +536,7 @@ public class QueryCoordinator extends BaseRichBolt {
 
     private void sendSubqueriesFromTaskQueue() {
         for (Integer taskId : queryServers) {
-            RangeQuerySubQuery subQuery = taskQueue.poll();
+            SubQuery subQuery = taskQueue.poll();
             if (subQuery != null) {
                 collector.emitDirect(taskId, Streams.FileSystemQueryStream
                         , new Values(subQuery));
@@ -547,8 +547,8 @@ public class QueryCoordinator extends BaseRichBolt {
 
     private void sendSubqueriesFromTaskQueues() {
         for (Integer taskId : queryServers) {
-            ArrayBlockingQueue<RangeQuerySubQuery> taskQueue = taskIdToTaskQueue.get(taskId);
-            RangeQuerySubQuery subQuery = taskQueue.poll();
+            ArrayBlockingQueue<SubQuery> taskQueue = taskIdToTaskQueue.get(taskId);
+            SubQuery subQuery = taskQueue.poll();
             if (subQuery != null) {
                 collector.emitDirect(taskId, Streams.FileSystemQueryStream
                         , new Values(subQuery));
@@ -559,7 +559,7 @@ public class QueryCoordinator extends BaseRichBolt {
     private void sendSubqueriesByshuffleGrouping(int numberOfSubqueries, Double leftKey
             , Double rightKey, List<String> fileNames, Long startTimeStamp, Long endTimeStamp) {
         for (int i = 0; i < numberOfSubqueries; ++i) {
-            RangeQuerySubQuery subQuery = new RangeQuerySubQuery(queryId, leftKey, rightKey, fileNames.get(i), startTimeStamp, endTimeStamp);
+            SubQuery subQuery = new SubQuery(queryId, leftKey, rightKey, fileNames.get(i), startTimeStamp, endTimeStamp);
             collector.emit(Streams.FileSystemQueryStream
                     , new Values(subQuery));
         }
@@ -567,7 +567,7 @@ public class QueryCoordinator extends BaseRichBolt {
 
 
     private void sendSubqueryToTask(int taskId) {
-        RangeQuerySubQuery subQuery = taskQueue.poll();
+        SubQuery subQuery = taskQueue.poll();
 
         if (subQuery != null) {
             collector.emitDirect(taskId, Streams.FileSystemQueryStream
@@ -580,9 +580,9 @@ public class QueryCoordinator extends BaseRichBolt {
 
     private void sendSubquery(int taskId) {
 
-        ArrayBlockingQueue<RangeQuerySubQuery> taskQueue = taskIdToTaskQueue.get(taskId);
+        ArrayBlockingQueue<SubQuery> taskQueue = taskIdToTaskQueue.get(taskId);
 
-        RangeQuerySubQuery subQuery = taskQueue.poll();
+        SubQuery subQuery = taskQueue.poll();
 
         if (subQuery == null) {
 
@@ -597,27 +597,27 @@ public class QueryCoordinator extends BaseRichBolt {
         }
     }
 
-    private ArrayBlockingQueue<RangeQuerySubQuery> getLongestQueue() {
-        List<ArrayBlockingQueue<RangeQuerySubQuery>> taskQueues
-                = new ArrayList<ArrayBlockingQueue<RangeQuerySubQuery>>(taskIdToTaskQueue.values());
+    private ArrayBlockingQueue<SubQuery> getLongestQueue() {
+        List<ArrayBlockingQueue<SubQuery>> taskQueues
+                = new ArrayList<ArrayBlockingQueue<SubQuery>>(taskIdToTaskQueue.values());
 
         Collections.sort(taskQueues, (taskQueue1, taskQueue2) -> Integer.compare(taskQueue2.size(), taskQueue1.size()));
 
-        ArrayBlockingQueue<RangeQuerySubQuery> taskQueue = taskQueues.get(0);
+        ArrayBlockingQueue<SubQuery> taskQueue = taskQueues.get(0);
 
         return taskQueue;
     }
 
-    private List<RangeQuerySubQuery> generateSubqueries(Long queryId, Double leftKey
+    private List<SubQuery> generateSubqueries(Long queryId, Double leftKey
             , Double rightKey, List<String> fileNames, Long startTimeStamp, Long endTimeStamp) {
-        List<RangeQuerySubQuery> subQueries = new ArrayList<>();
+        List<SubQuery> subQueries = new ArrayList<>();
 
-        RangeQuerySubQuery subQuery = new RangeQuerySubQuery(queryId, leftKey,
+        SubQuery subQuery = new SubQuery(queryId, leftKey,
                 rightKey, null, startTimeStamp, endTimeStamp);
         subQueries.add(subQuery);
 
         for (String fileName : fileNames) {
-            subQuery = new RangeQuerySubQuery(queryId, leftKey, rightKey, fileName, startTimeStamp, endTimeStamp);
+            subQuery = new SubQuery(queryId, leftKey, rightKey, fileName, startTimeStamp, endTimeStamp);
             subQueries.add(subQuery);
         }
 

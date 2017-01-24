@@ -1,15 +1,12 @@
 package indexingTopology.util;
 
-import org.apache.storm.tuple.Values;
 import indexingTopology.DataSchema;
 import indexingTopology.exception.UnsupportedGenericException;
-import javafx.util.Pair;
 import org.junit.Test;
 
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import static org.junit.Assert.*;
 
@@ -31,7 +28,7 @@ public class BTreeLeafNodeTest {
 
         int numberOfTuples = 1024;
 
-        BTreeLeafNode leaf = new BTreeLeafNode(order, new BytesCounter());
+        BTreeLeafNode leaf = new BTreeLeafNode(order);
 
         Random random = new Random();
 
@@ -55,7 +52,7 @@ public class BTreeLeafNodeTest {
                 values.add((double) j);
             }
             byte[] bytes = serializeIndexValue(values);
-            leaf.insertKeyValue(key, bytes);
+            leaf.insertKeyTuples(key, bytes, false);
         }
 
         Collections.sort(keys);
@@ -76,7 +73,7 @@ public class BTreeLeafNodeTest {
 
         BTreeNode root = null;
 
-        BTreeLeafNode leaf = new BTreeLeafNode(order, new BytesCounter());
+        BTreeLeafNode leaf = new BTreeLeafNode(order);
 
         Random random = new Random();
 
@@ -93,7 +90,7 @@ public class BTreeLeafNodeTest {
                 values.add((double) j);
             }
             byte[] bytes = serializeIndexValue(values);
-            root = leaf.insertKeyValue(key, bytes);
+            root = leaf.insertKeyTuples(key, bytes, false);
         }
 
         assertEquals(512, leaf.getKeyCount());
@@ -108,7 +105,7 @@ public class BTreeLeafNodeTest {
 
         int numberOfTuples = 1024;
 
-        BTreeLeafNode leaf = new BTreeLeafNode(order, new BytesCounter());
+        BTreeLeafNode leaf = new BTreeLeafNode(order);
 
         Random random = new Random();
 
@@ -125,12 +122,12 @@ public class BTreeLeafNodeTest {
                 values.add((double) j);
             }
             byte[] bytes = serializeIndexValue(values);
-            leaf.insertKeyValue(key, bytes);
+            leaf.insertKeyTuples(key, bytes, false);
         }
 
         for (Integer key : keys) {
             leaf.acquireReadLock();
-            List<byte[]> tuples = leaf.searchRange(key, key);
+            List<byte[]> tuples = leaf.search(key, key);
             assertEquals(1, tuples.size());
         }
 
@@ -143,7 +140,7 @@ public class BTreeLeafNodeTest {
 
         int numberOfTuples = 1024;
 
-        BTreeLeafNode leaf = new BTreeLeafNode(order, new BytesCounter());
+        BTreeLeafNode leaf = new BTreeLeafNode(order);
 
         Random random = new Random();
 
@@ -167,15 +164,15 @@ public class BTreeLeafNodeTest {
                 values.add((double) j);
             }
             byte[] bytes = serializeIndexValue(values);
-            leaf.insertKeyValue(key, bytes);
+            leaf.insertKeyTuples(key, bytes, false);
         }
 
         leaf.acquireReadLock();
-        List<byte[]> tuples = leaf.searchRange(min - 1, max + 1);
+        List<byte[]> tuples = leaf.search(min - 1, max + 1);
         assertEquals(numberOfTuples,  tuples.size());
 
         leaf.acquireReadLock();
-        tuples = leaf.searchRange(min, max);
+        tuples = leaf.search(min, max);
         assertEquals(numberOfTuples,  tuples.size());
     }
 
@@ -186,7 +183,7 @@ public class BTreeLeafNodeTest {
 
         int numberOfTuples = 1024;
 
-        BTreeLeafNode leaf = new BTreeLeafNode(order, new BytesCounter());
+        BTreeLeafNode leaf = new BTreeLeafNode(order);
 
         Random random = new Random();
 
@@ -204,22 +201,22 @@ public class BTreeLeafNodeTest {
                 values.add((double) j);
             }
             byte[] bytes = serializeIndexValue(values);
-            leaf.insertKeyValue(key, bytes);
+            leaf.insertKeyTuples(key, bytes, false);
         }
 
         Collections.sort(keys);
 
         leaf.acquireReadLock();
-        List<byte[]> tuples = leaf.searchRange(keys.get(300), keys.get(512));
+        List<byte[]> tuples = leaf.search(keys.get(300), keys.get(512));
         assertEquals(213, tuples.size());
 
 
         leaf.acquireReadLock();
-        tuples = leaf.searchRange(keys.get(1022), keys.get(1023));
+        tuples = leaf.search(keys.get(1022), keys.get(1023));
         assertEquals(2, tuples.size());
 
         leaf.acquireReadLock();
-        tuples = leaf.searchRange(keys.get(0), keys.get(1));
+        tuples = leaf.search(keys.get(0), keys.get(1));
         assertEquals(2, tuples.size());
     }
 
@@ -229,7 +226,7 @@ public class BTreeLeafNodeTest {
 
         int numberOfTuples = 1024;
 
-        BTreeLeafNode leaf = new BTreeLeafNode(order, new BytesCounter());
+        BTreeLeafNode leaf = new BTreeLeafNode(order);
 
         Random random = new Random();
 
@@ -253,15 +250,15 @@ public class BTreeLeafNodeTest {
                 values.add((double) j);
             }
             byte[] bytes = serializeIndexValue(values);
-            leaf.insertKeyValue(key, bytes);
+            leaf.insertKeyTuples(key, bytes, false);
         }
 
         leaf.acquireReadLock();
-        List<byte[]> tuples = leaf.searchRange(max + 1, Integer.MAX_VALUE);
+        List<byte[]> tuples = leaf.search(max + 1, Integer.MAX_VALUE);
         assertEquals(0, tuples.size());
 
         leaf.acquireReadLock();
-        tuples = leaf.searchRange(Integer.MIN_VALUE, min - 1);
+        tuples = leaf.search(Integer.MIN_VALUE, min - 1);
         assertEquals(0, tuples.size());
     }
 
@@ -273,7 +270,7 @@ public class BTreeLeafNodeTest {
 
         int numberOfTuples = 1024;
 
-        BTreeLeafNode leaf = new BTreeLeafNode(order, new BytesCounter());
+        BTreeLeafNode leaf = new BTreeLeafNode(order);
 
         Random random = new Random();
 
@@ -300,11 +297,11 @@ public class BTreeLeafNodeTest {
                 values.add((double) j);
             }
             byte[] bytes = serializeIndexValue(values);
-            leaf.insertKeyValue(key, bytes);
+            leaf.insertKeyTuples(key, bytes, false);
         }
 
         leaf.acquireReadLock();
-        List<byte[]> tuples = leaf.searchRange(min, max);
+        List<byte[]> tuples = leaf.search(min, max);
         assertEquals(numberOfTuples, tuples.size());
 
     }
@@ -315,7 +312,7 @@ public class BTreeLeafNodeTest {
 
         int numberOfTuples = 1024;
 
-        BTreeLeafNode leaf = new BTreeLeafNode(order, new BytesCounter());
+        BTreeLeafNode leaf = new BTreeLeafNode(order);
 
         Random random = new Random();
 
@@ -334,11 +331,11 @@ public class BTreeLeafNodeTest {
                 values.add((double) j);
             }
             byte[] bytes = serializeIndexValue(values);
-            leaf.insertKeyValue(key, bytes);
+            leaf.insertKeyTuples(key, bytes, false);
         }
 
         leaf.acquireReadLock();
-        List<byte[]> tuples = leaf.searchAndGetTuples(randomKey);
+        List<byte[]> tuples = leaf.search(randomKey, randomKey);
         assertEquals(numberOfTuples, tuples.size());
     }
 

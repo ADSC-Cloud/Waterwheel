@@ -1,7 +1,6 @@
 package indexingTopology.util;
 
 import indexingTopology.exception.UnsupportedGenericException;
-import javafx.util.Pair;
 
 import java.util.*;
 
@@ -9,31 +8,17 @@ import java.util.*;
 /**
  * Created by acelzj on 7/15/16.
  */
-public class TemplateUpdater<TKey extends Comparable<TKey>, TValue> {
+public class TemplateUpdater<TKey extends Comparable<TKey>> {
 
     private int order;
 
-    private BTree<Double, Integer> bt;
+    private BTree<Double, Integer> template;
 
-    private List<Pair<TKey, TValue>> record;
-
-    private TimingModule tm;
-
-    private SplitCounterModule sm;
-
-    private BytesCounter counter;
-
-
-    public TemplateUpdater(int btreeOrder, TimingModule tm, SplitCounterModule sm) {
+    public TemplateUpdater(int btreeOrder) {
         order = btreeOrder;
-        this.tm = tm;
-        this.sm = sm;
-//        record = new TreeMap<TKey, TValue>();
-        record = new ArrayList<Pair<TKey, TValue>>();
-        counter = new BytesCounter();
-        counter.increaseHeightCount();
     }
 
+    @SuppressWarnings("unchecked")
     private List<BTreeInnerNode> createInnerNodes(BTree oldBTree) {
         BTreeLeafNode currentLeave = oldBTree.getLeftMostLeaf();
 
@@ -53,7 +38,7 @@ public class TemplateUpdater<TKey extends Comparable<TKey>, TValue> {
         ArrayList<BTreeLeafNode> leaves = createLeaves(copyOfCurrentLeave, averageKeyCount, numberOfLeaves, totalKeyCount);
 
         List<BTreeInnerNode> innerNodes = new ArrayList<BTreeInnerNode>();
-        BTreeInnerNode node = new BTreeInnerNode(order, counter);
+        BTreeInnerNode node = new BTreeInnerNode(order);
         int index = 0;
         BTreeLeafNode preChild = leaves.get(index);
         node.setChild(0, preChild);
@@ -70,7 +55,7 @@ public class TemplateUpdater<TKey extends Comparable<TKey>, TValue> {
                 setSiblingsOfChild(preChild, child);
                 preChild = child;
                 innerNodes.add(node);
-                node = new BTreeInnerNode(order, counter);
+                node = new BTreeInnerNode(order);
                 child = leaves.get(index);
                 node.setChild(0, child);
             }
@@ -96,20 +81,20 @@ public class TemplateUpdater<TKey extends Comparable<TKey>, TValue> {
      * @return a new BTree
      */
 
+    @SuppressWarnings("unchecked")
     public BTree<Double, Integer> createTreeWithBulkLoading(BTree oldBTree) {
         List<BTreeInnerNode> innerNodes = createInnerNodes(oldBTree);
 
         int count = 0;
-        bt = new BTree(this.order, tm, sm);
-        BTreeInnerNode root = new BTreeInnerNode(this.order, counter);
+        template = new BTree(this.order);
+        BTreeInnerNode root = new BTreeInnerNode(this.order);
         for (BTreeInnerNode node : innerNodes) {
             ++count;
             if (count == 1) {
                 BTreeInnerNode parent = root;
                 parent.setChild(0, node);
                 node.setParent(parent);
-                counter.increaseHeightCount();
-                bt.setRoot(root);
+                template.setRoot(root);
             } else {
                 try {
                     BTreeInnerNode parent = root.getRightMostChild();
@@ -119,35 +104,36 @@ public class TemplateUpdater<TKey extends Comparable<TKey>, TValue> {
                     if (parent.isOverflow()) {
                         root = (BTreeInnerNode) parent.dealOverflow();
                     }
-                    bt.setHeight(counter.getHeightCount());
-                    bt.setRoot(root);
+//                    template.setHeight(counter.getHeightCount());
+                    template.setRoot(root);
                 } catch (UnsupportedGenericException e) {
                     e.printStackTrace();
                 }
             }
         }
 
-        bt.setRoot(root);
-        bt.setTemplateMode();
-        return bt;
+        template.setRoot(root);
+        template.setTemplateMode();
+        return template;
     }
 
-    public ArrayList<BTreeLeafNode> createLeaves(BTreeLeafNode mostLeafLeave, int averageKeyCount, int numberOfLeaves, int totalKeyCount) {
-        BTreeLeafNode currentLeaf = mostLeafLeave;
+    public ArrayList<BTreeLeafNode> createLeaves(BTreeLeafNode mostLeftLeaf, int averageKeyCount, int numberOfLeaves, int totalKeyCount) {
+        BTreeLeafNode currentLeaf = mostLeftLeaf;
 
         ArrayList<BTreeLeafNode> leaves = new ArrayList<>(numberOfLeaves);
 
-        int index = 0;
+        int indexInCurrentLeaf = 0;
 
         BTreeLeafNode preNode = null;
 
-        int remainderIndex = totalKeyCount - (numberOfLeaves) * averageKeyCount;
+        //This variable means the max index of the leaf node which should have one more key.
+        int maxIndex = totalKeyCount - (numberOfLeaves) * averageKeyCount;
 
         for (int i = 0; i < numberOfLeaves; ++i) {
 
-            int keyCount = i < remainderIndex ? averageKeyCount + 1 : averageKeyCount;
+            int keyCount = i < maxIndex ? averageKeyCount + 1 : averageKeyCount;
 
-            BTreeLeafNode leaf = new BTreeLeafNode(keyCount, counter);
+            BTreeLeafNode leaf = new BTreeLeafNode(keyCount);
 
             if (i == 0) {
                 preNode = leaf;
@@ -158,14 +144,14 @@ public class TemplateUpdater<TKey extends Comparable<TKey>, TValue> {
             }
 
             while (leaf.getKeyCount() < keyCount && currentLeaf != null) {
-                if (index == currentLeaf.getKeyCount()) {
+                if (indexInCurrentLeaf == currentLeaf.getKeyCount()) {
                     currentLeaf = (BTreeLeafNode) currentLeaf.rightSibling;
-                    index = 0;
+                    indexInCurrentLeaf = 0;
                 }
 
                 if (currentLeaf != null) {
-                    insertTuplesIntoLeaf(currentLeaf, leaf, index, leaf.getKeyCount());
-                    ++index;
+                    insertTuplesIntoLeaf(currentLeaf, leaf, indexInCurrentLeaf, leaf.getKeyCount());
+                    ++indexInCurrentLeaf;
                 }
             }
 
@@ -175,19 +161,20 @@ public class TemplateUpdater<TKey extends Comparable<TKey>, TValue> {
         return leaves;
     }
 
-    private void insertTuplesIntoLeaf(BTreeLeafNode currentLeave, BTreeLeafNode leaf, int index, int indexOfKey) {
-        leaf.keys.add(currentLeave.getKey(index));
+    @SuppressWarnings("unchecked")
+    private void insertTuplesIntoLeaf(BTreeLeafNode currentLeaf, BTreeLeafNode leaf, int index, int indexOfKey) {
+        leaf.keys.add(currentLeaf.getKey(index));
         leaf.tuples.add(new ArrayList<byte[]>());
         leaf.offsets.add(new ArrayList<Integer>());
 
         try {
-            leaf.bytesCount += UtilGenerics.sizeOf(currentLeave.getKey(index).getClass());
+            leaf.bytesCount += UtilGenerics.sizeOf(currentLeaf.getKey(index).getClass());
         } catch (UnsupportedGenericException e) {
             e.printStackTrace();
         }
 
-        ArrayList<byte[]> tuples = currentLeave.getTuples(index);
-        ArrayList<Integer> offsets = currentLeave.getOffsets(index);
+        ArrayList<byte[]> tuples = currentLeaf.getTuples(index);
+        ArrayList<Integer> offsets = currentLeaf.getOffsets(index);
 
         ((ArrayList) leaf.tuples.get(indexOfKey)).addAll(tuples);
         leaf.tupleCount.addAndGet(tuples.size());

@@ -17,7 +17,6 @@ import java.util.Queue;
  */
 public class KryoTemplateSerializer<TKey extends Comparable<TKey>> extends Serializer<BTree> {
 
-
     @Override
     public void write(Kryo kryo, Output output, BTree bTree) {
         Queue<BTreeNode> q = new LinkedList<BTreeNode>();
@@ -37,8 +36,7 @@ public class KryoTemplateSerializer<TKey extends Comparable<TKey>> extends Seria
     public BTree read(Kryo kryo, Input input, Class<BTree> aClass) {
         BTreeInnerNode root = null;
         Queue<BTreeNode> q = new LinkedList<BTreeNode>();
-        BytesCounter counter = new BytesCounter();
-        root = new BTreeInnerNode(TopologyConfig.BTREE_OREDER, counter);
+        root = new BTreeInnerNode(TopologyConfig.BTREE_OREDER);
         deserialize(input, root);
         q.add(root);
 
@@ -48,7 +46,7 @@ public class KryoTemplateSerializer<TKey extends Comparable<TKey>> extends Seria
             BTreeInnerNode curr = (BTreeInnerNode) q.remove();
 
             for (int i = 0; i < curr.getKeyCount() + 1; ++i) {
-                BTreeInnerNode node = new BTreeInnerNode(TopologyConfig.BTREE_OREDER, counter);
+                BTreeInnerNode node = new BTreeInnerNode(TopologyConfig.BTREE_OREDER);
                 deserialize(input, node);
                 if (node.getKeyCount() != 0) {
                     curr.setChild(i, node);
@@ -66,9 +64,7 @@ public class KryoTemplateSerializer<TKey extends Comparable<TKey>> extends Seria
             }
         }
 
-        TimingModule tm = TimingModule.createNew();
-        SplitCounterModule sm = SplitCounterModule.createNew();
-        BTree bTree = new BTree(TopologyConfig.BTREE_OREDER, tm, sm);
+        BTree bTree = new BTree(TopologyConfig.BTREE_OREDER);
         bTree.setRoot(root);
         return bTree;
     }

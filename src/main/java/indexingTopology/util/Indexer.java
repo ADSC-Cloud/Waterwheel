@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -92,8 +91,7 @@ public class Indexer {
 
         this.inputQueue = inputQueue;
 
-        templateUpdater = new TemplateUpdater(TopologyConfig.BTREE_OREDER, TimingModule.createNew(),
-                SplitCounterModule.createNew());
+        templateUpdater = new TemplateUpdater(TopologyConfig.BTREE_OREDER);
 
         start = System.currentTimeMillis();
 
@@ -114,7 +112,7 @@ public class Indexer {
 
         this.processQuerySemaphore = new Semaphore(1);
 
-        this.indexedData = new BTree(TopologyConfig.BTREE_OREDER, TimingModule.createNew(), SplitCounterModule.createNew());
+        this.indexedData = new BTree(TopologyConfig.BTREE_OREDER);
 
         kryo = new Kryo();
         kryo.register(BTree.class, new KryoTemplateSerializer());
@@ -468,11 +466,7 @@ public class Indexer {
 
                 List<byte[]> serializedTuples = null;
 
-//                if (leftKey.compareTo(rightKey) == 0) {
-//                    serializedTuples = indexedData.searchTuples(leftKey);
-//                } else {
-                    serializedTuples = indexedData.searchRange(leftKey, rightKey);
-//                }
+                serializedTuples = indexedData.searchRange(leftKey, rightKey);
 
                 processQuerySemaphore.release();
 
@@ -499,17 +493,9 @@ public class Indexer {
 
         Output output = new Output(65000000, 20000000);
 
-//        System.out.println("****begin serialize the leaves*****");
-
-//        byte[] leavesInBytes = indexedData.serializeLeaves();
         byte[] leavesInBytes = bTree.serializeLeaves();
 
-//        System.out.println("leaves have been serialized!!!");
-
-//        kryo.writeObject(output, indexedData);
         kryo.writeObject(output, bTree);
-
-//        System.out.println("template has been serialized!!!");
 
         byte[] bytes = output.toBytes();
 

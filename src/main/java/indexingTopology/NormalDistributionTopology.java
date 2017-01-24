@@ -7,7 +7,6 @@ import indexingTopology.config.TopologyConfig;
 import indexingTopology.streams.Streams;
 import indexingTopology.bolt.*;
 import indexingTopology.spout.NormalDistributionGenerator;
-import indexingTopology.util.Constants;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,7 +64,7 @@ public class NormalDistributionTopology {
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 
-        builder.setBolt(IndexerBolt, new Indexer("user_id", schema, TopologyConfig.BTREE_OREDER, 65000000),2)
+        builder.setBolt(IndexerBolt, new IngestionBolt("user_id", schema),2)
                 .setNumTasks(1)
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream);
@@ -97,10 +96,6 @@ public class NormalDistributionTopology {
         conf.setNumWorkers(1);
         conf.setDebug(false);
         conf.setMaxTaskParallelism(1);
-        conf.put(Constants.HDFS_CORE_SITE.str, "/Users/parijatmazumdar" +
-                "/Desktop/thesis/hadoop-2.7.1/etc/hadoop/core-site.xml");
-        conf.put(Constants.HDFS_HDFS_SITE.str,"/Users/parijatmazumdar/" +
-                "Desktop/thesis/hadoop-2.7.1/etc/hadoop/hdfs-site.xml");
 
         StormSubmitter.submitTopologyWithProgressBar(args[0], conf, builder.createTopology());
     }

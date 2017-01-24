@@ -33,7 +33,7 @@ public class TemplateUpdaterTest {
 
         int order = TopologyConfig.BTREE_OREDER;
 
-        BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
+        BTree bTree = new BTree(order);
 
         Random random = new Random();
 
@@ -57,12 +57,12 @@ public class TemplateUpdaterTest {
             bTree.insert(key, bytes);
         }
 
-        TemplateUpdater templateUpdater = new TemplateUpdater(order, TimingModule.createNew(), SplitCounterModule.createNew());
+        TemplateUpdater templateUpdater = new TemplateUpdater(order);
 
         BTree newTree = templateUpdater.createTreeWithBulkLoading(bTree);
 
         for (Integer key : keys) {
-            assertEquals(1, newTree.searchTuples(key).size());
+            assertEquals(1, newTree.searchRange(key, key).size());
         }
 
     }

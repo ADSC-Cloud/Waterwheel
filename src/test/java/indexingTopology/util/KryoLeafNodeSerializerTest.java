@@ -5,9 +5,6 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
-import indexingTopology.util.BTreeLeafNode;
-import indexingTopology.util.BytesCounter;
-import indexingTopology.util.KryoLeafNodeSerializer;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
 
@@ -35,7 +32,7 @@ public class KryoLeafNodeSerializerTest {
         Kryo kryo = new Kryo();
         kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
 
-        BTreeLeafNode leaf = new BTreeLeafNode(TopologyConfig.BTREE_OREDER, new BytesCounter());
+        BTreeLeafNode leaf = new BTreeLeafNode(TopologyConfig.BTREE_OREDER);
 
         for (int i = 0; i < 4; ++i) {
             List<Double> values = new ArrayList<>();
@@ -47,7 +44,7 @@ public class KryoLeafNodeSerializerTest {
 
             byte[] bytes = serializeIndexValue(values);
 
-            leaf.insertKeyValue((double) i, bytes);
+            leaf.insertKeyTuples((double) i, bytes ,false);
         }
 
 
@@ -68,7 +65,9 @@ public class KryoLeafNodeSerializerTest {
         leaf = kryo.readObject(input, BTreeLeafNode.class);
 
         for (int i = 0; i < 1024; ++i) {
-            ArrayList<byte[]> serializedTuples = leaf.searchAndGetTuples((double) i);
+            leaf.acquireReadLock();
+            List<byte[]> serializedTuples = leaf.search((double) i, (double) i);
+//            leaf.releaseReadLock();
             for (int j = 0; j < serializedTuples.size(); ++j) {
                 System.out.println(deserialize(serializedTuples.get(j)));
             }

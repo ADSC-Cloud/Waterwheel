@@ -35,49 +35,25 @@ public class KryoTemplateSerializerTest {
     @Test
     public void testDeserialize() throws IOException, UnsupportedGenericException {
 
-        int order = TopologyConfig.BTREE_OREDER;
-        BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
+        final int payloadSize = 10;
 
-        int numberOfTuples = 1024;
+        final double x1 = 0;
+        final double x2 = 1000;
+        final double y1 = 0;
+        final double y2 = 500;
+        final int partitions = 100;
 
-        Random random = new Random();
+        TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
+        City city = new City(x1, x2, y1, y2, partitions);
 
-        List<Integer> keys = new ArrayList<>();
+        int numTuples = TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK;
+        Long timestamp = 0L;
 
-        for (int i = 0; i < numberOfTuples; ++i) {
+        int chunkId = 0;
 
-            List<Object> values = new ArrayList<>();
-            values.add((double) i);
-            for (int j = 0; j < fieldNames.size() + 1; ++j) {
-                values.add((double) j);
-            }
-            byte[] bytes = serializeIndexValue(values);
-            bTree.insert((double) i, bytes);
+        List<String> fileNames = new ArrayList<>();
 
-        }
-
-
-        bTree.serializeLeaves();
-
-        Output output = new Output(500000);
-
-        Kryo kryo = new Kryo();
-        kryo.register(BTree.class, new KryoTemplateSerializer());
-
-        kryo.writeObject(output, bTree);
-
-        byte[] bytes = output.toBytes();
-
-        Input input = new Input(bytes);
-
-        bTree = kryo.readObject(input, BTree.class);
-
-    }
-
-    @Test
-    public void testTemplateAndLeaveDeserialization() throws IOException, UnsupportedGenericException {
-        int order = TopologyConfig.BTREE_OREDER;
-        BTree bTree = new BTree(order, TimingModule.createNew(), SplitCounterModule.createNew());
+        BTree indexedData = new BTree(TopologyConfig.BTREE_OREDER);
 
         int numberOfTuples = 60;
 
@@ -85,22 +61,78 @@ public class KryoTemplateSerializerTest {
 
         List<Integer> keys = new ArrayList<>();
 
-        for (int i = 0; i < numberOfTuples; ++i) {
-
+        for (int i = 0; i < numTuples; ++i) {
             List<Object> values = new ArrayList<>();
-            values.add((double) i);
-            for (int j = 0; j < fieldNames.size() + 1; ++j) {
-                values.add((double) j);
-            }
-            byte[] bytes = serializeIndexValue(values);
-            bTree.insert((double) i, bytes);
-
+            Car car = generator.generate();
+            values.add((double) car.id);
+            values.add((double) city.getZCodeForALocation(car.x, car.y));
+            values.add(new String(new char[payloadSize]));
+            values.add(timestamp);
+            byte[] bytes = null;
+            bytes = serializeIndexValue(values);
+            indexedData.insert((double) car.id, bytes);
         }
 
-        bTree.printBtree();
+
+        indexedData.serializeLeaves();
+
+        Output output = new Output(500000);
+
+        Kryo kryo = new Kryo();
+        kryo.register(BTree.class, new KryoTemplateSerializer());
+
+        kryo.writeObject(output, indexedData);
+
+        byte[] bytes = output.toBytes();
+
+        Input input = new Input(bytes);
+
+        indexedData = kryo.readObject(input, BTree.class);
+
+    }
+
+    @Test
+    public void testTemplateAndLeaveDeserialization() throws IOException, UnsupportedGenericException {
+        final int payloadSize = 10;
+
+        final double x1 = 0;
+        final double x2 = 1000;
+        final double y1 = 0;
+        final double y2 = 500;
+        final int partitions = 100;
+
+        TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
+        City city = new City(x1, x2, y1, y2, partitions);
+
+        int numTuples = TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK;
+        Long timestamp = 0L;
+
+        int chunkId = 0;
+
+        List<String> fileNames = new ArrayList<>();
+
+        BTree indexedData = new BTree(TopologyConfig.BTREE_OREDER);
+
+        int numberOfTuples = 60;
+
+        Random random = new Random();
+
+        List<Integer> keys = new ArrayList<>();
+
+        for (int i = 0; i < numTuples; ++i) {
+            List<Object> values = new ArrayList<>();
+            Car car = generator.generate();
+            values.add((double) car.id);
+            values.add((double) city.getZCodeForALocation(car.x, car.y));
+            values.add(new String(new char[payloadSize]));
+            values.add(timestamp);
+            byte[] bytes = null;
+            bytes = serializeIndexValue(values);
+            indexedData.insert((double) car.id, bytes);
+        }
 
 
-        byte[] leavesInBytes = bTree.serializeLeaves();
+        byte[] leavesInBytes = indexedData.serializeLeaves();
 
         Output output = new Output(500000, 20000000);
 
@@ -108,7 +140,7 @@ public class KryoTemplateSerializerTest {
         kryo.register(BTree.class, new KryoTemplateSerializer());
         kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
 
-        kryo.writeObject(output, bTree);
+        kryo.writeObject(output, indexedData);
 
         byte[] bytes = output.toBytes();
 
@@ -161,14 +193,14 @@ public class KryoTemplateSerializerTest {
 
         input = new Input(templateInBytes);
 
-        bTree = kryo.readObject(input, BTree.class);
+        indexedData = kryo.readObject(input, BTree.class);
 
-        bTree.printBtree();
+        indexedData.printBtree();
 
-        BTreeNode mostLeftNode = bTree.findLeafNodeShouldContainKeyInDeserializedTemplate(0.0);
-        BTreeNode mostRightNode = bTree.findLeafNodeShouldContainKeyInDeserializedTemplate(60.0);
+        BTreeNode mostLeftNode = indexedData.findLeafNodeShouldContainKeyInDeserializedTemplate(0.0);
+        BTreeNode mostRightNode = indexedData.findLeafNodeShouldContainKeyInDeserializedTemplate(60.0);
 
-        List<Integer> offsets = bTree.getOffsetsOfLeaveNodesShouldContainKeys(mostLeftNode
+        List<Integer> offsets = indexedData.getOffsetsOfLeaveNodesShouldContainKeys(mostLeftNode
                 , mostRightNode);
 
         for (Integer offset : offsets) {
@@ -195,7 +227,6 @@ public class KryoTemplateSerializerTest {
         }
     }
 
-
     @Test
     public void testTemplateUpdateDeserialization() throws UnsupportedGenericException, IOException {
         final int payloadSize = 10;
@@ -216,9 +247,9 @@ public class KryoTemplateSerializerTest {
 
         List<String> fileNames = new ArrayList<>();
 
-        BTree indexedData = new BTree(TopologyConfig.BTREE_OREDER, TimingModule.createNew(), SplitCounterModule.createNew());
+        BTree indexedData = new BTree(TopologyConfig.BTREE_OREDER);
 
-        while (true) {
+        while (chunkId <= 1) {
             for (int i = 0; i < numTuples; ++i) {
                 List<Object> values = new ArrayList<>();
                 Car car = generator.generate();

@@ -1,17 +1,14 @@
 package indexingTopology.util;
 
-import javax.transaction.TransactionRequiredException;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.Serializable;
 
-/**
- * Created by acelzj on 12/3/16.
- */
-public class SubQuery {
+public class SubQuery implements Serializable {
 
     private long queryId;
 
-    private Double key;
+    private Double leftKey;
+
+    private Double rightKey;
 
     private String fileName;
 
@@ -19,9 +16,12 @@ public class SubQuery {
 
     private Long endTimestamp;
 
-    public SubQuery(long queryId, Double key, String fileName, Long startTimestamp, Long endTimestamp) {
+
+    public SubQuery(long queryId, Double leftKey, Double rightKey
+            , String fileName, Long startTimestamp, Long endTimestamp) {
         this.queryId = queryId;
-        this.key = key;
+        this.leftKey = leftKey;
+        this.rightKey = rightKey;
         this.fileName = fileName;
         this.startTimestamp = startTimestamp;
         this.endTimestamp = endTimestamp;
@@ -31,8 +31,12 @@ public class SubQuery {
         return queryId;
     }
 
-    public Double getKey() {
-        return key;
+    public Double getlefKey() {
+        return leftKey;
+    }
+
+    public Double getRightKey() {
+        return rightKey;
     }
 
     public String getFileName() {
@@ -46,6 +50,5 @@ public class SubQuery {
     public Long getEndTimestamp() {
         return endTimestamp;
     }
-
 
 }

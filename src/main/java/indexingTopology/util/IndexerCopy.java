@@ -8,10 +8,8 @@ import indexingTopology.filesystem.FileSystemHandler;
 import indexingTopology.filesystem.HdfsFileSystemHandler;
 import indexingTopology.filesystem.LocalFileSystemHandler;
 import indexingTopology.exception.UnsupportedGenericException;
-import indexingTopology.streams.Streams;
 import javafx.util.Pair;
 import org.apache.storm.task.OutputCollector;
-import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 
 import java.io.IOException;
@@ -85,8 +83,7 @@ public class IndexerCopy {
 
         this.indexedData = indexedData;
 
-        templateUpdater = new TemplateUpdater(TopologyConfig.BTREE_OREDER, TimingModule.createNew(),
-                SplitCounterModule.createNew());
+        templateUpdater = new TemplateUpdater(TopologyConfig.BTREE_OREDER);
 
         start = System.currentTimeMillis();
 
@@ -290,7 +287,7 @@ public class IndexerCopy {
     }
 
     private void createNewTemplate() {
-        indexedData = new BTree(TopologyConfig.BTREE_OREDER, TimingModule.createNew(), SplitCounterModule.createNew());
+        indexedData = new BTree(TopologyConfig.BTREE_OREDER);
     }
 
     class IndexingRunnable implements Runnable {
@@ -382,7 +379,7 @@ public class IndexerCopy {
 //                if (leftKey.compareTo(rightKey) == 0) {
 //                    serializedTuples = indexedData.searchTuples(leftKey);
 //                } else {
-//                    serializedTuples = indexedData.searchRange(leftKey, rightKey);
+//                    serializedTuples = indexedData.search(leftKey, rightKey);
 //                }
 
                 try {
@@ -399,7 +396,7 @@ public class IndexerCopy {
                     Values deserializedTuple = null;
                     try {
                         deserializedTuple = schema.deserialize(serializedTuples.get(i));
-                        deserializedTuple = DeserializationHelper.deserialize(serializedTuples.get(i));
+                        deserializedTuple = schema.deserialize(serializedTuples.get(i));
                     } catch (IOException e) {
                         e.printStackTrace();
                     }

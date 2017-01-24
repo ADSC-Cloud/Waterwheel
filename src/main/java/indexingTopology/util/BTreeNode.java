@@ -17,8 +17,6 @@ enum TreeNodeType {
 
 public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serializable{
 	protected final int ORDER;
-	//   protected final BytesCounter counter;
-	protected BytesCounter counter;
 	protected ArrayList<TKey> keys;
 	protected int keyCount;
 	protected BTreeNode<TKey> parentNode;
@@ -35,16 +33,12 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 		return id;
 	}
 
-	protected BTreeNode(int order, BytesCounter counter) {
+	protected BTreeNode(int order) {
 		this.keyCount = 0;
 		ORDER = order;
 		this.parentNode = null;
 		this.leftSibling = null;
 		this.rightSibling = null;
-		this.counter=counter;
-		if (this instanceof BTreeInnerNode) {
-			this.counter.countNewNode();
-		}
 		this.lock = new ReentrantReadWriteLock();
 
 		this.wLock = lock.writeLock();
@@ -78,9 +72,6 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 		if (index < this.keys.size())
 			this.keys.set(index, key);
 		else if (index == this.keys.size()) {
-			if (this instanceof BTreeInnerNode) {
-				this.counter.countKeyAdditionOfTemplate(UtilGenerics.sizeOf(key.getClass()));
-			}
 			this.keys.add(index, key);
 			keyCount += 1;
 		} else {
@@ -91,9 +82,7 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 
 	public BTreeNode<TKey> getParent() {
 		BTreeNode<TKey> parent;
-
 		parent = this.parentNode;
-
 		return parent;
 	}
 
@@ -131,9 +120,7 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 		newRNode = this.split();
 
 		if (this.getParent() == null) {
-			this.setParent(new BTreeInnerNode<TKey>(this.ORDER, this.counter));
-
-			counter.increaseHeightCount();
+			this.setParent(new BTreeInnerNode<TKey>(this.ORDER));
 		}
 
 		newRNode.setParent(this.getParent());
@@ -161,23 +148,6 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 
 	/* The codes below are used to support deletion operation */
 
-	public boolean isUnderflow() {
-		return this.getKeyCount() < ((this.ORDER+1) / 2);
-	}
-
-	public boolean canLendAKey() {
-		return this.getKeyCount() > ((this.ORDER+1) / 2);
-	}
-
-	public BTreeNode<TKey> getLeftSibling() {
-		BTreeNode leftSibling = null;
-
-		if (this.leftSibling != null && this.leftSibling.getParent() == this.getParent())
-			leftSibling = this.leftSibling;
-
-		return leftSibling;
-	}
-
 	public ArrayList<TKey> getKeys() {
 		return new ArrayList<TKey>(keys);
 	}
@@ -201,41 +171,6 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 		this.rightSibling = sibling;
 	}
 
-	public BTreeNode<TKey> dealUnderflow() {
-
-		BTreeNode node = null;
-
-		if (this.getParent() == null)
-			node = null;
-			// try to borrow a key from sibling
-			BTreeNode<TKey> leftSibling = this.getLeftSibling();
-			if (leftSibling != null && leftSibling.canLendAKey()) {
-				this.getParent().processChildrenTransfer(this, leftSibling, leftSibling.getKeyCount() - 1);
-			}
-
-			BTreeNode<TKey> rightSibling = this.getRightSibling();
-			if (rightSibling != null && rightSibling.canLendAKey()) {
-				this.getParent().processChildrenTransfer(this, rightSibling, 0);
-			}
-
-			// Can not borrow a key from any sibling, then do fusion with sibling
-			if (leftSibling != null) {
-				node = this.getParent().processChildrenFusion(leftSibling, this);
-			} else {
-				node = this.getParent().processChildrenFusion(this, rightSibling);
-			}
-
-		return node;
-	}
-
-	protected abstract void processChildrenTransfer(BTreeNode<TKey> borrower, BTreeNode<TKey> lender, int borrowIndex);
-
-	protected abstract BTreeNode<TKey> processChildrenFusion(BTreeNode<TKey> leftChild, BTreeNode<TKey> rightChild);
-
-	protected abstract void fusionWithSibling(TKey sinkKey, BTreeNode<TKey> rightSibling);
-
-	protected abstract TKey transferFromSibling(TKey sinkKey, BTreeNode<TKey> sibling, int borrowIndex);
-
 	public void print() {
 		for (TKey k : keys)
 			System.out.print(k+" ");
@@ -245,8 +180,6 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 
 	public void acquireReadLock() {
 		rLock.lock();
-//		System.out.println("The keys are : " + keys);
-//		System.out.println("The number of locks is " + lock.getReadLockCount());
 //		System.out.println("r+ on " + this.getId() + " by thread " + Thread.currentThread().getId());
 	}
 
@@ -274,97 +207,4 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 	}
 
 	public abstract BTreeNode deepCopy(List<BTreeNode> nodes);
-
-	class MyWriteLock implements Lock {
-
-		ReentrantReadWriteLock.WriteLock lock;
-		protected MyWriteLock(ReentrantReadWriteLock.WriteLock lock) {
-			this.lock = lock;
-		}
-
-		public void lock() {
-			lock.lock();
-			writeLockThreadId = Thread.currentThread().getId();
-		}
-
-		public void lockInterruptibly() throws InterruptedException {
-
-		}
-
-		public boolean tryLock() {
-			return false;
-		}
-
-		public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
-			return false;
-		}
-
-		public void unlock() {
-			writeLockThreadId = -1;
-			lock.unlock();
-		}
-
-		public Condition newCondition() {
-			return null;
-		}
-	}
-
-	class MyReadLock implements Lock {
-
-		ReentrantReadWriteLock.ReadLock lock;
-		protected MyReadLock(ReentrantReadWriteLock.ReadLock lock) {
-			this.lock = lock;
-		}
-
-		public void lock() {
-			lock.lock();
-			readLockThreadId = Thread.currentThread().getId();
-//			System.out.println(String.format("readLock is updated to %d by thread %d", readLockThreadId, Thread.currentThread().getId()));
-		}
-
-		public void lockInterruptibly() throws InterruptedException {
-
-		}
-
-		public boolean tryLock() {
-			return false;
-		}
-
-		public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
-			return false;
-		}
-
-		public void unlock() {
-			readLockThreadId = -1;
-			lock.unlock();
-		}
-
-		public Condition newCondition() {
-			return null;
-		}
-	}
-
-	long readLockThreadId;
-	long writeLockThreadId;
-
-	static public class NodeLock {
-		Lock lock;
-		long nodeId;
-		public NodeLock(Lock lock, long nodeId) {
-			this.lock = lock;
-			this.nodeId = nodeId;
-		}
-
-		public void lock() {
-			lock.lock();
-		}
-
-		public void unlock() {
-			lock.unlock();
-		}
-
-		public long getNodeId() {
-			return nodeId;
-		}
-	}
 }

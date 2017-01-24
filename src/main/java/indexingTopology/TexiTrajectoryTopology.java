@@ -3,7 +3,6 @@ package indexingTopology;
 import org.apache.storm.Config;
 import org.apache.storm.StormSubmitter;
 import org.apache.storm.topology.TopologyBuilder;
-import indexingTopology.config.TopologyConfig;
 import indexingTopology.streams.Streams;
 import indexingTopology.bolt.*;
 import indexingTopology.spout.TexiTrajectoryGenerator;
@@ -64,7 +63,7 @@ public class TexiTrajectoryTopology {
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 
 
-        builder.setBolt(IndexerBolt, new Indexer(schema.getIndexField(), schema, TopologyConfig.BTREE_OREDER, 65000000), 4)
+        builder.setBolt(IndexerBolt, new IngestionBolt(schema.getIndexField(), schema), 4)
 
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream) // direct grouping should be used.
