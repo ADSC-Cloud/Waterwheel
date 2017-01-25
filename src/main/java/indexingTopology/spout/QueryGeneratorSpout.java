@@ -81,12 +81,12 @@ public class QueryGeneratorSpout extends BaseRichSpout{
                 Double key = Double.parseDouble(tuple[0]);
 
 //                Long startTimeStamp = System.currentTimeMillis() - 10000;
-                Long startTimeStamp = (long) 0;
+                Long startTimestamp = (long) 0;
 //                Long endTimeStamp = System.currentTimeMillis();
-                Long endTimeStamp = Long.MAX_VALUE;
+                Long endTimestamp = Long.MAX_VALUE;
 
                 collector.emit(Streams.QueryGenerateStream,
-                        new Values(queryId, key, startTimeStamp, endTimeStamp));
+                        new Values(queryId, key, startTimestamp, endTimestamp));
 
                 ++queryId;
             }

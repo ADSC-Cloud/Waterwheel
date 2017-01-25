@@ -2,13 +2,13 @@ package indexingTopology.util;
 
 import java.io.Serializable;
 
-public class SubQuery implements Serializable {
+public class SubQuery <T extends Number> implements Serializable {
 
     private long queryId;
 
-    private Double leftKey;
+    private T leftKey;
 
-    private Double rightKey;
+    private T rightKey;
 
     private String fileName;
 
@@ -17,7 +17,7 @@ public class SubQuery implements Serializable {
     private Long endTimestamp;
 
 
-    public SubQuery(long queryId, Double leftKey, Double rightKey
+    public SubQuery(long queryId, T leftKey, T rightKey
             , String fileName, Long startTimestamp, Long endTimestamp) {
         this.queryId = queryId;
         this.leftKey = leftKey;
@@ -31,11 +31,11 @@ public class SubQuery implements Serializable {
         return queryId;
     }
 
-    public Double getlefKey() {
+    public T getLeftKey() {
         return leftKey;
     }
 
-    public Double getRightKey() {
+    public T getRightKey() {
         return rightKey;
     }
 

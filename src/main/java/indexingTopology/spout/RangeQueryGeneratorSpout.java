@@ -96,11 +96,11 @@ public class RangeQueryGeneratorSpout extends BaseRichSpout {
                 System.out.println("Left key is " + leftKey.intValue());
                 System.out.println("Right key is " + rightKey.intValue());
 
-                Long startTimeStamp = System.currentTimeMillis() - 10000;
-                Long endTimeStamp = System.currentTimeMillis();
+                Long startTimestamp = System.currentTimeMillis() - 10000;
+                Long endTimestamp = System.currentTimeMillis();
 
                 collector.emit(Streams.QueryGenerateStream,
-                        new Values(queryId, leftKey, rightKey, startTimeStamp, endTimeStamp));
+                        new Values(queryId, leftKey, rightKey, startTimestamp, endTimestamp));
 
                 ++queryId;
             }

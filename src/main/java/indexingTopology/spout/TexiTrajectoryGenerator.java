@@ -11,6 +11,8 @@ import indexingTopology.util.texi.Car;
 import indexingTopology.util.texi.City;
 import indexingTopology.util.texi.TrajectoryGenerator;
 import org.apache.storm.tuple.Values;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.List;
@@ -22,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Created by acelzj on 7/27/16.
  */
 public class TexiTrajectoryGenerator extends BaseRichSpout {
+    private static final Logger LOG = LoggerFactory.getLogger(TexiTrajectoryGenerator.class);
 
     SpoutOutputCollector collector_;
     File file;
@@ -61,5 +64,10 @@ public class TexiTrajectoryGenerator extends BaseRichSpout {
         collector_.emit(Streams.IndexStream, new Values((double)car.id, (double)city.getZCodeForALocation(car.x
         , car.y), new String(new char[payloadSize]), timestamp), new Object());
         ++timestamp;
+    }
+
+    @Override
+    public void ack(Object msgId) {
+//        LOG.info("tuple ack: " + msgId + "," + System.currentTimeMillis() /1000);
     }
 }

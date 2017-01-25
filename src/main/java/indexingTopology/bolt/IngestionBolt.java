@@ -1,30 +1,17 @@
 package indexingTopology.bolt;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Output;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
-import org.apache.storm.tuple.TupleImpl;
-import org.apache.storm.tuple.Values;
-import indexingTopology.config.TopologyConfig;
 import indexingTopology.DataSchema;
-import indexingTopology.filesystem.FileSystemHandler;
-import indexingTopology.filesystem.HdfsFileSystemHandler;
-import indexingTopology.filesystem.LocalFileSystemHandler;
 import indexingTopology.streams.Streams;
-import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.util.*;
 import javafx.util.Pair;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 
@@ -119,7 +106,7 @@ public class IngestionBolt extends BaseRichBolt {
         outputFieldsDeclarer.declareStream(Streams.BPlusTreeQueryStream,
                 new Fields("queryId", "serializedTuples"));
 
-        outputFieldsDeclarer.declareStream(Streams.TimeStampUpdateStream,
+        outputFieldsDeclarer.declareStream(Streams.TimestampUpdateStream,
                 new Fields("timestampRange", "keyRange"));
     }
 }

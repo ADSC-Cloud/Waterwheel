@@ -61,8 +61,8 @@ public class IndexerCopy {
     private Double minIndexValue = Double.MAX_VALUE;
     private Double maxIndexValue = Double.MIN_VALUE;
 
-    private Long minTimeStamp = Long.MAX_VALUE;
-    private Long maxTimeStamp = Long.MIN_VALUE;
+    private Long minTimestamp = Long.MAX_VALUE;
+    private Long maxTimestamp = Long.MIN_VALUE;
 
     private DataSchema schema;
 

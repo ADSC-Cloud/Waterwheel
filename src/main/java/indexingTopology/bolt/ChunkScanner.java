@@ -92,8 +92,8 @@ public class ChunkScanner extends BaseRichBolt{
     private void executeRangeQuery(SubQuery subQuery) throws IOException {
 
         Long queryId = subQuery.getQueryId();
-        Double leftKey = subQuery.getlefKey();
-        Double rightKey = subQuery.getRightKey();
+        Double leftKey = (Double) subQuery.getLeftKey();
+        Double rightKey = (Double) subQuery.getRightKey();
         String fileName = subQuery.getFileName();
         Long timestampLowerBound = subQuery.getStartTimestamp();
         Long timestampUpperBound = subQuery.getEndTimestamp();

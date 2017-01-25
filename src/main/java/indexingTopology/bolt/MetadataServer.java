@@ -128,7 +128,7 @@ public class MetadataServer extends BaseRichBolt {
 
             collector.emit(Streams.FileInformationUpdateStream,
                     new Values(fileName, keyRange, timeStampRange));
-        } else if (tuple.getSourceStreamId().equals(Streams.TimeStampUpdateStream)) {
+        } else if (tuple.getSourceStreamId().equals(Streams.TimestampUpdateStream)) {
             int taskId = tuple.getSourceTask();
             Pair timestampRange = (Pair) tuple.getValueByField("timestampRange");
             Pair keyRange = (Pair) tuple.getValueByField("keyRange");
@@ -136,7 +136,7 @@ public class MetadataServer extends BaseRichBolt {
 
             indexTaskToTimestampMapping.put(taskId, endTimestamp);
 
-            collector.emit(Streams.TimeStampUpdateStream, new Values(taskId, keyRange, timestampRange));
+            collector.emit(Streams.TimestampUpdateStream, new Values(taskId, keyRange, timestampRange));
         } else if (tuple.getSourceStreamId().equals(Streams.EableRepartitionStream)) {
             repartitionEnabled = true;
         }
@@ -150,7 +150,7 @@ public class MetadataServer extends BaseRichBolt {
         outputFieldsDeclarer.declareStream(Streams.FileInformationUpdateStream,
                 new Fields("fileName", "keyRange", "timeStampRange"));
 
-        outputFieldsDeclarer.declareStream(Streams.TimeStampUpdateStream,
+        outputFieldsDeclarer.declareStream(Streams.TimestampUpdateStream,
                 new Fields("taskId", "keyRange", "timestampRange"));
 
         outputFieldsDeclarer.declareStream(Streams.StaticsRequestStream,

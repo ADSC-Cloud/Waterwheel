@@ -8,7 +8,7 @@ import java.util.Map;
 /**
  * Created by acelzj on 12/17/16.
  */
-public class BalancedPartition {
+public class BalancedPartition<T extends Number> {
 
     private Double lowerBound;
 
@@ -22,14 +22,14 @@ public class BalancedPartition {
 
     private Histogram histogram;
 
-    public BalancedPartition(int numberOfPartitions, Double lowerBound, Double upperBound) {
-        this.lowerBound = lowerBound;
-        this.upperBound = upperBound;
+    public BalancedPartition(int numberOfPartitions, T lowerBound, T upperBound) {
+        this.lowerBound = lowerBound.doubleValue();
+        this.upperBound = upperBound.doubleValue();
         this.numberOfPartitions = numberOfPartitions;
         intervalToPartitionMapping = getBalancedPartitionPlan();
     }
 
-    public BalancedPartition(int numberOfPartitions, Double lowerBound, Double upperBound, boolean enableRecord) {
+    public BalancedPartition(int numberOfPartitions, T lowerBound, T upperBound, boolean enableRecord) {
         this(numberOfPartitions, lowerBound, upperBound);
         histogram = new Histogram();
         if (enableRecord) {
@@ -37,7 +37,7 @@ public class BalancedPartition {
         }
     }
 
-    public BalancedPartition(int numberOfPartitions, Double lowerBound, Double upperBound,
+    public BalancedPartition(int numberOfPartitions, T lowerBound, T upperBound,
                              Map<Integer, Integer> intervalToPartitionMapping) {
         this(numberOfPartitions, lowerBound, upperBound, true);
         this.intervalToPartitionMapping.putAll(intervalToPartitionMapping);

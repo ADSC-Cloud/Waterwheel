@@ -73,8 +73,8 @@ public class Indexer {
     private Double minIndexValue = Double.MAX_VALUE;
     private Double maxIndexValue = Double.MIN_VALUE;
 
-    private Long minTimeStamp = Long.MAX_VALUE;
-    private Long maxTimeStamp = Long.MIN_VALUE;
+    private Long minTimestamp = Long.MAX_VALUE;
+    private Long maxTimestamp = Long.MIN_VALUE;
 
     private DataSchema schema;
 
@@ -273,16 +273,16 @@ public class Indexer {
                     }
 
                     Pair keyRange = new Pair(minIndexValue, maxIndexValue);
-                    Pair timeStampRange = new Pair(minTimeStamp, maxTimeStamp);
+                    Pair timeStampRange = new Pair(minTimestamp, maxTimestamp);
 
-                    domainToBTreeMapping.put(new Domain(minTimeStamp, maxTimeStamp, minIndexValue, maxIndexValue), indexedData);
+                    domainToBTreeMapping.put(new Domain(minTimestamp, maxTimestamp, minIndexValue, maxIndexValue), indexedData);
 
 //                    indexedData = indexedData.clone();
                     clonedIndexedData = indexedData.clone();
 
                     collector.emit(Streams.FileInformationUpdateStream, new Values(fileName, keyRange, timeStampRange));
 
-                    collector.emit(Streams.TimeStampUpdateStream, new Values(timeStampRange, keyRange));
+                    collector.emit(Streams.TimestampUpdateStream, new Values(timeStampRange, keyRange));
 
 //                    indexedData.clearPayload();
                     clonedIndexedData.clearPayload();
@@ -322,11 +322,11 @@ public class Indexer {
                             maxIndexValue = indexValue;
                         }
 
-                        if (timeStamp < minTimeStamp) {
-                            minTimeStamp = timeStamp;
+                        if (timeStamp < minTimestamp) {
+                            minTimestamp = timeStamp;
                         }
-                        if (timeStamp > maxTimeStamp) {
-                            maxTimeStamp = timeStamp;
+                        if (timeStamp > maxTimestamp) {
+                            maxTimestamp = timeStamp;
                         }
                         byte[] serializedTuple = schema.serializeTuple(tuple);
 

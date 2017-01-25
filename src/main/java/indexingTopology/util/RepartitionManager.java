@@ -48,17 +48,17 @@ public class RepartitionManager {
 
         long[] loads = new long[nbins];
 
-        System.out.println(newBallToBinMapping);
+//        System.out.println(newBallToBinMapping);
 
         for (Object ball : balls) {
             bin = newBallToBinMapping.get(ball);
             loads[bin % nbins] += ballToWeight.get(ball);
         }
 
-        System.out.println("Repartition has been finished!");
-        for (int i = 0; i < loads.length; ++i) {
-            System.out.println("bin " + i + " : " + loads[i]);
-        }
+//        System.out.println("Repartition has been finished!");
+//        for (int i = 0; i < loads.length; ++i) {
+//            System.out.println("bin " + i + " : " + loads[i]);
+//        }
         return newBallToBinMapping;
     }
 
