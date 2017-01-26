@@ -286,11 +286,17 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		while (leaf != null) {
 			offset = output.position();
 
-            int totalBytes = leaf.bytesCount + (1 + leaf.tuples.size()) * (Integer.SIZE / Byte.SIZE);
+			Output outputOfLeaf = new Output(6500, 20000000);
 
-            output.writeInt(totalBytes);
+            kryo.writeObject(outputOfLeaf, leaf);
+//            int totalBytes = leaf.bytesCount + (1 + leaf.tuples.size()) * (Integer.SIZE / Byte.SIZE);
 
-			kryo.writeObject(output, leaf);
+			byte[] bytes = outputOfLeaf.toBytes();
+			output.writeInt(bytes.length);
+			output.write(bytes);
+//            output.writeInt(totalBytes);
+
+//			kryo.writeObject(output, leaf);
 
 			((BTreeInnerNode)leaf.getParent()).putOffset(offset);
 

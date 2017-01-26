@@ -65,29 +65,29 @@ public class BalancedPartition<T extends Number> {
         return this.intervalToPartitionMapping;
     }
 
-    public int getIntervalId(Double key) {
+    public int getIntervalId(T key) {
         Double distance = (upperBound - lowerBound) / TopologyConfig.NUMBER_OF_INTERVALS;
 
         Double autualLowerBound = lowerBound + distance;
 
         Double autualUpperBound = upperBound - distance;
 
-        if (key <= autualLowerBound) {
+        if (key.doubleValue() <= autualLowerBound) {
             return 0;
         }
 
-        if (key > autualUpperBound) {
+        if (key.doubleValue() > autualUpperBound) {
             return TopologyConfig.NUMBER_OF_INTERVALS - 1;
         }
 
-        if ((key - autualLowerBound) % distance == 0) {
-            return (int) ((key - autualLowerBound) / distance);
+        if ((key.doubleValue() - autualLowerBound) % distance == 0) {
+            return (int) ((key.doubleValue() - autualLowerBound) / distance);
         } else {
-            return (int) ((key - autualLowerBound) / distance + 1);
+            return (int) ((key.doubleValue() - autualLowerBound) / distance + 1);
         }
     }
 
-    public int getPartitionId(Double key) {
+    public int getPartitionId(T key) {
         return intervalToPartitionMapping.get(getIntervalId(key));
     }
 
@@ -95,7 +95,7 @@ public class BalancedPartition<T extends Number> {
         enableRecord = true;
     }
 
-    public void record(Double key) {
+    public void record(T key) {
         if (enableRecord) {
             int intervalId = getIntervalId(key);
             histogram.record(intervalId);

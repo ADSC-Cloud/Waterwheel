@@ -378,6 +378,20 @@ public class KryoTemplateSerializerTest {
 
     }
 
+    @Test
+    public void testWriteString() {
+        Double a = 4.0;
+        String s = new String(new char[5]);
+        Output output = new Output(1000, 20000);
+        output.writeDouble(a);
+        output.writeString(s);
+        byte[] bytes = output.toBytes();
+        Input input = new Input(bytes);
+
+        System.out.println(input.readDouble());
+        System.out.println(input.readString());
+    }
+
     public byte[] serializeIndexValue(List<Object> values) throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
 

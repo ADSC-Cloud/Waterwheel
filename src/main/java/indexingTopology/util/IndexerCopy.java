@@ -396,7 +396,6 @@ public class IndexerCopy {
                     Values deserializedTuple = null;
                     try {
                         deserializedTuple = schema.deserialize(serializedTuples.get(i));
-                        deserializedTuple = schema.deserialize(serializedTuples.get(i));
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -405,7 +404,7 @@ public class IndexerCopy {
 
                 processQuerySemaphore.release();
 
-                System.out.println(queryId + " query has been finished!!!");
+//                System.out.println(queryId + " query has been finished!!!");
 
                 ++queryId;
             }

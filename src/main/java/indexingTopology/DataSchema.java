@@ -1,5 +1,8 @@
 package indexingTopology;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
@@ -39,7 +42,11 @@ public class DataSchema implements Serializable {
             }
             else if (valueTypes.get(i).equals(Integer.class)) {
                 values.add(tuple.getInteger(i));
-            } else {
+            }
+            else if (valueTypes.get(i).equals(Long.class)) {
+                values.add(tuple.getLong(i));
+            }
+            else {
                 throw new IOException("Only classes supported till now are string and double");
             }
         }
@@ -70,6 +77,7 @@ public class DataSchema implements Serializable {
         return values;
     }
 
+    /*
     public Values deserialize(byte [] b) throws IOException {
         Values values = new Values();
         int offset = 0;
@@ -97,7 +105,10 @@ public class DataSchema implements Serializable {
         values.add(val);
         return values;
     }
+    */
 
+
+    /*
     public byte[] serializeTuple(Tuple t) throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         for (int i=0;i<valueTypes.size();i++) {
@@ -119,6 +130,51 @@ public class DataSchema implements Serializable {
         bos.write(b);
 
         return bos.toByteArray();
+    }
+    */
+
+
+    public byte[] serializeTuple(Tuple t) throws IOException {
+        Output output = new Output(1000, 2000000);
+        for (int i = 0; i < valueTypes.size(); i++) {
+            if (valueTypes.get(i).equals(Double.class)) {
+                output.writeDouble(t.getDouble(i));
+            } else if (valueTypes.get(i).equals(String.class)) {
+                output.writeString(t.getString(i));
+            } else if (valueTypes.get(i).equals(Integer.class)) {
+                output.writeInt(t.getInteger(i));
+            } else if (valueTypes.get(i).equals(Long.class)) {
+                output.writeLong(t.getLong(i));
+            } else {
+                throw new IOException("Only classes supported till now are string and double");
+            }
+        }
+
+        //As we add timestamp for a field, so we need to serialize the timestamp
+        output.writeLong(t.getLong(valueTypes.size()));
+        return output.toBytes();
+    }
+
+
+    public Values deserialize(byte [] b) throws IOException {
+        Values values = new Values();
+        Input input = new Input(b);
+        for (int i = 0; i < valueTypes.size(); i++) {
+            if (valueTypes.get(i).equals(Double.class)) {
+                values.add(input.readDouble());
+            } else if (valueTypes.get(i).equals(String.class)) {
+                values.add(input.readString());
+            } else if (valueTypes.get(i).equals(Integer.class)) {
+                values.add(input.readInt());
+            } else if (valueTypes.get(i).equals(Long.class)) {
+                values.add(input.readLong());
+            } else {
+                throw new IOException("Only classes supported till now are string and double");
+            }
+        }
+
+        values.add(input.readLong());
+        return values;
     }
 
     public String getIndexField() {

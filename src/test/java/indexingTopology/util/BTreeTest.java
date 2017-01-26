@@ -479,7 +479,6 @@ public class BTreeTest {
 
     }
 
-
     public byte[] serializeIndexValue(List<Double> values) throws IOException{
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ArrayList valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
@@ -494,6 +493,5 @@ public class BTreeTest {
         bos.write(b);
         return bos.toByteArray();
     }
-
 
 }

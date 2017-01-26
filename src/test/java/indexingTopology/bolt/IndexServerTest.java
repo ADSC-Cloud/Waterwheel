@@ -1,5 +1,7 @@
 package indexingTopology.bolt;
 
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import indexingTopology.DataSchema;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.util.*;
@@ -144,6 +146,7 @@ public class IndexServerTest {
 
     }
 
+    /*
     public static byte[] serializeValues(List<Object> values) throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         for (int i=0;i < valueTypes.size();i++) {
@@ -166,6 +169,26 @@ public class IndexServerTest {
 
         return bos.toByteArray();
     }
+    */
+
+    public static byte[] serializeValues(List<Object> values) throws IOException {
+        Output output = new Output(1000, 2000000);
+        for (int i = 0; i < valueTypes.size(); i++) {
+            if (valueTypes.get(i).equals(Double.class)) {
+                output.writeDouble((Double) values.get(i));
+            } else if (valueTypes.get(i).equals(String.class)) {
+                output.writeString((String) values.get(i));
+            } else {
+                throw new IOException("Only classes supported till now are string and double");
+            }
+        }
+
+        //As we add timestamp for a field, so we need to serialize the timestamp
+        output.writeLong((Long) values.get(valueTypes.size()));
+        return output.toBytes();
+    }
+
+
 
     public static Values deserialize(byte [] b) throws IOException {
         Values values = new Values();

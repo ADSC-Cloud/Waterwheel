@@ -28,7 +28,7 @@ import java.util.Map;
 /**
  * Created by acelzj on 11/15/16.
  */
-public class ChunkScanner extends BaseRichBolt{
+public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt{
 
     OutputCollector collector;
 
@@ -89,11 +89,12 @@ public class ChunkScanner extends BaseRichBolt{
 
     }
 
+    @SuppressWarnings("unchecked")
     private void executeRangeQuery(SubQuery subQuery) throws IOException {
 
         Long queryId = subQuery.getQueryId();
-        Double leftKey = (Double) subQuery.getLeftKey();
-        Double rightKey = (Double) subQuery.getRightKey();
+        TKey leftKey =  (TKey) subQuery.getLeftKey();
+        TKey rightKey =  (TKey) subQuery.getRightKey();
         String fileName = subQuery.getFileName();
         Long timestampLowerBound = subQuery.getStartTimestamp();
         Long timestampUpperBound = subQuery.getEndTimestamp();
@@ -102,17 +103,17 @@ public class ChunkScanner extends BaseRichBolt{
 
         ArrayList<byte[]> serializedTuples = new ArrayList<byte[]>();
 
-        Pair data = getTreeData(fileName);
+        Pair data = getTemplateData(fileName);
 
-        BTree deserializedTree = (BTree) data.getKey();
+        BTree template = (BTree) data.getKey();
 
         Integer length = (Integer) data.getValue();
 
-        BTreeNode mostLeftNode = deserializedTree.findLeafNodeShouldContainKeyInDeserializedTemplate(leftKey);
+        BTreeNode mostLeftNode = template.findLeafNodeShouldContainKeyInDeserializedTemplate(leftKey);
 
-        BTreeNode mostRightNode = deserializedTree.findLeafNodeShouldContainKeyInDeserializedTemplate(rightKey);
+        BTreeNode mostRightNode = template.findLeafNodeShouldContainKeyInDeserializedTemplate(rightKey);
 
-        List<Integer> offsets = deserializedTree.getOffsetsOfLeaveNodesShouldContainKeys(mostLeftNode, mostRightNode);
+        List<Integer> offsets = template.getOffsetsOfLeaveNodesShouldContainKeys(mostLeftNode, mostRightNode);
 
         BTreeLeafNode leaf;
 
@@ -151,22 +152,22 @@ public class ChunkScanner extends BaseRichBolt{
     private Pair getTemplateFromExternalStorage(FileSystemHandler fileSystemHandler, String fileName) {
         fileSystemHandler.openFile("/", fileName);
 
-        byte[] temlateLengthInBytes = new byte[4];
-        fileSystemHandler.readBytesFromFile(temlateLengthInBytes);
+        byte[] templateLengthInBytes = new byte[4];
+        fileSystemHandler.readBytesFromFile(templateLengthInBytes);
 
-        Input input = new Input(temlateLengthInBytes);
+        Input input = new Input(templateLengthInBytes);
         int length = input.readInt();
 
-        byte[] serializedTree = new byte[length];
+        byte[] serializedTemplate = new byte[length];
 
-        fileSystemHandler.readBytesFromFile(0, serializedTree);
+        fileSystemHandler.readBytesFromFile(0, serializedTemplate);
 
-        input = new Input(serializedTree);
-        BTree deserializedTree = kryo.readObject(input, BTree.class);
+        input = new Input(serializedTemplate);
+        BTree template = kryo.readObject(input, BTree.class);
 
         fileSystemHandler.closeFile();
 
-        return new Pair(deserializedTree, length);
+        return new Pair(template, length);
     }
 
 
@@ -225,7 +226,7 @@ public class ChunkScanner extends BaseRichBolt{
     }
 
 
-    private Pair getTreeData(String fileName) {
+    private Pair getTemplateData(String fileName) {
         Pair data = null;
         try {
             FileSystemHandler fileSystemHandler = null;

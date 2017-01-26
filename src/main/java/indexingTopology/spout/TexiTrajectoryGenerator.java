@@ -63,6 +63,8 @@ public class TexiTrajectoryGenerator extends BaseRichSpout {
 //        final long timestamp = System.currentTimeMillis();
         collector_.emit(Streams.IndexStream, new Values((double)car.id, (double)city.getZCodeForALocation(car.x
         , car.y), new String(new char[payloadSize]), timestamp), new Object());
+//        collector_.emit(Streams.IndexStream, new Values(car.id, city.getZCodeForALocation(car.x
+//                , car.y), new String(new char[payloadSize]), timestamp), new Object());
         ++timestamp;
     }
 

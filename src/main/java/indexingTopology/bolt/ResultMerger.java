@@ -107,7 +107,6 @@ public class ResultMerger extends BaseRichBolt {
 //                    Values deserializedTuple = null;
 //                    try {
 //                    deserializedTuple = schema.deserialize(serializedTuples.get(i));
-//                        deserializedTuple = DeserializationHelper.deserialize(serializedTuples.get(i));
 //                    } catch (IOException e) {
 //                        e.printStackTrace();
 //                    }

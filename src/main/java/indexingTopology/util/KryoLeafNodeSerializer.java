@@ -30,15 +30,16 @@ public class KryoLeafNodeSerializer<TKey extends Comparable<TKey>> extends Seria
     public void write(Kryo kryo, Output output, BTreeLeafNode bTreeLeafNode) {
 
         List<TKey> keys = bTreeLeafNode.getKeys();
-        output.writeInt(keys.size());
+//        output.writeInt(keys.size());
 
-        for (TKey key : keys) {
-            if (key instanceof Integer) {
-                output.writeInt((Integer) key);
-            } else if (key instanceof Double) {
-                output.writeDouble((Double) key);
-            }
-        }
+//        for (TKey key : keys) {
+//            if (key instanceof Integer) {
+//                output.writeInt((Integer) key);
+//            } else if (key instanceof Double) {
+//                output.writeDouble((Double) key);
+//            }
+//        }
+        kryo.writeObject(output, keys);
 
         for (int i = 0; i < bTreeLeafNode.getKeys().size(); i++) {
             output.writeInt((bTreeLeafNode.getTuples(i)).size());
@@ -54,29 +55,32 @@ public class KryoLeafNodeSerializer<TKey extends Comparable<TKey>> extends Seria
 
         BTreeLeafNode leaf = new BTreeLeafNode(TopologyConfig.BTREE_OREDER);
 
-        int keyCount = input.readInt();
+        ArrayList keys = kryo.readObject(input, ArrayList.class);
 
-        ArrayList keys = null;
+        leaf.keys = keys;
+//        int keyCount = input.readInt();
 
-        if (TopologyConfig.KEY_TPYE.equals("double")) {
-            keys = new ArrayList<Double>();
+//        ArrayList keys = null;
 
-            for (int i = 0; i < keyCount; ++i) {
-                Double key = input.readDouble();
-                keys.add(key);
-            }
-
-            leaf.keys = keys;
-        } else if (TopologyConfig.KEY_TPYE.equals("int")) {
-            keys = new ArrayList<Integer>();
-
-            for (int i = 0; i < keyCount; ++i) {
-                Integer key = input.readInt();
-                keys.add(key);
-            }
-
-            leaf.keys = keys;
-        }
+//        if (TopologyConfig.KEY_TPYE.equals("double")) {
+//            keys = new ArrayList<Double>();
+//
+//            for (int i = 0; i < keyCount; ++i) {
+//                Double key = input.readDouble();
+//                keys.add(key);
+//            }
+//
+//            leaf.keys = keys;
+//        } else if (TopologyConfig.KEY_TPYE.equals("int")) {
+//            keys = new ArrayList<Integer>();
+//
+//            for (int i = 0; i < keyCount; ++i) {
+//                Integer key = input.readInt();
+//                keys.add(key);
+//            }
+//
+//            leaf.keys = keys;
+//        }
 
         ArrayList<ArrayList<byte[]>> tuples = new ArrayList<ArrayList<byte[]>>();
         for (int i = 0; i < keys.size();i++) {

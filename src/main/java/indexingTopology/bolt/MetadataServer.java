@@ -1,5 +1,6 @@
 package indexingTopology.bolt;
 
+import indexingTopology.config.TopologyConfig;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -99,7 +100,7 @@ public class MetadataServer extends BaseRichBolt {
                 ++numberOfStaticsReceived;
                 if (repartitionEnabled && (numberOfStaticsReceived == numberOfDispatchers)) {
                     Double skewnessFactor = getSkewnessFactor(this.histogram);
-                    if (skewnessFactor > 2) {
+                    if (skewnessFactor > TopologyConfig.LOAD_BALANCE_THRESHOLD) {
                         System.out.println("skewness detected!!!");
                         RepartitionManager manager = new RepartitionManager(numberOfPartitions, intervalToPartitionMapping,
                                 histogram.getHistogram(), getTotalWorkLoad(histogram));
