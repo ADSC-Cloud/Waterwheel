@@ -129,6 +129,7 @@ public class TemplateUpdaterTest {
         BTreeLeafNode leaf = newTree.getLeftMostLeaf();
         while (leaf != null) {
             leaf.print();
+            System.out.println(leaf.tupleCount.get());
             leaf = (BTreeLeafNode) leaf.rightSibling;
         }
 

@@ -92,7 +92,7 @@ public class IndexServerTest {
 //          File file = new File("/home/acelzj/test_data/" + "gauss_data" + ".txt");
 //            File file = new File("/home/acelzj/test_data/" + "zipf_data" + ".txt");
 //            File file = new File("/home/acelzj/test_data/" + "uniform_data" + ".txt");
-            File file = new File("/home/acelzj/logs/" + btreeOrder + TopologyConfig.SKEWNESS_DETECTION_THRESHOLD + ".txt");
+            File file = new File("/home/acelzj/logs/" + btreeOrder + choice + ".txt");
 
             if (!file.exists()) {
                 file.createNewFile();
@@ -143,14 +143,14 @@ public class IndexServerTest {
 
 //        for (int i = 0; i < 2; ++i) {
 
-//        double threshold = 0.1;
+        double threshold = 0.7;
 
             for (Integer order : orders) {
-//            for (int i = 0; i <= 2; ++i) {
-//                boolean templateMode = i == 0 ? false : true;
-                boolean templateMode = true;
-                TopologyConfig.SKEWNESS_DETECTION_THRESHOLD = 0.6;
-                IndexServerTest indexServerTest = new IndexServerTest(indexField, schema, order, bytesLimit, templateMode, 0);
+            for (int i = 0; i <= 2; ++i) {
+                boolean templateMode = i == 0 ? false : true;
+//                boolean templateMode = true;
+                TopologyConfig.SKEWNESS_DETECTION_THRESHOLD = threshold;
+                IndexServerTest indexServerTest = new IndexServerTest(indexField, schema, order, bytesLimit, templateMode, i);
 
                 createGenerateThread();
 
@@ -161,8 +161,7 @@ public class IndexServerTest {
                 indexer.terminateInputProcessingThread();
 
 //                threshold += 0.1;
-
-//            }
+            }
         }
 
     }

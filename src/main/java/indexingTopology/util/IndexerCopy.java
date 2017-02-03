@@ -233,16 +233,16 @@ public class IndexerCopy {
 //        System.out.println("total tuples " + totalTuples);
 //        System.out.println("counter " + counter.getCount());
 //        System.out.println("duplicate rate : " + counter.getCount()*1.0 / totalTuples);
-        System.out.println(String.format("BTree order %d, Throughput %f / s", order, (rateTracker.reportRate())));
+//        System.out.println(String.format("BTree order %d, Throughput %f / s", order, (rateTracker.reportRate())));
 
-        if (numberOfRebuild != 0) {
-            System.out.println("average rebuild time" + (totalRebuildTime / numberOfRebuild));
-        }
+//        if (numberOfRebuild != 0) {
+//            System.out.println("average rebuild time" + (totalRebuildTime / numberOfRebuild));
+//        }
 
-//        try {
-//            String text = "Throughput " + rateTracker.reportRate();
-//            bufferedWriter.write(text);
-//            bufferedWriter.newLine();
+        try {
+            String text = "Throughput " + rateTracker.reportRate();
+            bufferedWriter.write(text);
+            bufferedWriter.newLine();
 //            text = "Total time " + totalRebuildTime;
 //            bufferedWriter.write(text);
 //            bufferedWriter.newLine();
@@ -252,10 +252,10 @@ public class IndexerCopy {
 //            text = "rate " + totalRebuildTime / numberOfRebuild;
 //            bufferedWriter.write(text);
 //            bufferedWriter.newLine();
-//            bufferedWriter.flush();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+            bufferedWriter.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -279,7 +279,7 @@ public class IndexerCopy {
                     break;
                 }
 
-                /*
+
                 if (chunkId > 0 && choice == 2 &&
                         executed.get() >= TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK * TopologyConfig.SKEWNESS_DETECTION_THRESHOLD) {
                     if (indexedData.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
@@ -319,7 +319,7 @@ public class IndexerCopy {
                         createIndexingThread();
                     }
                 }
-                */
+
 
                 if (numTuples >= TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK) {
                     while (!pendingQueue.isEmpty()) {
@@ -361,11 +361,6 @@ public class IndexerCopy {
 
 //                    indexedData = indexedData.clone();
                     if (templateMode) {
-//                        System.out.println("clear payload");
-                        Long start = System.currentTimeMillis();
-                        indexedData = templateUpdater.createTreeWithBulkLoading(indexedData);
-                        totalRebuildTime += System.currentTimeMillis() - start;
-                        ++numberOfRebuild;
                         indexedData.clearPayload();
                     } else {
                         createNewTemplate();

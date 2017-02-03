@@ -318,14 +318,10 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 			Output outputOfLeaf = new Output(65000, 200000000);
 
             kryo.writeObject(outputOfLeaf, leaf);
-//            int totalBytes = leaf.bytesCount + (1 + leaf.tuples.size()) * (Integer.SIZE / Byte.SIZE);
 
 			byte[] bytes = outputOfLeaf.toBytes();
 			output.writeInt(bytes.length);
 			output.write(bytes);
-//            output.writeInt(totalBytes);
-
-//			kryo.writeObject(output, leaf);
 
 			((BTreeInnerNode)leaf.getParent()).putOffset(offset);
 

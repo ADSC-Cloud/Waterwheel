@@ -71,8 +71,8 @@ public class BTreeTest {
 
         leaf = newBTree.getLeftMostLeaf();
         while (leaf != null) {
-            assertEquals(0, leaf.bytesCount);
             assertEquals(0, leaf.keyCount);
+            assertEquals(0, leaf.tupleCount.get());
             assertEquals(0, leaf.tuples.size());
             assertEquals(0, leaf.offsets.size());
             leaf = (BTreeLeafNode) leaf.rightSibling;
@@ -425,7 +425,6 @@ public class BTreeTest {
         bTree.clearPayload();
         BTreeLeafNode leaf = bTree.getLeftMostLeaf();
         while (leaf != null) {
-            assertEquals(0, leaf.bytesCount);
             assertEquals(0, leaf.keyCount);
             assertEquals(0, leaf.tuples.size());
             assertEquals(0, leaf.offsets.size());
@@ -478,7 +477,6 @@ public class BTreeTest {
         bTree.clearPayload();
         BTreeLeafNode leaf = bTree.getLeftMostLeaf();
         while (leaf != null) {
-            assertEquals(0, leaf.bytesCount);
             assertEquals(0, leaf.keyCount);
             assertEquals(0, leaf.tuples.size());
             assertEquals(0, leaf.offsets.size());

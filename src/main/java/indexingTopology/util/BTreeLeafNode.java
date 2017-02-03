@@ -10,7 +10,6 @@ import java.util.concurrent.locks.Lock;
 public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> implements Serializable {
     protected ArrayList<ArrayList<byte []>> tuples;
     protected ArrayList<ArrayList<Integer>> offsets;
-    protected int bytesCount;
     protected AtomicLong tupleCount;
 
     public BTreeLeafNode(int order) {
@@ -19,7 +18,6 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
         this.tuples = new ArrayList<>(order + 1);
         this.offsets = new ArrayList<>(order + 1);
         tupleCount = new AtomicLong(0);
-        bytesCount = 0;
     }
 
     public boolean validateParentReference() {
@@ -59,9 +57,6 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
             this.tuples.set(index, tuples);
         else if (index == this.tuples.size()) {
             this.tuples.add(index, tuples);
-            for (int i = 0; i < tuples.size(); ++i) {
-                addBytesCount(tuples.get(i).length);
-            }
         } else
             throw new ArrayIndexOutOfBoundsException("index out of bounds");
     }
@@ -71,7 +66,6 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
             this.offsets.set(index, offsets);
         else if (index == this.offsets.size()) {
             this.offsets.add(index, offsets);
-            addBytesCount(offsets.size() * (Integer.SIZE / Byte.SIZE));
         } else
             throw new ArrayIndexOutOfBoundsException("index out of bounds");
     }
@@ -125,7 +119,6 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
 
         if (!(index < this.keys.size() && this.getKey(index).compareTo(key) == 0)) {
             this.keys.add(index, key);
-            addBytesCount(UtilGenerics.sizeOf(key.getClass()));
             this.tuples.add(index, new ArrayList<byte[]>());
             this.offsets.add(index, new ArrayList<Integer>());
             ++this.keyCount;
@@ -134,8 +127,6 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
         tupleCount.incrementAndGet();
         this.tuples.get(index).add(serilizedTuple);
         this.offsets.get(index).add(serilizedTuple.length);
-        addBytesCount(serilizedTuple.length);
-        addBytesCount(Integer.SIZE / Byte.SIZE);
 
         if (!templateMode && isOverflow()) {
             node = dealOverflow();
@@ -156,7 +147,6 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
 
         if (!(index < this.keys.size() && this.getKey(index).compareTo(key) == 0)) {
             this.keys.add(index, key);
-            addBytesCount(UtilGenerics.sizeOf(key.getClass()));
             this.tuples.add(index, new ArrayList<byte[]>());
             this.offsets.add(index, new ArrayList<Integer>());
             ++this.keyCount;
@@ -166,8 +156,6 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
         tupleCount.incrementAndGet();
         this.tuples.get(index).add(serilizedTuple);
         this.offsets.get(index).add(serilizedTuple.length);
-        addBytesCount(serilizedTuple.length);
-        addBytesCount(Integer.SIZE / Byte.SIZE);
 
         if (!templateMode && isOverflow()) {
             node = dealOverflow();
@@ -190,7 +178,6 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
             try {
                 newRNode.setKey(i - midIndex, this.getKey(i));
 
-                newRNode.addBytesCount(UtilGenerics.sizeOf(this.getKey(i).getClass()));
 
             } catch (UnsupportedGenericException e) {
                 e.printStackTrace();
@@ -218,43 +205,15 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
     }
 
     private void deleteAt(int index) {
-        try {
-            substactBytesCount(UtilGenerics.sizeOf(this.keys.get(index).getClass()));
-        } catch (UnsupportedGenericException e) {
-            e.printStackTrace();
-        }
         this.keys.remove(index);
-
-        for (int i = 0; i < tuples.get(index).size(); ++i) {
-            substactBytesCount(tuples.get(index).get(i).length);
-        }
 
         this.tuples.remove(index);
 
-        substactBytesCount(this.offsets.get(index).size() * (Integer.SIZE / Byte.SIZE));
         this.offsets.remove(index);
         --this.keyCount;
     }
 
     protected void clearNode() {
-        for (TKey k : this.keys) {
-            try {
-                bytesCount -= UtilGenerics.sizeOf(k.getClass());
-            } catch (UnsupportedGenericException e) {
-                e.printStackTrace();
-            }
-        }
-
-        for (int i = 0; i < tuples.size(); ++i) {
-            for (int j = 0; j < tuples.get(i).size(); ++j) {
-                bytesCount -= tuples.get(i).get(j).length;
-            }
-        }
-
-        for (int i = 0; i < offsets.size(); ++i) {
-            bytesCount -= offsets.get(i).size() * (Integer.SIZE / Byte.SIZE);
-        }
-
         this.keys.clear();
 
         this.tuples.clear();
@@ -278,8 +237,6 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
         node.offsets = (ArrayList) offsets.clone();
 
         node.tupleCount.set(this.tupleCount.get());
-
-        node.bytesCount = bytesCount;
 
         nodes.add(node);
         return node;
@@ -392,20 +349,8 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
         return retList;
     }
 
-    public void addBytesCount(int len) {
-        bytesCount += len;
-    }
-
-    public void substactBytesCount(int len) {
-        bytesCount -= len;
-    }
-
     public long getTupleCount() {
         return tupleCount.get();
-    }
-
-    public int getBytesCount() {
-        return bytesCount;
     }
 
     public void setKeys(ArrayList<TKey> keys) {

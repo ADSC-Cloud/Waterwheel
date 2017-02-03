@@ -102,6 +102,7 @@ public class TemplateUpdater<TKey extends Comparable<TKey>> {
             for (int j = index; j < index + keyCount; ++j) {
                 leaf.keys.add(keys.get(j));
                 leaf.tuples.add(tuples.get(j));
+                leaf.tupleCount.addAndGet(tuples.get(j).size());
                 leaf.offsets.add(offsets.get(j));
             }
             index += keyCount;
