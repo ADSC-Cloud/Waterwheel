@@ -39,7 +39,6 @@ public class TexiTrajectoryGenerator extends BaseRichSpout {
 
     private long timestamp;
 
-
     public TexiTrajectoryGenerator(DataSchema schema, TrajectoryGenerator generator, int payloadSize, City city)
             throws FileNotFoundException {
         this.schema = schema;

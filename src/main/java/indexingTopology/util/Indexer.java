@@ -91,7 +91,7 @@ public class Indexer {
 
         this.inputQueue = inputQueue;
 
-        templateUpdater = new TemplateUpdater(TopologyConfig.BTREE_OREDER);
+        templateUpdater = new TemplateUpdater(TopologyConfig.BTREE_ORDER);
 
         start = System.currentTimeMillis();
 
@@ -112,7 +112,7 @@ public class Indexer {
 
         this.processQuerySemaphore = new Semaphore(1);
 
-        this.indexedData = new BTree(TopologyConfig.BTREE_OREDER);
+        this.indexedData = new BTree(TopologyConfig.BTREE_ORDER);
 
         kryo = new Kryo();
         kryo.register(BTree.class, new KryoTemplateSerializer());
@@ -194,7 +194,7 @@ public class Indexer {
             while (true) {
 
 
-                if (executed.get() >= TopologyConfig.NUM_TUPLES_TO_CHECK_TEMPLATE) {
+                if (executed.get() >= TopologyConfig.SKEWNESS_DETECTION_THRESHOLD) {
                     if (indexedData.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
                         while (!pendingQueue.isEmpty()) {
                             try {
@@ -437,7 +437,7 @@ public class Indexer {
             while (true) {
 
                 try {
-                    System.out.println("queue length " + processQuerySemaphore.getQueueLength() + "query runnable");
+//                    System.out.println("queue length " + processQuerySemaphore.getQueueLength() + "query runnable");
                     processQuerySemaphore.acquire();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -454,9 +454,9 @@ public class Indexer {
 
                 Long queryId = (Long) pair.getKey();
 
-                System.out.println("semaphore " + queryId + " has been acquired in query runnable!!!");
+//                System.out.println("semaphore " + queryId + " has been acquired in query runnable!!!");
 
-                System.out.println("query id " + queryId + "in indexer has been taken from query pending queue!!!");
+//                System.out.println("query id " + queryId + "in indexer has been taken from query pending queue!!!");
 
                 Pair keyRange = (Pair) pair.getValue();
 
@@ -470,17 +470,17 @@ public class Indexer {
 
                 processQuerySemaphore.release();
 
-                System.out.println("semaphore " + queryId + " has been released in query runnable!!!");
+//                System.out.println("semaphore " + queryId + " has been released in query runnable!!!");
 
                 collector.emit(Streams.BPlusTreeQueryStream, new Values(queryId, serializedTuples));
 
-                System.out.println("query id " + queryId + "in indexer has been finished!!!");
+//                System.out.println("query id " + queryId + "in indexer has been finished!!!");
             }
         }
     }
 
     public void cleanTree(Domain domain) {
-        System.out.println("a tree has been removed!!!");
+//        System.out.println("a tree has been removed!!!");
         indexedData = clonedIndexedData;
         clonedIndexedData = null;
         domainToBTreeMapping.remove(domain);

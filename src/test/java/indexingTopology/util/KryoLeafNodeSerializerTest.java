@@ -32,7 +32,7 @@ public class KryoLeafNodeSerializerTest {
         Kryo kryo = new Kryo();
         kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
 
-        BTreeLeafNode leaf = new BTreeLeafNode(TopologyConfig.BTREE_OREDER);
+        BTreeLeafNode leaf = new BTreeLeafNode(TopologyConfig.BTREE_ORDER);
 
         for (int i = 0; i < 4; ++i) {
             List<Double> values = new ArrayList<>();

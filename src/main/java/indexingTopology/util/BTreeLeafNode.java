@@ -1,13 +1,9 @@
 package indexingTopology.util;
 
-import org.apache.storm.tuple.Values;
 import indexingTopology.exception.UnsupportedGenericException;
-import org.omg.Messaging.SYNC_WITH_TRANSPORT;
 
 import java.io.*;
-import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 
@@ -134,6 +130,38 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
             this.offsets.add(index, new ArrayList<Integer>());
             ++this.keyCount;
         }
+
+        tupleCount.incrementAndGet();
+        this.tuples.get(index).add(serilizedTuple);
+        this.offsets.get(index).add(serilizedTuple.length);
+        addBytesCount(serilizedTuple.length);
+        addBytesCount(Integer.SIZE / Byte.SIZE);
+
+        if (!templateMode && isOverflow()) {
+            node = dealOverflow();
+        }
+
+        return node;
+    }
+
+
+    public BTreeNode insertKeyTuples(TKey key, byte[] serilizedTuple, boolean templateMode, Counter counter) throws UnsupportedGenericException{
+        BTreeNode node = null;
+
+        int index = searchIndex(key);
+
+        if (keys.contains(key)) {
+            counter.addCount();
+        }
+
+        if (!(index < this.keys.size() && this.getKey(index).compareTo(key) == 0)) {
+            this.keys.add(index, key);
+            addBytesCount(UtilGenerics.sizeOf(key.getClass()));
+            this.tuples.add(index, new ArrayList<byte[]>());
+            this.offsets.add(index, new ArrayList<Integer>());
+            ++this.keyCount;
+        }
+
 
         tupleCount.incrementAndGet();
         this.tuples.get(index).add(serilizedTuple);

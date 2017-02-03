@@ -196,18 +196,18 @@ public class BTreeTest {
 
     @Test
     public void testSearchTuples() throws Exception, UnsupportedGenericException {
-        int order = 32;
+        int order = 4;
         BTree bTree = new BTree(order);
 
-        int numberOfTuples = 2048;
+        int numberOfTuples = 64;
 
         Random random = new Random();
 
         List<Integer> keys = new ArrayList<>();
 
         for (int i = 0; i < numberOfTuples; ++i) {
-            Integer key = random.nextInt();
-            keys.add(key);
+//            Integer key = random.nextInt();
+            keys.add(i);
         }
 
         for (Integer key : keys) {
@@ -220,12 +220,20 @@ public class BTreeTest {
             bTree.insert(key, bytes);
         }
 
+
+        bTree.printBtree();
+
         for (Integer key : keys) {
             assertEquals(1, bTree.searchRange(key, key).size());
         }
 
         //Test template mode
        bTree.clearPayload();
+
+//        for (int i = 0; i < numberOfTuples; ++i) {
+//            Integer key = random.nextInt();
+//            keys.add(i + 100);
+//        }
 
         for (Integer key : keys) {
             List<Double> values = new ArrayList<>();

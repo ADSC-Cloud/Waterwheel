@@ -16,7 +16,7 @@ public class TopologyConfig {
 
     public static final int NUMBER_OF_INTERVALS = 100;
 
-    public static final int BTREE_OREDER = 4;
+    public static final int BTREE_ORDER = 64;
 
     public static final double LOAD_BALANCE_THRESHOLD = 0.2;
 
@@ -24,6 +24,6 @@ public class TopologyConfig {
 
     public static String dataDir = "/home/acelzj";
 
-    public static final int NUM_TUPLES_TO_CHECK_TEMPLATE = 200000;
+    public static double SKEWNESS_DETECTION_THRESHOLD = 0.1;
 
 }

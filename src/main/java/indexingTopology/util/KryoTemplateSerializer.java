@@ -5,11 +5,9 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.util.*;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Queue;
 
 /**
@@ -36,7 +34,7 @@ public class KryoTemplateSerializer<TKey extends Comparable<TKey>> extends Seria
     public BTree read(Kryo kryo, Input input, Class<BTree> aClass) {
         BTreeInnerNode root = null;
         Queue<BTreeNode> q = new LinkedList<BTreeNode>();
-        root = new BTreeInnerNode(TopologyConfig.BTREE_OREDER);
+        root = new BTreeInnerNode(TopologyConfig.BTREE_ORDER);
         deserialize(input, root);
         q.add(root);
 
@@ -46,7 +44,7 @@ public class KryoTemplateSerializer<TKey extends Comparable<TKey>> extends Seria
             BTreeInnerNode curr = (BTreeInnerNode) q.remove();
 
             for (int i = 0; i < curr.getKeyCount() + 1; ++i) {
-                BTreeInnerNode node = new BTreeInnerNode(TopologyConfig.BTREE_OREDER);
+                BTreeInnerNode node = new BTreeInnerNode(TopologyConfig.BTREE_ORDER);
                 deserialize(input, node);
                 if (node.getKeyCount() != 0) {
                     curr.setChild(i, node);
@@ -64,7 +62,7 @@ public class KryoTemplateSerializer<TKey extends Comparable<TKey>> extends Seria
             }
         }
 
-        BTree bTree = new BTree(TopologyConfig.BTREE_OREDER);
+        BTree bTree = new BTree(TopologyConfig.BTREE_ORDER);
         bTree.setRoot(root);
         return bTree;
     }

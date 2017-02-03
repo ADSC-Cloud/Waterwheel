@@ -64,6 +64,35 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		}
 	}
 
+
+    public void insert(TKey key, byte[] serializedTuple, Counter counter) throws UnsupportedGenericException {
+        BTreeLeafNode leaf = null;
+        if (templateMode) {
+            leaf = findLeafNodeShouldContainKeyInTemplate(key);
+            leaf.acquireWriteLock();
+            leaf.insertKeyTuples(key, serializedTuple, templateMode, counter);
+            leaf.releaseWriteLock();
+        } else {
+            leaf = findLeafNodeShouldContainKeyInUpdaterWithProtocolTwo(key);
+            ArrayList<BTreeNode> ancestors = new ArrayList<BTreeNode>();
+            //if the root is null, it means that we have to use protocol 1 instead of protocol 2.
+            if (leaf == null) {
+                leaf = findLeafNodeShouldContainKeyInUpdaterWithProtocolOne(key, ancestors);
+            }
+            BTreeNode root = leaf.insertKeyTuples(key, serializedTuple, templateMode, counter);
+            if (root != null) {
+                this.setRoot(root);
+            }
+            leaf.releaseWriteLock();
+            for (BTreeNode ancestor : ancestors) {
+                ancestor.releaseWriteLock();
+            }
+            ancestors.clear();
+        }
+    }
+
+
+
 	/**
 	 * search operation for the reader
 	 * @param leftKey, rightKey
@@ -286,7 +315,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		while (leaf != null) {
 			offset = output.position();
 
-			Output outputOfLeaf = new Output(6500, 20000000);
+			Output outputOfLeaf = new Output(65000, 200000000);
 
             kryo.writeObject(outputOfLeaf, leaf);
 //            int totalBytes = leaf.bytesCount + (1 + leaf.tuples.size()) * (Integer.SIZE / Byte.SIZE);
@@ -350,6 +379,17 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 
 		return (maxNumberOfTuples - averageNumberOfTuples) / averageNumberOfTuples;
 	}
+
+	public int getHeight() {
+	    int height = 1;
+        BTreeNode<TKey> currentNode = this.root;
+        while (currentNode.getNodeType() == TreeNodeType.InnerNode) {
+            BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChild(0);
+            currentNode = node;
+            ++height;
+        }
+        return height;
+    }
 
 }
 

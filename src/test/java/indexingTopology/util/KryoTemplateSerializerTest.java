@@ -8,7 +8,6 @@ import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.filesystem.FileSystemHandler;
 import indexingTopology.filesystem.HdfsFileSystemHandler;
 import indexingTopology.filesystem.LocalFileSystemHandler;
-import indexingTopology.util.*;
 import indexingTopology.util.texi.Car;
 import indexingTopology.util.texi.City;
 import indexingTopology.util.texi.TrajectoryGenerator;
@@ -53,7 +52,7 @@ public class KryoTemplateSerializerTest {
 
         List<String> fileNames = new ArrayList<>();
 
-        BTree indexedData = new BTree(TopologyConfig.BTREE_OREDER);
+        BTree indexedData = new BTree(TopologyConfig.BTREE_ORDER);
 
         int numberOfTuples = 60;
 
@@ -111,7 +110,7 @@ public class KryoTemplateSerializerTest {
 
         List<String> fileNames = new ArrayList<>();
 
-        BTree indexedData = new BTree(TopologyConfig.BTREE_OREDER);
+        BTree indexedData = new BTree(TopologyConfig.BTREE_ORDER);
 
         int numberOfTuples = 60;
 
@@ -247,7 +246,7 @@ public class KryoTemplateSerializerTest {
 
         List<String> fileNames = new ArrayList<>();
 
-        BTree indexedData = new BTree(TopologyConfig.BTREE_OREDER);
+        BTree indexedData = new BTree(TopologyConfig.BTREE_ORDER);
 
         while (chunkId <= 1) {
             for (int i = 0; i < numTuples; ++i) {
