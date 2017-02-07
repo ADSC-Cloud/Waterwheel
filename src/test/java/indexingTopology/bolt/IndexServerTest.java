@@ -6,6 +6,8 @@ import indexingTopology.config.TopologyConfig;
 import indexingTopology.util.*;
 import indexingTopology.util.texi.*;
 import javafx.util.Pair;
+import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.random.Well19937c;
 import org.apache.storm.tuple.Values;
 import org.apache.log4j.Logger;
 
@@ -15,6 +17,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /**
@@ -92,6 +95,8 @@ public class IndexServerTest {
 //          File file = new File("/home/acelzj/test_data/" + "gauss_data" + ".txt");
 //            File file = new File("/home/acelzj/test_data/" + "zipf_data" + ".txt");
 //            File file = new File("/home/acelzj/test_data/" + "uniform_data" + ".txt");
+//            File file = new File("/home/acelzj/logs/" + btreeOrder + TopologyConfig.SKEWNESS_DETECTION_THRESHOLD + ".txt");
+//            File file = new File("/home/acelzj/logs/" + 20048 + ".txt");
             File file = new File("/home/acelzj/logs/" + btreeOrder + choice + ".txt");
 
             if (!file.exists()) {
@@ -143,26 +148,30 @@ public class IndexServerTest {
 
 //        for (int i = 0; i < 2; ++i) {
 
-        double threshold = 0.7;
+        double threshold = 0.5;
 
             for (Integer order : orders) {
-            for (int i = 0; i <= 2; ++i) {
-                boolean templateMode = i == 0 ? false : true;
-//                boolean templateMode = true;
-                TopologyConfig.SKEWNESS_DETECTION_THRESHOLD = threshold;
-                IndexServerTest indexServerTest = new IndexServerTest(indexField, schema, order, bytesLimit, templateMode, i);
+//                for (int i = 9; i <= 9; ++i) {
+//                    for (int j = 0; j <= 1; ++j) {
+//                        boolean templateMode = (j != 0);
+                        boolean templateMode = true;
+                        TopologyConfig.SKEWNESS_DETECTION_THRESHOLD = threshold;
+                        IndexServerTest indexServerTest = new IndexServerTest(indexField, schema, order, bytesLimit, templateMode, 2);
 
-                createGenerateThread();
+                        createGenerateThread();
 
-                Thread.sleep(60 * 1000);
+                        Thread.sleep(2 * 60 * 1000);
 
-                terminateGenerateThread();
+                        terminateGenerateThread();
 
-                indexer.terminateInputProcessingThread();
+                        indexer.terminateInputProcessingThread();
 
-//                threshold += 0.1;
-            }
-        }
+//                        indexer.terminateQueryThreads();
+
+                        threshold += 0.1;
+                    }
+//                }
+//        }
 
     }
 
@@ -189,20 +198,23 @@ public class IndexServerTest {
 
             long timestamp = 0;
 
-//            TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
+            TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
+            RandomGenerator randomGenerator = new Well19937c();
+            randomGenerator.setSeed(1000);
+            KeyGenerator keyGenerator = new ZipfKeyGenerator( 20048, 0.3, randomGenerator);
+//            KeyGenerator keyGenerator = new UniformKeyGenerator();
 //            TrajectoryGenerator generator = new TrajectoryGaussGenerator(10000, x1, x2, y1, y2);
-            City city = new City(x1, x2, y1, y2, partitions);
+//            City city = new City(x1, x2, y1, y2, partitions);
             while (true) {
                 if (inputExhausted) {
                     break;
                 }
-//                Car car = generator.generate();
-//                KeyGenerator keyGenerator = new ZipfKeyGenerator(100048, 0.3);
+                Car car = generator.generate();
 //                KeyGenerator keyGenerator = new GaussKeyGenerator(10240, 500);
 //                KeyGenerator keyGenerator = new UniformKeyGenerator();
                 try {
-                    String text = bufferedReader.readLine();
-                    String [] tuple = text.split(" ");
+//                    String text = bufferedReader.readLine();
+//                    String [] tuple = text.split(" ");
 //                    int ZCode = city.getZCodeForALocation(car.x, car.y);
 //                    try {
 //                        String text = "" + car.id + " " + keyGenerator.generate() + " " + new String(new char[payloadSize]) + " " + timestamp;
@@ -212,16 +224,22 @@ public class IndexServerTest {
 //                    } catch (IOException e) {
 //                        e.printStackTrace();
 //                    }
+                    Double key = keyGenerator.generate();
                     List<Object> values = new ArrayList<>();
-                    values.add(Double.valueOf(tuple[0]));
-                    values.add(Double.valueOf(tuple[1]));
-                    values.add(tuple[2]);
-                    values.add(Long.valueOf(tuple[3]));
+                    values.add((double) car.id);
+                    values.add(key);
+                    values.add(new String(new char[payloadSize]));
+                    values.add(timestamp);
 //
                     byte[] serializedTuples = serializeValues(values);
 //
-                    inputQueue.put(new Pair(Double.valueOf(tuple[1]), serializedTuples));
-//
+                    inputQueue.put(new Pair(key, serializedTuples));
+//                    values.add(Double.parseDouble(tuple[0]));
+//                    values.add(Double.parseDouble(tuple[1]));
+//                    values.add(tuple[2]);
+//                    values.add(Long.parseLong(tuple[3]));
+//                    byte[] serializedTuples = serializeValues(values);
+//                    inputQueue.put(new Pair(Double.parseDouble(tuple[1]), serializedTuples));
                     ++timestamp;
 //
                 } catch (InterruptedException e) {

@@ -285,15 +285,18 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
                     currLeaf.rightSibling.acquireReadLock();
                     lastLock.unlock();
                     lastLock = currLeaf.rightSibling.getrLock();
+                    currLeaf = (BTreeLeafNode) currLeaf.rightSibling;
                 }
-                currLeaf = (BTreeLeafNode) currLeaf.rightSibling;
             }
 
             currIndex = 0;
         }
 
-        while (currLeaf != null && currLeaf.getKey(currIndex).compareTo(rightKey) <= 0) {
+
+        while (currLeaf != null && currLeaf.getKeyCount() > 0 && currLeaf.getKey(currIndex).compareTo(rightKey) <= 0) {
             assert currLeaf.lock.getReadLockCount() > 0;
+//            System.out.println("key count" + currLeaf.getKeyCount());
+//            System.out.println(currLeaf == null);
             retList.addAll(currLeaf.getTuples(currIndex));
             currIndex++;
             if (currIndex >= currLeaf.getKeyCount()) {
@@ -328,8 +331,8 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
                             currLeaf.rightSibling.acquireReadLock();
                             lastLock.unlock();
                             lastLock = currLeaf.rightSibling.getrLock();
+                            currLeaf = (BTreeLeafNode) currLeaf.rightSibling;
                         }
-                        currLeaf = (BTreeLeafNode) currLeaf.rightSibling;
                     }
 
                 } else {

@@ -9,6 +9,8 @@ import indexingTopology.filesystem.HdfsFileSystemHandler;
 import indexingTopology.filesystem.LocalFileSystemHandler;
 import indexingTopology.exception.UnsupportedGenericException;
 import javafx.util.Pair;
+import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.random.Well19937c;
 import org.apache.log4j.Logger;
 import org.apache.storm.metric.internal.RateTracker;
 import org.apache.storm.task.OutputCollector;
@@ -38,15 +40,19 @@ public class IndexerCopy {
 
     private IndexingRunnable indexingRunnable;
 
+    private QueryRunnable queryRunnable;
+
     private InputProcessingRunnable inputProcessingRunnable;
 
     private List<Thread> indexingThreads;
+
+    private List<Thread> queryThreads;
 
     private TemplateUpdater templateUpdater;
 
     private Thread inputProcessingThread;
 
-    private final static int numberOfIndexingThreads = 1;
+    private int numberOfIndexingThreads = 1;
 
     private AtomicLong executed;
 
@@ -72,7 +78,7 @@ public class IndexerCopy {
 
     private int choice;
 
-    long queryId = 0;
+    AtomicLong queryId;
 
     private OutputCollector collector;
 
@@ -102,6 +108,11 @@ public class IndexerCopy {
 
     private Counter counter;
 
+    private Long totalTime;
+
+    private AtomicLong totalQueryTime;
+    private int numberOfQueryThreads = 4;
+
     public IndexerCopy(int taskId, ArrayBlockingQueue<Pair> inputQueue, BTree indexedData, String indexedField, DataSchema schema, BufferedWriter bufferedWriter, int order, boolean templateMode, int choice) {
         pendingQueue = new ArrayBlockingQueue<>(1024);
 
@@ -127,9 +138,10 @@ public class IndexerCopy {
 
         chunkId = 0;
 
-        queryId = 0;
+        queryId = new AtomicLong(0L);
 
         indexingThreads = new ArrayList<>();
+
 
         this.indexField = indexedField;
 
@@ -173,7 +185,30 @@ public class IndexerCopy {
 
         this.choice = choice;
 
+        totalTime = 0L;
+
+        totalQueryTime = new AtomicLong(0);
+
+//        queryThreads = new ArrayList<>();
+
+//        createQueryThread();
+//        numberOfIndexingThreads = choice;
+
 //        queryThread.start();
+    }
+
+    public void terminateQueryThreads() {
+        try {
+            queryRunnable.setInputExhausted();
+            for (Thread thread : queryThreads) {
+                thread.join();
+            }
+            queryThreads.clear();
+            queryRunnable = new QueryRunnable();
+//            System.out.println("All the indexing threads are terminated!");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     private void terminateIndexingThreads() {
@@ -192,6 +227,22 @@ public class IndexerCopy {
 
     private void createIndexingThread() {
         createIndexingThread(numberOfIndexingThreads);
+    }
+
+    private void createQueryThread() {
+        createQueryThread(numberOfQueryThreads);
+    }
+
+    private void createQueryThread(int n) {
+        if(queryRunnable == null) {
+            queryRunnable = new QueryRunnable();
+        }
+        for(int i = 0; i < n; i++) {
+            Thread queryThread = new Thread(queryRunnable);
+            queryThread.start();
+//            System.out.println(String.format("Thread %d is created!", indexThread.getId()));
+            queryThreads.add(queryThread);
+        }
     }
 
     private void createIndexingThread(int n) {
@@ -233,7 +284,9 @@ public class IndexerCopy {
 //        System.out.println("total tuples " + totalTuples);
 //        System.out.println("counter " + counter.getCount());
 //        System.out.println("duplicate rate : " + counter.getCount()*1.0 / totalTuples);
-//        System.out.println(String.format("BTree order %d, Throughput %f / s", order, (rateTracker.reportRate())));
+        System.out.println(String.format("BTree order %d, Throughput %f / s", order, (rateTracker.reportRate())));
+
+        System.out.println("average query latency " + totalQueryTime.get() * 1.0 / queryId.get());
 
 //        if (numberOfRebuild != 0) {
 //            System.out.println("average rebuild time" + (totalRebuildTime / numberOfRebuild));
@@ -243,15 +296,27 @@ public class IndexerCopy {
             String text = "Throughput " + rateTracker.reportRate();
             bufferedWriter.write(text);
             bufferedWriter.newLine();
-//            text = "Total time " + totalRebuildTime;
-//            bufferedWriter.write(text);
-//            bufferedWriter.newLine();
-//            text = "rebuild count " + numberOfRebuild;
-//            bufferedWriter.write(text);
-//            bufferedWriter.newLine();
-//            text = "rate " + totalRebuildTime / numberOfRebuild;
-//            bufferedWriter.write(text);
-//            bufferedWriter.newLine();
+            text = "Total time " + totalRebuildTime;
+            bufferedWriter.write(text);
+            bufferedWriter.newLine();
+            if (numberOfRebuild > 0) {
+                text = "rebuild count " + numberOfRebuild;
+                bufferedWriter.write(text);
+                bufferedWriter.newLine();
+                text = "rate " + totalRebuildTime * 1.0 / numberOfRebuild;
+                bufferedWriter.write(text);
+                bufferedWriter.newLine();
+                text = "rate " + numberOfRebuild * 1.0 / chunkId;
+                bufferedWriter.write(text);
+                bufferedWriter.newLine();
+            }
+            text = "average chunk full " + totalTime / chunkId;
+            bufferedWriter.write(text);
+            bufferedWriter.newLine();
+            bufferedWriter.flush();
+            text = "average query latency " + totalQueryTime.get() * 1.0 / queryId.get();
+            bufferedWriter.write(text);
+            bufferedWriter.newLine();
             bufferedWriter.flush();
         } catch (IOException e) {
             e.printStackTrace();
@@ -360,11 +425,15 @@ public class IndexerCopy {
 //                    System.out.println("a chunk has been full");
 
 //                    indexedData = indexedData.clone();
+//                    terminateQueryThreads();
+
                     if (templateMode) {
                         indexedData.clearPayload();
                     } else {
                         createNewTemplate();
                     }
+
+//                    createQueryThread();
 
                     executed.set(0L);
 
@@ -374,7 +443,9 @@ public class IndexerCopy {
 
 //                    System.out.println(String.format("After %d ms, a chunk has been full", System.currentTimeMillis() - start));
 
-                    start = System.currentTimeMillis();
+                    totalTime += System.currentTimeMillis() - startTime;
+
+                    startTime = System.currentTimeMillis();
 
                     numTuples = 0;
 
@@ -500,9 +571,23 @@ public class IndexerCopy {
 
 
     class QueryRunnable implements Runnable {
+
+        boolean inputExhausted = false;
+
+        public void setInputExhausted() {
+            inputExhausted = true;
+        }
+
         @Override
         public void run() {
+//            RandomGenerator randomGenerator = new Well19937c();
+//            randomGenerator.setSeed(1000);
+            KeyGenerator keyGenerator = new UniformKeyGenerator();
             while (true) {
+
+                if (inputExhausted) {
+                    break;
+                }
 
 //                Long queryId = (Long) pair.getKey();
 //
@@ -520,15 +605,29 @@ public class IndexerCopy {
 //                    serializedTuples = indexedData.search(leftKey, rightKey);
 //                }
 
+
+
+//                try {
+//                    processQuerySemaphore.acquire();
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
                 try {
-                    processQuerySemaphore.acquire();
+                    Thread.sleep(100);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
 
+                double leftKey = 0.0;
+                double rightKey = 1;
+
 
                 List<byte[]> serializedTuples = null;
-                serializedTuples = indexedData.searchRange(0.0, 1000.0);
+
+                long start = System.currentTimeMillis();
+                serializedTuples = indexedData.searchRange(leftKey, rightKey);
+//                System.out.println("query " + queryId + " has been finished!!!");
+                totalQueryTime.addAndGet(System.currentTimeMillis() - start);
 
 //                for (int i = 0; i < serializedTuples.size(); ++i) {
 //                    Values deserializedTuple = null;
@@ -540,11 +639,11 @@ public class IndexerCopy {
 //                    System.out.println(deserializedTuple);
 //                }
 
-                processQuerySemaphore.release();
+//                processQuerySemaphore.release();
 
 //                System.out.println(queryId + " query has been finished!!!");
 
-                ++queryId;
+                queryId.incrementAndGet();
             }
         }
     }
