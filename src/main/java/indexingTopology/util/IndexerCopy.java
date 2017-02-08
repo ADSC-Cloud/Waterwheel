@@ -71,8 +71,8 @@ public class IndexerCopy {
     private Double minIndexValue = Double.MAX_VALUE;
     private Double maxIndexValue = Double.MIN_VALUE;
 
-    private Long minTimestamp = Long.MAX_VALUE;
-    private Long maxTimestamp = Long.MIN_VALUE;
+    private Long minTimestamp;
+    private Long maxTimestamp;
 
     private DataSchema schema;
 
@@ -106,15 +106,18 @@ public class IndexerCopy {
 
     private RateTracker rateTracker;
 
-    private Counter counter;
 
     private Long totalTime;
 
     private AtomicLong totalQueryTime;
     private int numberOfQueryThreads = 4;
 
-    public IndexerCopy(int taskId, ArrayBlockingQueue<Pair> inputQueue, BTree indexedData, String indexedField, DataSchema schema, BufferedWriter bufferedWriter, int order, boolean templateMode, int choice) {
-        pendingQueue = new ArrayBlockingQueue<>(1024);
+    private CheckCapacityRunnable checkCapacityRunnable;
+
+    Thread capacityCheckingThread;
+
+    public IndexerCopy(int taskId, ArrayBlockingQueue<Pair> inputQueue, BTree indexedData, String indexedField, DataSchema schema, BufferedWriter bufferedWriter, int order, boolean templateMode, int numberOfIndexingThreads) {
+        pendingQueue = new ArrayBlockingQueue<>(TopologyConfig.PENDING_QUEUE_CAPACITY);
 
         this.inputQueue = inputQueue;
 
@@ -159,6 +162,10 @@ public class IndexerCopy {
 
         domainToBTreeMapping = new HashMap<>();
 
+        this.numberOfIndexingThreads = numberOfIndexingThreads;
+
+        System.out.println(this.numberOfIndexingThreads);
+
         createIndexingThread();
 
         this.logger = Logger.getLogger(IndexerCopy.class);
@@ -181,13 +188,20 @@ public class IndexerCopy {
 
         rateTracker = new RateTracker(30 * 1000, 10);
 
-        counter = new Counter();
+//        this.choice = choice;
 
-        this.choice = choice;
 
         totalTime = 0L;
 
         totalQueryTime = new AtomicLong(0);
+
+        checkCapacityRunnable = new CheckCapacityRunnable();
+
+        capacityCheckingThread = new Thread(checkCapacityRunnable);
+
+        capacityCheckingThread.start();
+
+
 
 //        queryThreads = new ArrayList<>();
 
@@ -226,6 +240,7 @@ public class IndexerCopy {
     }
 
     private void createIndexingThread() {
+//        System.out.println("number of indexing threads " + numberOfIndexingThreads);
         createIndexingThread(numberOfIndexingThreads);
     }
 
@@ -266,6 +281,9 @@ public class IndexerCopy {
         try {
             inputProcessingThread.join();
             inputProcessingRunnable = null;
+            checkCapacityRunnable.setInputExhausted();
+            System.out.println("set input exhausted");
+            checkCapacityRunnable = null;
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -284,7 +302,7 @@ public class IndexerCopy {
 //        System.out.println("total tuples " + totalTuples);
 //        System.out.println("counter " + counter.getCount());
 //        System.out.println("duplicate rate : " + counter.getCount()*1.0 / totalTuples);
-        System.out.println(String.format("BTree order %d, Throughput %f / s", order, (rateTracker.reportRate())));
+        System.out.println(String.format("BTree order %d, Throughput %f / s", 64, totalTuples*1.0 / 20));
 
         System.out.println("average query latency " + totalQueryTime.get() * 1.0 / queryId.get());
 
@@ -292,8 +310,9 @@ public class IndexerCopy {
 //            System.out.println("average rebuild time" + (totalRebuildTime / numberOfRebuild));
 //        }
 
+        /*
         try {
-            String text = "Throughput " + rateTracker.reportRate();
+            String text = "Throughput " + totalTuples / 60;
             bufferedWriter.write(text);
             bufferedWriter.newLine();
             text = "Total time " + totalRebuildTime;
@@ -321,6 +340,7 @@ public class IndexerCopy {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        */
     }
 
 
@@ -344,8 +364,8 @@ public class IndexerCopy {
                     break;
                 }
 
-
-                if (chunkId > 0 && choice == 2 &&
+                /*
+                if (chunkId > 0 &&
                         executed.get() >= TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK * TopologyConfig.SKEWNESS_DETECTION_THRESHOLD) {
                     if (indexedData.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
                         while (!pendingQueue.isEmpty()) {
@@ -384,7 +404,7 @@ public class IndexerCopy {
                         createIndexingThread();
                     }
                 }
-
+                */
 
                 if (numTuples >= TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK) {
                     while (!pendingQueue.isEmpty()) {
@@ -401,19 +421,19 @@ public class IndexerCopy {
                     String fileName = null;
 
 
-                    writeTreeIntoChunk();
+//                    writeTreeIntoChunk();
 //
-                    try {
-                        if (TopologyConfig.HDFSFlag) {
-                            fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
-                        } else {
-                            fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
-                        }
-                        fileName =  "taskId" + taskId + "chunk" + chunkId;
-                        fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+//                    try {
+//                        if (TopologyConfig.HDFSFlag) {
+//                            fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
+//                        } else {
+//                            fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
+//                        }
+//                        fileName =  "taskId" + taskId + "chunk" + chunkId;
+//                        fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
 
 //                    Pair keyRange = new Pair(minIndexValue, maxIndexValue);
 //                    Pair timeStampRange = new Pair(minTimeStamp, maxTimeStamp);
@@ -461,7 +481,9 @@ public class IndexerCopy {
 //                } catch (InterruptedException e) {
 //                    e.printStackTrace();
 //                }
-                inputQueue.drainTo(drainer, 4096);
+                inputQueue.drainTo(drainer);
+
+//                System.out.println("drainer " + drainer.size());
 
                 for (Pair pair: drainer) {
                     try {
@@ -475,6 +497,41 @@ public class IndexerCopy {
 
                 drainer.clear();
 
+            }
+        }
+    }
+
+
+    class CheckCapacityRunnable implements Runnable {
+
+        int count = 0;
+        boolean inputExhausted = false;
+
+        public void setInputExhausted() {
+            inputExhausted = true;
+        }
+        @Override
+        public void run() {
+            while (true) {
+
+                if (inputExhausted) {
+                    break;
+                }
+
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+//                if (inputQueue.size() / (256 * 8 * 4)) {
+//                    System.out.println("Warning : the production is too slow!!!");
+                if (inputQueue.size() * 1.0 / TopologyConfig.PENDING_QUEUE_CAPACITY < 0.1) {
+                    System.out.println(inputQueue.size() * 1.0 / TopologyConfig.PENDING_QUEUE_CAPACITY);
+                    System.out.println("Warning : the production speed is too slow!!!");
+                    System.out.println(++count);
+                }
+//                }
             }
         }
     }
@@ -516,7 +573,7 @@ public class IndexerCopy {
 //                        if(!first)
 //                            Thread.sleep(100);
 
-                    pendingQueue.drainTo(drainer, 4096);
+                    pendingQueue.drainTo(drainer, 256);
 //                    inputQueue.drainTo(drainer, 256);
 
 //                        Pair pair = queue.poll(10, TimeUnit.MILLISECONDS);
@@ -533,8 +590,7 @@ public class IndexerCopy {
 //                            final Integer offset = (Integer) pair.getValue();
                         final byte[] serializedTuple = (byte[]) pair.getValue();
 //                            System.out.println("insert");
-                        indexedData.insert(indexValue, serializedTuple, counter);
-//                        indexedData.insert(indexValue, serializedTuple);
+                        indexedData.insert(indexValue, serializedTuple);
 
 //                        logger.info("tuple has been inserted " + (System.currentTimeMillis() / 1000));
 //                            indexedData.insert(indexValue, offset);
@@ -549,7 +605,6 @@ public class IndexerCopy {
                     }
 
                     totalTuples += drainer.size();
-                    rateTracker.notify(drainer.size());
 
                     executed.addAndGet(drainer.size());
 

@@ -3,6 +3,7 @@ package indexingTopology.util;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import indexingTopology.DataSchema;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
 import org.junit.Test;
 
@@ -49,11 +50,9 @@ public class BTreeTest {
 
         BTree newBTree = bTree.clone();
 
-        System.out.println(newBTree == bTree);
 
         bTree.getRoot().keys = null;
 
-        newBTree.printBtree();
 
         for (Integer key : keys) {
             assertEquals(1, newBTree.searchRange((double) key, (double) key).size());
@@ -62,8 +61,6 @@ public class BTreeTest {
         BTreeLeafNode leaf = newBTree.getLeftMostLeaf();
 
         while (leaf != null) {
-            leaf.print();
-            leaf.parentNode.print();
             leaf = (BTreeLeafNode) leaf.rightSibling;
         }
 
@@ -217,14 +214,12 @@ public class BTreeTest {
                 values.add((double) j);
             }
             byte[] bytes = serializeIndexValue(values);
-            bTree.insert(key, bytes);
+            bTree.insert(key*1.0, bytes);
         }
 
 
-        bTree.printBtree();
-
         for (Integer key : keys) {
-            assertEquals(1, bTree.searchRange(key, key).size());
+            assertEquals(1, bTree.searchRange(key*1.0, key*1.0).size());
         }
 
         //Test template mode
@@ -242,11 +237,11 @@ public class BTreeTest {
                 values.add((double) j);
             }
             byte[] bytes = serializeIndexValue(values);
-            bTree.insert(key, bytes);
+            bTree.insert(key*1.0, bytes);
         }
 
         for (Integer key : keys) {
-            assertEquals(1, bTree.searchRange(key, key).size());
+            assertEquals(1, bTree.searchRange(key*1.0, key*1.0).size());
         }
     }
 
@@ -273,11 +268,11 @@ public class BTreeTest {
                 values.add((double) j);
             }
             byte[] bytes = serializeIndexValue(values);
-            bTree.insert(key, bytes);
+            bTree.insert(key*1.0, bytes);
         }
 
         for (Integer key : keys) {
-            assertEquals(1, bTree.searchRange(key, key).size());
+            assertEquals(1, bTree.searchRange(key*1.0, key*1.0).size());
         }
 
         //Test template mode
@@ -290,11 +285,11 @@ public class BTreeTest {
                 values.add((double) j);
             }
             byte[] bytes = serializeIndexValue(values);
-            bTree.insert(key, bytes);
+            bTree.insert(key*1.0, bytes);
         }
 
         for (Integer key : keys) {
-            assertEquals(1, bTree.searchRange(key, key).size());
+            assertEquals(1, bTree.searchRange(key*1.0, key*1.0).size());
         }
 
     }
@@ -305,22 +300,15 @@ public class BTreeTest {
         int order = 32;
         BTree bTree = new BTree(order);
 
-        int numberOfTuples = 2048;
-
-        Random random = new Random();
+        int numberOfTuples = 10000;
 
         List<Integer> keys = new ArrayList<>();
 
-        Integer min = Integer.MAX_VALUE;
-
-        Integer max = Integer.MIN_VALUE;
-
         for (int i = 0; i < numberOfTuples; ++i) {
-            Integer key = random.nextInt();
-            min = Math.min(min, key);
-            max = Math.max(max, key);
-            keys.add(key);
+            keys.add(i);
         }
+
+        Collections.shuffle(keys);
 
         for (Integer key : keys) {
             List<Double> values = new ArrayList<>();
@@ -329,10 +317,10 @@ public class BTreeTest {
                 values.add((double) j);
             }
             byte[] bytes = serializeIndexValue(values);
-            bTree.insert(key, bytes);
+            bTree.insert(key*1.0, bytes);
         }
 
-        assertEquals(numberOfTuples, bTree.searchRange(min, max).size());
+        assertEquals(numberOfTuples, bTree.searchRange(0.0, numberOfTuples*1.0).size());
 
         //Test template mode
         bTree.clearPayload();
@@ -344,10 +332,10 @@ public class BTreeTest {
                 values.add((double) j);
             }
             byte[] bytes = serializeIndexValue(values);
-            bTree.insert(key, bytes);
+            bTree.insert(key*1.0, bytes);
         }
 
-        assertEquals(numberOfTuples, bTree.searchRange(min, max).size());
+        assertEquals(numberOfTuples, bTree.searchRange(0.0, numberOfTuples*1.0).size());
 
     }
 
@@ -367,11 +355,10 @@ public class BTreeTest {
         Integer max = Integer.MIN_VALUE;
 
         for (int i = 0; i < numberOfTuples; ++i) {
-            Integer key = random.nextInt();
-            min = Math.min(min, key);
-            max = Math.max(max, key);
-            keys.add(key);
+            keys.add(i);
         }
+
+        Collections.shuffle(keys);
 
         for (Integer key : keys) {
             List<Double> values = new ArrayList<>();
@@ -380,18 +367,18 @@ public class BTreeTest {
                 values.add((double) j);
             }
             byte[] bytes = serializeIndexValue(values);
-            bTree.insert(key, bytes);
+            bTree.insert(key*1.0, bytes);
         }
 
         Collections.sort(keys);
 
-        List<byte[]> tuples = bTree.searchRange(keys.get(300), keys.get(512));
+        List<byte[]> tuples = bTree.searchRange(keys.get(300)*1.0, keys.get(512)*1.0);
         assertEquals(213, tuples.size());
 
-        tuples = bTree.searchRange(keys.get(1022), keys.get(1023));
+        tuples = bTree.searchRange(keys.get(1022)*1.0, keys.get(1023)*1.0);
         assertEquals(2, tuples.size());
 
-        tuples = bTree.searchRange(keys.get(0), keys.get(1));
+        tuples = bTree.searchRange(keys.get(0)*1.0, keys.get(1)*1.0);
         assertEquals(2, tuples.size());
 
     }

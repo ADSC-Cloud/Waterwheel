@@ -136,34 +136,6 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
     }
 
 
-    public BTreeNode insertKeyTuples(TKey key, byte[] serilizedTuple, boolean templateMode, Counter counter) throws UnsupportedGenericException{
-        BTreeNode node = null;
-
-        int index = searchIndex(key);
-
-        if (keys.contains(key)) {
-            counter.addCount();
-        }
-
-        if (!(index < this.keys.size() && this.getKey(index).compareTo(key) == 0)) {
-            this.keys.add(index, key);
-            this.tuples.add(index, new ArrayList<byte[]>());
-            this.offsets.add(index, new ArrayList<Integer>());
-            ++this.keyCount;
-        }
-
-
-        tupleCount.incrementAndGet();
-        this.tuples.get(index).add(serilizedTuple);
-        this.offsets.get(index).add(serilizedTuple.length);
-
-        if (!templateMode && isOverflow()) {
-            node = dealOverflow();
-        }
-
-        return node;
-    }
-
     /**
      * When splits a leaf node, the middle key is kept on new node and be pushed to parent node.
      */
@@ -244,7 +216,8 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
 
 
     /* The code below is used to support search operation.*/
-    public List<byte[]> search(TKey leftKey, TKey rightKey){
+    /*
+    public List<byte[]> search(TKey leftKey, TKey rightKey) {
         // find first index satisfying range
         Lock lastLock = this.getrLock();
         int firstIndex = searchIndex(leftKey);
@@ -285,8 +258,8 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
                     currLeaf.rightSibling.acquireReadLock();
                     lastLock.unlock();
                     lastLock = currLeaf.rightSibling.getrLock();
-                    currLeaf = (BTreeLeafNode) currLeaf.rightSibling;
                 }
+                currLeaf = (BTreeLeafNode) currLeaf.rightSibling;
             }
 
             currIndex = 0;
@@ -331,8 +304,8 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
                             currLeaf.rightSibling.acquireReadLock();
                             lastLock.unlock();
                             lastLock = currLeaf.rightSibling.getrLock();
-                            currLeaf = (BTreeLeafNode) currLeaf.rightSibling;
                         }
+                        currLeaf = (BTreeLeafNode) currLeaf.rightSibling;
                     }
 
                 } else {
@@ -351,6 +324,7 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
 
         return retList;
     }
+    */
 
     public long getTupleCount() {
         return tupleCount.get();

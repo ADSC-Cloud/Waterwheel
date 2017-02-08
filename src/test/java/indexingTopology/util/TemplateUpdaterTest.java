@@ -8,10 +8,7 @@ import org.junit.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -41,13 +38,22 @@ public class TemplateUpdaterTest {
 
         List<Integer> keys = new ArrayList<>();
 
+//        for (int i = 0; i < numberOfTuples; ++i) {
+//            Integer key = random.nextInt();
+//            while (keys.contains(key)) {
+//                key = random.nextInt();
+//            }
+//            keys.add(i);
+//        }
         for (int i = 0; i < numberOfTuples; ++i) {
-            Integer key = random.nextInt();
-            while (keys.contains(key)) {
-                key = random.nextInt();
-            }
+//            Integer key = random.nextInt();
+//            while (keys.contains(key)) {
+//                key = random.nextInt();
+//            }
             keys.add(i);
         }
+
+        Collections.shuffle(keys);
 
         for (Integer key : keys) {
             List<Double> values = new ArrayList<>();
@@ -65,7 +71,7 @@ public class TemplateUpdaterTest {
 
         Long start = System.currentTimeMillis();
         BTree newTree = templateUpdater.createTreeWithBulkLoading(bTree);
-        System.out.println((System.currentTimeMillis() - start) / 1000);
+//        System.out.println((System.currentTimeMillis() - start) / 1000);
 
 //        newTree.printBtree();
 
@@ -78,7 +84,7 @@ public class TemplateUpdaterTest {
     @Test
     public void testCreateTreeWithBulkLoadingWithDuplicatedTuples() throws Exception, UnsupportedGenericException {
 
-        int numberOfTuples = 64;
+        int numberOfTuples = TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK;
 //        int numberOfTuples = TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK;
 
         int order = 4;
@@ -91,12 +97,14 @@ public class TemplateUpdaterTest {
         List<Integer> keys = new ArrayList<>();
 
         for (int i = 0; i < numberOfTuples; ++i) {
-            Integer key = random.nextInt();
-            while (keys.contains(key)) {
-                key = random.nextInt();
-            }
+//            Integer key = random.nextInt();
+//            while (keys.contains(key)) {
+//                key = random.nextInt();
+//            }
             keys.add(i);
         }
+
+        Collections.shuffle(keys);
 
         int duplicatedTime = 5;
 
@@ -108,28 +116,29 @@ public class TemplateUpdaterTest {
             }
             byte[] bytes = serializeIndexValue(values);
             for (int i = 0; i < duplicatedTime; ++i) {
-                bTree.insert(key, bytes);
+                bTree.insert(key*1.0, bytes);
             }
         }
 
-        bTree.printBtree();
+//        bTree.printBtree();
 
         TemplateUpdater templateUpdater = new TemplateUpdater(order);
 
-        Long start = System.currentTimeMillis();
+//        Long start = System.currentTimeMillis();
         BTree newTree = templateUpdater.createTreeWithBulkLoading(bTree);
-        System.out.println((System.currentTimeMillis() - start) / 1000);
+//        System.out.println((System.currentTimeMillis() - start) / 1000);
 
-        newTree.printBtree();
+//        newTree.printBtree();
 
         for (Integer key : keys) {
-            assertEquals(duplicatedTime, newTree.searchRange(key, key).size());
+            assertEquals(duplicatedTime, newTree.searchRange(key*1.0, key*1.0).size());
         }
 
         BTreeLeafNode leaf = newTree.getLeftMostLeaf();
         while (leaf != null) {
-            leaf.print();
-            System.out.println(leaf.tupleCount.get());
+//            leaf.print();
+//            System.out.println(leaf.tupleCount.get());
+            assertEquals(duplicatedTime * leaf.getKeyCount(), leaf.getTupleCount());
             leaf = (BTreeLeafNode) leaf.rightSibling;
         }
 
