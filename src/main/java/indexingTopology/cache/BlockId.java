@@ -3,13 +3,13 @@ package indexingTopology.cache;
 /**
  * Created by acelzj on 11/29/16.
  */
-public class CacheMappingKey {
+public class BlockId {
 
     private String fileName;
 
     private int offset;
 
-    public CacheMappingKey(String fileName, int offset) {
+    public BlockId(String fileName, int offset) {
         this.fileName = fileName;
         this.offset = offset;
     }
@@ -24,15 +24,15 @@ public class CacheMappingKey {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof CacheMappingKey)) {
+        if (!(obj instanceof BlockId)) {
             return false;
         }
         if (obj == this) {
             return true;
         }
 
-        CacheMappingKey thatCacheMappingKey = (CacheMappingKey) obj;
-        return thatCacheMappingKey.fileName.equals(fileName) && thatCacheMappingKey.offset == offset;
+        BlockId thatBlockId = (BlockId) obj;
+        return thatBlockId.fileName.equals(fileName) && thatBlockId.offset == offset;
     }
 
 }

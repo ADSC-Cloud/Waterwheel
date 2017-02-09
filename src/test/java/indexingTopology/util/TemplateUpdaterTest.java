@@ -38,22 +38,9 @@ public class TemplateUpdaterTest {
 
         List<Integer> keys = new ArrayList<>();
 
-<<<<<<< HEAD
-//        for (int i = 0; i < numberOfTuples; ++i) {
-//            Integer key = random.nextInt();
-//            while (keys.contains(key)) {
-//                key = random.nextInt();
-//            }
-//            keys.add(i);
-//        }
+
         for (int i = 0; i < numberOfTuples; ++i) {
-//            Integer key = random.nextInt();
-//            while (keys.contains(key)) {
-//                key = random.nextInt();
-//            }
-=======
-        for (int i = 0; i < numberOfTuples; i++) {
->>>>>>> Li/master
+
             keys.add(i);
         }
         Collections.shuffle(keys);
@@ -76,11 +63,7 @@ public class TemplateUpdaterTest {
 
         Long start = System.currentTimeMillis();
         BTree newTree = templateUpdater.createTreeWithBulkLoading(bTree);
-<<<<<<< HEAD
-//        System.out.println((System.currentTimeMillis() - start) / 1000);
-=======
-        System.out.println((System.currentTimeMillis() - start) / 1000.0);
->>>>>>> Li/master
+
 
 //        newTree.printBtree();
 

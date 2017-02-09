@@ -14,6 +14,31 @@ import static org.junit.Assert.*;
  * Created by acelzj on 11/1/16.
  */
 public class BTreeLeafNodeTest {
+    @Test
+    public void getTuples() throws Exception, UnsupportedGenericException {
+        BTreeLeafNode node = new BTreeLeafNode(4);
+        for (int i = 1; i <= 4; ++i) {
+            List<Double> values = new ArrayList<>();
+            values.add(i*1.0);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add(j*1.0);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            node.insertKeyTuples(i*1.0, bytes, false);
+        }
+
+        assertEquals(1, node.getTuples(2.0, 2.0).size());
+        assertEquals(2, node.getTuples(1.0, 2.0).size());
+        assertEquals(3, node.getTuples(1.0, 3.0).size());
+        assertEquals(4, node.getTuples(1.0, 4.0).size());
+        assertEquals(4, node.getTuples(0.0, 5.0).size());
+        assertEquals(3, node.getTuples(1.5, 4.0).size());
+        assertEquals(1, node.getTuples(1.5, 2.5).size());
+        assertEquals(1, node.getTuples(3.5, 5.0).size());
+        assertEquals(2, node.getTuples(2.5, 5.0).size());
+        assertEquals(0, node.getTuples(-5.0, -4.0).size());
+        assertEquals(0, node.getTuples(6.0, 10.0).size());
+    }
 
     private List<String> fieldNames = new ArrayList<String>(Arrays.asList("user_id", "id_1", "id_2", "ts_epoch",
             "date", "time", "latitude", "longitude"));
@@ -353,5 +378,6 @@ public class BTreeLeafNodeTest {
         bos.write(b);
         return bos.toByteArray();
     }
+
 
 }

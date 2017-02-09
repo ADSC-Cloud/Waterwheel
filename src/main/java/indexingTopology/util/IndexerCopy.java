@@ -106,10 +106,6 @@ public class IndexerCopy {
 
     private RateTracker rateTracker;
 
-<<<<<<< HEAD
-=======
-//    private Counter counter;
->>>>>>> Li/master
 
     private Long totalTime;
 
@@ -191,12 +187,6 @@ public class IndexerCopy {
         startTime = System.currentTimeMillis();
 
         rateTracker = new RateTracker(30 * 1000, 10);
-
-<<<<<<< HEAD
-//        this.choice = choice;
-=======
-//        counter = new Counter();
->>>>>>> Li/master
 
 
         totalTime = 0L;
@@ -599,10 +589,7 @@ public class IndexerCopy {
                         final byte[] serializedTuple = (byte[]) pair.getValue();
 //                            System.out.println("insert");
                         indexedData.insert(indexValue, serializedTuple);
-<<<<<<< HEAD
-=======
-//                        indexedData.insert(indexValue, serializedTuple);
->>>>>>> Li/master
+
 
 //                        logger.info("tuple has been inserted " + (System.currentTimeMillis() / 1000));
 //                            indexedData.insert(indexValue, offset);

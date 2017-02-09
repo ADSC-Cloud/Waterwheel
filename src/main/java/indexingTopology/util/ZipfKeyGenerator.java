@@ -18,8 +18,8 @@ public class ZipfKeyGenerator implements KeyGenerator{
         this.generator = generator;
         this.numberOfKeys = numberOfKeys;
         distribution = new ZipfDistribution(generator, numberOfKeys, skewness);
-//        Thread changeDistributionThread = new Thread(new ChangeDistributionRunnable());
-//        changeDistributionThread.start();
+        Thread changeDistributionThread = new Thread(new ChangeDistributionRunnable());
+        changeDistributionThread.start();
     }
 
     @Override
@@ -32,7 +32,7 @@ public class ZipfKeyGenerator implements KeyGenerator{
         @Override
         public void run() {
             while (true) {
-                Utils.sleep(24 * 1000);
+                Utils.sleep(500);
                 distribution = new ZipfDistribution(numberOfKeys, generator.nextDouble());
             }
         }

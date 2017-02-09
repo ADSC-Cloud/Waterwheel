@@ -31,7 +31,7 @@ public class LRUCacheTest {
 
     @Test
     public void testCacheCapacityReachedOldestRemoved() throws UnsupportedGenericException, IOException {
-        LRUCache<CacheMappingKey, CacheUnit> cache = new LRUCache<CacheMappingKey, CacheUnit>(2);
+        LRUCache<BlockId, CacheUnit> cache = new LRUCache<BlockId, CacheUnit>(2);
 
         CacheUnit cacheUnit = new CacheUnit();
         BTreeLeafNode leaf = new BTreeLeafNode(4);
@@ -46,7 +46,7 @@ public class LRUCacheTest {
         }
         CacheData data = new LeafNodeCacheData(leaf);
         cacheUnit.setCacheData(data);
-        CacheMappingKey mappingKey0 = new CacheMappingKey("file0", 0);
+        BlockId mappingKey0 = new BlockId("file0", 0);
         cache.put(mappingKey0, cacheUnit);
         assertEquals(leaf, cache.get(mappingKey0).getCacheData().getData());
 //        ((LeafNodeCacheData) cache.get(0).getCacheData()).getData().print();
@@ -64,7 +64,7 @@ public class LRUCacheTest {
         }
         data = new LeafNodeCacheData(leaf1);
         cacheUnit.setCacheData(data);
-        CacheMappingKey mappingKey1 = new CacheMappingKey("file1", 1);
+        BlockId mappingKey1 = new BlockId("file1", 1);
         cache.put(mappingKey1, cacheUnit);
         assertEquals(leaf1, cache.get(mappingKey1).getCacheData().getData());
 //        ((LeafNodeCacheData) cache.get(1).getCacheData()).getData().print();
@@ -82,7 +82,7 @@ public class LRUCacheTest {
         }
         data = new LeafNodeCacheData(leaf2);
         cacheUnit.setCacheData(data);
-        CacheMappingKey mappingKey2 = new CacheMappingKey("file2", 2);
+        BlockId mappingKey2 = new BlockId("file2", 2);
         cache.put(mappingKey2, cacheUnit);
         assertEquals(leaf1, cache.get(mappingKey1).getCacheData().getData());
         assertEquals(leaf2, cache.get(mappingKey2).getCacheData().getData());

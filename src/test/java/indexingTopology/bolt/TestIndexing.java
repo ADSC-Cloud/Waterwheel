@@ -35,13 +35,10 @@ public class TestIndexing {
     private Long total;
     private final int btreeOrder;
     private int numTuples;
-    private int chunkId;
+
     private double indexValue;
-    private int numTuplesBeforeWritting;
     private AtomicInteger numberOfQueries;
     private Long totalTime;
-//    private ReentrantLock lock;
-
 
     private MemChunk chunk;
 
@@ -73,6 +70,12 @@ public class TestIndexing {
 
     private Semaphore chuckFilled = new Semaphore(0);
 
+    private int numberOfRebuild;
+
+    private Long totalRebuildTime;
+
+    private AtomicInteger chunkId;
+
     public TestIndexing(int btreeOrder, int numberOfIndexingThreads, int numberOfQueryThreads, boolean templateMode) {
 
         this.numberOfQueryThreads = numberOfQueryThreads;
@@ -82,15 +85,18 @@ public class TestIndexing {
         inputQueue = new ArrayBlockingQueue<Pair>(TopologyConfig.PENDING_QUEUE_CAPACITY);
 
         this.btreeOrder = btreeOrder;
-        chunkId = 0;
+        chunkId = new AtomicInteger(0);
         total = 0L;
         numTuples = 0;
-        numTuplesBeforeWritting = 1;
         count = 0;
 
         totalTime = 0L;
 
         totalQueryTime = 0L;
+
+        numberOfRebuild = 0;
+
+        totalRebuildTime = 0L;
 
         indexedData = new BTree(btreeOrder);
 
@@ -120,7 +126,7 @@ public class TestIndexing {
                 TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
                 RandomGenerator randomGenerator = new Well19937c();
                 randomGenerator.setSeed(1000);
-                KeyGenerator keyGenerator = new ZipfKeyGenerator( 200048, 0.01, randomGenerator);
+                KeyGenerator keyGenerator = new ZipfKeyGenerator( 200048, 0.3, randomGenerator);
 //                KeyGenerator keyGenerator = new RoundRobinKeyGenerator(TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK);
 //                KeyGenerator keyGenerator = new UniformKeyGenerator();
 
@@ -158,7 +164,7 @@ public class TestIndexing {
                                 e.printStackTrace();
                             }
                         }
-                        System.out.println(System.currentTimeMillis() - start);
+//                        System.out.println(System.currentTimeMillis() - start);
                         totalTime += System.currentTimeMillis() - start;
                         try {
                             // synchronizing indexing threads
@@ -169,19 +175,22 @@ public class TestIndexing {
                             indexingThreads.clear();
                             indexingRunnable = new IndexingRunnable();
 
+                            executedInChekingThread.set(0L);
+
 //                            queryRunnable.terminate();
-                            for (Thread thread : queryThreads) {
-                                try {
-                                    thread.join();
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                            queryThreads.clear();
-                            queryRunnable = new QueryRunnable();
+//                            for (Thread thread : queryThreads) {
+//                                try {
+//                                    thread.join();
+//                                } catch (InterruptedException e) {
+//                                    e.printStackTrace();
+//                                }
+//                            }
+//                            queryThreads.clear();
+//                            queryRunnable = new QueryRunnable();
 //                            System.out.println("All the indexing threads are terminated!");
 
                             numTuples = 0;
+                            chunkId.incrementAndGet();
 
                             // synchronizing query threads
 //                        queryRunnable.terminate();
@@ -224,6 +233,11 @@ public class TestIndexing {
                             }
                         }
                         indexingThreads.clear();
+                        System.out.println("total rebuild time " + totalRebuildTime);
+                        System.out.println("average rebuild time " + (totalRebuildTime / numberOfChunks));
+                        System.out.println("number of rebuild " + numberOfRebuild);
+                        System.out.println("total time " + totalTime);
+                        System.out.println("average time in a chunk" + totalTime / numberOfChunks);
                         break;
                     }
 
@@ -265,30 +279,34 @@ public class TestIndexing {
             @Override
             public void run() {
 
-                ArrayList<Pair> drainer = new ArrayList<>();
-
                 while (true) {
-
-
-                    if (executedInChekingThread.get() >= TopologyConfig.SKEWNESS_DETECTION_THRESHOLD) {
+//                    System.out.println(chunkId);
+//                    System.out.println(executedInChekingThread.get());
+//                    System.out.println(indexedData.getSkewnessFactor());
+                    if (chunkId.get() > 0 && executedInChekingThread.get() >= TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK * TopologyConfig.SKEWNESS_DETECTION_THRESHOLD) {
+//                        System.out.println(indexedData.getSkewnessFactor());
                         if (indexedData.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
                             indexingRunnable.setInputExhausted();
                             for (Thread thread : indexingThreads) {
                                 try {
                                     thread.join();
+//                                    System.out.println(String.format("Thread %d is joined!", thread.getId()));
                                 } catch (InterruptedException e) {
                                     e.printStackTrace();
                                 }
                             }
                             indexingThreads.clear();
+                            indexingRunnable = new IndexingRunnable();
 
-                            System.out.println("begin to rebuild the template!!!");
+//                            System.out.println("begin to rebuild the template!!!");
 
                             long start = System.currentTimeMillis();
 
                             indexedData = templateUpdater.createTreeWithBulkLoading(indexedData);
 
-                            System.out.println("Time used to update template " + (System.currentTimeMillis() - start));
+                            totalRebuildTime += (System.currentTimeMillis() - start);
+
+                            ++numberOfRebuild;
 
 //                        System.out.println("New tree has been built");
 //
@@ -618,6 +636,6 @@ public class TestIndexing {
 
     public static void main(String[] args) {
         int bTreeOrder = 64;
-        TestIndexing test = new TestIndexing(bTreeOrder, 1, 0, true);
+        TestIndexing test = new TestIndexing(bTreeOrder, 1, 1, true);
     }
 }
