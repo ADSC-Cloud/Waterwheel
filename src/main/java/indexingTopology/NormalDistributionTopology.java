@@ -41,11 +41,29 @@ public class NormalDistributionTopology {
 
 
         DataSchema schema=new DataSchema(fieldNames,valueTypes);*/
-        List<String> fieldNames = new ArrayList<String>(Arrays.asList("user_id", "id_1", "id_2", "ts_epoch",
-                "date", "time", "latitude", "longitude"));
-        List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
-                Double.class, Double.class, Double.class, Double.class, Double.class));
-        DataSchema schema = new DataSchema(fieldNames, valueTypes, "user_id");
+//        List<String> fieldNames = new ArrayList<String>(Arrays.asList("user_id", "id_1", "id_2", "ts_epoch",
+//                "date", "time", "latitude", "longitude"));
+//        List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
+//                Double.class, Double.class, Double.class, Double.class, Double.class));
+//        DataSchema schema = new DataSchema(fieldNames, valueTypes, "user_id");
+
+        DataSchema schema = new DataSchema();
+        schema.addDoubleField("user_id");
+        schema.addDoubleField("id_1");
+        schema.addDoubleField("id_2");
+        schema.addDoubleField("ts_epoch");
+        schema.addDoubleField("date");
+        schema.addDoubleField("time");
+        schema.addDoubleField("latitude");
+        schema.addDoubleField("longitude");
+        schema.setPrimaryIndexField("user_id");
+
+
+        DataSchema schemaWithTimestamp = schema.duplicate();
+        schemaWithTimestamp.addDoubleField("timestamp");
+
+
+
 
         Double lowerBound = 0.0;
 
@@ -59,12 +77,12 @@ public class NormalDistributionTopology {
 
         builder.setSpout(TupleGenerator, new NormalDistributionGenerator(schema), 1);
 
-        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher(schema, lowerBound, upperBound, enableLoadBalance))
+        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher(schemaWithTimestamp, lowerBound, upperBound, enableLoadBalance, false))
                 .shuffleGrouping(TupleGenerator, Streams.IndexStream)
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 
-        builder.setBolt(IndexerBolt, new IngestionBolt("user_id", schema),2)
+        builder.setBolt(IndexerBolt, new IngestionBolt("user_id", schemaWithTimestamp),2)
                 .setNumTasks(1)
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream);
@@ -76,12 +94,12 @@ public class NormalDistributionTopology {
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.TimestampUpdateStream);
 
-        builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner(schema), 4)
+        builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner(schemaWithTimestamp), 4)
 //                .fieldsGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream, new Fields("fileName"));
                 .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream);
 //                .shuffleGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream);
 
-        builder.setBolt(ResultMergeBolt, new ResultMerger(schema))
+        builder.setBolt(ResultMergeBolt, new ResultMerger(schemaWithTimestamp))
                 .allGrouping(RangeQueryChunkScannerBolt, Streams.FileSystemQueryStream)
                 .allGrouping(IndexerBolt, Streams.BPlusTreeQueryStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryInformationStream)

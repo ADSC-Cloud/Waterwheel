@@ -1,76 +1,110 @@
 package indexingTopology;
 
-import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
-import java.nio.ByteBuffer;
-import java.nio.channels.InterruptedByTimeoutException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by parijatmazumdar on 17/09/15.
  */
 public class DataSchema implements Serializable {
-    private final Fields dataFields;
-    private final List<Class> valueTypes;
-    private final String indexField;
+
+    static class DataType {
+        DataType(Class type, int length) {
+            this.type = type;
+            this.length = length;
+        }
+        Class type;
+        int length;
+    }
+
+    public DataSchema(){};
 
     public DataSchema(List<String> fieldNames,List<Class> valueTypes, String indexField) {
         assert fieldNames.size()==valueTypes.size() : "number of fields should be " +
                 "same as the number of value types provided";
-        dataFields=new Fields(fieldNames);
-        this.valueTypes=valueTypes;
+        for(int i = 0; i < valueTypes.size(); i++) {
+            if (valueTypes.get(i).equals(Integer.class)) {
+                addIntField(fieldNames.get(i));
+            } else if (valueTypes.get(i).equals(Long.class)) {
+                addLongField(fieldNames.get(i));
+            } else if (valueTypes.get(i).equals(Double.class)) {
+                addDoubleField(fieldNames.get(i));
+            } else if (valueTypes.get(i).equals(String.class)) {
+                throw new RuntimeException("String is not support in the constructor.");
+            }
+        }
         this.indexField = indexField;
     }
 
-    public Fields getFieldsObject() { return dataFields; }
-    public Values getValuesObject(Tuple tuple) throws IOException {
-        Values values=new Values();
-        for (int i=0;i<valueTypes.size();i++) {
-            if (valueTypes.get(i).equals(Double.class)) {
-                values.add(tuple.getDouble(i));
-            }
-            else if (valueTypes.get(i).equals(String.class)) {
-                values.add(tuple.getString(i));
-            }
-            else if (valueTypes.get(i).equals(Integer.class)) {
-                values.add(tuple.getInteger(i));
-            }
-            else if (valueTypes.get(i).equals(Long.class)) {
-                values.add(tuple.getLong(i));
-            }
-            else {
-                throw new IOException("Only classes supported till now are string and double");
-            }
-        }
+    private final Map<String, DataType> dataFields = new HashMap<>();
+    private final List<String> fieldNames = new ArrayList<>();
+    private final List<DataType> dataTypes = new ArrayList<>();
+    private String indexField;
 
-        values.add(tuple.getLong(valueTypes.size()));
-
-        return values;
+    public void setPrimaryIndexField(String name) {
+        indexField = name;
     }
 
-    public Values getValuesObject(String [] valuesAsString) throws IOException {
-        if (dataFields.size() != valuesAsString.length) throw new IOException("number of values provided does not " +
+    public void addDoubleField(String name) {
+        final DataType dataType = new DataType(Double.class, Double.BYTES);
+        fieldNames.add(name);
+        dataTypes.add(dataType);
+        dataFields.put(name, dataType);
+    }
+
+    public void addIntField(String name) {
+        final DataType dataType = new DataType(Integer.class, Integer.BYTES);
+        fieldNames.add(name);
+        dataTypes.add(dataType);
+        dataFields.put(name, dataType);
+    }
+
+    public void addVarcharField(String name, int length) {
+        final DataType dataType = new DataType(String.class, length);
+        fieldNames.add(name);
+        dataTypes.add(dataType);
+        dataFields.put(name, dataType);
+    }
+
+    public void addLongField(String name) {
+        final DataType dataType = new DataType(Long.class, Long.BYTES);
+        fieldNames.add(name);
+        dataTypes.add(dataType);
+        dataFields.put(name, dataType);
+    }
+
+
+    public Fields getFieldsObject() {
+        return new Fields(fieldNames);
+    }
+
+    public Values getValuesObject(String [] valuesAsString) throws RuntimeException {
+        if (dataFields.size() != valuesAsString.length) throw new RuntimeException("number of values provided does not " +
                 "match number of fields in data schema");
 
         Values values = new Values();
-        for (int i=0;i < valueTypes.size();i++) {
-            if (valueTypes.get(i).equals(Double.class)) {
+        for (int i=0;i < dataTypes.size();i++) {
+            if (dataTypes.get(i).equals(Double.class)) {
                 values.add(Double.parseDouble(valuesAsString[i]));
             }
-            else if (valueTypes.get(i).equals(String.class)) {
+            else if (dataTypes.get(i).equals(String.class)) {
                 values.add(valuesAsString[i]);
-            } else if (valueTypes.get(i).equals(Integer.class)) {
+            } else if (dataTypes.get(i).equals(Integer.class)) {
                 values.add(Integer.parseInt(valuesAsString[i]));
+            } else if (dataTypes.get(i).equals(Long.class)) {
+                values.add(Long.parseLong(valuesAsString[i]));
             } else {
-                throw new IOException("Only classes supported till now are string and double");
+                throw new RuntimeException("Only classes supported till now are string and double");
             }
         }
 
@@ -136,22 +170,19 @@ public class DataSchema implements Serializable {
 
     public byte[] serializeTuple(Tuple t) throws IOException {
         Output output = new Output(1000, 2000000);
-        for (int i = 0; i < valueTypes.size(); i++) {
-            if (valueTypes.get(i).equals(Double.class)) {
+        for (int i = 0; i < dataTypes.size(); i++) {
+            if (dataTypes.get(i).equals(Double.class)) {
                 output.writeDouble(t.getDouble(i));
-            } else if (valueTypes.get(i).equals(String.class)) {
+            } else if (dataTypes.get(i).equals(String.class)) {
                 output.writeString(t.getString(i));
-            } else if (valueTypes.get(i).equals(Integer.class)) {
+            } else if (dataTypes.get(i).equals(Integer.class)) {
                 output.writeInt(t.getInteger(i));
-            } else if (valueTypes.get(i).equals(Long.class)) {
+            } else if (dataTypes.get(i).equals(Long.class)) {
                 output.writeLong(t.getLong(i));
             } else {
                 throw new IOException("Only classes supported till now are string and double");
             }
         }
-
-        //As we add timestamp for a field, so we need to serialize the timestamp
-        output.writeLong(t.getLong(valueTypes.size()));
         return output.toBytes();
     }
 
@@ -159,14 +190,14 @@ public class DataSchema implements Serializable {
     public Values deserialize(byte [] b) throws IOException {
         Values values = new Values();
         Input input = new Input(b);
-        for (int i = 0; i < valueTypes.size(); i++) {
-            if (valueTypes.get(i).equals(Double.class)) {
+        for (int i = 0; i < dataTypes.size(); i++) {
+            if (dataTypes.get(i).equals(Double.class)) {
                 values.add(input.readDouble());
-            } else if (valueTypes.get(i).equals(String.class)) {
+            } else if (dataTypes.get(i).equals(String.class)) {
                 values.add(input.readString());
-            } else if (valueTypes.get(i).equals(Integer.class)) {
+            } else if (dataTypes.get(i).equals(Integer.class)) {
                 values.add(input.readInt());
-            } else if (valueTypes.get(i).equals(Long.class)) {
+            } else if (dataTypes.get(i).equals(Long.class)) {
                 values.add(input.readLong());
             } else {
                 throw new IOException("Only classes supported till now are string and double");
@@ -181,7 +212,16 @@ public class DataSchema implements Serializable {
         return indexField;
     }
 
-    public int getNumberOfFileds() {
+    public int getNumberOfFields() {
         return dataFields.size();
+    }
+
+    public DataSchema duplicate() {
+        DataSchema ret = new DataSchema();
+        ret.dataTypes.addAll(dataTypes);
+        ret.indexField = indexField;
+        ret.dataFields.putAll(dataFields);
+        ret.fieldNames.addAll(fieldNames);
+        return ret;
     }
 }

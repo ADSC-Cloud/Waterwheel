@@ -30,11 +30,16 @@ public class TexiTrajectoryTopology {
     public static void main(String[] args) throws Exception {
 
         TopologyBuilder builder = new TopologyBuilder();
-        List<String> fieldNames = new ArrayList<String>(Arrays.asList("id", "zcode", "payload"));
-        List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, String.class));
-        DataSchema schema = new DataSchema(fieldNames, valueTypes, "zcode");
-
         final int payloadSize = 10;
+        DataSchema schema = new DataSchema();
+        schema.addDoubleField("id");
+        schema.addDoubleField("zcode");
+        schema.addVarcharField("payload", payloadSize);
+        schema.setPrimaryIndexField("zcode");
+
+        DataSchema schemaWithTimestamp = schema.duplicate();
+        schemaWithTimestamp.addDoubleField("timestamp");
+
 
         final double x1 = 0;
         final double x2 = 1000;
@@ -57,13 +62,13 @@ public class TexiTrajectoryTopology {
 
         builder.setSpout(TupleGenerator, new TexiTrajectoryGenerator(schema, generator, payloadSize, city), 1);
 
-        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher(schema, lowerBound, upperBound, enableLoadBalance), 1)
+        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher(schemaWithTimestamp, lowerBound, upperBound, enableLoadBalance, false), 1)
                 .shuffleGrouping(TupleGenerator, Streams.IndexStream)
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 
 
-        builder.setBolt(IndexerBolt, new IngestionBolt(schema.getIndexField(), schema), 4)
+        builder.setBolt(IndexerBolt, new IngestionBolt(schemaWithTimestamp.getIndexField(), schemaWithTimestamp), 4)
 
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream) // direct grouping should be used.
@@ -77,11 +82,11 @@ public class TexiTrajectoryTopology {
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.TimestampUpdateStream);
 
-        builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner(schema), 4)
+        builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner(schemaWithTimestamp), 4)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream);
 //                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream); //make comparision with our method.
 
-        builder.setBolt(ResultMergeBolt, new ResultMerger(schema), 1)
+        builder.setBolt(ResultMergeBolt, new ResultMerger(schemaWithTimestamp), 1)
                 .allGrouping(RangeQueryChunkScannerBolt, Streams.FileSystemQueryStream)
                 .allGrouping(IndexerBolt, Streams.BPlusTreeQueryStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryInformationStream)
