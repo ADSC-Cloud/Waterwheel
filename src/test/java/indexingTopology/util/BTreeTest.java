@@ -5,6 +5,7 @@ import com.esotericsoftware.kryo.io.Input;
 import indexingTopology.DataSchema;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
+import org.apache.storm.tuple.Values;
 import org.junit.Test;
 
 import java.io.*;
@@ -47,6 +48,11 @@ public class BTreeTest {
             bTree.insert((double) key, bytes);
         }
 
+//        bTree.printBtree();
+
+        for (Integer key : keys) {
+            assertEquals(1, bTree.searchRange((double) key, (double) key).size());
+        }
 
         BTree newBTree = bTree.clone();
 
@@ -88,9 +94,11 @@ public class BTreeTest {
         List<Integer> keys = new ArrayList<>();
 
         for (int i = 0; i < numberOfTuples; ++i) {
-            Integer key = random.nextInt();
-            keys.add(key);
+//            Integer key = random.nextInt();
+            keys.add(i);
         }
+
+        Collections.shuffle(keys);
 
         for (Integer key : keys) {
             List<Double> values = new ArrayList<>();
@@ -128,9 +136,11 @@ public class BTreeTest {
         List<Integer> keys = new ArrayList<>();
 
         for (int i = 0; i < numberOfTuples; ++i) {
-            Integer key = random.nextInt();
-            keys.add(key);
+//            Integer key = random.nextInt();
+            keys.add(i);
         }
+
+        Collections.shuffle(keys);
 
         for (Integer key : keys) {
             List<Double> values = new ArrayList<>();
@@ -163,9 +173,10 @@ public class BTreeTest {
         List<Integer> keys = new ArrayList<>();
 
         for (int i = 0; i < numberOfTuples; ++i) {
-            Integer key = random.nextInt();
-            keys.add(key);
+            keys.add(i);
         }
+
+        Collections.shuffle(keys);
 
         for (Integer key : keys) {
             List<Double> values = new ArrayList<>();
@@ -207,6 +218,8 @@ public class BTreeTest {
             keys.add(i);
         }
 
+        Collections.shuffle(keys);
+
         for (Integer key : keys) {
             List<Double> values = new ArrayList<>();
             values.add((double) key);
@@ -217,11 +230,11 @@ public class BTreeTest {
             bTree.insert(key*1.0, bytes);
         }
 
+//        bTree.printBtree();
 
         for (Integer key : keys) {
-            assertEquals(1, bTree.searchRange(key*1.0, key*1.0).size());
+            assertEquals(1, bTree.searchRange(key * 1.0, key * 1.0).size());
         }
-
         //Test template mode
        bTree.clearPayload();
 
@@ -257,9 +270,10 @@ public class BTreeTest {
         List<Integer> keys = new ArrayList<>();
 
         for (int i = 0; i < numberOfTuples; ++i) {
-            Integer key = random.nextInt();
-            keys.add(key);
+            keys.add(i);
         }
+
+        Collections.shuffle(keys);
 
         for (Integer key : keys) {
             List<Double> values = new ArrayList<>();
@@ -297,10 +311,10 @@ public class BTreeTest {
 
     @Test
     public void testSearchRangeLeftKeyAndRightAllTuples() throws Exception, UnsupportedGenericException {
-        int order = 32;
+        int order = 4;
         BTree bTree = new BTree(order);
 
-        int numberOfTuples = 10000;
+        int numberOfTuples = 32;
 
         List<Integer> keys = new ArrayList<>();
 
@@ -319,6 +333,8 @@ public class BTreeTest {
             byte[] bytes = serializeIndexValue(values);
             bTree.insert(key*1.0, bytes);
         }
+
+//        bTree.printBtree();
 
         assertEquals(numberOfTuples, bTree.searchRange(0.0, numberOfTuples*1.0).size());
 
@@ -372,7 +388,12 @@ public class BTreeTest {
 
         Collections.sort(keys);
 
+//        bTree.printBtree();
+
         List<byte[]> tuples = bTree.searchRange(keys.get(300)*1.0, keys.get(512)*1.0);
+//        for (int i = 0; i < tuples.size(); ++i) {
+//            System.out.println(deserialize(tuples.get(i)));
+//        }
         assertEquals(213, tuples.size());
 
         tuples = bTree.searchRange(keys.get(1022)*1.0, keys.get(1023)*1.0);
@@ -487,4 +508,21 @@ public class BTreeTest {
         return bos.toByteArray();
     }
 
+    public Values deserialize(byte [] b) throws IOException {
+        Values values = new Values();
+        int offset = 0;
+        for (int i = 0; i < valueTypes.size(); i++) {
+            if (valueTypes.get(i).equals(Double.class)) {
+                int len = Double.SIZE/Byte.SIZE;
+                double val = ByteBuffer.wrap(b, offset, len).getDouble();
+                values.add(val);
+                offset += len;
+            }
+        }
+
+        int len = Double.SIZE / Byte.SIZE;
+        Double val = ByteBuffer.wrap(b, offset, len).getDouble();
+        values.add(val);
+        return values;
+    }
 }

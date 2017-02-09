@@ -24,8 +24,11 @@ import java.util.concurrent.atomic.AtomicLong;
  * Created by acelzj on 7/2/17.
  */
 public class TestIndexing {
-    private ArrayBlockingQueue<Pair> queue;
+    private ArrayBlockingQueue<Pair> inputQueue;
+
     private BTree indexedData;
+
+    private TemplateUpdater templateUpdater;
 
 
     //    CopyOnWriteArrayList<Long> timer = new CopyOnWriteArrayList<Long>();
@@ -50,6 +53,8 @@ public class TestIndexing {
 
     private List<Double> values;
 
+    private AtomicLong executedInChekingThread;
+
     private int numberOfChunks = 20;
 
     private IndexingRunnable indexingRunnable;
@@ -64,6 +69,8 @@ public class TestIndexing {
     private int numberOfQueryThreads;
     private List<Thread> queryThreads = new ArrayList<Thread>();
 
+    private Thread checkingSkewnessThread;
+
     private Semaphore chuckFilled = new Semaphore(0);
 
     public TestIndexing(int btreeOrder, int numberOfIndexingThreads, int numberOfQueryThreads, boolean templateMode) {
@@ -72,7 +79,7 @@ public class TestIndexing {
         this.numberOfIndexingThreads = numberOfIndexingThreads;
         this.templateMode = templateMode;
 
-        queue = new ArrayBlockingQueue<Pair>(TopologyConfig.PENDING_QUEUE_CAPACITY);
+        inputQueue = new ArrayBlockingQueue<Pair>(TopologyConfig.PENDING_QUEUE_CAPACITY);
 
         this.btreeOrder = btreeOrder;
         chunkId = 0;
@@ -92,6 +99,10 @@ public class TestIndexing {
         fieldNames = new ArrayList<String>(Arrays.asList("id", "zcode", "payload"));
         valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, String.class));
 
+        templateUpdater = new TemplateUpdater(btreeOrder);
+
+        executedInChekingThread = new AtomicLong(0);
+
         Thread emitThread = new Thread(new Runnable() {
             public void run() {
                 final double x1 = 0;
@@ -107,10 +118,11 @@ public class TestIndexing {
                 long timestamp = 0;
 
                 TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
-//                RandomGenerator randomGenerator = new Well19937c();
-//                randomGenerator.setSeed(1000);
-//            KeyGenerator keyGenerator = new ZipfKeyGenerator( 200048, 0.01, randomGenerator);
-                KeyGenerator keyGenerator = new RoundRobinKeyGenerator(TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK);
+                RandomGenerator randomGenerator = new Well19937c();
+                randomGenerator.setSeed(1000);
+                KeyGenerator keyGenerator = new ZipfKeyGenerator( 200048, 0.01, randomGenerator);
+//                KeyGenerator keyGenerator = new RoundRobinKeyGenerator(TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK);
+//                KeyGenerator keyGenerator = new UniformKeyGenerator();
 
                 while (true) {
                     try {
@@ -124,7 +136,7 @@ public class TestIndexing {
 //
                         byte[] serializedTuples = serializeValues(values);
 
-                        queue.put(new Pair(key, serializedTuples));
+                        inputQueue.put(new Pair(key, serializedTuples));
                         ++numTuples;
                         ++total;
 //                        System.out.println(numTuples);
@@ -136,16 +148,17 @@ public class TestIndexing {
 
                     if (numTuples >= TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK) {
 //                        System.out.println("A chunk has been full");
-//                        System.out.println(queue.size());
+//                        System.out.println(inputQueue.size());
                         chuckFilled.release();
                         long start = System.currentTimeMillis();
-                        while (!queue.isEmpty()) {
+                        while (!inputQueue.isEmpty()) {
                             try {
                                 Thread.sleep(1);
                             } catch (InterruptedException e) {
                                 e.printStackTrace();
                             }
                         }
+                        System.out.println(System.currentTimeMillis() - start);
                         totalTime += System.currentTimeMillis() - start;
                         try {
                             // synchronizing indexing threads
@@ -156,7 +169,7 @@ public class TestIndexing {
                             indexingThreads.clear();
                             indexingRunnable = new IndexingRunnable();
 
-                            queryRunnable.terminate();
+//                            queryRunnable.terminate();
                             for (Thread thread : queryThreads) {
                                 try {
                                     thread.join();
@@ -187,7 +200,7 @@ public class TestIndexing {
 //                                    populateInputQueueWithMoreTuples(5000);
                                     waitForInputQueueFilled();
                                     createIndexingThread();
-                                    createQueryThread();
+//                                    createQueryThread();
                                 }
                             }).start();
 
@@ -200,19 +213,19 @@ public class TestIndexing {
 
 //                    System.out.println(numberOfQueries.get());
 
-//                    if (total >= numberOfChunks * TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK) {
-//                        System.out.println(String.format("Index throughput = %f tuple / s", numberOfChunks * TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK / (double) (totalTime) * 1000));
-//                        indexingRunnable.setInputExhausted();
-//                        for (Thread thread : indexingThreads) {
-//                            try {
-//                                thread.join();
-//                            } catch (InterruptedException e) {
-//                                e.printStackTrace();
-//                            }
-//                        }
-//                        indexingThreads.clear();
-//                        break;
-//                    }
+                    if (total >= numberOfChunks * TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK) {
+                        System.out.println(String.format("Index throughput = %f tuple / s", numberOfChunks * TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK / (double) (totalTime) * 1000));
+                        indexingRunnable.setInputExhausted();
+                        for (Thread thread : indexingThreads) {
+                            try {
+                                thread.join();
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        indexingThreads.clear();
+                        break;
+                    }
 
 //                    System.out.println(numberOfQueries.get());
 
@@ -246,6 +259,50 @@ public class TestIndexing {
         });
         emitThread.start();
 
+
+        class CheckingSkewnessRunnable implements Runnable {
+
+            @Override
+            public void run() {
+
+                ArrayList<Pair> drainer = new ArrayList<>();
+
+                while (true) {
+
+
+                    if (executedInChekingThread.get() >= TopologyConfig.SKEWNESS_DETECTION_THRESHOLD) {
+                        if (indexedData.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
+                            indexingRunnable.setInputExhausted();
+                            for (Thread thread : indexingThreads) {
+                                try {
+                                    thread.join();
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                            indexingThreads.clear();
+
+                            System.out.println("begin to rebuild the template!!!");
+
+                            long start = System.currentTimeMillis();
+
+                            indexedData = templateUpdater.createTreeWithBulkLoading(indexedData);
+
+                            System.out.println("Time used to update template " + (System.currentTimeMillis() - start));
+
+//                        System.out.println("New tree has been built");
+//
+                            executedInChekingThread.set(0L);
+//
+                            createIndexingThread();
+                        }
+                    }
+                }
+            }
+        }
+
+
+
 //        populateInputQueueWithMoreTuples(5000);
         waitForInputQueueFilled();
 
@@ -253,7 +310,10 @@ public class TestIndexing {
 
         createIndexingThread();
 
-        createQueryThread();
+        checkingSkewnessThread = new Thread(new CheckingSkewnessRunnable());
+        checkingSkewnessThread.start();
+
+//        createQueryThread();
 
 
 //        Thread queryThread = new Thread(new Runnable() {
@@ -309,16 +369,15 @@ public class TestIndexing {
         public void run() {
             int count = 0;
             while (true) {
-                try {
+//                try {
                     if(terminating) {
                         break;
                     }
 
-                    Thread.sleep(1);
 
 //                    Thread.sleep(1);
-                    Double leftKey = (double) 1.0;
-                    Double rightKey = (double) 64;
+                    Double leftKey = 0.0;
+                    Double rightKey = 0.01;
 //                    Double indexValue = random.nextDouble() * 700 + 300;
 //                        s2.acquire();
                     long start = System.currentTimeMillis();
@@ -350,6 +409,7 @@ public class TestIndexing {
 //                        byte[] nextLineInBytes = newline.getBytes();
 //                        System.out.println(String.format("%d queries executed!", numberOfQueries));
                         System.out.println("latency per query: " + totalQueryTime / (double)5000 + " ms");
+                        totalQueryTime = 0L;
                         numberOfQueries.set(0);
                         break;
 //                        totalTime = new AtomicLong(0);
@@ -358,10 +418,7 @@ public class TestIndexing {
 //                } catch (IOException e) {
 //                    e.printStackTrace();
 //                    break;
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    break;
-                }
+//                }
             }
 //            System.out.println(String.format("Query thread %d is terminated!", Thread.currentThread().getId()));
 //            System.out.println(String.format("%2.4f ms per query.", totalTime.get() / (double) numberOfQueries / 1000000));
@@ -458,8 +515,12 @@ public class TestIndexing {
                 try {
 //                        if(!first)
 //                            Thread.sleep(100);
-                    queue.drainTo(drainer,256);
-//                        Pair pair = queue.poll(10, TimeUnit.MILLISECONDS);
+                    if(inputExhausted)
+                        break;
+
+                    inputQueue.drainTo(drainer,256);
+//                        Pair pair = inputQueue.poll(10, TimeUnit.MILLISECONDS);
+
                     if(drainer.size() == 0) {
                         if(inputExhausted)
                             break;
@@ -472,7 +533,8 @@ public class TestIndexing {
                         final byte[] serializedTuple = (byte[]) pair.getValue();
                         indexedData.insert(indexValue, serializedTuple);
                     }
-                    executed.getAndAdd(drainer.size());
+                    executed.addAndGet(drainer.size());
+                    executedInChekingThread.addAndGet(drainer.size());
 //                    total.addAndGet(drainer.size());
                     drainer.clear();
                 } catch (UnsupportedGenericException e) {
@@ -507,9 +569,9 @@ public class TestIndexing {
 //                public void run() {
 //                    long count = 0;
 //                    while (true) {
-//                        if (!queue.isEmpty()) {
+//                        if (!inputQueue.isEmpty()) {
 //                            try {
-//                                Pair pair = queue.take();
+//                                Pair pair = inputQueue.take();
 //                                Double indexValue = (Double) pair.getKey();
 //                                Integer offset = (Integer) pair.getValue();
 ////                            s2.acquire();
@@ -556,6 +618,6 @@ public class TestIndexing {
 
     public static void main(String[] args) {
         int bTreeOrder = 64;
-        TestIndexing test = new TestIndexing(bTreeOrder, 4, 1, true);
+        TestIndexing test = new TestIndexing(bTreeOrder, 1, 0, true);
     }
 }

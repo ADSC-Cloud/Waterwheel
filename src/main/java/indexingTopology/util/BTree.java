@@ -92,12 +92,15 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
         List<byte[]> tuples = new ArrayList<>();
         BTreeLeafNode leafLeft;
         BTreeLeafNode leafRight;
-        BTreeNode tmpNode;
         if (!templateMode) {
-            tmpNode = root;
-            tmpNode.acquireReadLock();
-            tuples.addAll(searchRangeInTemplate(leftKey, rightKey));
-            tmpNode.releaseReadLock();
+            BTreeNode tmpRoot = root;
+            tmpRoot.acquireReadLock();
+            while (tmpRoot != root) {
+                tmpRoot.releaseReadLock();
+                tmpRoot = root;
+                root.acquireReadLock();
+            }
+            tuples.addAll(searchRangeInBaseline(leftKey, rightKey));
 //            System.out.println(tmpNode == root);
         } else {
             tuples.addAll(searchRangeInTemplate(leftKey, rightKey));
@@ -106,6 +109,59 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
         return tuples;
     }
 
+    public List<byte[]> searchRangeInBaseline(TKey leftKey, TKey rightKey) {
+		assert leftKey.compareTo(rightKey) <= 0 : "leftKey provided is greater than the right key";
+		List<byte[]> tuples = new ArrayList<>();
+		BTreeNode tmpRoot = root;
+		BTreeNode currentNode = root;
+		if (currentNode.getNodeType() == TreeNodeType.LeafNode) {
+			tuples.addAll(((BTreeLeafNode) currentNode).getTuples(leftKey, rightKey));
+			root.releaseReadLock();
+		} else {
+			List<BTreeNode> ancestors = new ArrayList<>();
+			ancestors.add(currentNode);
+			tuples.addAll(searchTuplesFromCurrentNode(currentNode, leftKey, rightKey, ancestors));
+//			System.out.println("ancestors!!!");
+			for (BTreeNode ancestor : ancestors) {
+//				ancestor.print();
+				ancestor.releaseReadLock();
+			}
+		}
+		return tuples;
+	}
+
+	private List<byte[]> searchTuplesFromCurrentNode(BTreeNode currentNode, TKey leftKey, TKey rightKey, List<BTreeNode> ancestors) {
+		List<byte[]> tuples = new ArrayList<>();
+//		currentNode.print();
+		int minIndex = currentNode.search(leftKey);
+		int maxIndex = currentNode.search(rightKey);
+//		currentNode.print();
+//		System.out.println("min index " + minIndex);
+//		System.out.println("max index " + maxIndex);
+		if (currentNode.getNodeType() == TreeNodeType.LeafNode) {
+//			currentNode.print();
+			return ((BTreeLeafNode) currentNode).getTuples(leftKey, rightKey);
+		} else {
+			BTreeNode node;
+			if (minIndex == maxIndex) {
+				node = ((BTreeInnerNode) currentNode).getChild(minIndex);
+				node.acquireReadLock();
+//				currentNode.print();
+				currentNode.releaseReadLock();
+				ancestors.remove(currentNode);
+				ancestors.add(node);
+				tuples.addAll(searchTuplesFromCurrentNode(node, leftKey, rightKey, ancestors));
+			} else {
+				for (int i = minIndex; i <= maxIndex; ++i) {
+					node = ((BTreeInnerNode) currentNode).getChild(i);
+					node.acquireReadLock();
+					ancestors.add(node);
+					tuples.addAll(searchTuplesFromCurrentNode(node, leftKey, rightKey, ancestors));
+				}
+			}
+		}
+		return tuples;
+	}
 
 
     public List<byte[]> searchRangeInTemplate(TKey leftKey, TKey rightKey) {
@@ -145,6 +201,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	 * @param key
 	 * @return the leaf node should contain the key
 	 */
+	/*
 	private BTreeLeafNode findLeafNodeShouldContainKeyInReader(TKey key) {
 
         BTreeNode tmpRoot = root;
@@ -164,6 +221,17 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
         }
         return (BTreeLeafNode) currentNode;
 
+	}
+    */
+
+	private BTreeLeafNode findLeafNodeShouldContainKeyInReader(BTreeNode currentNode, TKey key) {
+		while (currentNode.getNodeType() == TreeNodeType.InnerNode) {
+			BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChildWithSpecificIndex(key);
+			node.acquireReadLock();
+			currentNode.releaseReadLock();
+			currentNode = node;
+		}
+		return (BTreeLeafNode) currentNode;
 	}
 
 	/**
@@ -243,6 +311,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		q.add(this.root);
 		while (!q.isEmpty()) {
 			BTreeNode<TKey> curr = q.remove();
+			assert curr.lock.getReadLockCount() == 0;
 			if (curr.getNodeType().equals(TreeNodeType.LeafNode)) {
 				((BTreeInnerNode) curr.getParent()).offsets.clear();
 				((BTreeLeafNode) curr).clearNode();
