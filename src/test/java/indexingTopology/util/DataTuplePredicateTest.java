@@ -2,6 +2,7 @@ package indexingTopology.util;
 
 import indexingTopology.DataSchema;
 import indexingTopology.DataTuple;
+import org.apache.commons.lang.SerializationUtils;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -66,4 +67,57 @@ public class DataTuplePredicateTest {
 
         assertEquals(0, survivedTuples.size());
     }
+
+//    @Test
+//    public void SerializationTest() {
+//        DataSchema dataSchema = new DataSchema();
+//        dataSchema.addLongField("long");
+//        dataSchema.addDoubleField("double");
+//        DataTuplePredicate myPredicate = new DataTuplePredicate() {
+//            @Override
+//            public boolean test(DataTuple objects) {
+//                return (long)objects.get(0) > 100;
+//            }
+//        };
+//
+//        List<DataTuple> tuples = new ArrayList<>();
+//        tuples.add(new DataTuple(0L, 3.3));
+//        tuples.add(new DataTuple(6L, 4.4));
+//        byte[] bytes = SerializationUtils.serialize(myPredicate);
+//        DataTuplePredicate deserilizedPredicate = (DataTuplePredicate)SerializationUtils.deserialize(bytes);
+//
+//        List<DataTuple> survivedTuples = new ArrayList<>();
+//        for (DataTuple tuple: tuples) {
+//            if (deserilizedPredicate.test(tuple)) {
+//                survivedTuples.add(tuple);
+//            }
+//        }
+//
+//        assertEquals(0, survivedTuples.size());
+//    }
+//    public static void main(String[] args) {
+//
+//        DataSchema dataSchema = new DataSchema();
+//        dataSchema.addLongField("long");
+//        dataSchema.addDoubleField("double");
+//        DataTuplePredicate myPredicate = new DataTuplePredicate() {
+//            @Override
+//            public boolean test(DataTuple objects) {
+//                return (long)objects.get(0) > 100;
+//            }
+//        };
+//
+//        List<DataTuple> tuples = new ArrayList<>();
+//        tuples.add(new DataTuple(0L, 3.3));
+//        tuples.add(new DataTuple(6L, 4.4));
+//        byte[] bytes = SerializationUtils.serialize(myPredicate);
+//        DataTuplePredicate deserilizedPredicate = (DataTuplePredicate)SerializationUtils.deserialize(bytes);
+//
+//        List<DataTuple> survivedTuples = new ArrayList<>();
+//        for (DataTuple tuple: tuples) {
+//            if (deserilizedPredicate.test(tuple)) {
+//                survivedTuples.add(tuple);
+//            }
+//        }
+//    }
 }

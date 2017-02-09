@@ -12,7 +12,7 @@ import java.util.function.Predicate;
 /**
  * Created by robert on 9/2/17.
  */
-abstract public class DataTuplePredicate implements Predicate<DataTuple>, Serializable{
+interface DataTuplePredicate extends Predicate<DataTuple>, Serializable{
 
 public static void main(String[] args) {
 
