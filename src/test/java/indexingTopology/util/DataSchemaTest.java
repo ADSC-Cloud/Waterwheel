@@ -1,6 +1,7 @@
 package indexingTopology.util;
 
 import indexingTopology.DataSchema;
+import indexingTopology.DataTuple;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
@@ -16,5 +17,17 @@ public class DataSchemaTest {
         schema.addIntField("int");
         schema.setPrimaryIndexField("double");
         assertEquals(schema.getNumberOfFields(), 2);
+    }
+
+    @Test
+    public void SerializationTest() {
+        DataSchema schema = new DataSchema();
+        schema.addDoubleField("f1");
+        schema.addLongField("f2");
+        DataTuple dataTuple = new DataTuple(0.01, 10L);
+        byte[] bytes = schema.serializeTuple(dataTuple);
+        DataTuple dataTupleDeserialized = schema.deserializeToDataTuple(bytes);
+        assertEquals(0.01, dataTupleDeserialized.get(0));
+        assertEquals(10L, dataTupleDeserialized.get(1));
     }
 }
