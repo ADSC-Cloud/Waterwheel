@@ -60,7 +60,7 @@ public class NormalDistributionTopology {
 
 
         DataSchema schemaWithTimestamp = schema.duplicate();
-        schemaWithTimestamp.addDoubleField("timestamp");
+        schemaWithTimestamp.addLongField("timestamp");
 
 
 

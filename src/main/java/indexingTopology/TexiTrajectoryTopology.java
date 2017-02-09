@@ -38,7 +38,7 @@ public class TexiTrajectoryTopology {
         schema.setPrimaryIndexField("zcode");
 
         DataSchema schemaWithTimestamp = schema.duplicate();
-        schemaWithTimestamp.addDoubleField("timestamp");
+        schemaWithTimestamp.addLongField("timestamp");
 
 
         final double x1 = 0;

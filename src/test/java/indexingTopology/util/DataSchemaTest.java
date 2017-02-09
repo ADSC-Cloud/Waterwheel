@@ -5,6 +5,7 @@ import indexingTopology.DataTuple;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertTrue;
 
 /**
  * Created by robert on 8/2/17.
@@ -29,5 +30,21 @@ public class DataSchemaTest {
         DataTuple dataTupleDeserialized = schema.deserializeToDataTuple(bytes);
         assertEquals(0.01, dataTupleDeserialized.get(0));
         assertEquals(10L, dataTupleDeserialized.get(1));
+    }
+
+    @Test
+    public void IndexFieldTest() {
+        DataSchema schema = new DataSchema();
+        schema.addDoubleField("f1");
+        schema.addLongField("f2");
+        schema.setPrimaryIndexField("f2");
+        assertEquals("f2", schema.getIndexField());
+        assertTrue(schema.getIndexType().type.equals(Long.class));
+
+        DataTuple dataTuple = new DataTuple(0.01, 10L);
+
+        assertEquals(0.01, schema.getValue("f1", dataTuple));
+
+        assertEquals(10L, schema.getIndexValue(dataTuple));
     }
 }

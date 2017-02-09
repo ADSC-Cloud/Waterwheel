@@ -18,13 +18,13 @@ import java.util.Map;
  */
 public class DataSchema implements Serializable {
 
-    static class DataType {
+    public static class DataType {
         DataType(Class type, int length) {
             this.type = type;
             this.length = length;
         }
-        Class type;
-        int length;
+        public Class type;
+        public int length;
     }
 
     public DataSchema(){};
@@ -46,7 +46,7 @@ public class DataSchema implements Serializable {
         this.indexField = indexField;
     }
 
-    private final Map<String, DataType> dataFields = new HashMap<>();
+    private final Map<String, Integer> dataFieldNameToIndex = new HashMap<>();
     private final List<String> fieldNames = new ArrayList<>();
     private final List<DataType> dataTypes = new ArrayList<>();
     private String indexField;
@@ -57,30 +57,30 @@ public class DataSchema implements Serializable {
 
     public void addDoubleField(String name) {
         final DataType dataType = new DataType(Double.class, Double.BYTES);
+        dataFieldNameToIndex.put(name, fieldNames.size());
         fieldNames.add(name);
         dataTypes.add(dataType);
-        dataFields.put(name, dataType);
     }
 
     public void addIntField(String name) {
         final DataType dataType = new DataType(Integer.class, Integer.BYTES);
+        dataFieldNameToIndex.put(name, fieldNames.size());
         fieldNames.add(name);
         dataTypes.add(dataType);
-        dataFields.put(name, dataType);
     }
 
     public void addVarcharField(String name, int length) {
         final DataType dataType = new DataType(String.class, length);
+        dataFieldNameToIndex.put(name, fieldNames.size());
         fieldNames.add(name);
         dataTypes.add(dataType);
-        dataFields.put(name, dataType);
     }
 
     public void addLongField(String name) {
         final DataType dataType = new DataType(Long.class, Long.BYTES);
+        dataFieldNameToIndex.put(name, fieldNames.size());
         fieldNames.add(name);
         dataTypes.add(dataType);
-        dataFields.put(name, dataType);
     }
 
 
@@ -89,7 +89,7 @@ public class DataSchema implements Serializable {
     }
 
     public Values getValuesObject(String [] valuesAsString) throws RuntimeException {
-        if (dataFields.size() != valuesAsString.length) throw new RuntimeException("number of values provided does not " +
+        if (dataFieldNameToIndex.size() != valuesAsString.length) throw new RuntimeException("number of values provided does not " +
                 "match number of fields in data schema");
 
         Values values = new Values();
@@ -249,16 +249,35 @@ public class DataSchema implements Serializable {
         return indexField;
     }
 
+    public DataType getDataType(String name) {
+        final int offset = dataFieldNameToIndex.get(name);
+        return dataTypes.get(offset);
+    }
+
+    public DataType getIndexType() {
+        return getDataType(indexField);
+    }
+
     public int getNumberOfFields() {
-        return dataFields.size();
+        return dataFieldNameToIndex.size();
     }
 
     public DataSchema duplicate() {
         DataSchema ret = new DataSchema();
         ret.dataTypes.addAll(dataTypes);
         ret.indexField = indexField;
-        ret.dataFields.putAll(dataFields);
+        ret.dataFieldNameToIndex.putAll(dataFieldNameToIndex);
         ret.fieldNames.addAll(fieldNames);
         return ret;
+    }
+
+    public Object getValue(String fieldName, DataTuple dataTuple) {
+        final int offset = dataFieldNameToIndex.get(fieldName);
+        return dataTuple.get(offset);
+    }
+
+    public Object getIndexValue(DataTuple dataTuple) {
+        final int indexOffset = dataFieldNameToIndex.get(indexField);
+        return dataTuple.get(indexOffset);
     }
 }
