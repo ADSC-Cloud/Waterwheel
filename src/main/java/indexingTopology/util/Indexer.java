@@ -280,6 +280,8 @@ public class Indexer {
 //                    indexedData = indexedData.clone();
                     clonedIndexedData = indexedData.clone();
 
+
+
                     collector.emit(Streams.FileInformationUpdateStream, new Values(fileName, keyRange, timeStampRange));
 
                     collector.emit(Streams.TimestampUpdateStream, new Values(timeStampRange, keyRange));

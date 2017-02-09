@@ -167,17 +167,35 @@ public class DataSchema implements Serializable {
     }
     */
 
+    public byte[] serializeTuple(DataTuple t) {
+        Output output = new Output(1000, 2000000);
+        for (int i = 0; i < dataTypes.size(); i++) {
+            if (dataTypes.get(i).type.equals(Double.class)) {
+                output.writeDouble((double)t.get(i));
+            } else if (dataTypes.get(i).type.equals(String.class)) {
+                output.writeString((String)t.get(i));
+            } else if (dataTypes.get(i).type.equals(Integer.class)) {
+                output.writeInt((int)t.get(i));
+            } else if (dataTypes.get(i).type.equals(Long.class)) {
+                output.writeLong((long)t.get(i));
+            } else {
+                throw new RuntimeException("Not supported data type!" );
+            }
+        }
+        return output.toBytes();
+    }
 
+    @Deprecated
     public byte[] serializeTuple(Tuple t) throws IOException {
         Output output = new Output(1000, 2000000);
         for (int i = 0; i < dataTypes.size(); i++) {
-            if (dataTypes.get(i).equals(Double.class)) {
+            if (dataTypes.get(i).type.equals(Double.class)) {
                 output.writeDouble(t.getDouble(i));
-            } else if (dataTypes.get(i).equals(String.class)) {
+            } else if (dataTypes.get(i).type.equals(String.class)) {
                 output.writeString(t.getString(i));
-            } else if (dataTypes.get(i).equals(Integer.class)) {
+            } else if (dataTypes.get(i).type.equals(Integer.class)) {
                 output.writeInt(t.getInteger(i));
-            } else if (dataTypes.get(i).equals(Long.class)) {
+            } else if (dataTypes.get(i).type.equals(Long.class)) {
                 output.writeLong(t.getLong(i));
             } else {
                 throw new IOException("Only classes supported till now are string and double");
@@ -186,26 +204,45 @@ public class DataSchema implements Serializable {
         return output.toBytes();
     }
 
-
+    @Deprecated
     public Values deserialize(byte [] b) throws IOException {
         Values values = new Values();
         Input input = new Input(b);
         for (int i = 0; i < dataTypes.size(); i++) {
-            if (dataTypes.get(i).equals(Double.class)) {
+            if (dataTypes.get(i).type.equals(Double.class)) {
                 values.add(input.readDouble());
-            } else if (dataTypes.get(i).equals(String.class)) {
+            } else if (dataTypes.get(i).type.equals(String.class)) {
                 values.add(input.readString());
-            } else if (dataTypes.get(i).equals(Integer.class)) {
+            } else if (dataTypes.get(i).type.equals(Integer.class)) {
                 values.add(input.readInt());
-            } else if (dataTypes.get(i).equals(Long.class)) {
+            } else if (dataTypes.get(i).type.equals(Long.class)) {
                 values.add(input.readLong());
             } else {
                 throw new IOException("Only classes supported till now are string and double");
             }
         }
 
-        values.add(input.readLong());
         return values;
+    }
+
+    public DataTuple deserializeToDataTuple(byte[] b) {
+        DataTuple dataTuple = new DataTuple();
+        Input input = new Input(b);
+        for (int i = 0; i < dataTypes.size(); i++) {
+            if (dataTypes.get(i).type.equals(Double.class)) {
+                dataTuple.add(input.readDouble());
+            } else if (dataTypes.get(i).type.equals(String.class)) {
+                dataTuple.add(input.readString());
+            } else if (dataTypes.get(i).type.equals(Integer.class)) {
+                dataTuple.add(input.readInt());
+            } else if (dataTypes.get(i).type.equals(Long.class)) {
+                dataTuple.add(input.readLong());
+            } else {
+                throw new RuntimeException("Only classes supported till now are string and double");
+            }
+        }
+
+        return dataTuple;
     }
 
     public String getIndexField() {
