@@ -184,8 +184,8 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt{
 
         for (int i = 0; i < tuples.size(); ++i) {
             Values deserializedTuple = schema.deserialize(tuples.get(i));
-            if (timestampLowerBound <= (Long) deserializedTuple.get(schema.getNumberOfFileds()) &&
-                    timestampUpperBound >= (Long) deserializedTuple.get(schema.getNumberOfFileds())) {
+            if (timestampLowerBound <= (Long) deserializedTuple.get(schema.getNumberOfFields()) &&
+                    timestampUpperBound >= (Long) deserializedTuple.get(schema.getNumberOfFields())) {
                 serializedTuples.add(tuples.get(i));
             }
         }

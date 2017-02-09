@@ -8,10 +8,7 @@ import org.junit.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -41,13 +38,10 @@ public class TemplateUpdaterTest {
 
         List<Integer> keys = new ArrayList<>();
 
-        for (int i = 0; i < numberOfTuples; ++i) {
-            Integer key = random.nextInt();
-            while (keys.contains(key)) {
-                key = random.nextInt();
-            }
+        for (int i = 0; i < numberOfTuples; i++) {
             keys.add(i);
         }
+        Collections.shuffle(keys);
 
         for (Integer key : keys) {
             List<Double> values = new ArrayList<>();
@@ -65,7 +59,7 @@ public class TemplateUpdaterTest {
 
         Long start = System.currentTimeMillis();
         BTree newTree = templateUpdater.createTreeWithBulkLoading(bTree);
-        System.out.println((System.currentTimeMillis() - start) / 1000);
+        System.out.println((System.currentTimeMillis() - start) / 1000.0);
 
 //        newTree.printBtree();
 

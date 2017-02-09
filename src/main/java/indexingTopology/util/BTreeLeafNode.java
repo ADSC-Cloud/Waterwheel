@@ -136,33 +136,33 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
     }
 
 
-    public BTreeNode insertKeyTuples(TKey key, byte[] serilizedTuple, boolean templateMode, Counter counter) throws UnsupportedGenericException{
-        BTreeNode node = null;
-
-        int index = searchIndex(key);
-
-        if (keys.contains(key)) {
-            counter.addCount();
-        }
-
-        if (!(index < this.keys.size() && this.getKey(index).compareTo(key) == 0)) {
-            this.keys.add(index, key);
-            this.tuples.add(index, new ArrayList<byte[]>());
-            this.offsets.add(index, new ArrayList<Integer>());
-            ++this.keyCount;
-        }
-
-
-        tupleCount.incrementAndGet();
-        this.tuples.get(index).add(serilizedTuple);
-        this.offsets.get(index).add(serilizedTuple.length);
-
-        if (!templateMode && isOverflow()) {
-            node = dealOverflow();
-        }
-
-        return node;
-    }
+//    public BTreeNode insertKeyTuples(TKey key, byte[] serilizedTuple, boolean templateMode, Counter counter) throws UnsupportedGenericException{
+//        BTreeNode node = null;
+//
+//        int index = searchIndex(key);
+//
+//        if (keys.contains(key)) {
+//            counter.addCount();
+//        }
+//
+//        if (!(index < this.keys.size() && this.getKey(index).compareTo(key) == 0)) {
+//            this.keys.add(index, key);
+//            this.tuples.add(index, new ArrayList<byte[]>());
+//            this.offsets.add(index, new ArrayList<Integer>());
+//            ++this.keyCount;
+//        }
+//
+//
+//        tupleCount.incrementAndGet();
+//        this.tuples.get(index).add(serilizedTuple);
+//        this.offsets.get(index).add(serilizedTuple.length);
+//
+//        if (!templateMode && isOverflow()) {
+//            node = dealOverflow();
+//        }
+//
+//        return node;
+//    }
 
     /**
      * When splits a leaf node, the middle key is kept on new node and be pushed to parent node.

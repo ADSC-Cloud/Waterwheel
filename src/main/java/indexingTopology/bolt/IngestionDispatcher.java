@@ -36,11 +36,15 @@ public class IngestionDispatcher extends BaseRichBolt {
 
     private int numberOfPartitions;
 
-    public IngestionDispatcher(DataSchema schema, Double lowerBound, Double upperBound, boolean enableLoadBalance) {
+    private boolean generateTimeStamp;
+
+    public IngestionDispatcher(DataSchema schema, Double lowerBound, Double upperBound, boolean enableLoadBalance,
+                               boolean generateTimeStamp) {
         this.schema = schema;
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
         this.enableLoadBalance = enableLoadBalance;
+        this.generateTimeStamp = generateTimeStamp;
     }
 
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
@@ -72,12 +76,9 @@ public class IngestionDispatcher extends BaseRichBolt {
 
             int taskId = targetTasks.get(partitionId);
 
-            Values values = null;
-            try {
-                values = schema.getValuesObject(tuple);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            Values values = new Values(tuple.getValues());
+            if (generateTimeStamp)
+                values.add(System.currentTimeMillis());
 
             collector.emitDirect(taskId, Streams.IndexStream, tuple, values);
             collector.ack(tuple);

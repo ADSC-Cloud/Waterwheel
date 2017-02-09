@@ -65,31 +65,31 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	}
 
 
-    public void insert(TKey key, byte[] serializedTuple, Counter counter) throws UnsupportedGenericException {
-        BTreeLeafNode leaf = null;
-        if (templateMode) {
-            leaf = findLeafNodeShouldContainKeyInTemplate(key);
-            leaf.acquireWriteLock();
-            leaf.insertKeyTuples(key, serializedTuple, templateMode, counter);
-            leaf.releaseWriteLock();
-        } else {
-            leaf = findLeafNodeShouldContainKeyInUpdaterWithProtocolTwo(key);
-            ArrayList<BTreeNode> ancestors = new ArrayList<BTreeNode>();
-            //if the root is null, it means that we have to use protocol 1 instead of protocol 2.
-            if (leaf == null) {
-                leaf = findLeafNodeShouldContainKeyInUpdaterWithProtocolOne(key, ancestors);
-            }
-            BTreeNode root = leaf.insertKeyTuples(key, serializedTuple, templateMode, counter);
-            if (root != null) {
-                this.setRoot(root);
-            }
-            leaf.releaseWriteLock();
-            for (BTreeNode ancestor : ancestors) {
-                ancestor.releaseWriteLock();
-            }
-            ancestors.clear();
-        }
-    }
+//    public void insert(TKey key, byte[] serializedTuple, Counter counter) throws UnsupportedGenericException {
+//        BTreeLeafNode leaf = null;
+//        if (templateMode) {
+//            leaf = findLeafNodeShouldContainKeyInTemplate(key);
+//            leaf.acquireWriteLock();
+//            leaf.insertKeyTuples(key, serializedTuple, templateMode, counter);
+//            leaf.releaseWriteLock();
+//        } else {
+//            leaf = findLeafNodeShouldContainKeyInUpdaterWithProtocolTwo(key);
+//            ArrayList<BTreeNode> ancestors = new ArrayList<BTreeNode>();
+//            //if the root is null, it means that we have to use protocol 1 instead of protocol 2.
+//            if (leaf == null) {
+//                leaf = findLeafNodeShouldContainKeyInUpdaterWithProtocolOne(key, ancestors);
+//            }
+//            BTreeNode root = leaf.insertKeyTuples(key, serializedTuple, templateMode, counter);
+//            if (root != null) {
+//                this.setRoot(root);
+//            }
+//            leaf.releaseWriteLock();
+//            for (BTreeNode ancestor : ancestors) {
+//                ancestor.releaseWriteLock();
+//            }
+//            ancestors.clear();
+//        }
+//    }
 
 
 
