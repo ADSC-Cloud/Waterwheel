@@ -1,5 +1,6 @@
 package indexingTopology.bolt;
 
+import indexingTopology.DataTuple;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -75,7 +76,7 @@ public class ResultMerger extends BaseRichBolt {
                 .equals(Streams.FileSystemQueryInformationStream)) {
             int numberOfFilesToScan = tuple.getInteger(1);
             Long queryId = tuple.getLong(0);
-//            System.out.println("queryId" + queryId + " number of files to scan " + numberOfFilesToScan);
+            System.out.println("queryId" + queryId + " number of files to scan " + numberOfFilesToScan);
             queryIdToNumberOfFilesToScan.put(queryId, numberOfFilesToScan);
 
             if (isQueryFinshed(queryId)) {
@@ -104,14 +105,9 @@ public class ResultMerger extends BaseRichBolt {
 
 //            if (tuple.getSourceStreamId().equals(Streams.FileSystemQueryStream)) {
 //                for (int i = 0; i < serializedTuples.size(); ++i) {
-//                    Values deserializedTuple = null;
-//                    try {
-//                    deserializedTuple = schema.deserialize(serializedTuples.get(i));
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    }
+//                    DataTuple dataTuple = schema.deserializeToDataTuple(serializedTuples.get(i));
+//                    System.out.println(dataTuple);
 //                    System.out.println("tuples in query id " + queryId + " " + tuple.getSourceStreamId());
-//                    System.out.println(deserializedTuple);
 //                }
 //            }
 

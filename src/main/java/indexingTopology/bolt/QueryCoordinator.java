@@ -1,7 +1,6 @@
 package indexingTopology.bolt;
 
-import indexingTopology.util.Query;
-import indexingTopology.util.SubQuery;
+import indexingTopology.util.*;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -14,8 +13,6 @@ import indexingTopology.config.TopologyConfig;
 import indexingTopology.metadata.FilePartitionSchemaManager;
 import indexingTopology.metadata.FileMetaData;
 import indexingTopology.streams.Streams;
-import indexingTopology.util.BalancedPartition;
-import indexingTopology.util.FileScanMetrics;
 import javafx.util.Pair;
 
 import java.io.*;
@@ -27,7 +24,7 @@ import java.util.concurrent.Semaphore;
 /**
  * Created by acelzj on 11/15/16.
  */
-public class QueryCoordinator extends BaseRichBolt {
+public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
 
     private OutputCollector collector;
 
@@ -61,8 +58,8 @@ public class QueryCoordinator extends BaseRichBolt {
 
     private int numberOfPartitions;
 
-    private Double lowerBound;
-    private Double upperBound;
+    private DataType lowerBound;
+    private DataType upperBound;
 
     private AtomicDouble minIndexValue;
     private AtomicDouble maxIndexValue;
@@ -71,7 +68,7 @@ public class QueryCoordinator extends BaseRichBolt {
 
     private LinkedBlockingQueue<Query> pendingQueue;
 
-    public QueryCoordinator(Double lowerBound, Double upperBound) {
+    public QueryCoordinator(DataType lowerBound, DataType upperBound) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
     }
@@ -100,7 +97,7 @@ public class QueryCoordinator extends BaseRichBolt {
         queryId = 0;
         filePartitionSchemaManager = new FilePartitionSchemaManager();
 
-        taskQueue = new ArrayBlockingQueue<SubQuery>(TopologyConfig.TASK_QUEUE_CAPACITY);
+        taskQueue = new ArrayBlockingQueue<>(TopologyConfig.TASK_QUEUE_CAPACITY);
 //        taskQueue = new LinkedBlockingQueue<SubQuery>(TopologyConfig.FILE_QUERY_TASK_WATINING_QUEUE_CAPACITY);
 
         Set<String> componentIds = topologyContext.getThisTargets().get(Streams.FileSystemQueryStream).keySet();
@@ -156,8 +153,8 @@ public class QueryCoordinator extends BaseRichBolt {
             Pair keyRange = (Pair) tuple.getValue(1);
             Pair timeStampRange = (Pair) tuple.getValue(2);
 
-            filePartitionSchemaManager.add(new FileMetaData(fileName, (Double) keyRange.getKey(),
-                    (Double)keyRange.getValue(), (Long) timeStampRange.getKey(), (Long) timeStampRange.getValue()));
+            filePartitionSchemaManager.add(new FileMetaData(fileName, ((DataType) keyRange.getKey()).doubleValue(),
+                    ((DataType) keyRange.getValue()).doubleValue(), (Long) timeStampRange.getKey(), (Long) timeStampRange.getValue()));
         } else if (tuple.getSourceStreamId().equals(Streams.NewQueryStream)) {
             Long queryId = tuple.getLong(0);
 
@@ -189,19 +186,16 @@ public class QueryCoordinator extends BaseRichBolt {
 
         } else if (tuple.getSourceStreamId().equals(Streams.QueryGenerateStream)) {
 
-            try {
-                concurrentQueriesSemaphore.acquire();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
 
-            Long queryId = tuple.getLong(0);
-            Double leftKey = tuple.getDouble(1);
-            Double rightKey = tuple.getDouble(2);
-            Long startTimestamp = tuple.getLong(3);
-            Long endTimestamp = tuple.getLong(4);
+//            Long queryId = tuple.getLong(0);
+//            DataType leftKey = (DataType) tuple.getValue(1);
+//            DataType rightKey = (DataType) tuple.getDouble(2);
+//            Long startTimestamp = tuple.getLong(3);
+//            Long endTimestamp = tuple.getLong(4);
 
-            Query query = new Query<>(queryId, leftKey, rightKey, startTimestamp, endTimestamp);
+            Query query = (Query) tuple.getValueByField("query");
+
+//            Query query = new Query<>(queryId, leftKey, rightKey, startTimestamp, endTimestamp);
             try {
                 pendingQueue.put(query);
             } catch (InterruptedException e) {
@@ -241,8 +235,8 @@ public class QueryCoordinator extends BaseRichBolt {
             Long endTimestamp = (Long) timestampRange.getValue();
             indexTaskToTimestampMapping.put(taskId, endTimestamp);
 
-            Double keyRangeLowerBound = (Double) keyRange.getKey();
-            Double keyRangeUpperBound = (Double) keyRange.getValue();
+            DataType keyRangeLowerBound = (DataType) keyRange.getKey();
+            DataType keyRangeUpperBound = (DataType) keyRange.getValue();
 
             if (staleBalancedPartition != null) {
                 updateStaleBalancedPartition(keyRangeLowerBound, keyRangeUpperBound);
@@ -281,7 +275,7 @@ public class QueryCoordinator extends BaseRichBolt {
         return canBeDeleted;
     }
 
-    private void updateStaleBalancedPartition(Double keyRangeLowerBound, Double keyRangeUpperBound) {
+    private void updateStaleBalancedPartition(DataType keyRangeLowerBound, DataType keyRangeUpperBound) {
         Map<Integer, Integer> intervalIdToPartitionIdMapping = balancedPartition.getIntervalToPartitionMapping();
         Integer startIntervalId = balancedPartition.getPartitionId(keyRangeLowerBound);
         Integer endIntervalId = balancedPartition.getPartitionId(keyRangeUpperBound);
@@ -316,11 +310,12 @@ public class QueryCoordinator extends BaseRichBolt {
 //        outputFieldsDeclarer.declareStream(NormalDistributionTopology.FileSystemQueryStream,
 //                new Fields("queryId", "leftKey", "rightKey", "fileName", "startTimeStamp", "endTimeStamp"));
 
-        outputFieldsDeclarer.declareStream(Streams.FileSystemQueryStream,
-                new Fields("subQuery"));
+        outputFieldsDeclarer.declareStream(Streams.FileSystemQueryStream, new Fields("subquery"));
 
-        outputFieldsDeclarer.declareStream(Streams.BPlusTreeQueryStream,
-                new Fields("queryId", "leftKey", "rightKey"));
+//        outputFieldsDeclarer.declareStream(Streams.BPlusTreeQueryStream,
+//                new Fields("queryId", "leftKey", "rightKey"));
+
+        outputFieldsDeclarer.declareStream(Streams.BPlusTreeQueryStream, new Fields("subquery"));
 
         outputFieldsDeclarer.declareStream(
                 Streams.FileSystemQueryInformationStream,
@@ -335,9 +330,42 @@ public class QueryCoordinator extends BaseRichBolt {
         outputFieldsDeclarer.declareStream(Streams.EableRepartitionStream, new Fields("Repartition"));
     }
 
-    private void handleQuery(Query query) {
-        generateSubQueriesOnTheInsertionServer(query.leftKey.doubleValue(), query.rightKey.doubleValue(), query.endTimestamp);
-        generateSubqueriesOnTheFileScanner(query.leftKey.doubleValue(), query.rightKey.doubleValue(), query.startTimestamp, query.endTimestamp);
+    private void handleQuery(Query<DataType> query) {
+//        generateSubQueriesOnTheInsertionServer(query.leftKey, query.rightKey, query.endTimestamp);
+        generateSubQueriesOnTheInsertionServer(query);
+//        generateSubqueriesOnTheFileScanner(query.leftKey, query.rightKey, query.startTimestamp, query.endTimestamp);
+        generateSubqueriesOnTheFileScanner(query);
+
+//        System.out.println(query.id + " has been handled!!!");
+    }
+
+    private void generateSubqueriesOnTheFileScanner(Query<DataType> query) {
+        Long queryId = query.id;
+        DataType leftKey = query.leftKey;
+        DataType rightKey = query.rightKey;
+        Long startTimestamp = query.startTimestamp;
+        Long endTimestamp = query.endTimestamp;
+
+        List<String> fileNames = filePartitionSchemaManager.search(leftKey.doubleValue(), rightKey.doubleValue(), startTimestamp, endTimestamp);
+
+        for (String fileName : fileNames) {
+            SubQuery subQuery = new SubQueryOnFiles(queryId, leftKey, rightKey, fileName, startTimestamp, endTimestamp);
+//            /*shuffle grouping
+//            sendSubqueriesByshuffleGrouping(subQuery);
+//             */
+            /*task queue
+            try {
+                taskQueue.put(subQuery);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            sendSubqueriesFromTaskQueue();
+            */
+            putSubqueryToTaskQueues(subQuery);
+            sendSubqueriesFromTaskQueues();
+        }
+
+        collector.emit(Streams.FileSystemQueryInformationStream, new Values(queryId, fileNames.size()));
     }
 
     private void createQueryHandlingThread() {
@@ -378,8 +406,8 @@ public class QueryCoordinator extends BaseRichBolt {
 
 //                String [] tuple = text.split(" ");
 //
-                    Double leftKey = 900.0;
-                    Double rightKey = 950.0;
+                    Integer leftKey = 940;
+                    Integer rightKey = 950;
 
                     Long startTimestamp = (long) 0;
 
@@ -403,21 +431,20 @@ public class QueryCoordinator extends BaseRichBolt {
         }
     }
 
-    private void putSubqueriesToTaskQueue(int numberOfSubqueries, Double leftKey
-            , Double rightKey, List<String> fileNames, Long starTimestamp, Long endTimestamp) {
-        for (int i = 0; i < numberOfSubqueries; ++i) {
-            SubQuery subQuery = new SubQuery(queryId, leftKey,  rightKey, fileNames.get(i), starTimestamp, endTimestamp);
-            try {
-                taskQueue.put(subQuery);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    }
+//    private void putSubqueriesToTaskQueue(SubQueryOnFiles subQuery) {
+//        for (int i = 0; i < numberOfSubqueries; ++i) {
+//            SubQueryOnFiles subQuery = new SubQueryOnFiles(queryId, leftKey,  rightKey, fileNames.get(i), starTimestamp, endTimestamp);
+//            try {
+//                taskQueue.put(subQuery);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//    }
 
-    private void generateSubqueriesOnTheFileScanner(Double leftKey, Double rightKey, Long startTimestamp,
+    private void generateSubqueriesOnTheFileScanner(DataType leftKey, DataType rightKey, Long startTimestamp,
                                                     Long endTimestamp) {
-        List<String> fileNames = filePartitionSchemaManager.search(leftKey, rightKey,
+        List<String> fileNames = filePartitionSchemaManager.search(leftKey.doubleValue(), rightKey.doubleValue(),
                 startTimestamp, endTimestamp);
 
 
@@ -444,8 +471,8 @@ public class QueryCoordinator extends BaseRichBolt {
                  */
 
 //                /* our method
-        putSubquerisToTaskQueues(numberOfSubqueries, leftKey, rightKey, fileNames, startTimestamp, endTimestamp);
-        sendSubqueriesFromTaskQueues();
+//        putSubquerisToTaskQueues(numberOfSubqueries, leftKey, rightKey, fileNames, startTimestamp, endTimestamp);
+//        sendSubqueriesFromTaskQueues();
 //                 */
 
 //                System.out.println("query Id " + queryId + " " + numberOfFilesToScan + " files in decompositionbolt");
@@ -453,7 +480,7 @@ public class QueryCoordinator extends BaseRichBolt {
         collector.emit(Streams.FileSystemQueryInformationStream, new Values(queryId, numberOfSubqueries));
     }
 
-    private void generateSubQueriesOnTheInsertionServer(Double leftKey, Double rightKey, Long endTimestamp) {
+    private void generateSubQueriesOnTheInsertionServer(DataType leftKey, DataType rightKey, Long endTimestamp) {
 
         int numberOfTasksToSearch = 0;
 
@@ -504,6 +531,65 @@ public class QueryCoordinator extends BaseRichBolt {
 
     }
 
+
+    private void generateSubQueriesOnTheInsertionServer(Query<DataType> query) {
+
+        int numberOfTasksToSearch = 0;
+
+        Long queryId = query.id;
+
+        DataType leftKey = query.leftKey;
+        DataType rightKey = query.rightKey;
+
+        Long startTimestamp = query.startTimestamp;
+        Long endTimestamp = query.endTimestamp;
+
+        List<Integer> partitionIdsInBalancedPartition = getPartitionIds(balancedPartition, leftKey, rightKey);
+        List<Integer> partitionIdsInStalePartition = null;
+
+        if (staleBalancedPartition != null) {
+            partitionIdsInStalePartition = getPartitionIds(staleBalancedPartition, leftKey, rightKey);
+        }
+
+        List<Integer> partitionIds = (partitionIdsInStalePartition == null
+                ? partitionIdsInBalancedPartition
+                : mergePartitionIds(partitionIdsInBalancedPartition, partitionIdsInStalePartition));
+
+
+
+//        Integer startPartitionId = balancedPartition.getPartitionId(leftKey);
+//        Integer endPartitionId = balancedPartition.getPartitionId(rightKey);
+
+
+
+
+//        Integer startTaskId = indexServers.get(startPartitionId);
+//        Integer endTaskId = indexServers.get(endPartitionId);
+
+//        for (Integer taskId = startTaskId; taskId <= endTaskId; ++taskId) {
+//            Long timestamp = indexTaskToTimestampMapping.get(taskId);
+//            if (timestamp <= endTimeStamp) {
+//                collector.emitDirect(taskId, NormalDistributionIndexingTopology.BPlusTreeQueryStream,
+//                        new Values(queryId, leftKey, rightKey));
+//                ++numberOfTasksToSearch;
+//            }
+//        }
+
+//        for (Integer partitionId : partitionIds) {
+//            Integer taskId = indexServers.get(partitionId);
+//            Long timestamp = indexTaskToTimestampMapping.get(taskId);
+//            if (timestamp <= endTimestamp && timestamp >= startTimestamp) {
+//                SubQuery subQuery = new SubQuery(query.id, query.leftKey, query.rightKey, query.startTimestamp, query.endTimestamp);
+//                collector.emitDirect(taskId, Streams.BPlusTreeQueryStream, new Values(subQuery));
+//                ++numberOfTasksToSearch;
+//            }
+//        }
+
+//        collector.emit(Streams.BPlusTreeQueryInformationStream, new Values(queryId, numberOfTasksToSearch));
+        collector.emit(Streams.BPlusTreeQueryInformationStream, new Values(queryId, 0));
+
+    }
+
     private List<Integer> mergePartitionIds(List<Integer> partitionIdsInBalancedPartition, List<Integer> partitionIdsInStalePartition) {
         List<Integer> partitionIds = new ArrayList<>();
         partitionIds.addAll(partitionIdsInBalancedPartition);
@@ -518,7 +604,7 @@ public class QueryCoordinator extends BaseRichBolt {
         return partitionIds;
     }
 
-    private List<Integer> getPartitionIds(BalancedPartition balancedPartition, Double leftKey, Double rightKey) {
+    private List<Integer> getPartitionIds(BalancedPartition balancedPartition, DataType leftKey, DataType rightKey) {
         Integer startPartitionId = balancedPartition.getPartitionId(leftKey);
         Integer endPartitionId = balancedPartition.getPartitionId(rightKey);
 
@@ -530,8 +616,9 @@ public class QueryCoordinator extends BaseRichBolt {
         return partitionIds;
     }
 
-    private void putSubquerisToTaskQueues(int numberOfSubqueries, Double leftKey
-            , Double rightKey, List<String> fileNames, Long startTimestamp, Long endTimestamp) {
+    /*
+    private void putSubquerisToTaskQueues(int numberOfSubqueries, DataType leftKey
+            , DataType rightKey, List<String> fileNames, Long startTimestamp, Long endTimestamp) {
         for (int i = 0; i < numberOfSubqueries; ++i) {
             String fileName = fileNames.get(i);
             int index = Math.abs(fileName.hashCode()) % queryServers.size();
@@ -548,6 +635,23 @@ public class QueryCoordinator extends BaseRichBolt {
             }
             taskIdToTaskQueue.put(taskId, taskQueue);
         }
+    }
+    */
+
+    private void putSubqueryToTaskQueues(SubQuery subQuery) {
+        String fileName = ((SubQueryOnFiles) subQuery).getFileName();
+        int index = Math.abs(fileName.hashCode()) % queryServers.size();
+        Integer taskId = queryServers.get(index);
+        ArrayBlockingQueue<SubQuery> taskQueue = taskIdToTaskQueue.get(taskId);
+//        if (taskQueue == null) {
+//            taskQueue = new ArrayBlockingQueue<SubQueryOnFiles>(TopologyConfig.TASK_QUEUE_CAPACITY);
+//        }
+        try {
+            taskQueue.put(subQuery);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        taskIdToTaskQueue.put(taskId, taskQueue);
     }
 
 
@@ -573,15 +677,20 @@ public class QueryCoordinator extends BaseRichBolt {
         }
     }
 
-    private void sendSubqueriesByshuffleGrouping(int numberOfSubqueries, Double leftKey
-            , Double rightKey, List<String> fileNames, Long startTimestamp, Long endTimestamp) {
+    /*
+    private void sendSubqueriesByshuffleGrouping(int numberOfSubqueries, DataType leftKey
+            , DataType rightKey, List<String> fileNames, Long startTimestamp, Long endTimestamp) {
         for (int i = 0; i < numberOfSubqueries; ++i) {
             SubQuery subQuery = new SubQuery(queryId, leftKey, rightKey, fileNames.get(i), startTimestamp, endTimestamp);
             collector.emit(Streams.FileSystemQueryStream
                     , new Values(subQuery));
         }
     }
+    */
 
+    private void sendSubqueriesByshuffleGrouping(SubQuery subQuery) {
+            collector.emit(Streams.FileSystemQueryStream, new Values(subQuery));
+    }
 
     private void sendSubqueryToTask(int taskId) {
         SubQuery subQuery = taskQueue.poll();
@@ -625,8 +734,9 @@ public class QueryCoordinator extends BaseRichBolt {
         return taskQueue;
     }
 
-    private List<SubQuery> generateSubqueries(Long queryId, Double leftKey
-            , Double rightKey, List<String> fileNames, Long startTimestamp, Long endTimestamp) {
+    /*
+    private List<SubQuery> generateSubqueries(Long queryId, DataType leftKey
+            , DataType rightKey, List<String> fileNames, Long startTimestamp, Long endTimestamp) {
         List<SubQuery> subQueries = new ArrayList<>();
 
         SubQuery subQuery = new SubQuery(queryId, leftKey,
@@ -640,7 +750,7 @@ public class QueryCoordinator extends BaseRichBolt {
 
         return subQueries;
     }
-
+    */
     private void setTimestamps() {
 
         indexTaskToTimestampMapping = new HashMap<>();

@@ -3,6 +3,7 @@ package indexingTopology.bolt;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import indexingTopology.DataSchema;
+import indexingTopology.DataTuple;
 import javafx.util.Pair;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -63,7 +64,7 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt{
 
     public void execute(Tuple tuple) {
 
-        SubQuery subQuery = (SubQuery) tuple.getValue(0);
+        SubQueryOnFiles subQuery = (SubQueryOnFiles) tuple.getValueByField("subquery");
 
         timeCostOfReadFile = ((long) 0);
 
@@ -90,9 +91,12 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt{
     }
 
     @SuppressWarnings("unchecked")
-    private void executeRangeQuery(SubQuery subQuery) throws IOException {
+    private void executeRangeQuery(SubQueryOnFiles subQuery) throws IOException {
 
         Long queryId = subQuery.getQueryId();
+
+        System.out.println(queryId + " in chunk scanner is being executed!!!");
+
         TKey leftKey =  (TKey) subQuery.getLeftKey();
         TKey rightKey =  (TKey) subQuery.getRightKey();
         String fileName = subQuery.getFileName();
@@ -183,9 +187,10 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt{
         ArrayList<byte[]> serializedTuples = new ArrayList<>();
 
         for (int i = 0; i < tuples.size(); ++i) {
-            Values deserializedTuple = schema.deserialize(tuples.get(i));
-            if (timestampLowerBound <= (Long) deserializedTuple.get(schema.getNumberOfFields()) &&
-                    timestampUpperBound >= (Long) deserializedTuple.get(schema.getNumberOfFields())) {
+//            Values deserializedTuple = schema.deserialize(tuples.get(i));
+            DataTuple dataTuple = schema.deserializeToDataTuple(tuples.get(i));
+            Long timestamp = (Long) schema.getValue("timestamp", dataTuple);
+            if (timestampLowerBound <= timestamp && timestampUpperBound >= timestamp) {
                 serializedTuples.add(tuples.get(i));
             }
         }

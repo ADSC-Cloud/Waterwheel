@@ -1,5 +1,6 @@
 package indexingTopology.bolt;
 
+import indexingTopology.DataTuple;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -12,14 +13,13 @@ import indexingTopology.streams.Streams;
 import indexingTopology.util.BalancedPartition;
 import indexingTopology.util.Histogram;
 
-import java.io.IOException;
 import java.util.*;
 
 
 /**
  * Created by parijatmazumdar on 14/09/15.
  */
-public class IngestionDispatcher extends BaseRichBolt {
+public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt {
     OutputCollector collector;
 
     private final DataSchema schema;
@@ -67,20 +67,21 @@ public class IngestionDispatcher extends BaseRichBolt {
     public void execute(Tuple tuple) {
         if (tuple.getSourceStreamId().equals(Streams.IndexStream)){
 
-            Double indexValue = tuple.getDoubleByField(schema.getIndexField());
+            DataTuple dataTuple = (DataTuple) tuple.getValueByField("tuple");
 
 //                updateBound(indexValue);
+            IndexType indexValue = (IndexType) schema.getIndexValue(dataTuple);
             balancedPartition.record(indexValue);
 
             int partitionId = balancedPartition.getPartitionId(indexValue);
 
             int taskId = targetTasks.get(partitionId);
 
-            Values values = new Values(tuple.getValues());
-            if (generateTimeStamp)
-                values.add(System.currentTimeMillis());
+//            Values values = new Values(tuple.getValues());
+//            if (generateTimeStamp)
+//                values.add(System.currentTimeMillis());
 
-            collector.emitDirect(taskId, Streams.IndexStream, tuple, values);
+            collector.emitDirect(taskId, Streams.IndexStream, tuple, new Values(dataTuple));
             collector.ack(tuple);
 
         } else if (tuple.getSourceStreamId().equals(Streams.IntervalPartitionUpdateStream)){
@@ -106,10 +107,10 @@ public class IngestionDispatcher extends BaseRichBolt {
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        List<String> fields = schema.getFieldsObject().toList();
-        fields.add("timeStamp");
+//        List<String> fields = schema.getFieldsObject().toList();
+//        fields.add("timeStamp");
 
-        declarer.declareStream(Streams.IndexStream, new Fields(fields));
+        declarer.declareStream(Streams.IndexStream, new Fields("tuple"));
 
         declarer.declareStream(Streams.StatisticsReportStream, new Fields("statistics"));
 

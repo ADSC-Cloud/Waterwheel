@@ -3,6 +3,7 @@ package indexingTopology.util;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Output;
 import indexingTopology.DataSchema;
+import indexingTopology.DataTuple;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.filesystem.FileSystemHandler;
 import indexingTopology.filesystem.HdfsFileSystemHandler;
@@ -28,13 +29,13 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Created by acelzj on 1/3/17.
  */
-public class Indexer {
+public class Indexer<DataType extends Number> {
 
-    private ArrayBlockingQueue<Pair> pendingQueue;
+    private ArrayBlockingQueue<DataTuple> pendingQueue;
 
-    private ArrayBlockingQueue<Tuple> inputQueue;
+    private ArrayBlockingQueue<DataTuple> inputQueue;
 
-    private ArrayBlockingQueue<Pair> queryPendingQueue;
+    private ArrayBlockingQueue<SubQuery<DataType>> queryPendingQueue;
 
     private Map<Domain, BTree> domainToBTreeMapping;
 
@@ -86,7 +87,7 @@ public class Indexer {
 
     private BTree clonedIndexedData;
 
-    public Indexer(int taskId, ArrayBlockingQueue<Tuple> inputQueue, String indexedField, DataSchema schema, OutputCollector collector, ArrayBlockingQueue<Pair> queryPendingQueue) {
+    public Indexer(int taskId, ArrayBlockingQueue<DataTuple> inputQueue, String indexedField, DataSchema schema, OutputCollector collector, ArrayBlockingQueue<SubQuery<DataType>> queryPendingQueue) {
         pendingQueue = new ArrayBlockingQueue<>(1024);
 
         this.inputQueue = inputQueue;
@@ -189,11 +190,10 @@ public class Indexer {
         @Override
         public void run() {
 
-            ArrayList<Tuple> drainer = new ArrayList<>();
+            ArrayList<DataTuple> drainer = new ArrayList<>();
 
             while (true) {
-
-
+                /*
                 if (executed.get() >= TopologyConfig.SKEWNESS_DETECTION_THRESHOLD) {
                     if (indexedData.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
                         while (!pendingQueue.isEmpty()) {
@@ -221,7 +221,7 @@ public class Indexer {
 //                        }
                                 terminateIndexingThreads();
 
-                                System.out.println("begin to rebuild the template!!!");
+//                                System.out.println("begin to rebuild the template!!!");
 
                                 long start = System.currentTimeMillis();
 
@@ -229,7 +229,7 @@ public class Indexer {
 
                                 processQuerySemaphore.release();
 
-                                System.out.println("Time used to update template " + (System.currentTimeMillis() - start));
+//                                System.out.println("Time used to update template " + (System.currentTimeMillis() - start));
 
 //                        System.out.println("New tree has been built");
 //
@@ -239,7 +239,7 @@ public class Indexer {
                             }
                     }
                 }
-
+                */
 
 
                 if (numTuples >= TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK) {
@@ -252,8 +252,6 @@ public class Indexer {
                     }
 
                     terminateIndexingThreads();
-
-                    System.out.println(chunkId + " has been full!!!");
 
                     FileSystemHandler fileSystemHandler = null;
                     String fileName = null;
@@ -293,8 +291,6 @@ public class Indexer {
 
                     createIndexingThread();
 
-                    System.out.println(chunkId + " has create new indexing threads!!!");
-
                     start = System.currentTimeMillis();
 
                     numTuples = 0;
@@ -313,33 +309,36 @@ public class Indexer {
 //                }
                 inputQueue.drainTo(drainer, 256);
 
-                for (Tuple tuple: drainer) {
+                for (DataTuple dataTuple: drainer) {
                     try {
-                        Double indexValue = tuple.getDoubleByField(indexField);
-                        Long timeStamp = tuple.getLong(3);
-                        if (indexValue < minIndexValue) {
-                            minIndexValue = indexValue;
-                        }
-                        if (indexValue > maxIndexValue) {
-                            maxIndexValue = indexValue;
-                        }
+//                        Double indexValue = tuple.getDoubleByField(indexField);
+                        Long timeStamp = (Long) schema.getValue("timestamp", dataTuple);
 
+                        DataType indexValue = (DataType) schema.getIndexValue(dataTuple);
+                        if (indexValue.doubleValue() < minIndexValue) {
+                            minIndexValue = indexValue.doubleValue();
+                        }
+                        if (indexValue.doubleValue() > maxIndexValue) {
+                            maxIndexValue = indexValue.doubleValue();
+                        }
+//
                         if (timeStamp < minTimestamp) {
                             minTimestamp = timeStamp;
                         }
                         if (timeStamp > maxTimestamp) {
                             maxTimestamp = timeStamp;
                         }
-                        byte[] serializedTuple = schema.serializeTuple(tuple);
+//                        byte[] serializedTuple = schema.serializeTuple(tuple);
+//
+//                        Pair pair = new Pair(indexValue, serializedTuple);
 
-                        Pair pair = new Pair(indexValue, serializedTuple);
-
-                        pendingQueue.put(pair);
+                        pendingQueue.put(dataTuple);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
-                    } catch (IOException e) {
-                        e.printStackTrace();
                     }
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
                 }
 
                 numTuples += drainer.size();
@@ -374,7 +373,7 @@ public class Indexer {
                 }
             }
             long localCount = 0;
-            ArrayList<Pair> drainer = new ArrayList<Pair>();
+            ArrayList<DataTuple> drainer = new ArrayList<>();
             while (true) {
                 try {
 //                        Pair pair = queue.poll(1, TimeUnit.MILLISECONDS);
@@ -395,16 +394,16 @@ public class Indexer {
                             continue;
                     }
 
-                    for (Pair pair : drainer) {
+                    for (DataTuple tuple : drainer) {
                         localCount++;
-                        final Double indexValue = (Double) pair.getKey();
+                        final DataType indexValue = (DataType) schema.getIndexValue(tuple);
 //                            final Integer offset = (Integer) pair.getValue();
-                        final byte[] serializedTuple = (byte[]) pair.getValue();
+                        final byte[] serializedTuple = schema.serializeTuple(tuple);
 //                            System.out.println("local count " + localCount + " insert");
                         if (clonedIndexedData != null) {
-                            clonedIndexedData.insert(indexValue, serializedTuple);
+                            clonedIndexedData.insert((Comparable) indexValue, serializedTuple);
                         } else {
-                            indexedData.insert(indexValue, serializedTuple);
+                            indexedData.insert((Comparable) indexValue, serializedTuple);
                         }
 
 //                        System.out.println("insert has been finished!!!");
@@ -439,44 +438,64 @@ public class Indexer {
             while (true) {
 
                 try {
-//                    System.out.println("queue length " + processQuerySemaphore.getQueueLength() + "query runnable");
+                    System.out.println("queue length " + processQuerySemaphore.getQueueLength() + "query runnable");
                     processQuerySemaphore.acquire();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
 
-                Pair pair = null;
+                SubQuery<DataType> subQuery = null;
 
                 try {
-                    pair = queryPendingQueue.take();
+                    subQuery = queryPendingQueue.take();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
 
 
-                Long queryId = (Long) pair.getKey();
+                Long queryId = subQuery.getQueryId();
 
 //                System.out.println("semaphore " + queryId + " has been acquired in query runnable!!!");
 
-//                System.out.println("query id " + queryId + "in indexer has been taken from query pending queue!!!");
+                System.out.println("query id " + queryId + "in indexer has been taken from query pending queue!!!");
 
-                Pair keyRange = (Pair) pair.getValue();
 
-                Double leftKey = (Double) keyRange.getKey();
+                DataType leftKey = subQuery.getLeftKey();
+                DataType rightKey = subQuery.getRightKey();
+                Long startTimestamp = subQuery.getStartTimestamp();
+                Long endTimestamp = subQuery.getEndTimestamp();
 
-                Double rightKey = (Double) keyRange.getValue();
+//                Double rightKey = (Double) keyRange.getValue();
 
                 List<byte[]> serializedTuples = null;
+                List<byte[]> serializedTuplesWithinTimestamp = null;
 
-                serializedTuples = indexedData.searchRange(leftKey, rightKey);
+                System.out.println(queryId + " search has been started!!!");
+
+                serializedTuples.addAll(indexedData.searchRange((Comparable) leftKey, (Comparable) rightKey));
+
+                System.out.println(queryId + " search has been finished!!!");
+
+                System.out.println("tuple size " + serializedTuples.size());
+
+                for (int i = 0; i < serializedTuples.size(); ++i) {
+                    System.out.println(i + " th tuple is being deserialized!!!");
+                    DataTuple dataTuple = schema.deserializeToDataTuple(serializedTuples.get(i));
+                    Long timestamp = (Long) schema.getValue("timestamp", dataTuple);
+                    if (timestamp >= startTimestamp && timestamp <= endTimestamp) {
+                        serializedTuplesWithinTimestamp.add(serializedTuples.get(i));
+                    }
+                }
+
+                System.out.println("deserialization has been finished!!!");
 
                 processQuerySemaphore.release();
 
-//                System.out.println("semaphore " + queryId + " has been released in query runnable!!!");
+                System.out.println("semaphore " + queryId + " has been released in query runnable!!!");
 
-                collector.emit(Streams.BPlusTreeQueryStream, new Values(queryId, serializedTuples));
+                collector.emit(Streams.BPlusTreeQueryStream, new Values(queryId, serializedTuplesWithinTimestamp));
 
-//                System.out.println("query id " + queryId + "in indexer has been finished!!!");
+                System.out.println("query id " + queryId + "in indexer has been finished!!!");
             }
         }
     }

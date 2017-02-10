@@ -125,7 +125,9 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 //			System.out.println("ancestors!!!");
 			for (BTreeNode ancestor : ancestors) {
 //				ancestor.print();
-				ancestor.releaseReadLock();
+				while (ancestor.lock.getReadLockCount() != 0) {
+					ancestor.releaseReadLock();
+				}
 			}
 		}
 		return tuples;
@@ -133,14 +135,15 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 
 	private List<byte[]> searchTuplesFromCurrentNode(BTreeNode currentNode, TKey leftKey, TKey rightKey, List<BTreeNode> ancestors) {
 		List<byte[]> tuples = new ArrayList<>();
-//		currentNode.print();
+		currentNode.print();
 		int minIndex = currentNode.search(leftKey);
 		int maxIndex = currentNode.search(rightKey);
-//		currentNode.print();
-//		System.out.println("min index " + minIndex);
-//		System.out.println("max index " + maxIndex);
+		currentNode.print();
+		System.out.println("min index " + minIndex);
+		System.out.println("max index " + maxIndex);
 		if (currentNode.getNodeType() == TreeNodeType.LeafNode) {
 //			currentNode.print();
+			System.out.println("leaf node!!!");
 			return ((BTreeLeafNode) currentNode).getTuples(leftKey, rightKey);
 		} else {
 			BTreeNode node;
