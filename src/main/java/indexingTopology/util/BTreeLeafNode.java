@@ -5,7 +5,6 @@ import indexingTopology.exception.UnsupportedGenericException;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
 
 public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> implements Serializable {
     protected ArrayList<ArrayList<byte []>> tuples;
@@ -42,7 +41,7 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
             tuples = this.tuples.get(index);
             return tuples;
         }
-        return null;
+        return new ArrayList<>();
     }
 
     public ArrayList<Integer> getOffsets(int index) {
@@ -95,7 +94,7 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
         return -1;
     }
 
-    private int searchIndex(TKey key) {
+    private int searchMinIndex(TKey key) {
         int low = 0;
         int high = this.getKeyCount() - 1;
         while (low <= high) {
@@ -112,10 +111,27 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
         return low;
     }
 
+    private int searchLargestIndex(TKey key) {
+        int low = 0;
+        int high = this.getKeyCount() - 1;
+        while (low <= high) {
+            int mid = (low + high) >> 1;
+            int cmp = this.getKey(mid).compareTo(key);
+            if (cmp == 0) {
+                return mid;
+            } else if (cmp > 0) {
+                high = mid - 1;
+            } else {
+                low = mid + 1;
+            }
+        }
+        return high;
+    }
+
     public BTreeNode insertKeyTuples(TKey key, byte[] serilizedTuple, boolean templateMode) throws UnsupportedGenericException{
         BTreeNode node = null;
 
-        int index = searchIndex(key);
+        int index = searchMinIndex(key);
 
         if (!(index < this.keys.size() && this.getKey(index).compareTo(key) == 0)) {
             this.keys.add(index, key);
@@ -135,34 +151,6 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
         return node;
     }
 
-
-//    public BTreeNode insertKeyTuples(TKey key, byte[] serilizedTuple, boolean templateMode, Counter counter) throws UnsupportedGenericException{
-//        BTreeNode node = null;
-//
-//        int index = searchIndex(key);
-//
-//        if (keys.contains(key)) {
-//            counter.addCount();
-//        }
-//
-//        if (!(index < this.keys.size() && this.getKey(index).compareTo(key) == 0)) {
-//            this.keys.add(index, key);
-//            this.tuples.add(index, new ArrayList<byte[]>());
-//            this.offsets.add(index, new ArrayList<Integer>());
-//            ++this.keyCount;
-//        }
-//
-//
-//        tupleCount.incrementAndGet();
-//        this.tuples.get(index).add(serilizedTuple);
-//        this.offsets.get(index).add(serilizedTuple.length);
-//
-//        if (!templateMode && isOverflow()) {
-//            node = dealOverflow();
-//        }
-//
-//        return node;
-//    }
 
     /**
      * When splits a leaf node, the middle key is kept on new node and be pushed to parent node.
@@ -244,10 +232,11 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
 
 
     /* The code below is used to support search operation.*/
-    public List<byte[]> search(TKey leftKey, TKey rightKey){
+    /*
+    public List<byte[]> search(TKey leftKey, TKey rightKey) {
         // find first index satisfying range
         Lock lastLock = this.getrLock();
-        int firstIndex = searchIndex(leftKey);
+        int firstIndex = searchMinIndex(leftKey);
         List<byte[]> retList = new ArrayList<byte[]>();
         BTreeLeafNode currLeaf = this;
         BTreeNode currRightSibling = this;
@@ -285,8 +274,8 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
                     currLeaf.rightSibling.acquireReadLock();
                     lastLock.unlock();
                     lastLock = currLeaf.rightSibling.getrLock();
-                    currLeaf = (BTreeLeafNode) currLeaf.rightSibling;
                 }
+                currLeaf = (BTreeLeafNode) currLeaf.rightSibling;
             }
 
             currIndex = 0;
@@ -331,8 +320,8 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
                             currLeaf.rightSibling.acquireReadLock();
                             lastLock.unlock();
                             lastLock = currLeaf.rightSibling.getrLock();
-                            currLeaf = (BTreeLeafNode) currLeaf.rightSibling;
                         }
+                        currLeaf = (BTreeLeafNode) currLeaf.rightSibling;
                     }
 
                 } else {
@@ -351,6 +340,7 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
 
         return retList;
     }
+    */
 
     public long getTupleCount() {
         return tupleCount.get();
@@ -369,13 +359,12 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
 
         ArrayList<byte[]> tuples = new ArrayList<>();
 
-        Double leftKeyInDouble = (Double) leftKey;
+        int startIndex = searchMinIndex(leftKey);
+        int endIndex = searchLargestIndex(rightKey);
 
-        Double rightKeyInDouble = (Double) rightKey;
 
-        for (Double key = leftKeyInDouble; key <= rightKeyInDouble; ++key) {
-            int index = search((TKey) key);
-            if (index != -1 && index < getKeyCount()) {
+        for (int index = startIndex; index <= endIndex; ++index) {
+            if (keys.get(index).compareTo(leftKey) >=0 && keys.get(index).compareTo(rightKey) <=0) {
                 tuples.addAll(getTuples(index));
             }
         }

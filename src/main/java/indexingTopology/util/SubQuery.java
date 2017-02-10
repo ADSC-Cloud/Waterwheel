@@ -10,8 +10,6 @@ public class SubQuery <T extends Number> implements Serializable {
 
     private T rightKey;
 
-    private String fileName;
-
     private Long startTimestamp;
 
     private Long endTimestamp;
@@ -24,7 +22,6 @@ public class SubQuery <T extends Number> implements Serializable {
         this.queryId = queryId;
         this.leftKey = leftKey;
         this.rightKey = rightKey;
-        this.fileName = fileName;
         this.startTimestamp = startTimestamp;
         this.endTimestamp = endTimestamp;
         this.predicate = predicate;
@@ -45,10 +42,6 @@ public class SubQuery <T extends Number> implements Serializable {
 
     public T getRightKey() {
         return rightKey;
-    }
-
-    public String getFileName() {
-        return fileName;
     }
 
     public Long getStartTimestamp() {

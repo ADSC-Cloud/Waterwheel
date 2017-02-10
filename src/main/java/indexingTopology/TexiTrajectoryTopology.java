@@ -32,8 +32,10 @@ public class TexiTrajectoryTopology {
         TopologyBuilder builder = new TopologyBuilder();
         final int payloadSize = 10;
         DataSchema schema = new DataSchema();
-        schema.addDoubleField("id");
-        schema.addDoubleField("zcode");
+//        schema.addDoubleField("id");
+        schema.addLongField("id");
+//        schema.addDoubleField("zcode");
+        schema.addIntField("zcode");
         schema.addVarcharField("payload", payloadSize);
         schema.setPrimaryIndexField("zcode");
 
@@ -57,7 +59,7 @@ public class TexiTrajectoryTopology {
 
         String path = "/home/acelzj";
 
-        boolean enableLoadBalance = true;
+        boolean enableLoadBalance = false;
 
 
         builder.setSpout(TupleGenerator, new TexiTrajectoryGenerator(schema, generator, payloadSize, city), 1);

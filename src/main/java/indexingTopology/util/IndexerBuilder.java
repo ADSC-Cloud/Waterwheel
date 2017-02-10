@@ -1,6 +1,7 @@
 package indexingTopology.util;
 
 import indexingTopology.DataSchema;
+import indexingTopology.DataTuple;
 import javafx.util.Pair;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.tuple.Tuple;
@@ -12,9 +13,9 @@ import java.util.concurrent.ArrayBlockingQueue;
  */
 public class IndexerBuilder {
 
-    private ArrayBlockingQueue<Pair> queryPendingQueue;
+    private ArrayBlockingQueue<SubQuery> queryPendingQueue;
 
-    private ArrayBlockingQueue<Tuple> inputQueue;
+    private ArrayBlockingQueue<DataTuple> inputQueue;
 
     private OutputCollector collector;
 
@@ -39,12 +40,12 @@ public class IndexerBuilder {
         return this;
     }
 
-    public IndexerBuilder setInputQueue(ArrayBlockingQueue<Tuple> inputQueue) {
+    public IndexerBuilder setInputQueue(ArrayBlockingQueue<DataTuple> inputQueue) {
         this.inputQueue = inputQueue;
         return this;
     }
 
-    public IndexerBuilder setQueryPendingQueue(ArrayBlockingQueue<Pair> queryPendingQueue) {
+    public IndexerBuilder setQueryPendingQueue(ArrayBlockingQueue<SubQuery> queryPendingQueue) {
         this.queryPendingQueue = queryPendingQueue;
         return this;
     }

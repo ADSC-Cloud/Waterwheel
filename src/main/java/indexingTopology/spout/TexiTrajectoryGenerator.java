@@ -1,5 +1,6 @@
 package indexingTopology.spout;
 
+import indexingTopology.DataTuple;
 import indexingTopology.streams.Streams;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -48,9 +49,7 @@ public class TexiTrajectoryGenerator extends BaseRichSpout {
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        List<String> fields = schema.getFieldsObject().toList();
-        fields.add("timeStamp");
-        declarer.declareStream(Streams.IndexStream, new Fields(fields));
+        declarer.declareStream(Streams.IndexStream, new Fields("tuple"));
     }
 
     public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
@@ -60,8 +59,9 @@ public class TexiTrajectoryGenerator extends BaseRichSpout {
     public void nextTuple() {
         Car car = generator.generate();
 //        final long timestamp = System.currentTimeMillis();
-        collector_.emit(Streams.IndexStream, new Values((double)car.id, (double)city.getZCodeForALocation(car.x
-        , car.y), new String(new char[payloadSize]), timestamp), new Object());
+        DataTuple dataTuple = new DataTuple(car.id, city.getZCodeForALocation(car.x
+                , car.y), new String(new char[payloadSize]), timestamp);
+        collector_.emit(Streams.IndexStream, new Values(dataTuple), new Object());
 //        collector_.emit(Streams.IndexStream, new Values(car.id, city.getZCodeForALocation(car.x
 //                , car.y), new String(new char[payloadSize]), timestamp), new Object());
         ++timestamp;

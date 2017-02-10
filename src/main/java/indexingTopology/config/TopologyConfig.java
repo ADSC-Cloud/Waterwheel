@@ -24,6 +24,12 @@ public class TopologyConfig {
 
     public static String dataDir = "/home/acelzj";
 
-    public static double SKEWNESS_DETECTION_THRESHOLD = 0.1;
+    public static String dataFileDir = "/test_data/uniform_data.txt";
+
+    public static String logDir = "/logs";
+
+    public static double SKEWNESS_DETECTION_THRESHOLD = 0.6;
+
+    public static final int PENDING_QUEUE_CAPACITY = 600005;
 
 }

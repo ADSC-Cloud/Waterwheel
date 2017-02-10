@@ -31,4 +31,5 @@ public class Query <T extends Number> implements Serializable {
     public void setPredicate(Predicate<DataTuple> predicate) {
         this.predicate = predicate;
     }
+
 }

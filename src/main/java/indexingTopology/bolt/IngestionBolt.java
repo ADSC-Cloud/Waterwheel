@@ -1,6 +1,7 @@
 package indexingTopology.bolt;
 
 import com.esotericsoftware.kryo.Kryo;
+import indexingTopology.DataTuple;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -18,7 +19,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 /**
  * Created by acelzj on 11/15/16.
  */
-public class IngestionBolt extends BaseRichBolt {
+public class IngestionBolt<DataType extends Number> extends BaseRichBolt {
     private final DataSchema schema;
 
     private final String indexField;
@@ -31,9 +32,9 @@ public class IngestionBolt extends BaseRichBolt {
 
     private Indexer indexer;
 
-    private ArrayBlockingQueue<Tuple> inputQueue;
+    private ArrayBlockingQueue<DataTuple> inputQueue;
 
-    private ArrayBlockingQueue<Pair> queryPendingQueue;
+    private ArrayBlockingQueue<SubQuery> queryPendingQueue;
 
     public IngestionBolt(String indexField, DataSchema schema) {
         this.schema = schema;
@@ -46,9 +47,9 @@ public class IngestionBolt extends BaseRichBolt {
         kryo.register(BTree.class, new KryoTemplateSerializer());
         kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
 
-        this.inputQueue = new ArrayBlockingQueue<Tuple>(1024);
+        this.inputQueue = new ArrayBlockingQueue<>(1024);
 
-        this.queryPendingQueue = new ArrayBlockingQueue<Pair>(1024);
+        this.queryPendingQueue = new ArrayBlockingQueue<>(1024);
 
         indexerBuilder = new IndexerBuilder();
 
@@ -69,22 +70,23 @@ public class IngestionBolt extends BaseRichBolt {
 
     public void execute(Tuple tuple) {
         if (tuple.getSourceStreamId().equals(Streams.IndexStream)) {
+            DataTuple dataTuple = (DataTuple) tuple.getValueByField("tuple");
             try {
-                inputQueue.put(tuple);
+                inputQueue.put(dataTuple);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } finally {
                 collector.ack(tuple);
             }
         } else if (tuple.getSourceStreamId().equals(Streams.BPlusTreeQueryStream)){
-            Long queryId = tuple.getLong(0);
-            Double leftKey = tuple.getDouble(1);
-            Double rightKey = tuple.getDouble(2);
-            Pair pair = new Pair(queryId, new Pair(leftKey, rightKey));
+//            Long queryId = tuple.getLong(0);
+//            Double leftKey = tuple.getDouble(1);
+//            Double rightKey = tuple.getDouble(2);
+//            Pair pair = new Pair(queryId, new Pair(leftKey, rightKey));
+            SubQuery subQuery = (SubQuery) tuple.getValueByField("subquery");
 
             try {
-                queryPendingQueue.put(pair);
-                System.out.println("query id " + queryId + " has been put to pending queue!!!");
+                queryPendingQueue.put(subQuery);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

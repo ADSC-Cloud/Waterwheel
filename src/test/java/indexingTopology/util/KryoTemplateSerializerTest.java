@@ -23,6 +23,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+import static org.junit.Assert.assertEquals;
+
 /**
  * Created by acelzj on 1/4/17.
  */
@@ -194,7 +196,7 @@ public class KryoTemplateSerializerTest {
 
         indexedData = kryo.readObject(input, BTree.class);
 
-        indexedData.printBtree();
+//        indexedData.printBtree();
 
         BTreeNode mostLeftNode = indexedData.findLeafNodeShouldContainKeyInDeserializedTemplate(0.0);
         BTreeNode mostRightNode = indexedData.findLeafNodeShouldContainKeyInDeserializedTemplate(60.0);
@@ -222,7 +224,7 @@ public class KryoTemplateSerializerTest {
 
             BTreeLeafNode leaf = kryo.readObject(input, BTreeLeafNode.class);
 
-            leaf.print();
+//            leaf.print();
         }
     }
 
@@ -311,7 +313,7 @@ public class KryoTemplateSerializerTest {
 
             indexedData.clearPayload();
 
-            indexedData.printBtree();
+//            indexedData.printBtree();
 
             for (String fileName : fileNames) {
 
@@ -339,7 +341,7 @@ public class KryoTemplateSerializerTest {
                 List<Integer> offsets = indexedData.getOffsetsOfLeaveNodesShouldContainKeys(mostLeftNode
                         , mostRightNode);
 
-                System.out.println(offsets);
+//                System.out.println(offsets);
 
                 for (Integer offset : offsets) {
 
@@ -364,9 +366,9 @@ public class KryoTemplateSerializerTest {
                     ArrayList<byte[]> tuples = leaf.getTuples(994.0, 994.0);
 //                ArrayList<byte[]> tuples = leaf.searchAndGetTuples(994.0);
 
-                    for (int j = 0; j < tuples.size(); ++j) {
-                        System.out.println(deserialize(tuples.get(j)));
-                    }
+//                    for (int j = 0; j < tuples.size(); ++j) {
+//                        System.out.println(deserialize(tuples.get(j)));
+//                    }
 
                 }
                 fileSystemHandler.closeFile();
@@ -375,20 +377,6 @@ public class KryoTemplateSerializerTest {
             ++chunkId;
         }
 
-    }
-
-    @Test
-    public void testWriteString() {
-        Double a = 4.0;
-        String s = new String(new char[5]);
-        Output output = new Output(1000, 20000);
-        output.writeDouble(a);
-        output.writeString(s);
-        byte[] bytes = output.toBytes();
-        Input input = new Input(bytes);
-
-        System.out.println(input.readDouble());
-        System.out.println(input.readString());
     }
 
     public byte[] serializeIndexValue(List<Object> values) throws IOException {

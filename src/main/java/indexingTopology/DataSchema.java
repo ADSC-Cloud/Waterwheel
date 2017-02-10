@@ -18,7 +18,7 @@ import java.util.Map;
  */
 public class DataSchema implements Serializable {
 
-    public static class DataType {
+    public static class DataType implements Serializable{
         DataType(Class type, int length) {
             this.type = type;
             this.length = length;
