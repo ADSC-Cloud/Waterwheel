@@ -82,7 +82,7 @@ public class NormalDistributionTopology {
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 
-        builder.setBolt(IndexerBolt, new IngestionBolt("user_id", schemaWithTimestamp),2)
+        builder.setBolt(IndexerBolt, new IngestionBolt(schemaWithTimestamp),2)
                 .setNumTasks(1)
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream);

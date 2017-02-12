@@ -95,7 +95,7 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt{
 
         Long queryId = subQuery.getQueryId();
 
-        System.out.println(queryId + " in chunk scanner is being executed!!!");
+//        System.out.println(queryId + " in chunk scanner is being executed!!!");
 
         TKey leftKey =  (TKey) subQuery.getLeftKey();
         TKey rightKey =  (TKey) subQuery.getRightKey();

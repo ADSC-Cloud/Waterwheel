@@ -17,21 +17,12 @@ public class IndexerBuilder {
 
     private ArrayBlockingQueue<DataTuple> inputQueue;
 
-    private OutputCollector collector;
-
-    private String indexField;
-
     private DataSchema schema;
 
     int taskId;
 
     public IndexerBuilder setTaskId(int taskId) {
         this.taskId = taskId;
-        return this;
-    }
-
-    public IndexerBuilder setOutputCollector(OutputCollector collector) {
-        this.collector = collector;
         return this;
     }
 
@@ -50,12 +41,7 @@ public class IndexerBuilder {
         return this;
     }
 
-    public IndexerBuilder setIndexField(String indexField) {
-        this.indexField = indexField;
-        return this;
-    }
-
     public Indexer getIndexer() {
-        return new Indexer(taskId, inputQueue, indexField, schema, collector, queryPendingQueue);
+        return new Indexer(taskId, inputQueue, schema, queryPendingQueue);
     }
 }

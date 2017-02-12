@@ -9,10 +9,7 @@ import indexingTopology.filesystem.FileSystemHandler;
 import indexingTopology.filesystem.HdfsFileSystemHandler;
 import indexingTopology.filesystem.LocalFileSystemHandler;
 import indexingTopology.exception.UnsupportedGenericException;
-import indexingTopology.streams.Streams;
 import javafx.util.Pair;
-import org.apache.storm.task.OutputCollector;
-import org.apache.storm.tuple.Values;
 
 import java.io.IOException;
 import java.util.*;
@@ -89,10 +86,14 @@ public class Indexer<DataType extends Number> extends Observable {
 
     private ArrayBlockingQueue<Pair> queryResultQueue;
 
+    private ArrayBlockingQueue<Pair> updateInformationPendingQueue;
+
     public Indexer(int taskId, ArrayBlockingQueue<DataTuple> inputQueue, DataSchema schema, ArrayBlockingQueue<SubQuery<DataType>> queryPendingQueue) {
         pendingQueue = new ArrayBlockingQueue<>(1024);
 
         queryResultQueue = new ArrayBlockingQueue<Pair>(100);
+
+        updateInformationPendingQueue = new ArrayBlockingQueue<Pair>(10);
 
         this.inputQueue = inputQueue;
 
@@ -280,6 +281,12 @@ public class Indexer<DataType extends Number> extends Observable {
 
 //                    indexedData = indexedData.clone();
                     clonedIndexedData = indexedData.clone();
+
+                    try {
+                        updateInformationPendingQueue.put(new Pair(fileName, new Domain(keyDomain, timeDomain)));
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
 
                     setChanged();
                     notifyObservers("information update");
@@ -506,16 +513,14 @@ public class Indexer<DataType extends Number> extends Observable {
     }
 
 
-    public KeyDomain getKeyDomain() {
-        return keyDomain;
-    }
-
-    public TimeDomain getTimeDomain() {
-        return timeDomain;
-    }
-
-    public String getFileName() {
-        return fileName;
+    public Pair getDomainInformation() {
+        Pair pair = null;
+        try {
+            pair = updateInformationPendingQueue.take();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return pair;
     }
 
     public Pair getQueryResult() {

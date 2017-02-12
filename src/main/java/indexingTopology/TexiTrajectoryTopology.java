@@ -70,7 +70,7 @@ public class TexiTrajectoryTopology {
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 
 
-        builder.setBolt(IndexerBolt, new IngestionBolt(schemaWithTimestamp.getIndexField(), schemaWithTimestamp), 4)
+        builder.setBolt(IndexerBolt, new IngestionBolt(schemaWithTimestamp), 4)
 
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream) // direct grouping should be used.

@@ -26,8 +26,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 public class IngestionBolt<DataType extends Comparable> extends BaseRichBolt implements Observer {
     private final DataSchema schema;
 
-    private final String indexField;
-
     private OutputCollector collector;
 
     private Kryo kryo;
@@ -42,9 +40,8 @@ public class IngestionBolt<DataType extends Comparable> extends BaseRichBolt imp
 
     private Observable observable;
 
-    public IngestionBolt(String indexField, DataSchema schema) {
+    public IngestionBolt(DataSchema schema) {
         this.schema = schema;
-        this.indexField = indexField;
     }
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
@@ -114,11 +111,13 @@ public class IngestionBolt<DataType extends Comparable> extends BaseRichBolt imp
     public void update(Observable o, Object arg) {
         if (o instanceof Indexer) {
             String s = (String) arg;
-            System.out.println(s);
             if (s.equals("information update")) {
-                String fileName = ((Indexer) o).getFileName();
-                KeyDomain keyDomain = ((Indexer) o).getKeyDomain();
-                TimeDomain timeDomain = ((Indexer) o).getTimeDomain();
+                Pair domainInformation = ((Indexer) o).getDomainInformation();
+
+                String fileName = (String) domainInformation.getKey();
+                Domain domain = (Domain) domainInformation.getValue();
+                KeyDomain keyDomain = new KeyDomain(domain.getLowerBound(), domain.getUpperBound());
+                TimeDomain timeDomain = new TimeDomain(domain.getStartTimestamp(), domain.getEndTimestamp());
 
                 collector.emit(Streams.FileInformationUpdateStream, new Values(fileName, keyDomain, timeDomain));
 
