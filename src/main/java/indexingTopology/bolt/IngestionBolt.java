@@ -12,14 +12,18 @@ import indexingTopology.DataSchema;
 import indexingTopology.streams.Streams;
 import indexingTopology.util.*;
 import javafx.util.Pair;
+import org.apache.storm.tuple.Values;
 
 import java.util.Map;
+import java.util.List;
+import java.util.Observable;
+import java.util.Observer;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * Created by acelzj on 11/15/16.
  */
-public class IngestionBolt<DataType extends Comparable> extends BaseRichBolt {
+public class IngestionBolt<DataType extends Comparable> extends BaseRichBolt implements Observer {
     private final DataSchema schema;
 
     private final String indexField;
@@ -35,6 +39,8 @@ public class IngestionBolt<DataType extends Comparable> extends BaseRichBolt {
     private ArrayBlockingQueue<DataTuple> inputQueue;
 
     private ArrayBlockingQueue<SubQuery> queryPendingQueue;
+
+    private Observable observable;
 
     public IngestionBolt(String indexField, DataSchema schema) {
         this.schema = schema;
@@ -56,11 +62,12 @@ public class IngestionBolt<DataType extends Comparable> extends BaseRichBolt {
         indexer = indexerBuilder
                 .setTaskId(topologyContext.getThisTaskId())
                 .setDataSchema(schema)
-                .setIndexField(indexField)
                 .setInputQueue(inputQueue)
                 .setQueryPendingQueue(queryPendingQueue)
-                .setOutputCollector(collector)
                 .getIndexer();
+
+        this.observable = indexer;
+        observable.addObserver(this);
     }
 
     @Override
@@ -101,5 +108,29 @@ public class IngestionBolt<DataType extends Comparable> extends BaseRichBolt {
 
         outputFieldsDeclarer.declareStream(Streams.TimestampUpdateStream,
                 new Fields("timeDomain", "keyDomain"));
+    }
+
+    @Override
+    public void update(Observable o, Object arg) {
+        if (o instanceof Indexer) {
+            String s = (String) arg;
+            System.out.println(s);
+            if (s.equals("information update")) {
+                String fileName = ((Indexer) o).getFileName();
+                KeyDomain keyDomain = ((Indexer) o).getKeyDomain();
+                TimeDomain timeDomain = ((Indexer) o).getTimeDomain();
+
+                collector.emit(Streams.FileInformationUpdateStream, new Values(fileName, keyDomain, timeDomain));
+
+                collector.emit(Streams.TimestampUpdateStream, new Values(timeDomain, keyDomain));
+
+            } else if (s.equals("query result")) {
+                Pair pair = ((Indexer) o).getQueryResult();
+                Long queryId = (Long) pair.getKey();
+                List<byte[]> serializedTuplesWithinTimestamp = (List<byte[]>) pair.getValue();
+
+                collector.emit(Streams.BPlusTreeQueryStream, new Values(queryId, serializedTuplesWithinTimestamp));
+            }
+        }
     }
 }

@@ -93,14 +93,13 @@ public class ResultMerger extends BaseRichBolt {
             }
             ArrayList<byte[]> serializedTuples = (ArrayList) tuple.getValue(1);
 
-//            if (tuple.getSourceStreamId().equals(Streams.FileSystemQueryStream)) {
+//            if (tuple.getSourceStreamId().equals(Streams.BPlusTreeQueryStream)) {
 //                for (int i = 0; i < serializedTuples.size(); ++i) {
 //                    DataTuple dataTuple = schema.deserializeToDataTuple(serializedTuples.get(i));
 //                    System.out.println(dataTuple);
 //                    System.out.println("tuples in query id " + queryId + " " + tuple.getSourceStreamId());
 //                }
 //            }
-
 
             Integer numberOfTuples = queryIdToNumberOfTuples.get(queryId);
             if (numberOfTuples == null)

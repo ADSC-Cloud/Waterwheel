@@ -12,14 +12,10 @@ import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.streams.Streams;
 import javafx.util.Pair;
 import org.apache.storm.task.OutputCollector;
-import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,7 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Created by acelzj on 1/3/17.
  */
-public class Indexer<DataType extends Number> {
+public class Indexer<DataType extends Number> extends Observable {
 
     private ArrayBlockingQueue<DataTuple> pendingQueue;
 
@@ -79,16 +75,24 @@ public class Indexer<DataType extends Number> {
 
     private DataSchema schema;
 
-    private OutputCollector collector;
-
     private int taskId;
 
     private Semaphore processQuerySemaphore;
 
     private BTree clonedIndexedData;
 
-    public Indexer(int taskId, ArrayBlockingQueue<DataTuple> inputQueue, String indexedField, DataSchema schema, OutputCollector collector, ArrayBlockingQueue<SubQuery<DataType>> queryPendingQueue) {
+    private TimeDomain timeDomain;
+
+    private KeyDomain keyDomain;
+
+    private String fileName;
+
+    private ArrayBlockingQueue<Pair> queryResultQueue;
+
+    public Indexer(int taskId, ArrayBlockingQueue<DataTuple> inputQueue, DataSchema schema, ArrayBlockingQueue<SubQuery<DataType>> queryPendingQueue) {
         pendingQueue = new ArrayBlockingQueue<>(1024);
+
+        queryResultQueue = new ArrayBlockingQueue<Pair>(100);
 
         this.inputQueue = inputQueue;
 
@@ -105,9 +109,7 @@ public class Indexer<DataType extends Number> {
         indexingThreads = new ArrayList<>();
         queryThreads = new ArrayList<>();
 
-        this.chunk = chunk;
-
-        this.indexField = indexedField;
+        this.indexField = schema.getIndexField();
 
         this.schema = schema;
 
@@ -118,8 +120,6 @@ public class Indexer<DataType extends Number> {
         kryo = new Kryo();
         kryo.register(BTree.class, new KryoTemplateSerializer());
         kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
-
-        this.collector = collector;
 
         this.taskId = taskId;
 
@@ -254,7 +254,8 @@ public class Indexer<DataType extends Number> {
                     terminateIndexingThreads();
 
                     FileSystemHandler fileSystemHandler = null;
-                    String fileName = null;
+//                    String fileName = null;
+                    fileName = null;
 
                     writeTreeIntoChunk();
 
@@ -264,23 +265,28 @@ public class Indexer<DataType extends Number> {
                         } else {
                             fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
                         }
-                        fileName = fileName = "taskId" + taskId + "chunk" + chunkId;
+                        fileName = "taskId" + taskId + "chunk" + chunkId;
                         fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
 
-                    KeyDomain keyDomain = new KeyDomain(minIndexValue, maxIndexValue);
-                    TimeDomain timeDomain = new TimeDomain(minTimestamp, maxTimestamp);
+//                    KeyDomain keyDomain = new KeyDomain(minIndexValue, maxIndexValue);
+                    keyDomain = new KeyDomain(minIndexValue, maxIndexValue);
+//                    TimeDomain timeDomain = new TimeDomain(minTimestamp, maxTimestamp);
+                    timeDomain = new TimeDomain(minTimestamp, maxTimestamp);
 
                     domainToBTreeMapping.put(new Domain(minTimestamp, maxTimestamp, minIndexValue, maxIndexValue), indexedData);
 
 //                    indexedData = indexedData.clone();
                     clonedIndexedData = indexedData.clone();
 
-                    collector.emit(Streams.FileInformationUpdateStream, new Values(fileName, keyDomain, timeDomain));
+                    setChanged();
+                    notifyObservers("information update");
 
-                    collector.emit(Streams.TimestampUpdateStream, new Values(timeDomain, keyDomain));
+//                    collector.emit(Streams.FileInformationUpdateStream, new Values(fileName, keyDomain, timeDomain));
+
+//                    collector.emit(Streams.TimestampUpdateStream, new Values(timeDomain, keyDomain));
 
 //                    indexedData.clearPayload();
                     clonedIndexedData.clearPayload();
@@ -296,15 +302,6 @@ public class Indexer<DataType extends Number> {
                     ++chunkId;
                 }
 
-//                try {
-//                    Pair pair = inputQueue.take();
-//
-//                    pendingQueue.put(pair);
-//
-//                    ++numTuples;
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
                 inputQueue.drainTo(drainer, 256);
 
                 for (DataTuple dataTuple: drainer) {
@@ -455,9 +452,7 @@ public class Indexer<DataType extends Number> {
 
 //                System.out.println("semaphore " + queryId + " has been acquired in query runnable!!!");
 
-                System.out.println("query id " + queryId + "in indexer has been taken from query pending queue!!!");
-
-
+//                System.out.println("query id " + queryId + "in indexer has been taken from query pending queue!!!");
                 DataType leftKey = subQuery.getLeftKey();
                 DataType rightKey = subQuery.getRightKey();
                 Long startTimestamp = subQuery.getStartTimestamp();
@@ -486,9 +481,17 @@ public class Indexer<DataType extends Number> {
 
                 processQuerySemaphore.release();
 
+                try {
+                    queryResultQueue.put(new Pair(queryId, serializedTuplesWithinTimestamp));
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                setChanged();
+                notifyObservers("query result");
 //                System.out.println("semaphore " + queryId + " has been released in query runnable!!!");
 
-                collector.emit(Streams.BPlusTreeQueryStream, new Values(queryId, serializedTuplesWithinTimestamp));
+//                collector.emit(Streams.BPlusTreeQueryStream, new Values(queryId, serializedTuplesWithinTimestamp));
 
 //                System.out.println("query id " + queryId + "in indexer has been finished!!!");
             }
@@ -502,6 +505,28 @@ public class Indexer<DataType extends Number> {
         domainToBTreeMapping.remove(domain);
     }
 
+
+    public KeyDomain getKeyDomain() {
+        return keyDomain;
+    }
+
+    public TimeDomain getTimeDomain() {
+        return timeDomain;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public Pair getQueryResult() {
+        Pair pair = null;
+        try {
+            pair =  queryResultQueue.take();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return pair;
+    }
 
     private void writeTreeIntoChunk() {
 
