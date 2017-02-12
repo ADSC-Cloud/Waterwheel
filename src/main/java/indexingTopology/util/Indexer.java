@@ -270,19 +270,17 @@ public class Indexer<DataType extends Number> {
                         e.printStackTrace();
                     }
 
-                    Pair keyRange = new Pair(minIndexValue, maxIndexValue);
-                    Pair timeStampRange = new Pair(minTimestamp, maxTimestamp);
+                    KeyDomain keyDomain = new KeyDomain(minIndexValue, maxIndexValue);
+                    TimeDomain timeDomain = new TimeDomain(minTimestamp, maxTimestamp);
 
                     domainToBTreeMapping.put(new Domain(minTimestamp, maxTimestamp, minIndexValue, maxIndexValue), indexedData);
 
 //                    indexedData = indexedData.clone();
                     clonedIndexedData = indexedData.clone();
 
+                    collector.emit(Streams.FileInformationUpdateStream, new Values(fileName, keyDomain, timeDomain));
 
-
-                    collector.emit(Streams.FileInformationUpdateStream, new Values(fileName, keyRange, timeStampRange));
-
-                    collector.emit(Streams.TimestampUpdateStream, new Values(timeStampRange, keyRange));
+                    collector.emit(Streams.TimestampUpdateStream, new Values(timeDomain, keyDomain));
 
 //                    indexedData.clearPayload();
                     clonedIndexedData.clearPayload();
@@ -465,21 +463,18 @@ public class Indexer<DataType extends Number> {
                 Long startTimestamp = subQuery.getStartTimestamp();
                 Long endTimestamp = subQuery.getEndTimestamp();
 
-//                Double rightKey = (Double) keyRange.getValue();
+                List<byte[]> serializedTuples = new ArrayList<>();
+                List<byte[]> serializedTuplesWithinTimestamp = new ArrayList<>();
 
-                List<byte[]> serializedTuples = null;
-                List<byte[]> serializedTuplesWithinTimestamp = null;
-
-                System.out.println(queryId + " search has been started!!!");
+//                System.out.println(queryId + " search has been started!!!");
 
                 serializedTuples.addAll(indexedData.searchRange((Comparable) leftKey, (Comparable) rightKey));
 
-                System.out.println(queryId + " search has been finished!!!");
+//                System.out.println(queryId + " search has been finished!!!");
 
-                System.out.println("tuple size " + serializedTuples.size());
+//                System.out.println("tuple size " + serializedTuples.size());
 
                 for (int i = 0; i < serializedTuples.size(); ++i) {
-                    System.out.println(i + " th tuple is being deserialized!!!");
                     DataTuple dataTuple = schema.deserializeToDataTuple(serializedTuples.get(i));
                     Long timestamp = (Long) schema.getValue("timestamp", dataTuple);
                     if (timestamp >= startTimestamp && timestamp <= endTimestamp) {
@@ -487,15 +482,15 @@ public class Indexer<DataType extends Number> {
                     }
                 }
 
-                System.out.println("deserialization has been finished!!!");
+//                System.out.println("deserialization has been finished!!!");
 
                 processQuerySemaphore.release();
 
-                System.out.println("semaphore " + queryId + " has been released in query runnable!!!");
+//                System.out.println("semaphore " + queryId + " has been released in query runnable!!!");
 
                 collector.emit(Streams.BPlusTreeQueryStream, new Values(queryId, serializedTuplesWithinTimestamp));
 
-                System.out.println("query id " + queryId + "in indexer has been finished!!!");
+//                System.out.println("query id " + queryId + "in indexer has been finished!!!");
             }
         }
     }

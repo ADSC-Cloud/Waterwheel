@@ -102,6 +102,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
                 root.acquireReadLock();
             }
             tuples.addAll(searchRangeInBaseline(leftKey, rightKey));
+            System.out.println("finished!!!");
 //            System.out.println(tmpNode == root);
         } else {
             tuples.addAll(searchRangeInTemplate(leftKey, rightKey));
@@ -116,41 +117,59 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		BTreeNode tmpRoot = root;
 		BTreeNode currentNode = root;
 		if (currentNode.getNodeType() == TreeNodeType.LeafNode) {
-			tuples.addAll(((BTreeLeafNode) currentNode).getTuples(leftKey, rightKey));
+			tuples.addAll(((BTreeLeafNode) currentNode).getTuplesWithinKeyRange(leftKey, rightKey));
 			root.releaseReadLock();
 		} else {
 			List<BTreeNode> ancestors = new ArrayList<>();
 			ancestors.add(currentNode);
 			tuples.addAll(searchTuplesFromCurrentNode(currentNode, leftKey, rightKey, ancestors));
-//			System.out.println("ancestors!!!");
+//			System.out.println("The size of ancestors is "  + ancestors.size() + " !!!");
 			for (BTreeNode ancestor : ancestors) {
 //				ancestor.print();
-				while (ancestor.lock.getReadLockCount() != 0) {
-					ancestor.releaseReadLock();
-				}
+//				while (ancestor.lock.getReadLockCount() != 0) {
+					try {
+//						System.out.println("in release " + ancestor.lock.getReadLockCount());
+//						if (ancestor.getNodeType() == TreeNodeType.InnerNode) {
+//							System.out.println("inner node");
+//						} else {
+//							System.out.println("leaf node");
+//						}
+//						System.out.println("****trying to release read lock!!!***");
+						ancestor.releaseReadLock();
+//						System.out.println("****have release read lock!!!***");
+					} catch (IllegalMonitorStateException e) {
+//						System.out.println("IllegalMonitorStateException");
+					} finally {
+//						System.out.println("******finally*******");
+//						ancestor.print();
+					}
 			}
+
+
 		}
 		return tuples;
 	}
 
 	private List<byte[]> searchTuplesFromCurrentNode(BTreeNode currentNode, TKey leftKey, TKey rightKey, List<BTreeNode> ancestors) {
 		List<byte[]> tuples = new ArrayList<>();
-		currentNode.print();
-		int minIndex = currentNode.search(leftKey);
-		int maxIndex = currentNode.search(rightKey);
-		currentNode.print();
-		System.out.println("min index " + minIndex);
-		System.out.println("max index " + maxIndex);
+//		currentNode.print();
+//		currentNode.print();
+//		System.out.println("min index " + minIndex);
+//		System.out.println("max index " + maxIndex);
 		if (currentNode.getNodeType() == TreeNodeType.LeafNode) {
+//			System.out.println("****leaf node******");
 //			currentNode.print();
-			System.out.println("leaf node!!!");
-			return ((BTreeLeafNode) currentNode).getTuples(leftKey, rightKey);
+//			System.out.println("read lock count " + currentNode.lock.getReadLockCount());
+			return ((BTreeLeafNode) currentNode).getTuplesWithinKeyRange(leftKey, rightKey);
 		} else {
 			BTreeNode node;
+			int minIndex = currentNode.search(leftKey);
+			int maxIndex = currentNode.search(rightKey);
 			if (minIndex == maxIndex) {
 				node = ((BTreeInnerNode) currentNode).getChild(minIndex);
 				node.acquireReadLock();
-//				currentNode.print();
+//				node.print();
+//				System.out.println("add read lock count " + node.lock.getReadLockCount());
 				currentNode.releaseReadLock();
 				ancestors.remove(currentNode);
 				ancestors.add(node);
@@ -158,7 +177,9 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 			} else {
 				for (int i = minIndex; i <= maxIndex; ++i) {
 					node = ((BTreeInnerNode) currentNode).getChild(i);
+//					node.print();
 					node.acquireReadLock();
+//					System.out.println("add read lock count " + node.lock.getReadLockCount());
 					ancestors.add(node);
 					tuples.addAll(searchTuplesFromCurrentNode(node, leftKey, rightKey, ancestors));
 				}
@@ -178,7 +199,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
         BTreeLeafNode currLeaf = leafLeft;
         while (currLeaf != leafRight.rightSibling) {
             currLeaf.acquireReadLock();
-            tuples.addAll(currLeaf.getTuples(leftKey, rightKey));
+            tuples.addAll(currLeaf.getTuplesWithinKeyRange(leftKey, rightKey));
             currLeaf.releaseReadLock();
             currLeaf = (BTreeLeafNode) currLeaf.rightSibling;
         }

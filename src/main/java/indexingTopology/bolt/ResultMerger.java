@@ -33,8 +33,6 @@ public class ResultMerger extends BaseRichBolt {
 
     Map<Long, FileScanMetrics> queryIdToFileScanMetrics;
 
-    List<HashMap> maps;
-
     DataSchema schema;
 
     OutputCollector collector;
@@ -67,7 +65,6 @@ public class ResultMerger extends BaseRichBolt {
             queryIdToNumberOfTasksToSearch.put(queryId, numberOfTasksToSearch);
 
             if (isQueryFinshed(queryId)) {
-//                System.out.println(tuple.getSourceStreamId());
                 sendNewQueryPermit(queryId);
                 removeQueryIdFromMappings(queryId);
             }
@@ -76,11 +73,10 @@ public class ResultMerger extends BaseRichBolt {
                 .equals(Streams.FileSystemQueryInformationStream)) {
             int numberOfFilesToScan = tuple.getInteger(1);
             Long queryId = tuple.getLong(0);
-            System.out.println("queryId" + queryId + " number of files to scan " + numberOfFilesToScan);
+//            System.out.println("queryId" + queryId + " number of files to scan " + numberOfFilesToScan);
             queryIdToNumberOfFilesToScan.put(queryId, numberOfFilesToScan);
 
             if (isQueryFinshed(queryId)) {
-//                System.out.println(tuple.getSourceStreamId());
                 sendNewQueryPermit(queryId);
                 removeQueryIdFromMappings(queryId);
             }
@@ -88,12 +84,6 @@ public class ResultMerger extends BaseRichBolt {
         } else if (tuple.getSourceStreamId().equals(Streams.BPlusTreeQueryStream) ||
                 tuple.getSourceStreamId().equals(Streams.FileSystemQueryStream)) {
             long queryId = tuple.getLong(0);
-
-//            if (tuple.getSourceStreamId().equals(Streams.FileSystemQueryStream)) {
-//                FileScanMetrics metrics = (FileScanMetrics) tuple.getValue(2);
-//                putFileScanMetrics(queryId, metrics);
-//                System.out.println(tuple.getSourceStreamId() + "has been finished");
-//            }
 
             Integer counter = queryIdToCounter.get(queryId);
             if (counter == null) {
@@ -154,12 +144,8 @@ public class ResultMerger extends BaseRichBolt {
     }
 
     private void sendNewQueryPermit(Long queryId) {
-//        FileScanMetrics metrics = queryIdToFileScanMetrics.get(queryId);
-//        int numberOfFilesToScan = queryIdToNumberOfFilesToScan.get(queryId);
-//        collector.emit(Streams.NewQueryStream, new Values(queryId, new String("New query can be executed"),
         collector.emit(Streams.NewQueryStream, new Values(queryId, new String("New query can be executed"),
                         null, 0));
-//                        metrics, numberOfFilesToScan));
     }
 
     private void removeQueryIdFromMappings(Long queryId) {

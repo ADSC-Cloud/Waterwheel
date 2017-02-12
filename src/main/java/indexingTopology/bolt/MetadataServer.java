@@ -1,6 +1,7 @@
 package indexingTopology.bolt;
 
 import indexingTopology.config.TopologyConfig;
+import indexingTopology.util.*;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -11,9 +12,6 @@ import org.apache.storm.tuple.Values;
 import indexingTopology.metadata.FileMetaData;
 import indexingTopology.metadata.FilePartitionSchemaManager;
 import indexingTopology.streams.Streams;
-import indexingTopology.util.BalancedPartition;
-import indexingTopology.util.Histogram;
-import indexingTopology.util.RepartitionManager;
 import javafx.util.Pair;
 
 import java.util.*;
@@ -121,23 +119,22 @@ public class MetadataServer extends BaseRichBolt {
 
         } else if (tuple.getSourceStreamId().equals(Streams.FileInformationUpdateStream)) {
             String fileName = tuple.getString(0);
-            Pair keyRange = (Pair) tuple.getValue(1);
-            Pair timeStampRange = (Pair) tuple.getValue(2);
-
-            filePartitionSchemaManager.add(new FileMetaData(fileName, (Double) keyRange.getKey(),
-                    (Double)keyRange.getValue(), (Long) timeStampRange.getKey(), (Long) timeStampRange.getValue()));
+            TimeDomain timeDomain = (TimeDomain) tuple.getValueByField("timeDomain");
+            KeyDomain keyDomain = (KeyDomain) tuple.getValueByField("keyDomain");
+            filePartitionSchemaManager.add(new FileMetaData(fileName, (Double) keyDomain.getLowerBound(),
+                    (Double)keyDomain.getUpperBound(), timeDomain.getStartTimestamp(), timeDomain.getEndTimestamp()));
 
             collector.emit(Streams.FileInformationUpdateStream,
-                    new Values(fileName, keyRange, timeStampRange));
+                    new Values(fileName, keyDomain, timeDomain));
         } else if (tuple.getSourceStreamId().equals(Streams.TimestampUpdateStream)) {
             int taskId = tuple.getSourceTask();
-            Pair timestampRange = (Pair) tuple.getValueByField("timestampRange");
-            Pair keyRange = (Pair) tuple.getValueByField("keyRange");
-            Long endTimestamp = (Long) timestampRange.getValue();
+            TimeDomain timeDomain = (TimeDomain) tuple.getValueByField("timeDomain");
+            KeyDomain keyDomain = (KeyDomain) tuple.getValueByField("keyDomain");
+            Long endTimestamp = timeDomain.getEndTimestamp();
 
             indexTaskToTimestampMapping.put(taskId, endTimestamp);
 
-            collector.emit(Streams.TimestampUpdateStream, new Values(taskId, keyRange, timestampRange));
+            collector.emit(Streams.TimestampUpdateStream, new Values(taskId, keyDomain, timeDomain));
         } else if (tuple.getSourceStreamId().equals(Streams.EableRepartitionStream)) {
             repartitionEnabled = true;
         }
@@ -149,10 +146,10 @@ public class MetadataServer extends BaseRichBolt {
                 new Fields("newIntervalPartition"));
 
         outputFieldsDeclarer.declareStream(Streams.FileInformationUpdateStream,
-                new Fields("fileName", "keyRange", "timeStampRange"));
+                new Fields("fileName", "keyDomain", "timeDomain"));
 
         outputFieldsDeclarer.declareStream(Streams.TimestampUpdateStream,
-                new Fields("taskId", "keyRange", "timestampRange"));
+                new Fields("taskId", "keyDomain", "timeDomain"));
 
         outputFieldsDeclarer.declareStream(Streams.StaticsRequestStream,
                 new Fields("Statics Request"));

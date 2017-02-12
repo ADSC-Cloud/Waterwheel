@@ -66,7 +66,7 @@ public class KryoLeafNodeSerializerTest {
 
         for (int i = 0; i < 1024; ++i) {
             leaf.acquireReadLock();
-            List<byte[]> serializedTuples = leaf.getTuples((double) i, (double) i);
+            List<byte[]> serializedTuples = leaf.getTuplesWithinKeyRange((double) i, (double) i);
 //            leaf.releaseReadLock();
 //            for (int j = 0; j < serializedTuples.size(); ++j) {
 //                System.out.println(deserialize(serializedTuples.get(j)));

@@ -5,19 +5,26 @@ package indexingTopology.util;
  */
 public class Domain <TKey extends Comparable<TKey>>{
 
-    private long startTimestamp;
+    private Long startTimestamp;
 
-    private long endTimestamp;
+    private Long endTimestamp;
 
     private TKey lowerBound;
 
     private TKey upperBound;
 
-    public Domain(long startTimestamp, long endTimestamp, TKey lowerBound, TKey upperBound) {
+    public Domain(Long startTimestamp, Long endTimestamp, TKey lowerBound, TKey upperBound) {
         this.startTimestamp = startTimestamp;
         this.endTimestamp = endTimestamp;
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
+    }
+
+    public Domain(KeyDomain keyDomain, TimeDomain timeDomain) {
+        this.startTimestamp = timeDomain.getStartTimestamp();
+        this.endTimestamp = timeDomain.getEndTimestamp();
+        this.lowerBound = (TKey) keyDomain.getLowerBound();
+        this.upperBound = (TKey) keyDomain.getUpperBound();
     }
 
     @Override

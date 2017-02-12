@@ -33,7 +33,7 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt{
 
     OutputCollector collector;
 
-    private transient LRUCache<BlockId, CacheUnit> cacheMapping;
+    private transient LRUCache<BlockId, CacheUnit> blockIdToCacheUnit;
 
     private transient Kryo kryo;
 
@@ -56,7 +56,7 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt{
 
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
-        cacheMapping = new LRUCache<BlockId, CacheUnit>(TopologyConfig.CACHE_SIZE);
+        blockIdToCacheUnit = new LRUCache<BlockId, CacheUnit>(TopologyConfig.CACHE_SIZE);
         kryo = new Kryo();
         kryo.register(BTree.class, new KryoTemplateSerializer());
         kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
@@ -64,7 +64,7 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt{
 
     public void execute(Tuple tuple) {
 
-        SubQueryOnFiles subQuery = (SubQueryOnFiles) tuple.getValueByField("subquery");
+        SubQueryOnFile subQuery = (SubQueryOnFile) tuple.getValueByField("subquery");
 
         timeCostOfReadFile = ((long) 0);
 
@@ -91,7 +91,7 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt{
     }
 
     @SuppressWarnings("unchecked")
-    private void executeRangeQuery(SubQueryOnFiles subQuery) throws IOException {
+    private void executeRangeQuery(SubQueryOnFile subQuery) throws IOException {
 
         Long queryId = subQuery.getQueryId();
 
@@ -122,15 +122,15 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt{
         BTreeLeafNode leaf;
 
         for (Integer offset : offsets) {
-            BlockId mappingKey = new BlockId(fileName, offset + length + 4);
-            leaf = (BTreeLeafNode) getFromCache(mappingKey);
+            BlockId blockId = new BlockId(fileName, offset + length + 4);
+            leaf = (BTreeLeafNode) getFromCache(blockId);
             if (leaf == null) {
                 leaf = getLeafFromExternalStorage(fileName, offset + length + 4);
                 CacheData cacheData = new LeafNodeCacheData(leaf);
-                putCacheData(cacheData, mappingKey);
+                putCacheData(blockId, cacheData);
             }
 
-            ArrayList<byte[]> tuplesInKeyRange = leaf.getTuples(leftKey, rightKey);
+            ArrayList<byte[]> tuplesInKeyRange = leaf.getTuplesWithinKeyRange(leftKey, rightKey);
 
             ArrayList<byte[]> tuplesWithinTimestamp = getTuplesWithinTimestamp(tuplesInKeyRange, timestampLowerBound, timestampUpperBound);
 
@@ -145,11 +145,11 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt{
 
     }
 
-    private Object getFromCache(BlockId mappingKey) {
-        if (cacheMapping.get(mappingKey) == null) {
+    private Object getFromCache(BlockId blockId) {
+        if (blockIdToCacheUnit.get(blockId) == null) {
             return null;
         }
-        return cacheMapping.get(mappingKey).getCacheData().getData();
+        return blockIdToCacheUnit.get(blockId).getCacheData().getData();
     }
 
 
@@ -175,10 +175,10 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt{
     }
 
 
-    private void putCacheData(CacheData cacheData, BlockId mappingKey) {
+    private void putCacheData(BlockId blockId, CacheData cacheData) {
         CacheUnit cacheUnit = new CacheUnit();
         cacheUnit.setCacheData(cacheData);
-        cacheMapping.put(mappingKey, cacheUnit);
+        blockIdToCacheUnit.put(blockId, cacheUnit);
     }
 
     private ArrayList<byte[]> getTuplesWithinTimestamp(ArrayList<byte[]> tuples, Long timestampLowerBound, Long timestampUpperBound)
@@ -187,7 +187,6 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt{
         ArrayList<byte[]> serializedTuples = new ArrayList<>();
 
         for (int i = 0; i < tuples.size(); ++i) {
-//            Values deserializedTuple = schema.deserialize(tuples.get(i));
             DataTuple dataTuple = schema.deserializeToDataTuple(tuples.get(i));
             Long timestamp = (Long) schema.getValue("timestamp", dataTuple);
             if (timestampLowerBound <= timestamp && timestampUpperBound >= timestamp) {
@@ -241,14 +240,14 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt{
                 fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
             }
 
-            BlockId mappingKey = new BlockId(fileName, 0);
+            BlockId blockId = new BlockId(fileName, 0);
 
-            data = (Pair) getFromCache(mappingKey);
+            data = (Pair) getFromCache(blockId);
 
             if (data == null) {
                 data = getTemplateFromExternalStorage(fileSystemHandler, fileName);
                 CacheData cacheData = new TemplateCacheData(data);
-                putCacheData(cacheData, mappingKey);
+                putCacheData(blockId, cacheData);
             }
 
         } catch (IOException e) {

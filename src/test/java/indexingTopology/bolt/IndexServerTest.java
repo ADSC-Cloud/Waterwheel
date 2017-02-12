@@ -135,7 +135,13 @@ public class IndexServerTest {
 
         String indexField = "zcode";
 
-        DataSchema schema = new DataSchema(fieldNames, valueTypes, indexField);
+        DataSchema schema = new DataSchema();
+        schema.addDoubleField("id");
+//        schema.addLongField("id");
+        schema.addDoubleField("zcode");
+//        schema.addIntField("zcode");
+        schema.addVarcharField("payload", 10);
+        schema.setPrimaryIndexField("zcode");
 
         final int btreeOrder = TopologyConfig.BTREE_ORDER;
 
@@ -156,11 +162,11 @@ public class IndexServerTest {
 //                        boolean templateMode = (j != 0);
                         boolean templateMode = true;
                         TopologyConfig.SKEWNESS_DETECTION_THRESHOLD = threshold;
-                        IndexServerTest indexServerTest = new IndexServerTest(indexField, schema, order, bytesLimit, templateMode, i);
+                        IndexServerTest indexServerTest = new IndexServerTest(indexField, schema, order, bytesLimit, false, i);
 
                         createGenerateThread();
 
-                        Thread.sleep(1 * 20 * 1000);
+                        Thread.sleep(1 * 2000000 * 1000);
 
                         terminateGenerateThread();
 
@@ -203,12 +209,12 @@ public class IndexServerTest {
             long timestamp = 0;
 
             TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
-            RandomGenerator randomGenerator = new Well19937c();
-            randomGenerator.setSeed(1000);
+//            RandomGenerator randomGenerator = new Well19937c();
+//            randomGenerator.setSeed(1000);
 //            KeyGenerator keyGenerator = new ZipfKeyGenerator( 200048, 0.3, randomGenerator);
-            KeyGenerator keyGenerator = new UniformKeyGenerator();
+//            KeyGenerator keyGenerator = new UniformKeyGenerator();
 //            TrajectoryGenerator generator = new TrajectoryGaussGenerator(10000, x1, x2, y1, y2);
-//            City city = new City(x1, x2, y1, y2, partitions);
+            City city = new City(x1, x2, y1, y2, partitions);
             while (true) {
                 if (inputExhausted) {
                     break;
@@ -228,16 +234,17 @@ public class IndexServerTest {
 //                    } catch (IOException e) {
 //                        e.printStackTrace();
 //                    }
-                    Double key = keyGenerator.generate();
+//                    Double key = keyGenerator.generate();
+                    double zcode = city.getZCodeForALocation(car.x, car.y);
                     List<Object> values = new ArrayList<>();
                     values.add((double) car.id);
-                    values.add(key);
+                    values.add(zcode);
                     values.add(new String(new char[payloadSize]));
                     values.add(timestamp);
 //
                     byte[] serializedTuples = serializeValues(values);
 
-                    inputQueue.put(new Pair(key, serializedTuples));
+                    inputQueue.put(new Pair(zcode, serializedTuples));
 //                    values.add(Double.parseDouble(tuple[0]));
 //                    values.add(Double.parseDouble(tuple[1]));
 //                    values.add(tuple[2]);

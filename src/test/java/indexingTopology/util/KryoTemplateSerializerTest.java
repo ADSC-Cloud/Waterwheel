@@ -363,7 +363,7 @@ public class KryoTemplateSerializerTest {
 
                     BTreeLeafNode leaf = kryo.readObject(input, BTreeLeafNode.class);
 
-                    ArrayList<byte[]> tuples = leaf.getTuples(994.0, 994.0);
+                    ArrayList<byte[]> tuples = leaf.getTuplesWithinKeyRange(994.0, 994.0);
 //                ArrayList<byte[]> tuples = leaf.searchAndGetTuples(994.0);
 
 //                    for (int j = 0; j < tuples.size(); ++j) {

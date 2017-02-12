@@ -19,7 +19,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 /**
  * Created by acelzj on 11/15/16.
  */
-public class IngestionBolt<DataType extends Number> extends BaseRichBolt {
+public class IngestionBolt<DataType extends Comparable> extends BaseRichBolt {
     private final DataSchema schema;
 
     private final String indexField;
@@ -79,36 +79,27 @@ public class IngestionBolt<DataType extends Number> extends BaseRichBolt {
                 collector.ack(tuple);
             }
         } else if (tuple.getSourceStreamId().equals(Streams.BPlusTreeQueryStream)){
-//            Long queryId = tuple.getLong(0);
-//            Double leftKey = tuple.getDouble(1);
-//            Double rightKey = tuple.getDouble(2);
-//            Pair pair = new Pair(queryId, new Pair(leftKey, rightKey));
             SubQuery subQuery = (SubQuery) tuple.getValueByField("subquery");
-
             try {
                 queryPendingQueue.put(subQuery);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         } else if (tuple.getSourceStreamId().equals(Streams.TreeCleanStream)) {
-            Pair keyRange = (Pair) tuple.getValueByField("keyRange");
-            Pair timestampRange = (Pair) tuple.getValueByField("timestampRange");
-            Double keyRangeLowerBound = (Double) keyRange.getKey();
-            Double keyRangeUpperBound = (Double) keyRange.getValue();
-            Long startTimestamp = (Long) timestampRange.getKey();
-            Long endTimestamp = (Long) timestampRange.getValue();
-            indexer.cleanTree(new Domain(startTimestamp, endTimestamp, keyRangeLowerBound, keyRangeUpperBound));
+            TimeDomain timeDomain = (TimeDomain) tuple.getValueByField("timeDomain");
+            KeyDomain keyDomain = (KeyDomain) tuple.getValueByField("keyDomain");
+            indexer.cleanTree(new Domain(keyDomain, timeDomain));
         }
     }
 
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
         outputFieldsDeclarer.declareStream(Streams.FileInformationUpdateStream,
-                new Fields("fileName", "keyRange", "timeStampRange"));
+                new Fields("fileName", "keyDomain", "timeDomain"));
 
         outputFieldsDeclarer.declareStream(Streams.BPlusTreeQueryStream,
                 new Fields("queryId", "serializedTuples"));
 
         outputFieldsDeclarer.declareStream(Streams.TimestampUpdateStream,
-                new Fields("timestampRange", "keyRange"));
+                new Fields("timeDomain", "keyDomain"));
     }
 }

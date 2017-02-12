@@ -4,6 +4,8 @@ import com.esotericsoftware.kryo.io.Output;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.util.*;
+import indexingTopology.util.generator.KeyGenerator;
+import indexingTopology.util.generator.ZipfKeyGenerator;
 import indexingTopology.util.texi.Car;
 import indexingTopology.util.texi.TrajectoryGenerator;
 import indexingTopology.util.texi.TrajectoryUniformGenerator;

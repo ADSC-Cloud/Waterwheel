@@ -1,6 +1,7 @@
-package indexingTopology.util;
+package indexingTopology.util.generator;
 
 
+import indexingTopology.util.generator.KeyGenerator;
 import org.apache.commons.math3.distribution.ZipfDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.storm.utils.Utils;
@@ -8,7 +9,7 @@ import org.apache.storm.utils.Utils;
 /**
  * Created by acelzj on 2/2/17.
  */
-public class ZipfKeyGenerator implements KeyGenerator{
+public class ZipfKeyGenerator implements KeyGenerator {
 
     ZipfDistribution distribution;
     RandomGenerator generator;

@@ -228,7 +228,7 @@ public class TemplateUpdater<TKey extends Comparable<TKey>> {
             e.printStackTrace();
         }
 
-        ArrayList<byte[]> tuples = currentLeaf.getTuples(index);
+        ArrayList<byte[]> tuples = currentLeaf.getTuplesWithinKeyRange(index);
         ArrayList<Integer> offsets = currentLeaf.getOffsets(index);
 
         ((ArrayList) leaf.tuples.get(indexOfKey)).addAll(tuples);

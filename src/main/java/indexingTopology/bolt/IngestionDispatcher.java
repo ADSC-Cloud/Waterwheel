@@ -77,10 +77,6 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
 
             int taskId = targetTasks.get(partitionId);
 
-//            Values values = new Values(tuple.getValues());
-//            if (generateTimeStamp)
-//                values.add(System.currentTimeMillis());
-
             collector.emitDirect(taskId, Streams.IndexStream, tuple, new Values(dataTuple));
             collector.ack(tuple);
 
@@ -107,9 +103,6 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-//        List<String> fields = schema.getFieldsObject().toList();
-//        fields.add("timeStamp");
-
         declarer.declareStream(Streams.IndexStream, new Fields("tuple"));
 
         declarer.declareStream(Streams.StatisticsReportStream, new Fields("statistics"));

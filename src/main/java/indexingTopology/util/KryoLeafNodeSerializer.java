@@ -36,7 +36,7 @@ public class KryoLeafNodeSerializer<TKey extends Comparable<TKey>> extends Seria
         kryo.writeObject(output, keys);
 
         for (int i = 0; i < bTreeLeafNode.getKeys().size(); i++) {
-            output.writeInt((bTreeLeafNode.getTuples(i)).size());
+            output.writeInt((bTreeLeafNode.getTuplesWithinKeyRange(i)).size());
             for (int j = 0; j < (((ArrayList<byte []>) bTreeLeafNode.tuples.get(i)).size()); ++j) {
                 output.writeInt(((ArrayList<Integer>)bTreeLeafNode.offsets.get(i)).get(j));
                 output.write(((ArrayList<byte []>) bTreeLeafNode.tuples.get(i)).get(j));
