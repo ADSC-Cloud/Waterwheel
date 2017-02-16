@@ -28,6 +28,21 @@ public class RepartitionManager {
 
         Object[] balls = ballToBinMapping.keySet().toArray();
 
+        System.out.println(ballToBinMapping);
+
+//        System.out.println(ballToWeight);
+
+        long[] loadsBeforeRepartition = new long[nbins];
+
+        for (Object ball : balls) {
+            int bin = ballToBinMapping.get(ball);
+            loadsBeforeRepartition[bin % nbins] += ballToWeight.get(ball);
+        }
+
+        for (int i = 0; i < loadsBeforeRepartition.length; ++i) {
+            System.out.println("bin " + i + " : " + loadsBeforeRepartition[i]);
+        }
+
         Map<Integer, Integer> newBallToBinMapping = new HashMap<>();
 
         Arrays.sort(balls);
@@ -42,6 +57,7 @@ public class RepartitionManager {
             newBallToBinMapping.put((Integer) ball, bin);
             if (totalWeight >= distance) {
                 ++bin;
+                bin = Math.min(bin, nbins - 1);
                 totalWeight = 0L;
             }
         }
@@ -55,10 +71,11 @@ public class RepartitionManager {
             loads[bin % nbins] += ballToWeight.get(ball);
         }
 
-//        System.out.println("Repartition has been finished!");
-//        for (int i = 0; i < loads.length; ++i) {
-//            System.out.println("bin " + i + " : " + loads[i]);
-//        }
+        System.out.println("Repartition has been finished!");
+        for (int i = 0; i < loads.length; ++i) {
+            System.out.println("bin " + i + " : " + loads[i]);
+        }
+
         return newBallToBinMapping;
     }
 

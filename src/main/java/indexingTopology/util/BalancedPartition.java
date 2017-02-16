@@ -2,13 +2,14 @@ package indexingTopology.util;
 
 import indexingTopology.config.TopologyConfig;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Created by acelzj on 12/17/16.
  */
-public class BalancedPartition<T extends Number> {
+public class BalancedPartition<T extends Number> implements Serializable{
 
     private Double lowerBound;
 
@@ -37,6 +38,7 @@ public class BalancedPartition<T extends Number> {
         }
     }
 
+
     public BalancedPartition(int numberOfPartitions, T lowerBound, T upperBound,
                              Map<Integer, Integer> intervalToPartitionMapping) {
         this(numberOfPartitions, lowerBound, upperBound, true);
@@ -59,6 +61,9 @@ public class BalancedPartition<T extends Number> {
                 bin = Math.min(numberOfPartitions - 1, bin);
             }
         }
+
+        System.out.println(intervalToPartitionMapping);
+
         return intervalToPartitionMapping;
     }
 

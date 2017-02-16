@@ -4,7 +4,7 @@ package indexingTopology.config;
  * Created by acelzj on 7/21/16.
  */
 public class TopologyConfig {
-    public static final double REBUILD_TEMPLATE_PERCENTAGE = 1;
+    public static final double REBUILD_TEMPLATE_PERCENTAGE = 0.3;
 
     public static final String HDFS_HOST = "hdfs://192.168.0.237:54310/";
 
@@ -28,7 +28,7 @@ public class TopologyConfig {
 
     public static String logDir = "/logs";
 
-    public static double SKEWNESS_DETECTION_THRESHOLD = 0.6;
+    public static double SKEWNESS_DETECTION_THRESHOLD = 0.2;
 
     public static final int PENDING_QUEUE_CAPACITY = 600005;
 

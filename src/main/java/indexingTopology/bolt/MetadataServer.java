@@ -63,8 +63,6 @@ public class MetadataServer extends BaseRichBolt {
 
         filePartitionSchemaManager = new FilePartitionSchemaManager();
 
-        intervalToPartitionMapping = new HashMap<>();
-
         numberOfDispatchers = topologyContext.getComponentTasks("DispatcherBolt").size();
 
         indexTasks = topologyContext.getComponentTasks("IndexerBolt");
@@ -72,6 +70,8 @@ public class MetadataServer extends BaseRichBolt {
         numberOfPartitions = indexTasks.size();
 
         balancedPartition = new BalancedPartition(numberOfPartitions, lowerBound, upperBound);
+
+        intervalToPartitionMapping = balancedPartition.getIntervalToPartitionMapping();
 
         numberOfStaticsReceived = 0;
 
@@ -92,17 +92,21 @@ public class MetadataServer extends BaseRichBolt {
 
             Histogram histogram = (Histogram) tuple.getValue(0);
 
+//            System.out.println(histogram.getHistogram());
+
             if (numberOfStaticsReceived < numberOfDispatchers) {
                 partitionLoads = new long[numberOfPartitions];
                 this.histogram.merge(histogram);
                 ++numberOfStaticsReceived;
-                if (repartitionEnabled && (numberOfStaticsReceived == numberOfDispatchers)) {
+                if (numberOfStaticsReceived == numberOfDispatchers) {
                     Double skewnessFactor = getSkewnessFactor(this.histogram);
+                    System.out.println("skewness factor " + skewnessFactor);
                     if (skewnessFactor > TopologyConfig.LOAD_BALANCE_THRESHOLD) {
                         System.out.println("skewness detected!!!");
                         RepartitionManager manager = new RepartitionManager(numberOfPartitions, intervalToPartitionMapping,
                                 histogram.getHistogram(), getTotalWorkLoad(histogram));
                         this.intervalToPartitionMapping = manager.getRepartitionPlan();
+                        System.out.println("after repartition " + intervalToPartitionMapping);
                         this.balancedPartition = new BalancedPartition(numberOfPartitions, lowerBound, upperBound,
                                 intervalToPartitionMapping);
                         repartitionEnabled = false;
@@ -137,6 +141,7 @@ public class MetadataServer extends BaseRichBolt {
             collector.emit(Streams.TimestampUpdateStream, new Values(taskId, keyDomain, timeDomain));
         } else if (tuple.getSourceStreamId().equals(Streams.EableRepartitionStream)) {
             repartitionEnabled = true;
+            System.out.println("repartition has been enabled!!!");
         }
     }
 
@@ -165,6 +170,7 @@ public class MetadataServer extends BaseRichBolt {
 
         Long sum = getTotalWorkLoad(histogram);
         Long maxWorkload = getMaxWorkLoad(histogram);
+
         double averageLoad = sum / (double) numberOfPartitions;
 
         return maxWorkload / averageLoad;
@@ -213,8 +219,10 @@ public class MetadataServer extends BaseRichBolt {
 
                 histogram.clear();
 
-                collector.emit(Streams.StaticsRequestStream,
-                        new Values("Statics Request"));
+                if (repartitionEnabled) {
+                    collector.emit(Streams.StaticsRequestStream,
+                            new Values("Statics Request"));
+                }
             }
         }
 

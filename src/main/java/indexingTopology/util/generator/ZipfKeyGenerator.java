@@ -7,10 +7,12 @@ import org.apache.commons.math3.distribution.ZipfDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.storm.utils.Utils;
 
+import java.io.Serializable;
+
 /**
  * Created by acelzj on 2/2/17.
  */
-public class ZipfKeyGenerator implements KeyGenerator {
+public class ZipfKeyGenerator implements KeyGenerator, Serializable {
 
     ZipfDistribution distribution;
     RandomGenerator generator;

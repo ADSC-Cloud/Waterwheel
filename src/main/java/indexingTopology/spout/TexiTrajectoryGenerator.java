@@ -2,6 +2,10 @@ package indexingTopology.spout;
 
 import indexingTopology.DataTuple;
 import indexingTopology.streams.Streams;
+import indexingTopology.util.generator.ZipfKeyGenerator;
+import org.apache.commons.math3.distribution.ZipfDistribution;
+import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.random.Well19937c;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -40,7 +44,7 @@ public class TexiTrajectoryGenerator extends BaseRichSpout {
 
     private long timestamp;
 
-    private Random random;
+    private ZipfDistribution distribution;
 
     public TexiTrajectoryGenerator(DataSchema schema, TrajectoryGenerator generator, int payloadSize, City city)
             throws FileNotFoundException {
@@ -48,7 +52,10 @@ public class TexiTrajectoryGenerator extends BaseRichSpout {
         this.generator = generator;
         this.city = city;
         this.payloadSize = payloadSize;
-        this.random = new Random(1000);
+//        RandomGenerator randomGenerator = new Well19937c();
+//        randomGenerator.setSeed(1000);
+//        this.keyGenerator = new ZipfKeyGenerator(200048, 0.5, randomGenerator);
+        distribution = new ZipfDistribution(200048, 0.5);
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
@@ -62,11 +69,11 @@ public class TexiTrajectoryGenerator extends BaseRichSpout {
     public void nextTuple() {
         Car car = generator.generate();
 //        final long timestamp = System.currentTimeMillis();
-        DataTuple dataTuple = new DataTuple(car.id, city.getZCodeForALocation(car.x
-                , car.y), new String(new char[payloadSize]), timestamp);
+//        DataTuple dataTuple = new DataTuple(car.id, city.getZCodeForALocation(car.x
+//                , car.y), new String(new char[payloadSize]), timestamp);
 
 
-//        DataTuple dataTuple = new DataTuple(car.id, random.nextInt(), new String(new char[payloadSize]), timestamp);
+        DataTuple dataTuple = new DataTuple(car.id, distribution.sample(), new String(new char[payloadSize]), timestamp);
 
         collector_.emit(Streams.IndexStream, new Values(dataTuple), new Object());
 //        collector_.emit(Streams.IndexStream, new Values(car.id, city.getZCodeForALocation(car.x

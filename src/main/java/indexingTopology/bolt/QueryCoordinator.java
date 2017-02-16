@@ -13,9 +13,7 @@ import indexingTopology.config.TopologyConfig;
 import indexingTopology.metadata.FilePartitionSchemaManager;
 import indexingTopology.metadata.FileMetaData;
 import indexingTopology.streams.Streams;
-import javafx.util.Pair;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -155,21 +153,20 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
         } else if (tuple.getSourceStreamId().equals(Streams.TimestampUpdateStream)) {
             int taskId = tuple.getIntegerByField("taskId");
             TimeDomain timeDomain = (TimeDomain) tuple.getValueByField("timeDomain");
-//            Pair timestampRange = (Pair) tuple.getValueByField("timestampRange");
             KeyDomain keyDomain = (KeyDomain) tuple.getValueByField("keyDomain");
-//            Pair timeStampRange = (Pair) tuple.getValue(2);
             Long endTimestamp = timeDomain.getEndTimestamp();
+
             indexTaskToTimestampMapping.put(taskId, endTimestamp);
 
             DataType keyRangeLowerBound = (DataType) keyDomain.getLowerBound();
             DataType keyRangeUpperBound = (DataType) keyDomain.getUpperBound();
 
+
             if (staleBalancedPartition != null) {
                 updateStaleBalancedPartition(keyRangeLowerBound, keyRangeUpperBound);
-                if (canDeleteStalePartition()) {
+                if (isPartitionUpdated()) {
                     staleBalancedPartition = null;
-                    System.out.println("stale partition has been deleted!!!");
-                    collector.emit(new Values("Partition can be enabled!"));
+                    collector.emit(Streams.EableRepartitionStream, new Values("Partition can be enabled!"));
                 }
             }
 
@@ -180,35 +177,27 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
             BalancedPartition newBalancedPartition = (BalancedPartition) tuple.getValueByField("newIntervalPartition");
             staleBalancedPartition = balancedPartition;
             balancedPartition = newBalancedPartition;
-            System.out.println("partition has been updated!!!");
+//            System.out.println("partition has been updated in decompostion bolt!!! ");
 //            balancedPartition.setIntervalToPartitionMapping(intervalToPartitionMapping);
         }
     }
 
-    private boolean canDeleteStalePartition() {
-        boolean canBeDeleted = true;
-        Set<Integer> intervals = staleBalancedPartition.getIntervalToPartitionMapping().keySet();
+    private boolean isPartitionUpdated() {
         Map<Integer, Integer> staleIntervalIdToPartitionIdMapping = staleBalancedPartition.getIntervalToPartitionMapping();
         Map<Integer, Integer> intervalIdToPartitionIdMapping = balancedPartition.getIntervalToPartitionMapping();
 
-        for (Integer intervalId : intervals) {
-            if (staleIntervalIdToPartitionIdMapping.get(intervalId) != intervalIdToPartitionIdMapping.get(intervalId)) {
-                canBeDeleted = false;
-                break;
-            }
-        }
-
-        return canBeDeleted;
+        return staleIntervalIdToPartitionIdMapping.equals(intervalIdToPartitionIdMapping);
     }
 
     private void updateStaleBalancedPartition(DataType keyRangeLowerBound, DataType keyRangeUpperBound) {
         Map<Integer, Integer> intervalIdToPartitionIdMapping = balancedPartition.getIntervalToPartitionMapping();
-        Integer startIntervalId = balancedPartition.getPartitionId(keyRangeLowerBound);
-        Integer endIntervalId = balancedPartition.getPartitionId(keyRangeUpperBound);
+        Integer startIntervalId = balancedPartition.getIntervalId(keyRangeLowerBound);
+        Integer endIntervalId = balancedPartition.getIntervalId(keyRangeUpperBound);
 
         for (Integer intervalId = startIntervalId; intervalId <= endIntervalId; ++intervalId) {
             staleBalancedPartition.getIntervalToPartitionMapping().put(intervalId, intervalIdToPartitionIdMapping.get(intervalId));
         }
+
     }
 
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
@@ -337,15 +326,15 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
                 ? partitionIdsInBalancedPartition
                 : mergePartitionIds(partitionIdsInBalancedPartition, partitionIdsInStalePartition));
 
-//        for (Integer partitionId : partitionIds) {
-//            Integer taskId = indexServers.get(partitionId);
-//            Long timestamp = indexTaskToTimestampMapping.get(taskId);
-//            if (timestamp <= endTimestamp && timestamp >= startTimestamp) {
-//                SubQuery subQuery = new SubQuery(query.id, query.leftKey, query.rightKey, query.startTimestamp, query.endTimestamp);
-//                collector.emitDirect(taskId, Streams.BPlusTreeQueryStream, new Values(subQuery));
-//                ++numberOfTasksToSearch;
-//            }
-//        }
+        for (Integer partitionId : partitionIds) {
+            Integer taskId = indexServers.get(partitionId);
+            Long timestamp = indexTaskToTimestampMapping.get(taskId);
+            if (timestamp <= endTimestamp && timestamp >= startTimestamp) {
+                SubQuery subQuery = new SubQuery(query.id, query.leftKey, query.rightKey, query.startTimestamp, query.endTimestamp);
+                collector.emitDirect(taskId, Streams.BPlusTreeQueryStream, new Values(subQuery));
+                ++numberOfTasksToSearch;
+            }
+        }
 
         collector.emit(Streams.BPlusTreeQueryInformationStream, new Values(queryId, numberOfTasksToSearch));
     }

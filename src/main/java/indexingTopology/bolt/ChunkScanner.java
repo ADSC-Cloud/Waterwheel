@@ -101,8 +101,6 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt {
         Long timestampLowerBound = subQuery.getStartTimestamp();
         Long timestampUpperBound = subQuery.getEndTimestamp();
 
-        System.out.println("file name" + fileName);
-
         FileScanMetrics metrics = new FileScanMetrics();
 
         ArrayList<byte[]> serializedTuples = new ArrayList<byte[]>();

@@ -195,7 +195,7 @@ public class Indexer<DataType extends Number> extends Observable {
             ArrayList<DataTuple> drainer = new ArrayList<>();
 
             while (true) {
-                /*
+
                 if (executed.get() >= TopologyConfig.SKEWNESS_DETECTION_THRESHOLD) {
                     if (indexedData.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
                         while (!pendingQueue.isEmpty()) {
@@ -233,7 +233,7 @@ public class Indexer<DataType extends Number> extends Observable {
 
 //                                System.out.println("Time used to update template " + (System.currentTimeMillis() - start));
 
-//                        System.out.println("New tree has been built");
+//                              System.out.println("New tree has been built");
 //
                                 executed.set(0L);
 //
@@ -241,7 +241,7 @@ public class Indexer<DataType extends Number> extends Observable {
                             }
                     }
                 }
-                */
+
 
 
                 if (numTuples >= TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK) {
@@ -300,6 +300,9 @@ public class Indexer<DataType extends Number> extends Observable {
                     clonedIndexedData.clearPayload();
 
                     executed.set(0L);
+
+                    minIndexValue = Double.MAX_VALUE;
+                    maxIndexValue = Double.MIN_VALUE;
 
                     createIndexingThread();
 
@@ -546,15 +549,6 @@ public class Indexer<DataType extends Number> extends Observable {
         byte[] bytes = output.toBytes();
 
         int lengthOfTemplate = bytes.length;
-
-//        System.out.println("length of template" + lengthOfTemplate);
-
-//        System.out.println("******begin to deserialize******");
-
-        Input input = new Input(bytes);
-        BTree deserializedTree = kryo.readObject(input, BTree.class);
-
-//        System.out.println("******deserialization has been finished******");
 
         output = new Output(4);
 
