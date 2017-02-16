@@ -83,35 +83,35 @@ public class IndexServerTest {
         this.chunk = MemChunk.createNew(bytesLimit);
         this.templateUpdater = new TemplateUpdater(btreeOrder);
         indexedData = new BTree(btreeOrder);
-        try {
-            bufferedReader = new BufferedReader(new FileReader(new File(TopologyConfig.dataDir + TopologyConfig.dataFileDir)));
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            bufferedReader = new BufferedReader(new FileReader(new File(TopologyConfig.dataDir + TopologyConfig.dataFileDir)));
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//        }
 //        queryId = 0;
 
 
-        try {
+//        try {
 //          File file = new File("/home/acelzj/test_data/" + "gauss_data" + ".txt");
 //            File file = new File("/home/acelzj/test_data/" + "zipf_data" + ".txt");
 //            File file = new File("/home/acelzj/test_data/" + "uniform_data" + ".txt");
 //            File file = new File("/home/acelzj/logs/" + btreeOrder + TopologyConfig.SKEWNESS_DETECTION_THRESHOLD + ".txt");
 //            File file = new File("/home/acelzj/logs/" + 20048 + ".txt");
-            File file = new File(TopologyConfig.dataDir + TopologyConfig.logDir + "/" + numberOfIndexThreads + ".txt");
+//            File file = new File(TopologyConfig.dataDir + TopologyConfig.logDir + "/" + numberOfIndexThreads + ".txt");
+//
+//            if (!file.exists()) {
+//                file.createNewFile();
+//                System.out.println(file.getName() + "has been created!!!");
+//            }
 
-            if (!file.exists()) {
-                file.createNewFile();
-                System.out.println(file.getName() + "has been created!!!");
-            }
+//            FileWriter fileWriter = new FileWriter(file,true);
 
-            FileWriter fileWriter = new FileWriter(file,true);
-
-            bufferedWriter = new BufferedWriter(fileWriter);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//            bufferedWriter = new BufferedWriter(fileWriter);
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
         indexer = new IndexerCopy(0, inputQueue, indexedData, indexField, schema, bufferedWriter, btreeOrder, templateMode, numberOfIndexThreads);
     }

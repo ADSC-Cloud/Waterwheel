@@ -105,127 +105,142 @@ public class KryoTemplateSerializerTest {
         TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
         City city = new City(x1, x2, y1, y2, partitions);
 
-        int numTuples = TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK;
+        int numTuples = 120;
         Long timestamp = 0L;
 
         int chunkId = 0;
 
         List<String> fileNames = new ArrayList<>();
 
-        BTree indexedData = new BTree(TopologyConfig.BTREE_ORDER);
+//        BTree indexedData = new BTree(TopologyConfig.BTREE_ORDER);
 
-        int numberOfTuples = 60;
+        int numberOfTuples = 120;
 
         Random random = new Random();
 
         List<Integer> keys = new ArrayList<>();
 
-        for (int i = 0; i < numTuples; ++i) {
-            List<Object> values = new ArrayList<>();
-            Car car = generator.generate();
-            values.add((double) car.id);
-            values.add((double) city.getZCodeForALocation(car.x, car.y));
-            values.add(new String(new char[payloadSize]));
-            values.add(timestamp);
-            byte[] bytes = null;
-            bytes = serializeIndexValue(values);
-            indexedData.insert((double) car.id, bytes);
-        }
 
+//        for (int j = 0; j < 10; ++j) {
+            BTree indexedData = new BTree(TopologyConfig.BTREE_ORDER);
 
-        byte[] leavesInBytes = indexedData.serializeLeaves();
-
-        Output output = new Output(500000, 20000000);
-
-        Kryo kryo = new Kryo();
-        kryo.register(BTree.class, new KryoTemplateSerializer());
-        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
-
-        kryo.writeObject(output, indexedData);
-
-        byte[] bytes = output.toBytes();
-
-        int lengthOfTemplate = bytes.length;
-
-        output = new Output(4);
-
-        output.writeInt(lengthOfTemplate);
-
-        byte[] lengthInBytes = output.toBytes();
-
-        MemChunk chunk = MemChunk.createNew(4 + lengthOfTemplate + leavesInBytes.length);
-
-        chunk.write(lengthInBytes );
-
-        chunk.write(bytes);
-
-        chunk.write(leavesInBytes);
-
-        FileSystemHandler fileSystemHandler = null;
-
-        String fileName = null;
-
-        try {
-            if (TopologyConfig.HDFSFlag) {
-                fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
-            } else {
-                fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
+            for (int i = 0; i < numTuples; ++i) {
+                List<Object> values = new ArrayList<>();
+                Car car = generator.generate();
+                values.add((double) car.id);
+//                values.add((double) city.getZCodeForALocation(car.x, car.y));
+                values.add((double) i);
+                values.add(new String(new char[payloadSize]));
+                values.add(timestamp);
+                byte[] bytes = null;
+                bytes = serializeIndexValue(values);
+//                indexedData.insert((double) city.getZCodeForALocation(car.x, car.y), bytes);
+                indexedData.insert(i, bytes);
             }
 
-            fileName = "taskId" + 0 + "chunk" + 0;
-            fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+            indexedData.printBtree();
 
-        byte[] temlateLengthInBytes = new byte[4];
+            byte[] leavesInBytes = indexedData.serializeLeaves();
 
-        fileSystemHandler.openFile("/", "taskId0chunk0");
+            Output output = new Output(5000000, 20000000);
 
-        fileSystemHandler.readBytesFromFile(temlateLengthInBytes);
+            Kryo kryo = new Kryo();
+            kryo.register(BTree.class, new KryoTemplateSerializer());
+            kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
 
-        Input input = new Input(temlateLengthInBytes);
+            kryo.writeObject(output, indexedData);
 
-        int length = input.readInt();
+            byte[] bytes = output.toBytes();
 
-        byte[] templateInBytes = new byte[length];
+            int lengthOfTemplate = bytes.length;
 
-        fileSystemHandler.readBytesFromFile(templateInBytes);
+            System.out.println(lengthOfTemplate);
 
-        input = new Input(templateInBytes);
+            output = new Output(4);
 
-        indexedData = kryo.readObject(input, BTree.class);
+            output.writeInt(lengthOfTemplate);
 
-//        indexedData.printBtree();
+            byte[] lengthInBytes = output.toBytes();
 
-        BTreeNode mostLeftNode = indexedData.findLeafNodeShouldContainKeyInDeserializedTemplate(0.0);
-        BTreeNode mostRightNode = indexedData.findLeafNodeShouldContainKeyInDeserializedTemplate(60.0);
+            MemChunk chunk = MemChunk.createNew(4 + lengthOfTemplate + leavesInBytes.length);
 
-        List<Integer> offsets = indexedData.getOffsetsOfLeaveNodesShouldContainKeys(mostLeftNode
-                , mostRightNode);
+            chunk.write(lengthInBytes);
 
-        for (Integer offset : offsets) {
+            chunk.write(bytes);
 
-            fileSystemHandler.seek(offset + length + 4);
+            chunk.write(leavesInBytes);
 
-            byte[] lengthInByte = new byte[4];
+            FileSystemHandler fileSystemHandler = null;
 
-            fileSystemHandler.readBytesFromFile(offset + length + 4, lengthInByte);
+            String fileName = null;
 
-            int lengthOfLeaveInBytes = ByteBuffer.wrap(lengthInByte, 0, 4).getInt();
+            try {
+                if (TopologyConfig.HDFSFlag) {
+                    fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
+                } else {
+                    fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
+                }
 
-            byte[] leafInByte = new byte[lengthOfLeaveInBytes + 1];
+                fileName = "taskId" + 0 + "chunk" + 0;
+                fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
-            fileSystemHandler.seek(offset + length + 4 + 4);
+            byte[] temlateLengthInBytes = new byte[4];
 
-            fileSystemHandler.readBytesFromFile(leafInByte);
+            fileSystemHandler.openFile("/", "taskId0chunk0");
 
-            input = new Input(leafInByte);
+            fileSystemHandler.readBytesFromFile(0, temlateLengthInBytes);
 
-            BTreeLeafNode leaf = kryo.readObject(input, BTreeLeafNode.class);
+            Input input = new Input(temlateLengthInBytes);
 
-//            leaf.print();
-        }
+            int length = input.readInt();
+
+            byte[] templateInBytes = new byte[length];
+
+            fileSystemHandler.readBytesFromFile(4, templateInBytes);
+
+            input = new Input(templateInBytes);
+
+            indexedData = kryo.readObject(input, BTree.class);
+
+            indexedData.printBtree();
+
+            BTreeNode mostLeftNode = indexedData.findLeafNodeShouldContainKeyInDeserializedTemplate(0.0);
+            BTreeNode mostRightNode = indexedData.findLeafNodeShouldContainKeyInDeserializedTemplate(120.0);
+
+            List<Integer> offsets = indexedData.getOffsetsOfLeaveNodesShouldContainKeys(mostLeftNode
+                    , mostRightNode);
+
+            List<byte[]> list = new ArrayList<>();
+
+            for (Integer offset : offsets) {
+
+                fileSystemHandler.seek(offset + length + 4);
+
+                byte[] lengthInByte = new byte[4];
+
+                fileSystemHandler.readBytesFromFile(offset + length + 4, lengthInByte);
+
+                int lengthOfLeaveInBytes = ByteBuffer.wrap(lengthInByte, 0, 4).getInt();
+
+                byte[] leafInByte = new byte[lengthOfLeaveInBytes];
+
+                fileSystemHandler.seek(offset + length + 4 + 4);
+
+                fileSystemHandler.readBytesFromFile(offset + length + 4 + 4, leafInByte);
+
+                input = new Input(leafInByte);
+
+                BTreeLeafNode leaf = kryo.readObject(input, BTreeLeafNode.class);
+
+                list.addAll(leaf.getTuplesWithinKeyRange(0, 60));
+
+            }
+
+            assertEquals(61, list.size());
+//        }
     }
 
     @Test
@@ -329,7 +344,7 @@ public class KryoTemplateSerializerTest {
 
                 byte[] templateInBytes = new byte[length];
 
-                fileSystemHandler.readBytesFromFile(templateInBytes);
+                fileSystemHandler.readBytesFromFile(4, templateInBytes);
 
                 input = new Input(templateInBytes);
 
@@ -357,7 +372,7 @@ public class KryoTemplateSerializerTest {
 
                     fileSystemHandler.seek(offset + length + 4 + 4);
 
-                    fileSystemHandler.readBytesFromFile(leafInByte);
+                    fileSystemHandler.readBytesFromFile(offset + length + 4 + 4, leafInByte);
 
                     input = new Input(leafInByte);
 

@@ -35,7 +35,7 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
         return 1;
     }
 
-    public ArrayList<byte[]> getTuplesWithinKeyRange(int index) {
+    public ArrayList<byte[]> getTuplesWithSpecificIndex(int index) {
         if (index < getKeyCount()) {
             ArrayList<byte[]> tuples;
             tuples = this.tuples.get(index);
@@ -170,9 +170,9 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
             } catch (UnsupportedGenericException e) {
                 e.printStackTrace();
             }
-            newRNode.setTupleList(i - midIndex, this.getTuplesWithinKeyRange(i));
+            newRNode.setTupleList(i - midIndex, this.getTuplesWithSpecificIndex(i));
 
-            this.tupleCount.addAndGet(-this.getTuplesWithinKeyRange(i).size());
+            this.tupleCount.addAndGet(-this.getTuplesWithSpecificIndex(i).size());
 
             newRNode.setOffsetList(i - midIndex, this.getOffsets(i));
         }
@@ -254,7 +254,7 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
 
         for (int index = startIndex; index <= endIndex; ++index) {
             if (keys.get(index).compareTo(leftKey) >=0 && keys.get(index).compareTo(rightKey) <=0) {
-                tuples.addAll(getTuplesWithinKeyRange(index));
+                tuples.addAll(getTuplesWithSpecificIndex(index));
             }
         }
         return tuples;

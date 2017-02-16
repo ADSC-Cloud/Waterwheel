@@ -1,9 +1,11 @@
 package indexingTopology.util;
 
+import java.io.Serializable;
+
 /**
  * Created by acelzj on 13/1/17.
  */
-public class Domain <TKey extends Comparable<TKey>>{
+public class Domain <TKey extends Comparable<TKey>> implements Serializable {
 
     private Long startTimestamp;
 

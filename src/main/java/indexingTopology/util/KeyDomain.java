@@ -1,9 +1,11 @@
 package indexingTopology.util;
 
+import java.io.Serializable;
+
 /**
  * Created by acelzj on 12/2/17.
  */
-public class KeyDomain <TKey extends Comparable<TKey>> {
+public class KeyDomain <TKey extends Comparable<TKey>> implements Serializable{
     TKey lowerBound;
     TKey upperBound;
 

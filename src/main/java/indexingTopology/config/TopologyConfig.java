@@ -4,7 +4,7 @@ package indexingTopology.config;
  * Created by acelzj on 7/21/16.
  */
 public class TopologyConfig {
-    public static final double REBUILD_TEMPLATE_PERCENTAGE = 0.2;
+    public static final double REBUILD_TEMPLATE_PERCENTAGE = 1;
 
     public static final String HDFS_HOST = "hdfs://192.168.0.237:54310/";
 
@@ -20,9 +20,9 @@ public class TopologyConfig {
 
     public static final double LOAD_BALANCE_THRESHOLD = 0.2;
 
-    public static boolean HDFSFlag = false;
+    public static boolean HDFSFlag = true;
 
-    public static String dataDir = "/home/acelzj";
+    public static String dataDir = "/home/lzj";
 
     public static String dataFileDir = "/test_data/uniform_data.txt";
 

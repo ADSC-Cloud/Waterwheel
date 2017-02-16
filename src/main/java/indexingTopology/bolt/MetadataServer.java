@@ -110,7 +110,7 @@ public class MetadataServer extends BaseRichBolt {
 //                                new Values(this.balancedPartition.getIntervalToPartitionMapping()));
                                 new Values(this.balancedPartition));
                     } else {
-                        System.out.println("skewness is not detected!!!");
+//                        System.out.println("skewness is not detected!!!");
                     }
 
                     numberOfStaticsReceived = 0;
@@ -208,7 +208,7 @@ public class MetadataServer extends BaseRichBolt {
                     sum += count;
                 }
 
-                System.out.println("statics request has been sent!!!");
+//                System.out.println("statics request has been sent!!!");
 //                System.out.println(String.format("Overall Throughput: %f tuple / second", sum / (double)sleepTimeInSecond));
 
                 histogram.clear();

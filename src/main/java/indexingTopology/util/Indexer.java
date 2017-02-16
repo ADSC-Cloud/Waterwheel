@@ -1,6 +1,7 @@
 package indexingTopology.util;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import indexingTopology.DataSchema;
 import indexingTopology.DataTuple;
@@ -86,14 +87,14 @@ public class Indexer<DataType extends Number> extends Observable {
 
     private ArrayBlockingQueue<Pair> queryResultQueue;
 
-    private ArrayBlockingQueue<Pair> updateInformationPendingQueue;
+    private ArrayBlockingQueue<Pair> informationToUpdatePendingQueue;
 
     public Indexer(int taskId, ArrayBlockingQueue<DataTuple> inputQueue, DataSchema schema, ArrayBlockingQueue<SubQuery<DataType>> queryPendingQueue) {
         pendingQueue = new ArrayBlockingQueue<>(1024);
 
         queryResultQueue = new ArrayBlockingQueue<Pair>(100);
 
-        updateInformationPendingQueue = new ArrayBlockingQueue<Pair>(10);
+        informationToUpdatePendingQueue = new ArrayBlockingQueue<Pair>(10);
 
         this.inputQueue = inputQueue;
 
@@ -112,7 +113,7 @@ public class Indexer<DataType extends Number> extends Observable {
 
         this.indexField = schema.getIndexField();
 
-        this.schema = schema;
+        this.schema = schema.duplicate();
 
         this.processQuerySemaphore = new Semaphore(1);
 
@@ -283,7 +284,7 @@ public class Indexer<DataType extends Number> extends Observable {
                     clonedIndexedData = indexedData.clone();
 
                     try {
-                        updateInformationPendingQueue.put(new Pair(fileName, new Domain(keyDomain, timeDomain)));
+                        informationToUpdatePendingQueue.put(new Pair(fileName, new Domain(keyDomain, timeDomain)));
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -440,7 +441,6 @@ public class Indexer<DataType extends Number> extends Observable {
             while (true) {
 
                 try {
-                    System.out.println("queue length " + processQuerySemaphore.getQueueLength() + "query runnable");
                     processQuerySemaphore.acquire();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -516,7 +516,7 @@ public class Indexer<DataType extends Number> extends Observable {
     public Pair getDomainInformation() {
         Pair pair = null;
         try {
-            pair = updateInformationPendingQueue.take();
+            pair = informationToUpdatePendingQueue.take();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -537,7 +537,7 @@ public class Indexer<DataType extends Number> extends Observable {
 
         BTree bTree = clonedIndexedData == null ? indexedData : clonedIndexedData;
 
-        Output output = new Output(65000000, 20000000);
+        Output output = new Output(65000000, 500000000);
 
         byte[] leavesInBytes = bTree.serializeLeaves();
 
@@ -547,6 +547,15 @@ public class Indexer<DataType extends Number> extends Observable {
 
         int lengthOfTemplate = bytes.length;
 
+//        System.out.println("length of template" + lengthOfTemplate);
+
+//        System.out.println("******begin to deserialize******");
+
+        Input input = new Input(bytes);
+        BTree deserializedTree = kryo.readObject(input, BTree.class);
+
+//        System.out.println("******deserialization has been finished******");
+
         output = new Output(4);
 
         output.writeInt(lengthOfTemplate);
@@ -555,7 +564,7 @@ public class Indexer<DataType extends Number> extends Observable {
 
         chunk = MemChunk.createNew(leavesInBytes.length + 4 + lengthOfTemplate);
 
-        chunk.write(lengthInBytes );
+        chunk.write(lengthInBytes);
 
         chunk.write(bytes);
 

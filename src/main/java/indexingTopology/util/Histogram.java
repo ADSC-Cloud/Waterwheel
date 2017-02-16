@@ -48,7 +48,7 @@ public class Histogram implements Serializable{
     public void setDefaultValueForAbsentKey(int numberOfKeys) {
         for(int i = 0; i< numberOfKeys; i++ ) {
             if(!histogram.containsKey(i)) {
-                histogram.put(i, 0L );
+                histogram.put(i, 0L);
             }
         }
     }

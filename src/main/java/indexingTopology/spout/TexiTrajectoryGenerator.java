@@ -40,12 +40,15 @@ public class TexiTrajectoryGenerator extends BaseRichSpout {
 
     private long timestamp;
 
+    private Random random;
+
     public TexiTrajectoryGenerator(DataSchema schema, TrajectoryGenerator generator, int payloadSize, City city)
             throws FileNotFoundException {
         this.schema = schema;
         this.generator = generator;
         this.city = city;
         this.payloadSize = payloadSize;
+        this.random = new Random(1000);
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
@@ -61,6 +64,10 @@ public class TexiTrajectoryGenerator extends BaseRichSpout {
 //        final long timestamp = System.currentTimeMillis();
         DataTuple dataTuple = new DataTuple(car.id, city.getZCodeForALocation(car.x
                 , car.y), new String(new char[payloadSize]), timestamp);
+
+
+//        DataTuple dataTuple = new DataTuple(car.id, random.nextInt(), new String(new char[payloadSize]), timestamp);
+
         collector_.emit(Streams.IndexStream, new Values(dataTuple), new Object());
 //        collector_.emit(Streams.IndexStream, new Values(car.id, city.getZCodeForALocation(car.x
 //                , car.y), new String(new char[payloadSize]), timestamp), new Object());

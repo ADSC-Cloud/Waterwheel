@@ -1,9 +1,11 @@
 package indexingTopology.util;
 
+import java.io.Serializable;
+
 /**
  * Created by acelzj on 12/2/17.
  */
-public class TimeDomain {
+public class TimeDomain implements Serializable {
     private Long startTimestamp;
 
     private Long endTimestamp;

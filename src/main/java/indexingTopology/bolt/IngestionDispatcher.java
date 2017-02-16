@@ -73,6 +73,7 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
             IndexType indexValue = (IndexType) schema.getIndexValue(dataTuple);
             balancedPartition.record(indexValue);
 
+
             int partitionId = balancedPartition.getPartitionId(indexValue);
 
             int taskId = targetTasks.get(partitionId);

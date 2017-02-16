@@ -40,11 +40,8 @@ public class TemplateUpdaterTest {
 
 
         for (int i = 0; i < numberOfTuples; ++i) {
-
             keys.add(i);
         }
-        Collections.shuffle(keys);
-
         Collections.shuffle(keys);
 
         for (Integer key : keys) {
@@ -59,6 +56,8 @@ public class TemplateUpdaterTest {
 
 //        bTree.printBtree();
 
+        System.out.println(bTree.getSkewnessFactor());
+
         TemplateUpdater templateUpdater = new TemplateUpdater(order);
 
         Long start = System.currentTimeMillis();
@@ -70,7 +69,20 @@ public class TemplateUpdaterTest {
 //        for (Integer key : keys) {
 //            assertEquals(1, newTree.searchRange(key, key).size());
 //        }
+        int total = 0;
+        BTreeLeafNode leaf = newTree.getLeftMostLeaf();
 
+        while (leaf != null) {
+//            leaf.print();
+//            System.out.println(leaf.tupleCount.get());
+            total += leaf.getTupleCount();
+            assertEquals(leaf.getKeyCount(), leaf.getTupleCount());
+            leaf = (BTreeLeafNode) leaf.rightSibling;
+        }
+
+        System.out.println(newTree.getSkewnessFactor());
+
+        assertEquals(total, numberOfTuples);
     }
 
     @Test
@@ -112,6 +124,9 @@ public class TemplateUpdaterTest {
             }
         }
 
+
+        System.out.println(bTree.getSkewnessFactor());
+
 //        bTree.printBtree();
 
         TemplateUpdater templateUpdater = new TemplateUpdater(order);
@@ -133,6 +148,8 @@ public class TemplateUpdaterTest {
             assertEquals(duplicatedTime * leaf.getKeyCount(), leaf.getTupleCount());
             leaf = (BTreeLeafNode) leaf.rightSibling;
         }
+
+        System.out.println(newTree.getSkewnessFactor());
 
     }
 

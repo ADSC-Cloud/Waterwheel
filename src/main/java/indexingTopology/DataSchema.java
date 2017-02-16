@@ -182,7 +182,9 @@ public class DataSchema implements Serializable {
                 throw new RuntimeException("Not supported data type!" );
             }
         }
-        return output.toBytes();
+        byte[] bytes = output.toBytes();
+//        return output.toBytes();
+        return bytes;
     }
 
     @Deprecated

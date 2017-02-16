@@ -28,7 +28,7 @@ public class IngestionBolt<DataType extends Comparable> extends BaseRichBolt imp
 
     private OutputCollector collector;
 
-    private Kryo kryo;
+//    private Kryo kryo;
 
     private IndexerBuilder indexerBuilder;
 
@@ -46,9 +46,9 @@ public class IngestionBolt<DataType extends Comparable> extends BaseRichBolt imp
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
 
-        kryo = new Kryo();
-        kryo.register(BTree.class, new KryoTemplateSerializer());
-        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
+//        kryo = new Kryo();
+//        kryo.register(BTree.class, new KryoTemplateSerializer());
+//        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
 
         this.inputQueue = new ArrayBlockingQueue<>(1024);
 

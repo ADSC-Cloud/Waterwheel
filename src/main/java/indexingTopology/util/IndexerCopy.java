@@ -1,11 +1,17 @@
 package indexingTopology.util;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import indexingTopology.DataSchema;
+import indexingTopology.cache.BlockId;
+import indexingTopology.cache.CacheData;
+import indexingTopology.cache.TemplateCacheData;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.filesystem.FileSystemHandler;
 import indexingTopology.exception.UnsupportedGenericException;
+import indexingTopology.filesystem.HdfsFileSystemHandler;
+import indexingTopology.filesystem.LocalFileSystemHandler;
 import indexingTopology.util.generator.KeyGenerator;
 import indexingTopology.util.generator.UniformKeyGenerator;
 import javafx.util.Pair;
@@ -14,11 +20,14 @@ import org.apache.storm.metric.internal.RateTracker;
 import org.apache.storm.task.OutputCollector;
 
 import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.StreamCorruptedException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -62,6 +71,8 @@ public class IndexerCopy {
     private long start;
 
     private String indexField;
+
+    private List<String> fileNames;
 
     private Kryo kryo;
 
@@ -107,7 +118,7 @@ public class IndexerCopy {
     private Long totalTime;
 
     private AtomicLong totalQueryTime;
-    private int numberOfQueryThreads = 1;
+    private int numberOfQueryThreads = 2;
 
     private CheckCapacityRunnable checkCapacityRunnable;
 
@@ -191,6 +202,8 @@ public class IndexerCopy {
         totalQueryTime = new AtomicLong(0);
 
         checkCapacityRunnable = new CheckCapacityRunnable();
+
+        fileNames = new CopyOnWriteArrayList<>();
 
 //        capacityCheckingThread = new Thread(checkCapacityRunnable);
 
@@ -417,19 +430,20 @@ public class IndexerCopy {
                     String fileName = null;
 
 
-//                    writeTreeIntoChunk();
+                    writeTreeIntoChunk();
 //
-//                    try {
-//                        if (TopologyConfig.HDFSFlag) {
-//                            fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
-//                        } else {
-//                            fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
-//                        }
-//                        fileName =  "taskId" + taskId + "chunk" + chunkId;
-//                        fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    }
+                    try {
+                        if (TopologyConfig.HDFSFlag) {
+                            fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
+                        } else {
+                            fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
+                        }
+                        fileName =  "taskId" + taskId + "chunk" + chunkId;
+                        fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
+                        fileNames.add(fileName);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
 
 //                    Pair keyRange = new Pair(minIndexValue, maxIndexValue);
 //                    Pair timeStampRange = new Pair(minTimeStamp, maxTimeStamp);
@@ -664,22 +678,53 @@ public class IndexerCopy {
 //                } catch (InterruptedException e) {
 //                    e.printStackTrace();
 //                }
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+//                try {
+//                    Thread.sleep(100);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//
+//                double leftKey = 940;
+//                double rightKey = 950;
+//
+//
+//                List<byte[]> serializedTuples = null;
+//
+//                long start = System.currentTimeMillis();
+//                serializedTuples = indexedData.searchRange(leftKey, rightKey);
+//                System.out.println("query " + queryId + " has been finished!!!");
+//                totalQueryTime.addAndGet(System.currentTimeMillis() - start);
+                for (String fileName : fileNames) {
+                    try {
+
+//                        System.out.println(fileName);
+
+                        FileSystemHandler fileSystemHandler = null;
+                        if (TopologyConfig.HDFSFlag) {
+                            fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
+                        } else {
+                            fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
+                        }
+
+                        fileSystemHandler.openFile("/", fileName);
+
+                        byte[] templateLengthInBytes = new byte[4];
+                        fileSystemHandler.readBytesFromFile(0, templateLengthInBytes);
+
+                        Input input = new Input(templateLengthInBytes);
+                        int length = input.readInt();
+
+                        byte[] serializedTemplate = new byte[length];
+
+                        fileSystemHandler.readBytesFromFile(4, serializedTemplate);
+
+                        input = new Input(serializedTemplate);
+                        BTree template = kryo.readObject(input, BTree.class);
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
-
-                double leftKey = 940;
-                double rightKey = 950;
-
-
-                List<byte[]> serializedTuples = null;
-
-                long start = System.currentTimeMillis();
-                serializedTuples = indexedData.searchRange(leftKey, rightKey);
-                System.out.println("query " + queryId + " has been finished!!!");
-                totalQueryTime.addAndGet(System.currentTimeMillis() - start);
 
 //                for (int i = 0; i < serializedTuples.size(); ++i) {
 //                    Values deserializedTuple = null;
@@ -712,7 +757,15 @@ public class IndexerCopy {
 
         byte[] bytes = output.toBytes();
 
+        Input input = new Input(bytes);
+
+        BTree bTree = kryo.readObject(input, BTree.class);
+
+        bTree.printBtree();
+
         int lengthOfTemplate = bytes.length;
+
+//        System.out.println("length " + lengthOfTemplate);
 
         output = new Output(4);
 

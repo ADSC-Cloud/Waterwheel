@@ -56,6 +56,7 @@ public class BalancedPartition<T extends Number> {
             if (bound > keyRangeUpperBound) {
                 keyRangeUpperBound = keyRangeUpperBound + distance;
                 ++bin;
+                bin = Math.min(numberOfPartitions - 1, bin);
             }
         }
         return intervalToPartitionMapping;
@@ -68,22 +69,22 @@ public class BalancedPartition<T extends Number> {
     public int getIntervalId(T key) {
         Double distance = (upperBound - lowerBound) / TopologyConfig.NUMBER_OF_INTERVALS;
 
-        Double autualLowerBound = lowerBound + distance;
+        Double startLowerBound = lowerBound + distance;
 
-        Double autualUpperBound = upperBound - distance;
+        Double endUpperBound = upperBound - distance;
 
-        if (key.doubleValue() <= autualLowerBound) {
+        if (key.doubleValue() <= startLowerBound) {
             return 0;
         }
 
-        if (key.doubleValue() > autualUpperBound) {
+        if (key.doubleValue() > endUpperBound) {
             return TopologyConfig.NUMBER_OF_INTERVALS - 1;
         }
 
-        if ((key.doubleValue() - autualLowerBound) % distance == 0) {
-            return (int) ((key.doubleValue() - autualLowerBound) / distance);
+        if ((key.doubleValue() - startLowerBound) % distance == 0) {
+            return (int) ((key.doubleValue() - startLowerBound) / distance);
         } else {
-            return (int) ((key.doubleValue() - autualLowerBound) / distance + 1);
+            return (int) ((key.doubleValue() - startLowerBound) / distance + 1);
         }
     }
 

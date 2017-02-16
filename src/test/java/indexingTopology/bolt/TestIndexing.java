@@ -128,7 +128,7 @@ public class TestIndexing {
                 TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
                 RandomGenerator randomGenerator = new Well19937c();
                 randomGenerator.setSeed(1000);
-                KeyGenerator keyGenerator = new ZipfKeyGenerator( 200048, 0.3, randomGenerator);
+                KeyGenerator keyGenerator = new ZipfKeyGenerator( 200048, 0.5, randomGenerator);
 //                KeyGenerator keyGenerator = new RoundRobinKeyGenerator(TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK);
 //                KeyGenerator keyGenerator = new UniformKeyGenerator();
 
@@ -238,8 +238,9 @@ public class TestIndexing {
                         System.out.println("total rebuild time " + totalRebuildTime);
                         System.out.println("average rebuild time " + (totalRebuildTime / numberOfChunks));
                         System.out.println("number of rebuild " + numberOfRebuild);
-                        System.out.println("total time " + totalTime);
+//                        System.out.println("total time " + totalTime);
                         System.out.println("average time in a chunk" + totalTime / numberOfChunks);
+                        System.out.println("average number of rebuild in a chunk " + numberOfRebuild*1.0 / numberOfChunks);
                         break;
                     }
 
@@ -286,7 +287,7 @@ public class TestIndexing {
 //                    System.out.println(executedInChekingThread.get());
 //                    System.out.println(indexedData.getSkewnessFactor());
                     if (chunkId.get() > 0 && executedInChekingThread.get() >= TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK * TopologyConfig.SKEWNESS_DETECTION_THRESHOLD) {
-//                        System.out.println(indexedData.getSkewnessFactor());
+//                        System.out.println("Before rebuilt " + indexedData.getSkewnessFactor());
                         if (indexedData.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
                             indexingRunnable.setInputExhausted();
                             for (Thread thread : indexingThreads) {
@@ -308,11 +309,15 @@ public class TestIndexing {
 
                             totalRebuildTime += (System.currentTimeMillis() - start);
 
+//                            System.out.println("After rebuilt, the skewness is " + indexedData.getSkewnessFactor());
+
                             ++numberOfRebuild;
 
 //                        System.out.println("New tree has been built");
 //
                             executedInChekingThread.set(0L);
+
+//                            TopologyConfig.SKEWNESS_DETECTION_THRESHOLD = 0.01;
 //
                             createIndexingThread();
                         }
@@ -638,6 +643,6 @@ public class TestIndexing {
 
     public static void main(String[] args) {
         int bTreeOrder = 64;
-        TestIndexing test = new TestIndexing(bTreeOrder, 1, 1, true);
+        TestIndexing test = new TestIndexing(bTreeOrder, 1, 0, true);
     }
 }

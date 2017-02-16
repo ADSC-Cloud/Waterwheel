@@ -29,7 +29,7 @@ import java.util.Map;
 /**
  * Created by acelzj on 11/15/16.
  */
-public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt{
+public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt {
 
     OutputCollector collector;
 
@@ -95,13 +95,13 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt{
 
         Long queryId = subQuery.getQueryId();
 
-//        System.out.println(queryId + " in chunk scanner is being executed!!!");
-
         TKey leftKey =  (TKey) subQuery.getLeftKey();
         TKey rightKey =  (TKey) subQuery.getRightKey();
         String fileName = subQuery.getFileName();
         Long timestampLowerBound = subQuery.getStartTimestamp();
         Long timestampUpperBound = subQuery.getEndTimestamp();
+
+        System.out.println("file name" + fileName);
 
         FileScanMetrics metrics = new FileScanMetrics();
 
@@ -137,6 +137,8 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt{
             if (tuplesWithinTimestamp.size() != 0) {
                 serializedTuples.addAll(tuplesWithinTimestamp);
             }
+
+//            System.out.println("an offset has been done!!!");
         }
 
         collector.emit(Streams.FileSystemQueryStream, new Values(queryId, serializedTuples, metrics));
@@ -153,21 +155,33 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt{
     }
 
 
-    private Pair getTemplateFromExternalStorage(FileSystemHandler fileSystemHandler, String fileName) {
+    private Pair getTemplateFromExternalStorage(FileSystemHandler fileSystemHandler, String fileName) throws IOException {
         fileSystemHandler.openFile("/", fileName);
 
+//        System.out.println("begin to get the template!!!");
+
         byte[] templateLengthInBytes = new byte[4];
-        fileSystemHandler.readBytesFromFile(templateLengthInBytes);
+        fileSystemHandler.readBytesFromFile(0, templateLengthInBytes);
+//        fileSystemHandler.readBytesFromFile(templateLengthInBytes);
 
         Input input = new Input(templateLengthInBytes);
         int length = input.readInt();
+//        input.close();
+
+//        System.out.println("length " + length);
 
         byte[] serializedTemplate = new byte[length];
 
-        fileSystemHandler.readBytesFromFile(0, serializedTemplate);
+//        fileSystemHandler.seek(4);
+
+        fileSystemHandler.readBytesFromFile(4, serializedTemplate);
+
+//        fileSystemHandler.readBytesFromFile(4, serializedTemplate);
 
         input = new Input(serializedTemplate);
         BTree template = kryo.readObject(input, BTree.class);
+
+//        System.out.println("tempalte has been loaded to memory!!!");
 
         fileSystemHandler.closeFile();
 
@@ -214,16 +228,21 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt{
 
         fileSystemHandler.readBytesFromFile(offset, lengthInByte);
 
-        int lengthOfLeaveInBytes = ByteBuffer.wrap(lengthInByte, 0, 4).getInt();
+        Input input = new Input(lengthInByte);
 
-        byte[] leafInByte = new byte[lengthOfLeaveInBytes+1];
+//        int lengthOfLeaveInBytes = ByteBuffer.wrap(lengthInByte, 0, 4).getInt();
+        int lengthOfLeaveInBytes = input.readInt();
 
-        fileSystemHandler.seek(offset + 4);
+        byte[] leafInByte = new byte[lengthOfLeaveInBytes];
+
+//        fileSystemHandler.seek(offset + 4);
 
         fileSystemHandler.readBytesFromFile(offset + 4, leafInByte);
 
-        Input input = new Input(leafInByte);
+//        Input input = new Input(leafInByte);
+        input = new Input(leafInByte);
         BTreeLeafNode leaf = kryo.readObject(input, BTreeLeafNode.class);
+
 
         fileSystemHandler.closeFile();
         return leaf;

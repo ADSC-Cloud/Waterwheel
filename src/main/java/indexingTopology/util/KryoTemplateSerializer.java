@@ -36,16 +36,21 @@ public class KryoTemplateSerializer<TKey extends Comparable<TKey>> extends Seria
         Queue<BTreeNode> q = new LinkedList<BTreeNode>();
         root = new BTreeInnerNode(TopologyConfig.BTREE_ORDER);
         deserialize(input, root);
-        q.add(root);
+        if (root.getOffsets().size() == 0) {
+            q.add(root);
+        }
 
         int count = 0;
         BTreeInnerNode preNode = null;
         while (!q.isEmpty()) {
             BTreeInnerNode curr = (BTreeInnerNode) q.remove();
-
+//            System.out.println("curr " + curr.getKeyCount());
+//            System.out.println(curr.keys);
             for (int i = 0; i < curr.getKeyCount() + 1; ++i) {
                 BTreeInnerNode node = new BTreeInnerNode(TopologyConfig.BTREE_ORDER);
                 deserialize(input, node);
+//                System.out.println("node" + node.getKeyCount());
+//                System.out.println(node.keys);
                 if (node.getKeyCount() != 0) {
                     curr.setChild(i, node);
                 }
@@ -69,7 +74,7 @@ public class KryoTemplateSerializer<TKey extends Comparable<TKey>> extends Seria
 
     private byte[] serializeInnerNode(BTreeInnerNode node) {
 
-        Output output = new Output(500000, 6500000);
+        Output output = new Output(500000, 200000000);
 
         ArrayList<TKey> keys = node.getKeys();
 
@@ -83,7 +88,9 @@ public class KryoTemplateSerializer<TKey extends Comparable<TKey>> extends Seria
             output.writeChar('n');
         }
 
-        return output.toBytes();
+        byte[] bytes = output.toBytes();
+
+        return bytes;
     }
 
     private void deserialize(Input input, BTreeInnerNode node) {

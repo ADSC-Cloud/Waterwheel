@@ -27,7 +27,7 @@ public class IndexerBuilder {
     }
 
     public IndexerBuilder setDataSchema(DataSchema schema) {
-        this.schema = schema;
+        this.schema = schema.duplicate();
         return this;
     }
 

@@ -337,15 +337,15 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
                 ? partitionIdsInBalancedPartition
                 : mergePartitionIds(partitionIdsInBalancedPartition, partitionIdsInStalePartition));
 
-        for (Integer partitionId : partitionIds) {
-            Integer taskId = indexServers.get(partitionId);
-            Long timestamp = indexTaskToTimestampMapping.get(taskId);
-            if (timestamp <= endTimestamp && timestamp >= startTimestamp) {
-                SubQuery subQuery = new SubQuery(query.id, query.leftKey, query.rightKey, query.startTimestamp, query.endTimestamp);
-                collector.emitDirect(taskId, Streams.BPlusTreeQueryStream, new Values(subQuery));
-                ++numberOfTasksToSearch;
-            }
-        }
+//        for (Integer partitionId : partitionIds) {
+//            Integer taskId = indexServers.get(partitionId);
+//            Long timestamp = indexTaskToTimestampMapping.get(taskId);
+//            if (timestamp <= endTimestamp && timestamp >= startTimestamp) {
+//                SubQuery subQuery = new SubQuery(query.id, query.leftKey, query.rightKey, query.startTimestamp, query.endTimestamp);
+//                collector.emitDirect(taskId, Streams.BPlusTreeQueryStream, new Values(subQuery));
+//                ++numberOfTasksToSearch;
+//            }
+//        }
 
         collector.emit(Streams.BPlusTreeQueryInformationStream, new Values(queryId, numberOfTasksToSearch));
     }

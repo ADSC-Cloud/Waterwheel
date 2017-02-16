@@ -64,13 +64,13 @@ public class TexiTrajectoryTopology {
 
         builder.setSpout(TupleGenerator, new TexiTrajectoryGenerator(schema, generator, payloadSize, city), 1);
 
-        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher(schemaWithTimestamp, lowerBound, upperBound, enableLoadBalance, false), 1)
+        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher(schemaWithTimestamp, lowerBound, upperBound, enableLoadBalance, true), 1)
                 .shuffleGrouping(TupleGenerator, Streams.IndexStream)
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 
 
-        builder.setBolt(IndexerBolt, new IngestionBolt(schemaWithTimestamp), 4)
+        builder.setBolt(IndexerBolt, new IngestionBolt(schemaWithTimestamp), 8)
 
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream) // direct grouping should be used.
@@ -84,7 +84,7 @@ public class TexiTrajectoryTopology {
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.TimestampUpdateStream);
 
-        builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner(schemaWithTimestamp), 4)
+        builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner(schemaWithTimestamp), 8)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream);
 //                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream); //make comparision with our method.
 
@@ -102,7 +102,7 @@ public class TexiTrajectoryTopology {
 
         Config conf = new Config();
         conf.setDebug(false);
-        conf.setNumWorkers(1);
+        conf.setNumWorkers(4);
 
         StormSubmitter.submitTopologyWithProgressBar(args[0], conf, builder.createTopology());
     }
