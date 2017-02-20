@@ -48,7 +48,7 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
 
     private BalancedPartition balancedPartition;
 
-    private BalancedPartition staleBalancedPartition;
+    private BalancedPartition balancedPartitionToBeDeleted;
 
     private int numberOfPartitions;
 
@@ -75,19 +75,15 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
         taskQueue = new ArrayBlockingQueue<>(TopologyConfig.TASK_QUEUE_CAPACITY);
 
         Set<String> componentIds = topologyContext.getThisTargets().get(Streams.FileSystemQueryStream).keySet();
-
         taskIdToTaskQueue = new HashMap<Integer, ArrayBlockingQueue<SubQuery>>();
-
         queryServers = new ArrayList<Integer>();
-
         for (String componentId : componentIds) {
             queryServers.addAll(topologyContext.getComponentTasks(componentId));
         }
-
         createTaskQueues(queryServers);
+
         
         componentIds = topologyContext.getThisTargets().get(Streams.BPlusTreeQueryStream).keySet();
-
         indexServers = new ArrayList<Integer>();
         for (String componentId : componentIds) {
             indexServers.addAll(topologyContext.getComponentTasks(componentId));
@@ -103,7 +99,7 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
         numberOfPartitions = queryServers.size();
         balancedPartition = new BalancedPartition(numberOfPartitions, lowerBound, upperBound);
 
-        staleBalancedPartition = null;
+        balancedPartitionToBeDeleted = null;
 
         pendingQueue = new LinkedBlockingQueue<>();
 
@@ -117,9 +113,7 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
         if (tuple.getSourceStreamId().equals(Streams.FileInformationUpdateStream)) {
             String fileName = tuple.getString(0);
             TimeDomain timeDomain = (TimeDomain) tuple.getValueByField("timeDomain");
-//            Pair timestampRange = (Pair) tuple.getValueByField("timestampRange");
             KeyDomain keyDomain = (KeyDomain) tuple.getValueByField("keyDomain");
-//            Pair timeStampRange = (Pair) tuple.getValue(2);
 
             filePartitionSchemaManager.add(new FileMetaData(fileName, ((DataType) keyDomain.getLowerBound()).doubleValue(),
                     ((DataType) keyDomain.getUpperBound()).doubleValue(), timeDomain.getStartTimestamp(), timeDomain.getEndTimestamp()));
@@ -161,11 +155,10 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
             DataType keyRangeLowerBound = (DataType) keyDomain.getLowerBound();
             DataType keyRangeUpperBound = (DataType) keyDomain.getUpperBound();
 
-
-            if (staleBalancedPartition != null) {
+            if (balancedPartitionToBeDeleted != null) {
                 updateStaleBalancedPartition(keyRangeLowerBound, keyRangeUpperBound);
-                if (isPartitionUpdated()) {
-                    staleBalancedPartition = null;
+                if (isPartitionDeletable()) {
+                    balancedPartitionToBeDeleted = null;
                     collector.emit(Streams.EableRepartitionStream, new Values("Partition can be enabled!"));
                 }
             }
@@ -175,15 +168,15 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
         } else if (tuple.getSourceStreamId().equals(Streams.IntervalPartitionUpdateStream)) {
 //            Map<Integer, Integer> intervalToPartitionMapping = (Map) tuple.getValueByField("newIntervalPartition");
             BalancedPartition newBalancedPartition = (BalancedPartition) tuple.getValueByField("newIntervalPartition");
-            staleBalancedPartition = balancedPartition;
+            balancedPartitionToBeDeleted = balancedPartition;
             balancedPartition = newBalancedPartition;
 //            System.out.println("partition has been updated in decompostion bolt!!! ");
 //            balancedPartition.setIntervalToPartitionMapping(intervalToPartitionMapping);
         }
     }
 
-    private boolean isPartitionUpdated() {
-        Map<Integer, Integer> staleIntervalIdToPartitionIdMapping = staleBalancedPartition.getIntervalToPartitionMapping();
+    private boolean isPartitionDeletable() {
+        Map<Integer, Integer> staleIntervalIdToPartitionIdMapping = balancedPartitionToBeDeleted.getIntervalToPartitionMapping();
         Map<Integer, Integer> intervalIdToPartitionIdMapping = balancedPartition.getIntervalToPartitionMapping();
 
         return staleIntervalIdToPartitionIdMapping.equals(intervalIdToPartitionIdMapping);
@@ -195,9 +188,8 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
         Integer endIntervalId = balancedPartition.getIntervalId(keyRangeUpperBound);
 
         for (Integer intervalId = startIntervalId; intervalId <= endIntervalId; ++intervalId) {
-            staleBalancedPartition.getIntervalToPartitionMapping().put(intervalId, intervalIdToPartitionIdMapping.get(intervalId));
+            balancedPartitionToBeDeleted.getIntervalToPartitionMapping().put(intervalId, intervalIdToPartitionIdMapping.get(intervalId));
         }
-
     }
 
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
@@ -308,18 +300,17 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
         int numberOfTasksToSearch = 0;
 
         Long queryId = query.id;
-
         DataType leftKey = query.leftKey;
         DataType rightKey = query.rightKey;
-
         Long startTimestamp = query.startTimestamp;
         Long endTimestamp = query.endTimestamp;
+
 
         List<Integer> partitionIdsInBalancedPartition = getPartitionIds(balancedPartition, leftKey, rightKey);
         List<Integer> partitionIdsInStalePartition = null;
 
-        if (staleBalancedPartition != null) {
-            partitionIdsInStalePartition = getPartitionIds(staleBalancedPartition, leftKey, rightKey);
+        if (balancedPartitionToBeDeleted != null) {
+            partitionIdsInStalePartition = getPartitionIds(balancedPartitionToBeDeleted, leftKey, rightKey);
         }
 
         List<Integer> partitionIds = (partitionIdsInStalePartition == null

@@ -92,8 +92,6 @@ public class MetadataServer extends BaseRichBolt {
 
             Histogram histogram = (Histogram) tuple.getValue(0);
 
-//            System.out.println(histogram.getHistogram());
-
             if (numberOfStaticsReceived < numberOfDispatchers) {
                 partitionLoads = new long[numberOfPartitions];
                 this.histogram.merge(histogram);
@@ -162,15 +160,8 @@ public class MetadataServer extends BaseRichBolt {
 
 
     private double getSkewnessFactor(Histogram histogram) {
-
-//        System.out.println("Before repartition");
-//        for (int i = 0; i < intervalLoads.length; ++i) {
-//            System.out.println("bin " + i + " : " + intervalLoads[i]);
-//        }
-
         Long sum = getTotalWorkLoad(histogram);
         Long maxWorkload = getMaxWorkLoad(histogram);
-
         double averageLoad = sum / (double) numberOfPartitions;
 
         return maxWorkload / averageLoad;

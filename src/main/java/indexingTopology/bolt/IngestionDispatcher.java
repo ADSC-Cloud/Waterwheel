@@ -53,7 +53,6 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
         Set<String> componentIds = topologyContext.getThisTargets()
                 .get(Streams.IndexStream).keySet();
         targetTasks = new ArrayList<Integer>();
-
         for (String componentId : componentIds) {
             targetTasks.addAll(topologyContext.getComponentTasks(componentId));
         }
@@ -61,26 +60,21 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
         numberOfPartitions = targetTasks.size();
 
         balancedPartition = new BalancedPartition(numberOfPartitions, lowerBound, upperBound, enableLoadBalance);
-
     }
 
     public void execute(Tuple tuple) {
         if (tuple.getSourceStreamId().equals(Streams.IndexStream)){
 
             DataTuple dataTuple = (DataTuple) tuple.getValueByField("tuple");
-
 //                updateBound(indexValue);
             IndexType indexValue = (IndexType) schema.getIndexValue(dataTuple);
             balancedPartition.record(indexValue);
 
-
             int partitionId = balancedPartition.getPartitionId(indexValue);
-
             int taskId = targetTasks.get(partitionId);
 
             collector.emitDirect(taskId, Streams.IndexStream, tuple, new Values(dataTuple));
             collector.ack(tuple);
-
         } else if (tuple.getSourceStreamId().equals(Streams.IntervalPartitionUpdateStream)){
             System.out.println("partition has been updated!!!");
 //            Map<Integer, Integer> intervalToPartitionMapping = (Map) tuple.getValueByField("newIntervalPartition");
@@ -88,10 +82,8 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
 //            System.out.println(intervalToPartitionMapping);
 //            balancedPartition.setIntervalToPartitionMapping(intervalToPartitionMapping);
         } else if (tuple.getSourceStreamId().equals(Streams.StaticsRequestStream)){
-
             collector.emit(Streams.StatisticsReportStream,
                     new Values(new Histogram(balancedPartition.getIntervalDistribution().getHistogram())));
-
             balancedPartition.clearHistogram();
         }
     }
@@ -110,8 +102,5 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
         declarer.declareStream(Streams.IndexStream, new Fields("tuple"));
 
         declarer.declareStream(Streams.StatisticsReportStream, new Fields("statistics"));
-
     }
-
-
 }

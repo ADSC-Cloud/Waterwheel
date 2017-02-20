@@ -37,11 +37,8 @@ public class ResultMerger extends BaseRichBolt {
 
     OutputCollector collector;
 
-    private int counter;
-
     public ResultMerger(DataSchema schema) {
         this.schema = schema;
-        counter = 0;
     }
 
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {

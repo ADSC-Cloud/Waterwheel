@@ -207,11 +207,11 @@ public class KryoTemplateSerializerTest {
 
             indexedData.printBtree();
 
-            BTreeNode mostLeftNode = indexedData.findLeafNodeShouldContainKeyInDeserializedTemplate(0.0);
-            BTreeNode mostRightNode = indexedData.findLeafNodeShouldContainKeyInDeserializedTemplate(120.0);
+//            BTreeNode mostLeftNode = indexedData.findInnerNodeShouldContainKey(0.0);
+//            BTreeNode mostRightNode = indexedData.findInnerNodeShouldContainKey(120.0);
 
-            List<Integer> offsets = indexedData.getOffsetsOfLeaveNodesShouldContainKeys(mostLeftNode
-                    , mostRightNode);
+            List<Integer> offsets = indexedData.getOffsetsOfLeafNodesShouldContainKeys(0.0
+                    , 120.0);
 
             List<byte[]> list = new ArrayList<>();
 
@@ -350,11 +350,11 @@ public class KryoTemplateSerializerTest {
 
                 BTree bTree = kryo.readObject(input, BTree.class);
 
-                BTreeNode mostLeftNode = bTree.findLeafNodeShouldContainKeyInDeserializedTemplate(994.0);
-                BTreeNode mostRightNode = bTree.findLeafNodeShouldContainKeyInDeserializedTemplate(1000.0);
+//                BTreeNode mostLeftNode = bTree.findInnerNodeShouldContainKey(994.0);
+//                BTreeNode mostRightNode = bTree.findInnerNodeShouldContainKey(1000.0);
 
-                List<Integer> offsets = indexedData.getOffsetsOfLeaveNodesShouldContainKeys(mostLeftNode
-                        , mostRightNode);
+                List<Integer> offsets = indexedData.getOffsetsOfLeafNodesShouldContainKeys(994.0
+                        , 1000.0);
 
 //                System.out.println(offsets);
 

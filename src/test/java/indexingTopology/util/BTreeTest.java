@@ -3,7 +3,6 @@ package indexingTopology.util;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import indexingTopology.DataSchema;
-import indexingTopology.config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
@@ -75,7 +74,7 @@ public class BTreeTest {
         leaf = newBTree.getLeftMostLeaf();
         while (leaf != null) {
             assertEquals(0, leaf.keyCount);
-            assertEquals(0, leaf.tupleCount.get());
+            assertEquals(0, leaf.atomicKeyCount.get());
             assertEquals(0, leaf.tuples.size());
             assertEquals(0, leaf.offsets.size());
             leaf = (BTreeLeafNode) leaf.rightSibling;

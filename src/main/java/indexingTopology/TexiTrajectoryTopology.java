@@ -10,6 +10,7 @@ import indexingTopology.util.texi.City;
 import indexingTopology.util.texi.TrajectoryGenerator;
 import indexingTopology.util.texi.TrajectoryUniformGenerator;
 
+import java.io.BufferedInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -39,6 +40,7 @@ public class TexiTrajectoryTopology {
         schema.addVarcharField("payload", payloadSize);
         schema.setPrimaryIndexField("zcode");
 
+
         DataSchema schemaWithTimestamp = schema.duplicate();
         schemaWithTimestamp.addLongField("timestamp");
 
@@ -56,22 +58,22 @@ public class TexiTrajectoryTopology {
         Double lowerBound = 0.0;
 
 //        Double upperBound = (double)city.getMaxZCode();
-        Double upperBound = 210048.0;
+        Double upperBound = 2100048.0;
 
         String path = "/home/acelzj";
 
         boolean enableLoadBalance = true;
 
 
-        builder.setSpout(TupleGenerator, new TexiTrajectoryGenerator(schema, generator, payloadSize, city), 1);
+        builder.setSpout(TupleGenerator, new TexiTrajectoryGenerator(schema, generator, payloadSize, city), 7);
 
-        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher(schemaWithTimestamp, lowerBound, upperBound, enableLoadBalance, false), 1)
+        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher(schemaWithTimestamp, lowerBound, upperBound, enableLoadBalance, false), 11)
                 .shuffleGrouping(TupleGenerator, Streams.IndexStream)
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 
 
-        builder.setBolt(IndexerBolt, new IngestionBolt(schemaWithTimestamp), 4)
+        builder.setBolt(IndexerBolt, new IngestionBolt(schemaWithTimestamp), 71)
 
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream) // direct grouping should be used.
@@ -85,7 +87,7 @@ public class TexiTrajectoryTopology {
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.TimestampUpdateStream);
 
-        builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner(schemaWithTimestamp), 4)
+        builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner(schemaWithTimestamp), 20)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream);
 //                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream); //make comparision with our method.
 
@@ -103,7 +105,7 @@ public class TexiTrajectoryTopology {
 
         Config conf = new Config();
         conf.setDebug(false);
-        conf.setNumWorkers(4);
+        conf.setNumWorkers(42);
 
         StormSubmitter.submitTopologyWithProgressBar(args[0], conf, builder.createTopology());
     }

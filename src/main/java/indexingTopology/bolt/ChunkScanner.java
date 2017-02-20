@@ -21,7 +21,6 @@ import indexingTopology.streams.Streams;
 import indexingTopology.util.*;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -39,24 +38,50 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt {
 
     private DataSchema schema;
 
-    Long startTime;
+//    Long startTime;
 
-    Long timeCostOfReadFile;
+//    Long timeCostOfReadFile;
 
-    Long timeCostOfSearching;
+//    Long timeCostOfSearching;
 
-    Long timeCostOfDeserializationATree;
+//    Long timeCostOfDeserializationATree;
 
-    Long timeCostOfDeserializationALeaf;
+//    Long timeCostOfDeserializationALeaf;
 
 
     public ChunkScanner(DataSchema schema) {
         this.schema = schema;
     }
 
+    private Pair getTemplateFromExternalStorage(FileSystemHandler fileSystemHandler, String fileName) throws IOException {
+        fileSystemHandler.openFile("/", fileName);
+        byte[] bytesToRead = new byte[4];
+        fileSystemHandler.readBytesFromFile(0, bytesToRead);
+
+        Input input = new Input(bytesToRead);
+        int templateLength = input.readInt();
+
+
+
+        bytesToRead = new byte[templateLength];
+//        fileSystemHandler.seek(4);
+        fileSystemHandler.readBytesFromFile(4, bytesToRead);
+
+
+        input = new Input(bytesToRead);
+        BTree template = kryo.readObject(input, BTree.class);
+
+
+        fileSystemHandler.closeFile();
+
+        return new Pair(template, templateLength);
+    }
+
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
+
         blockIdToCacheUnit = new LRUCache<BlockId, CacheUnit>(TopologyConfig.CACHE_SIZE);
+
         kryo = new Kryo();
         kryo.register(BTree.class, new KryoTemplateSerializer());
         kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
@@ -66,16 +91,16 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt {
 
         SubQueryOnFile subQuery = (SubQueryOnFile) tuple.getValueByField("subquery");
 
-        timeCostOfReadFile = ((long) 0);
-
-        timeCostOfSearching = ((long) 0);
-
-        timeCostOfDeserializationATree = ((long) 0);
-
-        timeCostOfDeserializationALeaf = ((long) 0);
+//        timeCostOfReadFile = ((long) 0);
+//
+//        timeCostOfSearching = ((long) 0);
+//
+//        timeCostOfDeserializationATree = ((long) 0);
+//
+//        timeCostOfDeserializationALeaf = ((long) 0);
 
         try {
-            executeRangeQuery(subQuery);
+            handleSubQuery(subQuery);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -87,14 +112,12 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt {
 
         outputFieldsDeclarer.declareStream(Streams.FileSubQueryFinishStream,
                 new Fields("finished"));
-
     }
 
     @SuppressWarnings("unchecked")
-    private void executeRangeQuery(SubQueryOnFile subQuery) throws IOException {
+    private void handleSubQuery(SubQueryOnFile subQuery) throws IOException {
 
         Long queryId = subQuery.getQueryId();
-
         TKey leftKey =  (TKey) subQuery.getLeftKey();
         TKey rightKey =  (TKey) subQuery.getRightKey();
         String fileName = subQuery.getFileName();
@@ -103,24 +126,22 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt {
 
         FileScanMetrics metrics = new FileScanMetrics();
 
-        ArrayList<byte[]> serializedTuples = new ArrayList<byte[]>();
 
         Pair data = getTemplateData(fileName);
-
         BTree template = (BTree) data.getKey();
-
         Integer length = (Integer) data.getValue();
 
-        BTreeNode mostLeftNode = template.findLeafNodeShouldContainKeyInDeserializedTemplate(leftKey);
 
-        BTreeNode mostRightNode = template.findLeafNodeShouldContainKeyInDeserializedTemplate(rightKey);
+//        BTreeNode mostLeftNode = template.findInnerNodeShouldContainKey(leftKey);
+//        BTreeNode mostRightNode = template.findInnerNodeShouldContainKey(rightKey);
 
-        List<Integer> offsets = template.getOffsetsOfLeaveNodesShouldContainKeys(mostLeftNode, mostRightNode);
 
         BTreeLeafNode leaf;
-
+        ArrayList<byte[]> tuples = new ArrayList<byte[]>();
+        List<Integer> offsets = template.getOffsetsOfLeafNodesShouldContainKeys(leftKey, rightKey);
         for (Integer offset : offsets) {
             BlockId blockId = new BlockId(fileName, offset + length + 4);
+
             leaf = (BTreeLeafNode) getFromCache(blockId);
             if (leaf == null) {
                 leaf = getLeafFromExternalStorage(fileName, offset + length + 4);
@@ -129,61 +150,24 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt {
             }
 
             ArrayList<byte[]> tuplesInKeyRange = leaf.getTuplesWithinKeyRange(leftKey, rightKey);
-
             ArrayList<byte[]> tuplesWithinTimestamp = getTuplesWithinTimestamp(tuplesInKeyRange, timestampLowerBound, timestampUpperBound);
 
             if (tuplesWithinTimestamp.size() != 0) {
-                serializedTuples.addAll(tuplesWithinTimestamp);
+                tuples.addAll(tuplesWithinTimestamp);
             }
-
-//            System.out.println("an offset has been done!!!");
         }
 
-        collector.emit(Streams.FileSystemQueryStream, new Values(queryId, serializedTuples, metrics));
+        collector.emit(Streams.FileSystemQueryStream, new Values(queryId, tuples, metrics));
 
         collector.emit(Streams.FileSubQueryFinishStream, new Values("finished"));
-
     }
+
 
     private Object getFromCache(BlockId blockId) {
         if (blockIdToCacheUnit.get(blockId) == null) {
             return null;
         }
         return blockIdToCacheUnit.get(blockId).getCacheData().getData();
-    }
-
-
-    private Pair getTemplateFromExternalStorage(FileSystemHandler fileSystemHandler, String fileName) throws IOException {
-        fileSystemHandler.openFile("/", fileName);
-
-//        System.out.println("begin to get the template!!!");
-
-        byte[] templateLengthInBytes = new byte[4];
-        fileSystemHandler.readBytesFromFile(0, templateLengthInBytes);
-//        fileSystemHandler.readBytesFromFile(templateLengthInBytes);
-
-        Input input = new Input(templateLengthInBytes);
-        int length = input.readInt();
-//        input.close();
-
-//        System.out.println("length " + length);
-
-        byte[] serializedTemplate = new byte[length];
-
-//        fileSystemHandler.seek(4);
-
-        fileSystemHandler.readBytesFromFile(4, serializedTemplate);
-
-//        fileSystemHandler.readBytesFromFile(4, serializedTemplate);
-
-        input = new Input(serializedTemplate);
-        BTree template = kryo.readObject(input, BTree.class);
-
-//        System.out.println("tempalte has been loaded to memory!!!");
-
-        fileSystemHandler.closeFile();
-
-        return new Pair(template, length);
     }
 
 
@@ -196,17 +180,16 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt {
     private ArrayList<byte[]> getTuplesWithinTimestamp(ArrayList<byte[]> tuples, Long timestampLowerBound, Long timestampUpperBound)
             throws IOException {
 
-        ArrayList<byte[]> serializedTuples = new ArrayList<>();
-
+        ArrayList<byte[]> tuplesWithinTimestamp = new ArrayList<>();
         for (int i = 0; i < tuples.size(); ++i) {
             DataTuple dataTuple = schema.deserializeToDataTuple(tuples.get(i));
             Long timestamp = (Long) schema.getValue("timestamp", dataTuple);
             if (timestampLowerBound <= timestamp && timestampUpperBound >= timestamp) {
-                serializedTuples.add(tuples.get(i));
+                tuplesWithinTimestamp.add(tuples.get(i));
             }
         }
 
-        return serializedTuples;
+        return tuplesWithinTimestamp;
     }
 
     private BTreeLeafNode getLeafFromExternalStorage(String fileName, int offset)
@@ -219,30 +202,26 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt {
             fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
         }
 
-        byte[] lengthInByte = new byte[4];
+        byte[] bytesToRead = new byte[4];
         fileSystemHandler.openFile("/", fileName);
-
         fileSystemHandler.seek(offset);
+        fileSystemHandler.readBytesFromFile(offset, bytesToRead);
 
-        fileSystemHandler.readBytesFromFile(offset, lengthInByte);
 
-        Input input = new Input(lengthInByte);
+        Input input = new Input(bytesToRead);
+        int leaveNodeLength = input.readInt();
 
-//        int lengthOfLeaveInBytes = ByteBuffer.wrap(lengthInByte, 0, 4).getInt();
-        int lengthOfLeaveInBytes = input.readInt();
-
-        byte[] leafInByte = new byte[lengthOfLeaveInBytes];
+        bytesToRead = new byte[leaveNodeLength];
+        fileSystemHandler.readBytesFromFile(offset + 4, bytesToRead);
 
 //        fileSystemHandler.seek(offset + 4);
 
-        fileSystemHandler.readBytesFromFile(offset + 4, leafInByte);
-
-//        Input input = new Input(leafInByte);
-        input = new Input(leafInByte);
+        input = new Input(bytesToRead);
         BTreeLeafNode leaf = kryo.readObject(input, BTreeLeafNode.class);
 
 
         fileSystemHandler.closeFile();
+
         return leaf;
     }
 
@@ -260,13 +239,11 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt {
             BlockId blockId = new BlockId(fileName, 0);
 
             data = (Pair) getFromCache(blockId);
-
             if (data == null) {
                 data = getTemplateFromExternalStorage(fileSystemHandler, fileName);
                 CacheData cacheData = new TemplateCacheData(data);
                 putCacheData(blockId, cacheData);
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         }

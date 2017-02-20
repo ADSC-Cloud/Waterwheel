@@ -119,9 +119,9 @@ public class BTreeLeafNodeTest {
         }
 
         assertEquals(512, leaf.getKeyCount());
-        assertEquals(512, leaf.getTupleCount());
+        assertEquals(512, leaf.getAtomicKeyCount());
         assertEquals(513, leaf.rightSibling.getKeyCount());
-        assertEquals(513, ((BTreeLeafNode) leaf.rightSibling).getTupleCount());
+        assertEquals(513, ((BTreeLeafNode) leaf.rightSibling).getAtomicKeyCount());
         assertEquals(1, root.getKeyCount());
     }
 

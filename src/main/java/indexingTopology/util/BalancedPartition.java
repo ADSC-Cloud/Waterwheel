@@ -50,6 +50,8 @@ public class BalancedPartition<T extends Number> implements Serializable{
         Double miniDistance = (upperBound - lowerBound) / TopologyConfig.NUMBER_OF_INTERVALS;
         Double keyRangeUpperBound = lowerBound + distance;
         Double bound = lowerBound + miniDistance;
+
+
         Map<Integer, Integer> intervalToPartitionMapping = new HashMap<>();
         int bin = 0;
         for (int i = 0; i < TopologyConfig.NUMBER_OF_INTERVALS; ++i) {
@@ -62,8 +64,6 @@ public class BalancedPartition<T extends Number> implements Serializable{
             }
         }
 
-        System.out.println(intervalToPartitionMapping);
-
         return intervalToPartitionMapping;
     }
 
@@ -75,7 +75,6 @@ public class BalancedPartition<T extends Number> implements Serializable{
         Double distance = (upperBound - lowerBound) / TopologyConfig.NUMBER_OF_INTERVALS;
 
         Double startLowerBound = lowerBound + distance;
-
         Double endUpperBound = upperBound - distance;
 
         if (key.doubleValue() <= startLowerBound) {

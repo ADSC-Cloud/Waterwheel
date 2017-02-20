@@ -74,9 +74,9 @@ public class TemplateUpdaterTest {
 
         while (leaf != null) {
 //            leaf.print();
-//            System.out.println(leaf.tupleCount.get());
-            total += leaf.getTupleCount();
-            assertEquals(leaf.getKeyCount(), leaf.getTupleCount());
+//            System.out.println(leaf.atomicKeyCount.get());
+            total += leaf.getAtomicKeyCount();
+            assertEquals(leaf.getKeyCount(), leaf.getAtomicKeyCount());
             leaf = (BTreeLeafNode) leaf.rightSibling;
         }
 
@@ -144,8 +144,8 @@ public class TemplateUpdaterTest {
         BTreeLeafNode leaf = newTree.getLeftMostLeaf();
         while (leaf != null) {
 //            leaf.print();
-//            System.out.println(leaf.tupleCount.get());
-            assertEquals(duplicatedTime * leaf.getKeyCount(), leaf.getTupleCount());
+//            System.out.println(leaf.atomicKeyCount.get());
+            assertEquals(duplicatedTime * leaf.getKeyCount(), leaf.getAtomicKeyCount());
             leaf = (BTreeLeafNode) leaf.rightSibling;
         }
 

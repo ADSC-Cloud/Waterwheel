@@ -1,7 +1,6 @@
 package indexingTopology.util;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import indexingTopology.DataSchema;
 import indexingTopology.DataTuple;
@@ -292,11 +291,6 @@ public class Indexer<DataType extends Number> extends Observable {
                     setChanged();
                     notifyObservers("information update");
 
-//                    collector.emit(Streams.FileInformationUpdateStream, new Values(fileName, keyDomain, timeDomain));
-
-//                    collector.emit(Streams.TimestampUpdateStream, new Values(timeDomain, keyDomain));
-
-//                    indexedData.clearPayload();
                     clonedIndexedData.clearPayload();
 
                     executed.set(0L);
@@ -403,27 +397,17 @@ public class Indexer<DataType extends Number> extends Observable {
                     for (DataTuple tuple : drainer) {
                         localCount++;
                         final DataType indexValue = (DataType) schema.getIndexValue(tuple);
-//                            final Integer offset = (Integer) pair.getValue();
                         final byte[] serializedTuple = schema.serializeTuple(tuple);
-//                            System.out.println("local count " + localCount + " insert");
                         if (clonedIndexedData != null) {
                             clonedIndexedData.insert((Comparable) indexValue, serializedTuple);
                         } else {
                             indexedData.insert((Comparable) indexValue, serializedTuple);
                         }
-
-//                        System.out.println("insert has been finished!!!");
-//                            indexedData.insert(indexValue, offset);
                     }
 
                     executed.addAndGet(drainer.size());
 
-//                    if (executed.get() > 500000) {
-//                        System.out.println(String.format("%d tuples have been inserted to the tree ", executed.get()));
-//                    }
-
                     drainer.clear();
-
                 } catch (UnsupportedGenericException e) {
                     e.printStackTrace();
                 } catch (Exception e) {
@@ -459,10 +443,6 @@ public class Indexer<DataType extends Number> extends Observable {
 
 
                 Long queryId = subQuery.getQueryId();
-
-//                System.out.println("semaphore " + queryId + " has been acquired in query runnable!!!");
-
-//                System.out.println("query id " + queryId + "in indexer has been taken from query pending queue!!!");
                 DataType leftKey = subQuery.getLeftKey();
                 DataType rightKey = subQuery.getRightKey();
                 Long startTimestamp = subQuery.getStartTimestamp();
@@ -471,13 +451,9 @@ public class Indexer<DataType extends Number> extends Observable {
                 List<byte[]> serializedTuples = new ArrayList<>();
                 List<byte[]> serializedTuplesWithinTimestamp = new ArrayList<>();
 
-//                System.out.println(queryId + " search has been started!!!");
 
                 serializedTuples.addAll(indexedData.searchRange((Comparable) leftKey, (Comparable) rightKey));
 
-//                System.out.println(queryId + " search has been finished!!!");
-
-//                System.out.println("tuple size " + serializedTuples.size());
 
                 for (int i = 0; i < serializedTuples.size(); ++i) {
                     DataTuple dataTuple = schema.deserializeToDataTuple(serializedTuples.get(i));
@@ -486,8 +462,6 @@ public class Indexer<DataType extends Number> extends Observable {
                         serializedTuplesWithinTimestamp.add(serializedTuples.get(i));
                     }
                 }
-
-//                System.out.println("deserialization has been finished!!!");
 
                 processQuerySemaphore.release();
 
@@ -499,11 +473,6 @@ public class Indexer<DataType extends Number> extends Observable {
 
                 setChanged();
                 notifyObservers("query result");
-//                System.out.println("semaphore " + queryId + " has been released in query runnable!!!");
-
-//                collector.emit(Streams.BPlusTreeQueryStream, new Values(queryId, serializedTuplesWithinTimestamp));
-
-//                System.out.println("query id " + queryId + "in indexer has been finished!!!");
             }
         }
     }
@@ -542,26 +511,21 @@ public class Indexer<DataType extends Number> extends Observable {
 
         Output output = new Output(65000000, 500000000);
 
-        byte[] leavesInBytes = bTree.serializeLeaves();
+        byte[] leafBytesToWrite = bTree.serializeLeaves();
 
         kryo.writeObject(output, bTree);
+        byte[] templateBytesToWrite = output.toBytes();
 
-        byte[] bytes = output.toBytes();
-
-        int lengthOfTemplate = bytes.length;
 
         output = new Output(4);
+        int templateLength = templateBytesToWrite.length;
+        output.writeInt(templateLength);
 
-        output.writeInt(lengthOfTemplate);
+        byte[] templateLengthBytesToWrite = output.toBytes();
 
-        byte[] lengthInBytes = output.toBytes();
-
-        chunk = MemChunk.createNew(leavesInBytes.length + 4 + lengthOfTemplate);
-
-        chunk.write(lengthInBytes);
-
-        chunk.write(bytes);
-
-        chunk.write(leavesInBytes);
+        chunk = MemChunk.createNew(leafBytesToWrite.length + 4 + templateLength);
+        chunk.write(templateLengthBytesToWrite);
+        chunk.write(templateBytesToWrite);
+        chunk.write(leafBytesToWrite);
     }
 }

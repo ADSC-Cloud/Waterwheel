@@ -55,7 +55,7 @@ public class TexiTrajectoryGenerator extends BaseRichSpout {
 //        RandomGenerator randomGenerator = new Well19937c();
 //        randomGenerator.setSeed(1000);
 //        this.keyGenerator = new ZipfKeyGenerator(200048, 0.5, randomGenerator);
-        distribution = new ZipfDistribution(200048, 0.5);
+        distribution = new ZipfDistribution(2000048, 0.5);
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {

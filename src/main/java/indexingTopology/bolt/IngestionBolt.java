@@ -28,8 +28,6 @@ public class IngestionBolt<DataType extends Comparable> extends BaseRichBolt imp
 
     private OutputCollector collector;
 
-//    private Kryo kryo;
-
     private IndexerBuilder indexerBuilder;
 
     private Indexer indexer;
@@ -45,10 +43,6 @@ public class IngestionBolt<DataType extends Comparable> extends BaseRichBolt imp
     }
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
-
-//        kryo = new Kryo();
-//        kryo.register(BTree.class, new KryoTemplateSerializer());
-//        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
 
         this.inputQueue = new ArrayBlockingQueue<>(1024);
 
@@ -113,7 +107,6 @@ public class IngestionBolt<DataType extends Comparable> extends BaseRichBolt imp
             String s = (String) arg;
             if (s.equals("information update")) {
                 Pair domainInformation = ((Indexer) o).getDomainInformation();
-
                 String fileName = (String) domainInformation.getKey();
                 Domain domain = (Domain) domainInformation.getValue();
                 KeyDomain keyDomain = new KeyDomain(domain.getLowerBound(), domain.getUpperBound());
