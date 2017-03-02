@@ -27,17 +27,17 @@ public class BTreeLeafNodeTest {
             node.insertKeyTuples(i*1.0, bytes, false);
         }
 
-        assertEquals(1, node.getTuples(2.0, 2.0).size());
-        assertEquals(2, node.getTuples(1.0, 2.0).size());
-        assertEquals(3, node.getTuples(1.0, 3.0).size());
-        assertEquals(4, node.getTuples(1.0, 4.0).size());
-        assertEquals(4, node.getTuples(0.0, 5.0).size());
-        assertEquals(3, node.getTuples(1.5, 4.0).size());
-        assertEquals(1, node.getTuples(1.5, 2.5).size());
-        assertEquals(1, node.getTuples(3.5, 5.0).size());
-        assertEquals(2, node.getTuples(2.5, 5.0).size());
-        assertEquals(0, node.getTuples(-5.0, -4.0).size());
-        assertEquals(0, node.getTuples(6.0, 10.0).size());
+        assertEquals(1, node.getTuplesWithinKeyRange(2.0, 2.0).size());
+        assertEquals(2, node.getTuplesWithinKeyRange(1.0, 2.0).size());
+        assertEquals(3, node.getTuplesWithinKeyRange(1.0, 3.0).size());
+        assertEquals(4, node.getTuplesWithinKeyRange(1.0, 4.0).size());
+        assertEquals(4, node.getTuplesWithinKeyRange(0.0, 5.0).size());
+        assertEquals(3, node.getTuplesWithinKeyRange(1.5, 4.0).size());
+        assertEquals(1, node.getTuplesWithinKeyRange(1.5, 2.5).size());
+        assertEquals(1, node.getTuplesWithinKeyRange(3.5, 5.0).size());
+        assertEquals(2, node.getTuplesWithinKeyRange(2.5, 5.0).size());
+        assertEquals(0, node.getTuplesWithinKeyRange(-5.0, -4.0).size());
+        assertEquals(0, node.getTuplesWithinKeyRange(6.0, 10.0).size());
     }
 
     private List<String> fieldNames = new ArrayList<String>(Arrays.asList("user_id", "id_1", "id_2", "ts_epoch",
@@ -119,7 +119,9 @@ public class BTreeLeafNodeTest {
         }
 
         assertEquals(512, leaf.getKeyCount());
+        assertEquals(512, leaf.getAtomicKeyCount());
         assertEquals(513, leaf.rightSibling.getKeyCount());
+        assertEquals(513, ((BTreeLeafNode) leaf.rightSibling).getAtomicKeyCount());
         assertEquals(1, root.getKeyCount());
     }
 

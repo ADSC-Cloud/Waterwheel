@@ -1,6 +1,7 @@
 package indexingTopology.bolt;
 
 import indexingTopology.DataTuple;
+import org.apache.storm.metric.internal.RateTracker;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -38,6 +39,8 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
 
     private boolean generateTimeStamp;
 
+    private RateTracker rateTracker;
+
     public IngestionDispatcher(DataSchema schema, Double lowerBound, Double upperBound, boolean enableLoadBalance,
                                boolean generateTimeStamp) {
         this.schema = schema;
@@ -53,46 +56,51 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
         Set<String> componentIds = topologyContext.getThisTargets()
                 .get(Streams.IndexStream).keySet();
         targetTasks = new ArrayList<Integer>();
-
         for (String componentId : componentIds) {
             targetTasks.addAll(topologyContext.getComponentTasks(componentId));
         }
 
+        rateTracker = new RateTracker(5 * 1000, 5);
+
         numberOfPartitions = targetTasks.size();
 
         balancedPartition = new BalancedPartition(numberOfPartitions, lowerBound, upperBound, enableLoadBalance);
-
     }
 
     public void execute(Tuple tuple) {
         if (tuple.getSourceStreamId().equals(Streams.IndexStream)){
 
-            DataTuple dataTuple = (DataTuple) tuple.getValueByField("tuple");
-
+//            DataTuple dataTuple = (DataTuple) tuple.getValueByField("tuple");
+            byte[] dataTupleBytes = (byte[]) tuple.getValueByField("tuple");
+            Long tupleId = tuple.getLongByField("tupleId");
+            int sourceTaskId = tuple.getIntegerByField("taskId");
 //                updateBound(indexValue);
+            DataTuple dataTuple = schema.deserializeToDataTuple(dataTupleBytes);
             IndexType indexValue = (IndexType) schema.getIndexValue(dataTuple);
             balancedPartition.record(indexValue);
 
             int partitionId = balancedPartition.getPartitionId(indexValue);
-
             int taskId = targetTasks.get(partitionId);
 
-//            Values values = new Values(tuple.getValues());
-//            if (generateTimeStamp)
-//                values.add(System.currentTimeMillis());
+            rateTracker.notify(1);
 
-            collector.emitDirect(taskId, Streams.IndexStream, tuple, new Values(dataTuple));
-            collector.ack(tuple);
-
+//            collector.emitDirect(taskId, Streams.IndexStream, tuple, new Values(dataTuple));
+//            collector.emitDirect(taskId, Streams.IndexStream, tuple, new Values(schema.serializeTuple(dataTuple)));
+//            collector.emitDirect(taskId, Streams.IndexStream, tuple, new Values(schema.serializeTuple(dataTuple), tupleId));
+            collector.emitDirect(taskId, Streams.IndexStream, new Values(schema.serializeTuple(dataTuple), tupleId, sourceTaskId));
+//            collector.ack(tuple);
         } else if (tuple.getSourceStreamId().equals(Streams.IntervalPartitionUpdateStream)){
-            Map<Integer, Integer> intervalToPartitionMapping = (Map) tuple.getValueByField("newIntervalPartition");
-            balancedPartition.setIntervalToPartitionMapping(intervalToPartitionMapping);
+            System.out.println("partition has been updated!!!");
+//            Map<Integer, Integer> intervalToPartitionMapping = (Map) tuple.getValueByField("newIntervalPartition");
+            balancedPartition = (BalancedPartition) tuple.getValueByField("newIntervalPartition");
+//            System.out.println(intervalToPartitionMapping);
+//            balancedPartition.setIntervalToPartitionMapping(intervalToPartitionMapping);
         } else if (tuple.getSourceStreamId().equals(Streams.StaticsRequestStream)){
-
             collector.emit(Streams.StatisticsReportStream,
                     new Values(new Histogram(balancedPartition.getIntervalDistribution().getHistogram())));
-
             balancedPartition.clearHistogram();
+        } else if (tuple.getSourceStreamId().equals(Streams.ThroughputRequestStream)) {
+            collector.emit(Streams.ThroughputReportStream, new Values(rateTracker.reportRate()));
         }
     }
 
@@ -107,14 +115,11 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-//        List<String> fields = schema.getFieldsObject().toList();
-//        fields.add("timeStamp");
-
-        declarer.declareStream(Streams.IndexStream, new Fields("tuple"));
+//        declarer.declareStream(Streams.IndexStream, new Fields("tuple"));
+        declarer.declareStream(Streams.IndexStream, new Fields("tuple", "tupleId", "taskId"));
 
         declarer.declareStream(Streams.StatisticsReportStream, new Fields("statistics"));
 
+        declarer.declareStream(Streams.ThroughputReportStream, new Fields("throughput"));
     }
-
-
 }

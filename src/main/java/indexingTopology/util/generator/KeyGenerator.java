@@ -1,4 +1,4 @@
-package indexingTopology.util;
+package indexingTopology.util.generator;
 
 /**
  * Created by acelzj on 2/2/17.

@@ -1,4 +1,6 @@
-package indexingTopology.util;
+package indexingTopology.util.generator;
+
+import indexingTopology.util.generator.KeyGenerator;
 
 /**
  * Created by acelzj on 8/2/17.

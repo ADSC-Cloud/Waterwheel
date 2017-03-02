@@ -2,13 +2,14 @@ package indexingTopology.util;
 
 import indexingTopology.config.TopologyConfig;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Created by acelzj on 12/17/16.
  */
-public class BalancedPartition<T extends Number> {
+public class BalancedPartition<T extends Number> implements Serializable{
 
     private Double lowerBound;
 
@@ -37,6 +38,7 @@ public class BalancedPartition<T extends Number> {
         }
     }
 
+
     public BalancedPartition(int numberOfPartitions, T lowerBound, T upperBound,
                              Map<Integer, Integer> intervalToPartitionMapping) {
         this(numberOfPartitions, lowerBound, upperBound, true);
@@ -48,6 +50,8 @@ public class BalancedPartition<T extends Number> {
         Double miniDistance = (upperBound - lowerBound) / TopologyConfig.NUMBER_OF_INTERVALS;
         Double keyRangeUpperBound = lowerBound + distance;
         Double bound = lowerBound + miniDistance;
+
+
         Map<Integer, Integer> intervalToPartitionMapping = new HashMap<>();
         int bin = 0;
         for (int i = 0; i < TopologyConfig.NUMBER_OF_INTERVALS; ++i) {
@@ -56,8 +60,10 @@ public class BalancedPartition<T extends Number> {
             if (bound > keyRangeUpperBound) {
                 keyRangeUpperBound = keyRangeUpperBound + distance;
                 ++bin;
+                bin = Math.min(numberOfPartitions - 1, bin);
             }
         }
+
         return intervalToPartitionMapping;
     }
 
@@ -68,22 +74,21 @@ public class BalancedPartition<T extends Number> {
     public int getIntervalId(T key) {
         Double distance = (upperBound - lowerBound) / TopologyConfig.NUMBER_OF_INTERVALS;
 
-        Double autualLowerBound = lowerBound + distance;
+        Double startLowerBound = lowerBound + distance;
+        Double endUpperBound = upperBound - distance;
 
-        Double autualUpperBound = upperBound - distance;
-
-        if (key.doubleValue() <= autualLowerBound) {
+        if (key.doubleValue() <= startLowerBound) {
             return 0;
         }
 
-        if (key.doubleValue() > autualUpperBound) {
+        if (key.doubleValue() > endUpperBound) {
             return TopologyConfig.NUMBER_OF_INTERVALS - 1;
         }
 
-        if ((key.doubleValue() - autualLowerBound) % distance == 0) {
-            return (int) ((key.doubleValue() - autualLowerBound) / distance);
+        if ((key.doubleValue() - startLowerBound) % distance == 0) {
+            return (int) ((key.doubleValue() - startLowerBound) / distance);
         } else {
-            return (int) ((key.doubleValue() - autualLowerBound) / distance + 1);
+            return (int) ((key.doubleValue() - startLowerBound) / distance + 1);
         }
     }
 

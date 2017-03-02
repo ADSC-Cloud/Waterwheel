@@ -9,7 +9,6 @@ import java.util.*;
  * Created by acelzj on 7/15/16.
  */
 public class TemplateUpdater<TKey extends Comparable<TKey>> {
-
     private int order;
 
     private BTree<Double, Integer> template;
@@ -43,7 +42,6 @@ public class TemplateUpdater<TKey extends Comparable<TKey>> {
         if (averageKeyCount == 0) {
             return new ArrayList<>();
         }
-
         List<BTreeLeafNode> leaves = createLeaves(keys, tuples, offsets, averageKeyCount, numberOfLeaves, totalKeyCount);
 
 //        ArrayList<BTreeLeafNode> leaves = createLeaves(copyOfCurrentLeave, averageKeyCount, numberOfLeaves, totalKeyCount);
@@ -102,7 +100,7 @@ public class TemplateUpdater<TKey extends Comparable<TKey>> {
             for (int j = index; j < index + keyCount; ++j) {
                 leaf.keys.add(keys.get(j));
                 leaf.tuples.add(tuples.get(j));
-                leaf.tupleCount.addAndGet(tuples.get(j).size());
+                leaf.atomicKeyCount.addAndGet(tuples.get(j).size());
                 leaf.offsets.add(offsets.get(j));
             }
             index += keyCount;
@@ -228,11 +226,11 @@ public class TemplateUpdater<TKey extends Comparable<TKey>> {
             e.printStackTrace();
         }
 
-        ArrayList<byte[]> tuples = currentLeaf.getTuples(index);
+        ArrayList<byte[]> tuples = currentLeaf.getTuplesWithSpecificIndex(index);
         ArrayList<Integer> offsets = currentLeaf.getOffsets(index);
 
         ((ArrayList) leaf.tuples.get(indexOfKey)).addAll(tuples);
-        leaf.tupleCount.addAndGet(tuples.size());
+        leaf.atomicKeyCount.addAndGet(tuples.size());
 
         ((ArrayList) leaf.offsets.get(indexOfKey)).addAll(offsets);
 

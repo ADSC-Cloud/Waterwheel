@@ -29,6 +29,8 @@ public class DataSchema implements Serializable {
 
     public DataSchema(){};
 
+    private int tupleLength = 0;
+
     public DataSchema(List<String> fieldNames,List<Class> valueTypes, String indexField) {
         assert fieldNames.size()==valueTypes.size() : "number of fields should be " +
                 "same as the number of value types provided";
@@ -182,7 +184,9 @@ public class DataSchema implements Serializable {
                 throw new RuntimeException("Not supported data type!" );
             }
         }
-        return output.toBytes();
+        byte[] bytes = output.toBytes();
+//        return output.toBytes();
+        return bytes;
     }
 
     @Deprecated
@@ -279,5 +283,12 @@ public class DataSchema implements Serializable {
     public Object getIndexValue(DataTuple dataTuple) {
         final int indexOffset = dataFieldNameToIndex.get(indexField);
         return dataTuple.get(indexOffset);
+    }
+
+    public int getTupleLength() {
+        for (int i = 0; i < dataTypes.size(); ++i) {
+            tupleLength += dataTypes.get(i).length;
+        }
+        return tupleLength;
     }
 }

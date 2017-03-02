@@ -74,7 +74,7 @@ class BTreeInnerNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> impl
 		return children;
 	}
 
-	public BTreeNode<TKey> getChildWithSpecificIndex(TKey key) {
+	public BTreeNode<TKey> getChildShouldContainKey(TKey key) {
 		BTreeNode node;
         int index = search(key);
         node = this.children.get(index);

@@ -94,6 +94,10 @@ public class KryoTemplateSerializerTest {
 
     @Test
     public void testTemplateAndLeaveDeserialization() throws IOException, UnsupportedGenericException {
+
+
+        System.out.println("Total " + Runtime.getRuntime().totalMemory());
+
         final int payloadSize = 10;
 
         final double x1 = 0;
@@ -105,127 +109,243 @@ public class KryoTemplateSerializerTest {
         TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
         City city = new City(x1, x2, y1, y2, partitions);
 
-        int numTuples = TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK;
+        int numTuples = 1200000;
         Long timestamp = 0L;
 
         int chunkId = 0;
 
         List<String> fileNames = new ArrayList<>();
 
-        BTree indexedData = new BTree(TopologyConfig.BTREE_ORDER);
+//        BTree indexedData = new BTree(TopologyConfig.BTREE_ORDER);
 
-        int numberOfTuples = 60;
+        int numberOfTuples = 120;
 
         Random random = new Random();
 
         List<Integer> keys = new ArrayList<>();
 
-        for (int i = 0; i < numTuples; ++i) {
-            List<Object> values = new ArrayList<>();
-            Car car = generator.generate();
-            values.add((double) car.id);
-            values.add((double) city.getZCodeForALocation(car.x, car.y));
-            values.add(new String(new char[payloadSize]));
-            values.add(timestamp);
-            byte[] bytes = null;
-            bytes = serializeIndexValue(values);
-            indexedData.insert((double) car.id, bytes);
-        }
 
+//        for (int j = 0; j < 10; ++j) {
+            BTree indexedData = new BTree(TopologyConfig.BTREE_ORDER);
 
-        byte[] leavesInBytes = indexedData.serializeLeaves();
-
-        Output output = new Output(500000, 20000000);
-
-        Kryo kryo = new Kryo();
-        kryo.register(BTree.class, new KryoTemplateSerializer());
-        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
-
-        kryo.writeObject(output, indexedData);
-
-        byte[] bytes = output.toBytes();
-
-        int lengthOfTemplate = bytes.length;
-
-        output = new Output(4);
-
-        output.writeInt(lengthOfTemplate);
-
-        byte[] lengthInBytes = output.toBytes();
-
-        MemChunk chunk = MemChunk.createNew(4 + lengthOfTemplate + leavesInBytes.length);
-
-        chunk.write(lengthInBytes );
-
-        chunk.write(bytes);
-
-        chunk.write(leavesInBytes);
-
-        FileSystemHandler fileSystemHandler = null;
-
-        String fileName = null;
-
-        try {
-            if (TopologyConfig.HDFSFlag) {
-                fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
-            } else {
-                fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
+            for (int i = 0; i < numTuples; ++i) {
+                List<Object> values = new ArrayList<>();
+                Car car = generator.generate();
+                values.add((double) car.id);
+//                values.add((double) city.getZCodeForALocation(car.x, car.y));
+                values.add((double) i);
+                values.add(new String(new char[payloadSize]));
+                values.add(timestamp);
+                byte[] bytes = null;
+                bytes = serializeIndexValue(values);
+//                indexedData.insert((double) city.getZCodeForALocation(car.x, car.y), bytes);
+                indexedData.insert(i, bytes);
             }
 
-            fileName = "taskId" + 0 + "chunk" + 0;
-            fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+            System.out.println("Used : " + (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()));
 
-        byte[] temlateLengthInBytes = new byte[4];
+//            indexedData.printBtree();
 
-        fileSystemHandler.openFile("/", "taskId0chunk0");
+            byte[] leavesInBytes = indexedData.serializeLeaves();
 
-        fileSystemHandler.readBytesFromFile(temlateLengthInBytes);
+            Output output = new Output(5000000, 20000000);
 
-        Input input = new Input(temlateLengthInBytes);
+            Kryo kryo = new Kryo();
+            kryo.register(BTree.class, new KryoTemplateSerializer());
+            kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
 
-        int length = input.readInt();
+            kryo.writeObject(output, indexedData);
 
-        byte[] templateInBytes = new byte[length];
+            byte[] bytes = output.toBytes();
 
-        fileSystemHandler.readBytesFromFile(templateInBytes);
+            int lengthOfTemplate = bytes.length;
 
-        input = new Input(templateInBytes);
+//            System.out.println(lengthOfTemplate);
 
-        indexedData = kryo.readObject(input, BTree.class);
+            output = new Output(4);
 
-//        indexedData.printBtree();
+            output.writeInt(lengthOfTemplate);
 
-        BTreeNode mostLeftNode = indexedData.findLeafNodeShouldContainKeyInDeserializedTemplate(0.0);
-        BTreeNode mostRightNode = indexedData.findLeafNodeShouldContainKeyInDeserializedTemplate(60.0);
+            byte[] lengthInBytes = output.toBytes();
 
-        List<Integer> offsets = indexedData.getOffsetsOfLeaveNodesShouldContainKeys(mostLeftNode
-                , mostRightNode);
+            MemChunk chunk = MemChunk.createNew(4 + lengthOfTemplate + leavesInBytes.length);
 
-        for (Integer offset : offsets) {
+            chunk.write(lengthInBytes);
 
-            fileSystemHandler.seek(offset + length + 4);
+            chunk.write(bytes);
 
-            byte[] lengthInByte = new byte[4];
+            chunk.write(leavesInBytes);
 
-            fileSystemHandler.readBytesFromFile(offset + length + 4, lengthInByte);
+            FileSystemHandler fileSystemHandler = null;
 
-            int lengthOfLeaveInBytes = ByteBuffer.wrap(lengthInByte, 0, 4).getInt();
+            String fileName = null;
 
-            byte[] leafInByte = new byte[lengthOfLeaveInBytes + 1];
+            System.out.println("Before read " + Runtime.getRuntime().freeMemory());
 
-            fileSystemHandler.seek(offset + length + 4 + 4);
+            try {
+                if (TopologyConfig.HDFSFlag) {
+                    fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
+                } else {
+                    fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
+                }
 
-            fileSystemHandler.readBytesFromFile(leafInByte);
+                fileName = "taskId" + 0 + "chunk" + 0;
+                fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
-            input = new Input(leafInByte);
+            byte[] temlateLengthInBytes = new byte[4];
 
-            BTreeLeafNode leaf = kryo.readObject(input, BTreeLeafNode.class);
+            long fileOpenTime = 0;
 
-//            leaf.print();
-        }
+            long totalStart = System.currentTimeMillis();
+
+            long start = System.currentTimeMillis();
+            fileSystemHandler.openFile("/", "taskId48chunk9");
+            fileOpenTime += System.currentTimeMillis() - start;
+
+            int fileLength = 64902601;
+            byte[] bytesToRead = new byte[fileLength];
+//            long wholeStart = System.currentTimeMillis();
+//            fileSystemHandler.readBytesFromFile(0, bytesToRead);
+//            System.out.println("time " + (System.currentTimeMillis() - wholeStart));
+
+            long templateReadStart = System.currentTimeMillis();
+            fileSystemHandler.readBytesFromFile(0, temlateLengthInBytes);
+
+
+            Input input = new Input(temlateLengthInBytes);
+
+            int length = input.readInt();
+
+            byte[] templateInBytes = new byte[length];
+
+            System.out.println("length " + length);
+            fileSystemHandler.readBytesFromFile(4, templateInBytes);
+
+            input = new Input(templateInBytes);
+
+            indexedData = kryo.readObject(input, BTree.class);
+
+            System.out.println("template read time " + (System.currentTimeMillis() - templateReadStart));
+
+//            indexedData.printBtree();
+
+//            BTreeNode mostLeftNode = indexedData.findInnerNodeShouldContainKey(0.0);
+//            BTreeNode mostRightNode = indexedData.findInnerNodeShouldContainKey(120.0);
+
+            List<Integer> offsets = indexedData.getOffsetsOfLeafNodesShouldContainKeys(0.0
+                    , 1.0);
+
+            List<byte[]> list = new ArrayList<>();
+
+
+            long leaveReadTime = 0;
+
+            long getTupleTime = 0;
+
+            System.out.println(offsets.size());
+
+            int startOffset = offsets.get(0);
+
+            long leafReadStart = System.currentTimeMillis();
+
+            bytesToRead = new byte[4];
+            int lastOffset = offsets.get(offsets.size() - 1);
+            fileSystemHandler.readBytesFromFile(lastOffset + length + 4, bytesToRead);
+
+            Input input1 = new Input(bytesToRead);
+            int tempLength = input1.readInt();
+            int totalLength = tempLength + (lastOffset - offsets.get(0));
+
+            System.out.println("template length " + tempLength);
+
+            List<BTreeLeafNode> leaves = new ArrayList<>();
+
+            bytesToRead = new byte[totalLength + 4];
+
+            fileSystemHandler.readBytesFromFile(startOffset + length + 4, bytesToRead);
+
+            System.out.println("leaf read time " + (System.currentTimeMillis() - leafReadStart));
+
+            Input input2 = new Input(bytesToRead);
+
+            System.out.println(offsets);
+
+            for (Integer offset : offsets) {
+
+//                System.out.println(input2.readInt());
+
+//                System.out.println(input2.position());
+
+
+//                System.out.println(input2.position());
+
+                input2.setPosition(input2.position() + 4);
+
+                BTreeLeafNode leafNode = kryo.readObject(input2, BTreeLeafNode.class);
+
+                long tuplgGetStart = System.currentTimeMillis();
+
+                list.addAll(leafNode.getTuplesWithinKeyRange(0.0, 1.0));
+
+                getTupleTime += (System.currentTimeMillis() - tuplgGetStart);
+            }
+
+            System.out.println("tuple size " + list.size());
+
+
+//            for (Integer offset : offsets) {
+//
+//
+//                fileSystemHandler.seek(offset + length + 4);
+//
+//                byte[] lengthInByte = new byte[4];
+//
+//                fileSystemHandler.readBytesFromFile(offset + length + 4, lengthInByte);
+//
+//                int lengthOfLeaveInBytes = ByteBuffer.wrap(lengthInByte, 0, 4).getInt();
+//
+//                System.out.println(lengthOfLeaveInBytes);
+//
+//                byte[] leafInByte = new byte[lengthOfLeaveInBytes];
+
+//                fileSystemHandler.seek(offset + length + 4 + 4);
+//                long leafNodestart = System.currentTimeMillis();
+//                start = System.currentTimeMillis();
+//                fileSystemHandler.readBytesFromFile(offset + length + 4 + 4, leafInByte);
+//                System.out.println("leaf node read time " + (System.currentTimeMillis() - leafNodestart));
+//                leaveReadTime += (System.currentTimeMillis() - start);
+//
+//                input = new Input(leafInByte);
+
+//                BTreeLeafNode leaf = kryo.readObject(input, BTreeLeafNode.class);
+
+//                leaf.print();
+
+
+
+//                start = System.currentTimeMillis();
+//                list.addAll(leaf.getTuplesWithinKeyRange(0.0, 1.0));
+
+//            }
+
+            start = System.currentTimeMillis();
+            fileSystemHandler.closeFile();
+            fileOpenTime += (System.currentTimeMillis() - start);
+
+            System.out.println("total " + (System.currentTimeMillis() - totalStart));
+
+
+            System.out.println("file open time " + fileOpenTime);
+            System.out.println("get tuple time " + getTupleTime);
+            System.out.println("leaf read time " + leaveReadTime);
+
+            System.out.println("after read " + Runtime.getRuntime().freeMemory());
+
+            assertEquals(1261073, list.size());
+//        }
     }
 
     @Test
@@ -329,17 +449,17 @@ public class KryoTemplateSerializerTest {
 
                 byte[] templateInBytes = new byte[length];
 
-                fileSystemHandler.readBytesFromFile(templateInBytes);
+                fileSystemHandler.readBytesFromFile(4, templateInBytes);
 
                 input = new Input(templateInBytes);
 
                 BTree bTree = kryo.readObject(input, BTree.class);
 
-                BTreeNode mostLeftNode = bTree.findLeafNodeShouldContainKeyInDeserializedTemplate(994.0);
-                BTreeNode mostRightNode = bTree.findLeafNodeShouldContainKeyInDeserializedTemplate(1000.0);
+//                BTreeNode mostLeftNode = bTree.findInnerNodeShouldContainKey(994.0);
+//                BTreeNode mostRightNode = bTree.findInnerNodeShouldContainKey(1000.0);
 
-                List<Integer> offsets = indexedData.getOffsetsOfLeaveNodesShouldContainKeys(mostLeftNode
-                        , mostRightNode);
+                List<Integer> offsets = indexedData.getOffsetsOfLeafNodesShouldContainKeys(0.0
+                        , 1.0);
 
 //                System.out.println(offsets);
 
@@ -357,13 +477,13 @@ public class KryoTemplateSerializerTest {
 
                     fileSystemHandler.seek(offset + length + 4 + 4);
 
-                    fileSystemHandler.readBytesFromFile(leafInByte);
+                    fileSystemHandler.readBytesFromFile(offset + length + 4 + 4, leafInByte);
 
                     input = new Input(leafInByte);
 
                     BTreeLeafNode leaf = kryo.readObject(input, BTreeLeafNode.class);
 
-                    ArrayList<byte[]> tuples = leaf.getTuples(994.0, 994.0);
+                    ArrayList<byte[]> tuples = leaf.getTuplesWithinKeyRange(994.0, 994.0);
 //                ArrayList<byte[]> tuples = leaf.searchAndGetTuples(994.0);
 
 //                    for (int j = 0; j < tuples.size(); ++j) {
