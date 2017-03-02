@@ -11,7 +11,7 @@ public class Streams {
     public static final String IndexStream = "IndexStream";
     public static final String BPlusTreeQueryInformationStream = "BPlusTreeQueryInformationStream";
     public static final String FileSystemQueryInformationStream = "FileSystemQueryInformationStream";
-    public static final String NewQueryStream = "NewQueryStream";
+    public static final String QueryFinishedStream = "NewQueryStream";
     public static final String TimestampUpdateStream = "TimestampUpdateStream";
     public static final String QueryGenerateStream = "QueryGenerateStream";
     public static final String FileSubQueryFinishStream = "FileSubQueryFinishStream";

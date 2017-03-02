@@ -17,8 +17,7 @@ public class SubQuery <T extends Number> implements Serializable {
     private DataTuplePredicate predicate;
 
 
-    public SubQuery(long queryId, T leftKey, T rightKey
-            , String fileName, Long startTimestamp, Long endTimestamp, DataTuplePredicate predicate) {
+    public SubQuery(long queryId, T leftKey, T rightKey, Long startTimestamp, Long endTimestamp, DataTuplePredicate predicate) {
         this.queryId = queryId;
         this.leftKey = leftKey;
         this.rightKey = rightKey;
@@ -28,8 +27,8 @@ public class SubQuery <T extends Number> implements Serializable {
     }
 
     public SubQuery(long queryId, T leftKey, T rightKey
-            , String fileName, Long startTimestamp, Long endTimestamp) {
-        this(queryId, leftKey, rightKey, fileName, startTimestamp, endTimestamp, null);
+            ,Long startTimestamp, Long endTimestamp) {
+        this(queryId, leftKey, rightKey, startTimestamp, endTimestamp, null);
     }
 
     public long getQueryId() {

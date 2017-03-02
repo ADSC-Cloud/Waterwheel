@@ -132,7 +132,7 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
 
             filePartitionSchemaManager.add(new FileMetaData(fileName, ((DataType) keyDomain.getLowerBound()).doubleValue(),
                     ((DataType) keyDomain.getUpperBound()).doubleValue(), timeDomain.getStartTimestamp(), timeDomain.getEndTimestamp()));
-        } else if (tuple.getSourceStreamId().equals(Streams.NewQueryStream)) {
+        } else if (tuple.getSourceStreamId().equals(Streams.QueryFinishedStream)) {
             Long queryId = tuple.getLong(0);
 
 //            Long start = queryIdToStartTime.get(queryId);

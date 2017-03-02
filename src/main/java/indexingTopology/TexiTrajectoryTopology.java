@@ -1,20 +1,13 @@
 package indexingTopology;
 
-import indexingTopology.config.TopologyConfig;
 import org.apache.storm.Config;
 import org.apache.storm.StormSubmitter;
 import org.apache.storm.topology.TopologyBuilder;
 import indexingTopology.streams.Streams;
 import indexingTopology.bolt.*;
-import indexingTopology.spout.TexiTrajectoryGenerator;
 import indexingTopology.util.texi.City;
 import indexingTopology.util.texi.TrajectoryGenerator;
 import indexingTopology.util.texi.TrajectoryUniformGenerator;
-
-import java.io.BufferedInputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Created by acelzj on 11/15/16.
@@ -87,7 +80,7 @@ public class TexiTrajectoryTopology {
         // And RangeQueryDecompositionBolt should emit to this stream via directEmit!!!!!
 
         builder.setBolt(RangeQueryDecompositionBolt, new QueryCoordinator(lowerBound, upperBound), 22)
-                .shuffleGrouping(ResultMergeBolt, Streams.NewQueryStream)
+                .shuffleGrouping(ResultMergeBolt, Streams.QueryFinishedStream)
                 .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSubQueryFinishStream)
                 .shuffleGrouping(MetadataServer, Streams.FileInformationUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
