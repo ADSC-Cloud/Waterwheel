@@ -46,6 +46,8 @@ public class TexiTrajectoryGenerator extends BaseRichSpout {
 
     private ZipfDistribution distribution;
 
+    private Random random;
+
     public TexiTrajectoryGenerator(DataSchema schema, TrajectoryGenerator generator, int payloadSize, City city)
             throws FileNotFoundException {
         this.schema = schema;
@@ -55,7 +57,8 @@ public class TexiTrajectoryGenerator extends BaseRichSpout {
 //        RandomGenerator randomGenerator = new Well19937c();
 //        randomGenerator.setSeed(1000);
 //        this.keyGenerator = new ZipfKeyGenerator(200048, 0.5, randomGenerator);
-        distribution = new ZipfDistribution(2000048, 0.5);
+//        distribution = new ZipfDistribution(2000048, 0.5);
+        random = new Random(1000);
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
@@ -73,9 +76,11 @@ public class TexiTrajectoryGenerator extends BaseRichSpout {
 //                , car.y), new String(new char[payloadSize]), timestamp);
 
 
-        DataTuple dataTuple = new DataTuple(car.id, distribution.sample(), new String(new char[payloadSize]), timestamp);
+//        DataTuple dataTuple = new DataTuple(car.id, distribution.sample(), new String(new char[payloadSize]), timestamp);
+        DataTuple dataTuple = new DataTuple(car.id, random.nextDouble(), new String(new char[payloadSize]), timestamp);
 
-        collector_.emit(Streams.IndexStream, new Values(dataTuple), new Object());
+//        collector_.emit(Streams.IndexStream, new Values(dataTuple), new Object());
+        collector_.emit(Streams.IndexStream, new Values(schema.serializeTuple(dataTuple)), new Object());
 //        collector_.emit(Streams.IndexStream, new Values(car.id, city.getZCodeForALocation(car.x
 //                , car.y), new String(new char[payloadSize]), timestamp), new Object());
         ++timestamp;

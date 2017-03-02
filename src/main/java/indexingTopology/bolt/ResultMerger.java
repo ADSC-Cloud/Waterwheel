@@ -1,6 +1,5 @@
 package indexingTopology.bolt;
 
-import indexingTopology.DataTuple;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -12,11 +11,7 @@ import indexingTopology.DataSchema;
 import indexingTopology.streams.Streams;
 import indexingTopology.util.FileScanMetrics;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by acelzj on 11/9/16.
@@ -32,6 +27,8 @@ public class ResultMerger extends BaseRichBolt {
     Map<Long, Integer> queryIdToNumberOfTasksToSearch;
 
     Map<Long, FileScanMetrics> queryIdToFileScanMetrics;
+
+    Map<Long, Map<Integer, List<FileScanMetrics>>> queryIdToTaskIdToTimeMapping;
 
     DataSchema schema;
 
@@ -49,6 +46,8 @@ public class ResultMerger extends BaseRichBolt {
 
         queryIdToFileScanMetrics = new HashMap<Long, FileScanMetrics>();
 
+        queryIdToTaskIdToTimeMapping = new HashMap<>();
+
         collector = outputCollector;
     }
 
@@ -62,6 +61,7 @@ public class ResultMerger extends BaseRichBolt {
             queryIdToNumberOfTasksToSearch.put(queryId, numberOfTasksToSearch);
 
             if (isQueryFinshed(queryId)) {
+//                printTimeInformation(queryId);
                 sendNewQueryPermit(queryId);
                 removeQueryIdFromMappings(queryId);
             }
@@ -74,6 +74,7 @@ public class ResultMerger extends BaseRichBolt {
             queryIdToNumberOfFilesToScan.put(queryId, numberOfFilesToScan);
 
             if (isQueryFinshed(queryId)) {
+//                printTimeInformation(queryId);
                 sendNewQueryPermit(queryId);
                 removeQueryIdFromMappings(queryId);
             }
@@ -90,13 +91,39 @@ public class ResultMerger extends BaseRichBolt {
             }
             ArrayList<byte[]> serializedTuples = (ArrayList) tuple.getValue(1);
 
-//            if (tuple.getSourceStreamId().equals(Streams.BPlusTreeQueryStream)) {
+//            if (tuple.getSourceStreamId().equals(Streams.FileSystemQueryStream)) {
 //                for (int i = 0; i < serializedTuples.size(); ++i) {
 //                    DataTuple dataTuple = schema.deserializeToDataTuple(serializedTuples.get(i));
 //                    System.out.println(dataTuple);
 //                    System.out.println("tuples in query id " + queryId + " " + tuple.getSourceStreamId());
 //                }
 //            }
+            if (tuple.getSourceStreamId().equals(Streams.FileSystemQueryStream)) {
+                int taskId = tuple.getSourceTask();
+                FileScanMetrics fileScanMetrics = (FileScanMetrics) tuple.getValueByField("metrics");
+//                        System.out.println(queryId + "has been finished");
+//                if (queryIdToTaskIdToTimeMapping.get(queryId) == null) {
+//                    Map<Integer, List<FileScanMetrics>> taskIdToTimeMapping = new HashMap<>();
+//                    List<FileScanMetrics> time = new ArrayList<>();
+//                    time.add(fileScanMetrics);
+//                    taskIdToTimeMapping.put(taskId, time);
+//                    queryIdToTaskIdToTimeMapping.put(queryId, taskIdToTimeMapping);
+//                } else {
+//                    Map<Integer, List<FileScanMetrics>> taskIdToMetricsMapping = queryIdToTaskIdToTimeMapping.get(queryId);
+//                    if (taskIdToMetricsMapping.get(taskId) == null) {
+//                        List<FileScanMetrics> time = new ArrayList<>();
+//                        time.add(fileScanMetrics);
+//                        taskIdToMetricsMapping.put(taskId, time);
+//                        queryIdToTaskIdToTimeMapping.put(queryId, taskIdToMetricsMapping);
+//                    } else {
+//                        List<FileScanMetrics> time = taskIdToMetricsMapping.get(taskId);
+//                        time.add(fileScanMetrics);
+//                        taskIdToMetricsMapping.put(taskId, time);
+//                        queryIdToTaskIdToTimeMapping.put(queryId, taskIdToMetricsMapping);
+//                    }
+//                }
+                collector.emitDirect(taskId, Streams.SubQueryReceivedStream, new Values("received"));
+            }
 
             Integer numberOfTuples = queryIdToNumberOfTuples.get(queryId);
             if (numberOfTuples == null)
@@ -107,6 +134,7 @@ public class ResultMerger extends BaseRichBolt {
 
             if (isQueryFinshed(queryId)) {
 //                System.out.println(tuple.getSourceStreamId());
+//                printTimeInformation(queryId);
                 sendNewQueryPermit(queryId);
                 removeQueryIdFromMappings(queryId);
             }
@@ -121,7 +149,7 @@ public class ResultMerger extends BaseRichBolt {
         outputFieldsDeclarer.declareStream(Streams.NewQueryStream
                 , new Fields("queryId", "New Query", "metrics", "numberOfFilesToScan"));
 
-
+        outputFieldsDeclarer.declareStream(Streams.SubQueryReceivedStream, new Fields("receivedMessage"));
     }
 
     private boolean isQueryFinshed(Long queryId) {
@@ -158,6 +186,29 @@ public class ResultMerger extends BaseRichBolt {
         } else {
 //            fileScanMetrics.addWithAnotherMetrics(metrics);
             queryIdToFileScanMetrics.put(queryId, fileScanMetrics);
+        }
+    }
+
+
+    private void printTimeInformation(Long queryId) {
+        Map<Integer, List<FileScanMetrics>> taskIdToTimeMapping = queryIdToTaskIdToTimeMapping.get(queryId);
+        if (taskIdToTimeMapping != null) {
+            System.out.println("query id " + queryId + "has been finished ");
+            Set<Integer> taskIds = taskIdToTimeMapping.keySet();
+            for (Integer taskId : taskIds) {
+                List<FileScanMetrics> time = taskIdToTimeMapping.get(taskId);
+                if (time != null) {
+                    System.out.println("" + taskId);
+                    for (FileScanMetrics fileScanMetrics : time) {
+                        System.out.println(fileScanMetrics);
+                    }
+//                    Long sum = 0L;
+//                    for (Long t : time) {
+//                        sum += t;
+//                    }
+//                    System.out.println("task id " + taskId + " total "  + sum);
+                }
+            }
         }
     }
 

@@ -1,5 +1,6 @@
 package indexingTopology;
 
+import indexingTopology.config.TopologyConfig;
 import org.apache.storm.Config;
 import org.apache.storm.StormSubmitter;
 import org.apache.storm.topology.TopologyBuilder;
@@ -27,6 +28,7 @@ public class TexiTrajectoryTopology {
     static final String RangeQueryChunkScannerBolt = "ChunkScannerBolt";
     static final String ResultMergeBolt = "ResultMergeBolt";
     static final String MetadataServer = "MetadataServer";
+    static final String LogWriter = "LogWriter";
 
     public static void main(String[] args) throws Exception {
 
@@ -35,8 +37,8 @@ public class TexiTrajectoryTopology {
         DataSchema schema = new DataSchema();
 //        schema.addDoubleField("id");
         schema.addLongField("id");
-//        schema.addDoubleField("zcode");
-        schema.addIntField("zcode");
+        schema.addDoubleField("zcode");
+//        schema.addIntField("zcode");
         schema.addVarcharField("payload", payloadSize);
         schema.setPrimaryIndexField("zcode");
 
@@ -58,42 +60,47 @@ public class TexiTrajectoryTopology {
         Double lowerBound = 0.0;
 
 //        Double upperBound = (double)city.getMaxZCode();
-        Double upperBound = 2100048.0;
+        Double upperBound = 1.0;
 
         String path = "/home/acelzj";
 
-        boolean enableLoadBalance = true;
+        boolean enableLoadBalance = false;
 
 
-        builder.setSpout(TupleGenerator, new TexiTrajectoryGenerator(schema, generator, payloadSize, city), 7);
+//        builder.setSpout(TupleGenerator, new TexiTrajectoryGenerator(schema, generator, payloadSize, city), 1);
+//        builder.setSpout(TupleGenerator, new TexiTrajectoryGenerator(schemaWithTimestamp, generator, payloadSize, city), 16);
+        builder.setBolt(TupleGenerator, new Generator(schemaWithTimestamp, generator, payloadSize, city), 22)
+                .directGrouping(IndexerBolt, Streams.AckStream);
 
-        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher(schemaWithTimestamp, lowerBound, upperBound, enableLoadBalance, false), 11)
+        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher(schemaWithTimestamp, lowerBound, upperBound, enableLoadBalance, false), 22)
                 .shuffleGrouping(TupleGenerator, Streams.IndexStream)
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
-                .allGrouping(MetadataServer, Streams.StaticsRequestStream);
+                .allGrouping(MetadataServer, Streams.StaticsRequestStream)
+                .allGrouping(LogWriter, Streams.ThroughputRequestStream);
 
 
-        builder.setBolt(IndexerBolt, new IngestionBolt(schemaWithTimestamp), 71)
+        builder.setBolt(IndexerBolt, new IngestionBolt(schemaWithTimestamp), 22)
 
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream) // direct grouping should be used.
                 .directGrouping(RangeQueryDecompositionBolt, Streams.TreeCleanStream);
         // And RangeQueryDecompositionBolt should emit to this stream via directEmit!!!!!
 
-        builder.setBolt(RangeQueryDecompositionBolt, new QueryCoordinator(lowerBound, upperBound), 1)
+        builder.setBolt(RangeQueryDecompositionBolt, new QueryCoordinator(lowerBound, upperBound), 22)
                 .shuffleGrouping(ResultMergeBolt, Streams.NewQueryStream)
                 .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSubQueryFinishStream)
                 .shuffleGrouping(MetadataServer, Streams.FileInformationUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.TimestampUpdateStream);
 
-        builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner(schemaWithTimestamp), 20)
-                .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream);
+        builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner(schemaWithTimestamp), 22)
+                .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream)
+                .directGrouping(ResultMergeBolt, Streams.SubQueryReceivedStream);
 //                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream); //make comparision with our method.
 
         builder.setBolt(ResultMergeBolt, new ResultMerger(schemaWithTimestamp), 1)
-                .allGrouping(RangeQueryChunkScannerBolt, Streams.FileSystemQueryStream)
-                .allGrouping(IndexerBolt, Streams.BPlusTreeQueryStream)
+                .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSystemQueryStream)
+                .shuffleGrouping(IndexerBolt, Streams.BPlusTreeQueryStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryInformationStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryInformationStream);
 
@@ -103,9 +110,16 @@ public class TexiTrajectoryTopology {
                 .shuffleGrouping(IndexerBolt, Streams.FileInformationUpdateStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.EableRepartitionStream);
 
+        builder.setBolt(LogWriter, new LogWriter(), 1)
+                .shuffleGrouping(RangeQueryDispatcherBolt, Streams.ThroughputReportStream);
+
         Config conf = new Config();
         conf.setDebug(false);
-        conf.setNumWorkers(42);
+        conf.setNumWorkers(22);
+
+        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+//        conf.put(Config.SUPERVISOR_CHILDOPTS, "-Xmx2048m");
+        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
         StormSubmitter.submitTopologyWithProgressBar(args[0], conf, builder.createTopology());
     }

@@ -643,6 +643,6 @@ public class TestIndexing {
 
     public static void main(String[] args) {
         int bTreeOrder = 64;
-        TestIndexing test = new TestIndexing(bTreeOrder, 1, 0, true);
+        TestIndexing test = new TestIndexing(bTreeOrder, 3, 0, true);
     }
 }

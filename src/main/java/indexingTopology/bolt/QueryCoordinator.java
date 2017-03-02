@@ -1,6 +1,7 @@
 package indexingTopology.bolt;
 
 import indexingTopology.util.*;
+import javafx.util.Pair;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -13,6 +14,8 @@ import indexingTopology.config.TopologyConfig;
 import indexingTopology.metadata.FilePartitionSchemaManager;
 import indexingTopology.metadata.FileMetaData;
 import indexingTopology.streams.Streams;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -60,6 +63,13 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
 
     private LinkedBlockingQueue<Query> pendingQueue;
 
+    private Map<Long, Pair> queryIdToStartTime;
+
+    private int totalQueries;
+
+
+    private static final Logger LOG = LoggerFactory.getLogger(QueryCoordinator.class);
+
     public QueryCoordinator(DataType lowerBound, DataType upperBound) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
@@ -74,25 +84,30 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
 
         taskQueue = new ArrayBlockingQueue<>(TopologyConfig.TASK_QUEUE_CAPACITY);
 
-        Set<String> componentIds = topologyContext.getThisTargets().get(Streams.FileSystemQueryStream).keySet();
+        queryServers = topologyContext.getComponentTasks("ChunkScannerBolt");
+
+//        System.out.println("query sever ids " + queryServers);
         taskIdToTaskQueue = new HashMap<Integer, ArrayBlockingQueue<SubQuery>>();
-        queryServers = new ArrayList<Integer>();
-        for (String componentId : componentIds) {
-            queryServers.addAll(topologyContext.getComponentTasks(componentId));
-        }
+//        queryServers = new ArrayList<Integer>();
+//        for (String componentId : componentIds) {
+//            queryServers.addAll(topologyContext.getComponentTasks(componentId));
+//        }
         createTaskQueues(queryServers);
 
         
-        componentIds = topologyContext.getThisTargets().get(Streams.BPlusTreeQueryStream).keySet();
-        indexServers = new ArrayList<Integer>();
-        for (String componentId : componentIds) {
-            indexServers.addAll(topologyContext.getComponentTasks(componentId));
-        }
+//        componentIds = topologyContext.getThisTargets().get(Streams.BPlusTreeQueryStream).keySet();
+//        indexServers = new ArrayList<Integer>();
+//        for (String componentId : componentIds) {
+//            indexServers.addAll(topologyContext.getComponentTasks(componentId));
+//        }
+        indexServers = topologyContext.getComponentTasks("IndexerBolt");
 
 
         minIndexValue = new AtomicDouble(2000);
         maxIndexValue = new AtomicDouble(0);
 
+
+        queryIdToStartTime = new HashMap<>();
 
         setTimestamps();
 
@@ -120,20 +135,33 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
         } else if (tuple.getSourceStreamId().equals(Streams.NewQueryStream)) {
             Long queryId = tuple.getLong(0);
 
-            System.out.println("query id " + queryId + " has been finished!!!");
+//            Long start = queryIdToStartTime.get(queryId);
+            Pair pair = queryIdToStartTime.get(queryId);
+
+
+            if (pair != null) {
+                Long start = (Long) pair.getKey();
+                int fileSize = (Integer) pair.getValue();
+//                LOG.info("query id " + queryId);
+                LOG.info("Query time " + (System.currentTimeMillis() - start));
+//                LOG.info("file size " + fileSize);
+                queryIdToStartTime.remove(queryId);
+            }
+
+//            System.out.println("query id " + queryId + " has been finished!!!");
             concurrentQueriesSemaphore.release();
 
         } else if (tuple.getSourceStreamId().equals(Streams.FileSubQueryFinishStream)) {
 
             int taskId = tuple.getSourceTask();
 
-            /*task queue model
+//            /*task queue model
             sendSubqueryToTask(taskId);
-            */
-
-//            /*our method
-            sendSubquery(taskId);
 //            */
+
+            /*our method
+            sendSubquery(taskId);
+            */
 
         } else if (tuple.getSourceStreamId().equals(Streams.QueryGenerateStream)) {
             Query query = (Query) tuple.getValueByField("query");
@@ -224,24 +252,48 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
 
         List<String> fileNames = filePartitionSchemaManager.search(leftKey.doubleValue(), rightKey.doubleValue(), startTimestamp, endTimestamp);
 
-        for (String fileName : fileNames) {
-            SubQuery subQuery = new SubQueryOnFile(queryId, leftKey, rightKey, fileName, startTimestamp, endTimestamp);
-//            /*shuffle grouping
-//            sendSubqueriesByshuffleGrouping(subQuery);
-//             */
-            /*task queue
-            try {
-                taskQueue.put(subQuery);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            sendSubqueriesFromTaskQueue();
-            */
-            putSubqueryToTaskQueues(subQuery);
-            sendSubqueriesFromTaskQueues();
-        }
 
-        collector.emit(Streams.FileSystemQueryInformationStream, new Values(queryId, fileNames.size()));
+//        if (fileNames.size() > 25) {
+//            System.out.println("size " + fileNames.size());
+//        }
+
+        if (fileNames.size() < 64) {
+            collector.emit(Streams.FileSystemQueryInformationStream, new Values(queryId, 0));
+        } else {
+
+            queryIdToStartTime.put(queryId, new Pair(System.currentTimeMillis(), fileNames.size()));
+
+//            System.out.println("query id " + queryId);
+
+
+            for (String fileName : fileNames) {
+                SubQuery subQuery = new SubQueryOnFile(queryId, leftKey, rightKey, fileName, startTimestamp, endTimestamp);
+//            /*shuffle grouping
+            sendSubqueriesByshuffleGrouping(subQuery);
+//             */
+//            /*task queue
+                try {
+                    taskQueue.put(subQuery);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+//              */
+
+                /*our method
+                putSubqueryToTaskQueues(subQuery);
+                */
+            }
+
+//            /* task queue
+            sendSubqueriesFromTaskQueue();
+//            */
+
+            /*our method
+                sendSubqueriesFromTaskQueues();
+            */
+
+            collector.emit(Streams.FileSystemQueryInformationStream, new Values(queryId, fileNames.size()));
+        }
     }
 
     private void createQueryHandlingThread() {
@@ -268,11 +320,14 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
                 try {
                     Thread.sleep(1000);
 
-                    Integer leftKey = 0;
-                    Integer rightKey = 1000;
+//                    Integer leftKey = 0;
+//                    Integer rightKey = 0.25;
 
 //                    Long leftKey = 0L;
 //                    Long rightKey = 1000L;
+
+                    Double leftKey = 0.0;
+                    Double rightKey = 0.01;
 
                     Long startTimestamp = (long) 0;
                     Long endTimestamp = Long.MAX_VALUE;
@@ -306,26 +361,26 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
         Long endTimestamp = query.endTimestamp;
 
 
-        List<Integer> partitionIdsInBalancedPartition = getPartitionIds(balancedPartition, leftKey, rightKey);
-        List<Integer> partitionIdsInStalePartition = null;
-
-        if (balancedPartitionToBeDeleted != null) {
-            partitionIdsInStalePartition = getPartitionIds(balancedPartitionToBeDeleted, leftKey, rightKey);
-        }
-
-        List<Integer> partitionIds = (partitionIdsInStalePartition == null
-                ? partitionIdsInBalancedPartition
-                : mergePartitionIds(partitionIdsInBalancedPartition, partitionIdsInStalePartition));
-
-        for (Integer partitionId : partitionIds) {
-            Integer taskId = indexServers.get(partitionId);
-            Long timestamp = indexTaskToTimestampMapping.get(taskId);
-            if (timestamp <= endTimestamp && timestamp >= startTimestamp) {
-                SubQuery subQuery = new SubQuery(query.id, query.leftKey, query.rightKey, query.startTimestamp, query.endTimestamp);
-                collector.emitDirect(taskId, Streams.BPlusTreeQueryStream, new Values(subQuery));
-                ++numberOfTasksToSearch;
-            }
-        }
+//        List<Integer> partitionIdsInBalancedPartition = getPartitionIds(balancedPartition, leftKey, rightKey);
+//        List<Integer> partitionIdsInStalePartition = null;
+//
+//        if (balancedPartitionToBeDeleted != null) {
+//            partitionIdsInStalePartition = getPartitionIds(balancedPartitionToBeDeleted, leftKey, rightKey);
+//        }
+//
+//        List<Integer> partitionIds = (partitionIdsInStalePartition == null
+//                ? partitionIdsInBalancedPartition
+//                : mergePartitionIds(partitionIdsInBalancedPartition, partitionIdsInStalePartition));
+//
+//        for (Integer partitionId : partitionIds) {
+//            Integer taskId = indexServers.get(partitionId);
+//            Long timestamp = indexTaskToTimestampMapping.get(taskId);
+//            if (timestamp <= endTimestamp && timestamp >= startTimestamp) {
+//                SubQuery subQuery = new SubQuery(query.id, query.leftKey, query.rightKey, query.startTimestamp, query.endTimestamp);
+//                collector.emitDirect(taskId, Streams.BPlusTreeQueryStream, new Values(subQuery));
+//                ++numberOfTasksToSearch;
+//            }
+//        }
 
         collector.emit(Streams.BPlusTreeQueryInformationStream, new Values(queryId, numberOfTasksToSearch));
     }
@@ -371,10 +426,14 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
 
 
     private void sendSubqueriesFromTaskQueue() {
+//        System.out.println(queryServers);
         for (Integer taskId : queryServers) {
+//            System.out.println(taskId);
             SubQuery subQuery = taskQueue.poll();
             if (subQuery != null) {
+//                System.out.println(taskId);
                 collector.emitDirect(taskId, Streams.FileSystemQueryStream, new Values(subQuery));
+//                System.out.println("query " + subQuery.getQueryId() + " has been sent to task " + taskId);
             }
         }
     }

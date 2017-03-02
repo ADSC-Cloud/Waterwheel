@@ -2,6 +2,7 @@ package indexingTopology.bolt;
 
 import com.esotericsoftware.kryo.Kryo;
 import indexingTopology.DataTuple;
+import indexingTopology.config.TopologyConfig;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -38,6 +39,10 @@ public class IngestionBolt<DataType extends Comparable> extends BaseRichBolt imp
 
     private Observable observable;
 
+    private int numTuples;
+
+    private long start;
+
     public IngestionBolt(DataSchema schema) {
         this.schema = schema;
     }
@@ -59,6 +64,8 @@ public class IngestionBolt<DataType extends Comparable> extends BaseRichBolt imp
 
         this.observable = indexer;
         observable.addObserver(this);
+        start = System.currentTimeMillis();
+        numTuples = 0;
     }
 
     @Override
@@ -68,13 +75,33 @@ public class IngestionBolt<DataType extends Comparable> extends BaseRichBolt imp
 
     public void execute(Tuple tuple) {
         if (tuple.getSourceStreamId().equals(Streams.IndexStream)) {
-            DataTuple dataTuple = (DataTuple) tuple.getValueByField("tuple");
+//            DataTuple dataTuple = (DataTuple) tuple.getValueByField("tuple");
+            byte[] dataTupleBytes = (byte[]) tuple.getValueByField("tuple");
+            DataTuple dataTuple = schema.deserializeToDataTuple(dataTupleBytes);
+
+            Long tupleId = tuple.getLongByField("tupleId");
+
+            int taskId = tuple.getIntegerByField("taskId");
+
             try {
                 inputQueue.put(dataTuple);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } finally {
-                collector.ack(tuple);
+//            if (numTuples == 0) {
+//                start = System.currentTimeMillis();
+//            }
+//                ++numTuples;
+//                if (numTuples >= 1200000) {
+//                    System.out.println("Throughput: " + (numTuples * 1000 / ((System.currentTimeMillis() - start)*1.0)));
+//                    numTuples = 0;
+//                    start = System.currentTimeMillis();
+//                }
+//                collector.ack(tuple);
+//                System.out.println("tuple id " + tupleId);
+                if (tupleId % TopologyConfig.EMIT_NUM == 0) {
+                    collector.emitDirect(taskId, Streams.AckStream, new Values(tupleId));
+                }
             }
         } else if (tuple.getSourceStreamId().equals(Streams.BPlusTreeQueryStream)){
             SubQuery subQuery = (SubQuery) tuple.getValueByField("subquery");
@@ -99,6 +126,8 @@ public class IngestionBolt<DataType extends Comparable> extends BaseRichBolt imp
 
         outputFieldsDeclarer.declareStream(Streams.TimestampUpdateStream,
                 new Fields("timeDomain", "keyDomain"));
+
+        outputFieldsDeclarer.declareStream(Streams.AckStream, new Fields("tupleId"));
     }
 
     @Override

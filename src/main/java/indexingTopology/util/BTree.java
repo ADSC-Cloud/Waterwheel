@@ -335,14 +335,14 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	public byte[] serializeLeaves() {
 		BTreeLeafNode leaf = getLeftMostLeaf();
 		int offset;
-		Output output = new Output(65000000, 500000000);
+		Output output = new Output(60000000, 500000000);
 		Kryo kryo = new Kryo();
 		kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
 		int count = 0;
 		while (leaf != null) {
 			offset = output.position();
 
-			Output leafOutput = new Output(65000, 500000000);
+			Output leafOutput = new Output(650000, 500000000);
             kryo.writeObject(leafOutput, leaf);
 
 			byte[] bytesToWrite = leafOutput.toBytes();

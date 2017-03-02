@@ -58,8 +58,6 @@ public class Indexer<DataType extends Number> extends Observable {
 
     private int chunkId;
 
-    private long start;
-
     private String indexField;
 
     private Kryo kryo;
@@ -87,6 +85,15 @@ public class Indexer<DataType extends Number> extends Observable {
     private ArrayBlockingQueue<Pair> queryResultQueue;
 
     private ArrayBlockingQueue<Pair> informationToUpdatePendingQueue;
+
+    private Integer estimatedSize;
+
+    private int tupleLength;
+
+    private int keyLength;
+
+
+    private Long start;
 
     public Indexer(int taskId, ArrayBlockingQueue<DataTuple> inputQueue, DataSchema schema, ArrayBlockingQueue<SubQuery<DataType>> queryPendingQueue) {
         pendingQueue = new ArrayBlockingQueue<>(1024);
@@ -122,7 +129,12 @@ public class Indexer<DataType extends Number> extends Observable {
         kryo.register(BTree.class, new KryoTemplateSerializer());
         kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
 
+        tupleLength = schema.getTupleLength();
+        keyLength = schema.getIndexType().length;
+
         this.taskId = taskId;
+
+        this.estimatedSize = 0;
 
         this.queryPendingQueue = queryPendingQueue;
 
@@ -131,6 +143,11 @@ public class Indexer<DataType extends Number> extends Observable {
         inputProcessingThread = new Thread(new InputProcessingRunnable());
 
         inputProcessingThread.start();
+
+//        Thread checkCapacityThread = new Thread(new CheckCapacityRunnable());
+//        checkCapacityThread.start();
+
+        start = System.currentTimeMillis();
 
         createIndexingThread();
 
@@ -195,15 +212,15 @@ public class Indexer<DataType extends Number> extends Observable {
 
             while (true) {
 
-                if (executed.get() >= TopologyConfig.SKEWNESS_DETECTION_THRESHOLD) {
-                    if (indexedData.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
-                        while (!pendingQueue.isEmpty()) {
-                            try {
-                                Thread.sleep(1);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                        }
+//                if (executed.get() >= TopologyConfig.SKEWNESS_DETECTION_THRESHOLD) {
+//                    if (indexedData.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
+//                        while (!pendingQueue.isEmpty()) {
+//                            try {
+//                                Thread.sleep(1);
+//                            } catch (InterruptedException e) {
+//                                e.printStackTrace();
+//                            }
+//                        }
 
 //                        System.out.println("pengding queue has been empty, the template can be rebuilt!!!");
 
@@ -215,35 +232,37 @@ public class Indexer<DataType extends Number> extends Observable {
 //                            System.out.println("trying to acquire the semaphore");
 //                            System.out.println("queue length " + processQuerySemaphore.getQueueLength() + "processing runnable");
 //                            processQuerySemaphore.acquire();
-                            if (processQuerySemaphore.tryAcquire()) {
+//                            if (processQuerySemaphore.tryAcquire()) {
 //                            System.out.println("semaphore has been acquired in input processing runnable!!!");
 //                        } catch (InterruptedException e) {
 //                            e.printStackTrace();
 //                        }
-                                terminateIndexingThreads();
+//                                terminateIndexingThreads();
 
 //                                System.out.println("begin to rebuild the template!!!");
 
-                                long start = System.currentTimeMillis();
+//                                long start = System.currentTimeMillis();
 
-                                indexedData = templateUpdater.createTreeWithBulkLoading(indexedData);
+//                                indexedData = templateUpdater.createTreeWithBulkLoading(indexedData);
 
-                                processQuerySemaphore.release();
+//                                processQuerySemaphore.release();
 
 //                                System.out.println("Time used to update template " + (System.currentTimeMillis() - start));
 
 //                              System.out.println("New tree has been built");
 //
-                                executed.set(0L);
+//                                executed.set(0L);
 //
-                                createIndexingThread();
-                            }
-                    }
-                }
+//                                createIndexingThread();
+//                            }
+//                    }
+//                }
+//                System.out.println("size " + estimatedSize);
+//                System.out.println("tuple " + numTuples);
 
 
-
-                if (numTuples >= TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK) {
+//                if (numTuples >= TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK) {
+                if (estimatedSize >= TopologyConfig.CHUNK_SIZE) {
                     while (!pendingQueue.isEmpty()) {
                         try {
                             Thread.sleep(1);
@@ -251,6 +270,10 @@ public class Indexer<DataType extends Number> extends Observable {
                             e.printStackTrace();
                         }
                     }
+
+//                    System.out.println("A chunk full " + (System.currentTimeMillis() - start)*1.0 / 1000);
+
+//                    System.out.println("Throughput " + executed.get() * 1000 / ((System.currentTimeMillis() - start)*1.0));
 
                     terminateIndexingThreads();
 
@@ -304,6 +327,8 @@ public class Indexer<DataType extends Number> extends Observable {
 
                     numTuples = 0;
 
+                    estimatedSize = 0;
+
                     ++chunkId;
                 }
 
@@ -342,6 +367,8 @@ public class Indexer<DataType extends Number> extends Observable {
                 }
 
                 numTuples += drainer.size();
+
+                estimatedSize += (drainer.size() * (keyLength + tupleLength + TopologyConfig.OFFSET_LENGTH));
 
                 drainer.clear();
 
@@ -421,6 +448,43 @@ public class Indexer<DataType extends Number> extends Observable {
 //                System.out.println("Indexing thread " + Thread.currentThread().getId() + " is terminated with " + localCount + " tuples processed!");
         }
     }
+
+
+    class CheckCapacityRunnable implements Runnable {
+
+        int count = 0;
+        boolean inputExhausted = false;
+
+        public void setInputExhausted() {
+            inputExhausted = true;
+        }
+        @Override
+        public void run() {
+            while (true) {
+
+                if (inputExhausted) {
+                    break;
+                }
+
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+//                if (inputQueue.size() / (256 * 8 * 4)) {
+//                    System.out.println("Warning : the production is too slow!!!");
+                if (inputQueue.size() * 1.0 / TopologyConfig.PENDING_QUEUE_CAPACITY < 0.1) {
+                    System.out.println(inputQueue.size() * 1.0 / TopologyConfig.PENDING_QUEUE_CAPACITY);
+                    System.out.println("Warning : the production speed is too slow!!!");
+                    System.out.println(++count);
+                }
+//                }
+            }
+        }
+    }
+
+
 
     class QueryRunnable implements Runnable {
         @Override
@@ -509,7 +573,7 @@ public class Indexer<DataType extends Number> extends Observable {
 
         BTree bTree = clonedIndexedData == null ? indexedData : clonedIndexedData;
 
-        Output output = new Output(65000000, 500000000);
+        Output output = new Output(60000000, 500000000);
 
         byte[] leafBytesToWrite = bTree.serializeLeaves();
 

@@ -1,5 +1,7 @@
 package indexingTopology.bolt;
 
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.util.*;
 import org.apache.storm.task.OutputCollector;
@@ -13,6 +15,7 @@ import indexingTopology.metadata.FileMetaData;
 import indexingTopology.metadata.FilePartitionSchemaManager;
 import indexingTopology.streams.Streams;
 import javafx.util.Pair;
+import org.apache.zookeeper.KeeperException;
 
 import java.util.*;
 
@@ -51,6 +54,14 @@ public class MetadataServer extends BaseRichBolt {
 
     private boolean repartitionEnabled;
 
+    private ZookeeperHandler zookeeperHandler;
+
+    private Output output;
+
+    private int numberOfFiles;
+
+    private String path = "/MetadataNode";
+
 
     public MetadataServer(Double lowerBound, Double upperBound) {
         this.lowerBound = lowerBound;
@@ -81,8 +92,52 @@ public class MetadataServer extends BaseRichBolt {
 
         repartitionEnabled = true;
 
+        numberOfFiles = 0;
+
+        output = new Output(50000, 6500000);
+
+        try {
+            zookeeperHandler = new ZookeeperHandler();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         staticsRequestSendingThread = new Thread(new StatisticsRequestSendingRunnable());
         staticsRequestSendingThread.start();
+
+
+//        createMetadataSendingThread();
+    }
+
+    private void createMetadataSendingThread() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    byte[] bytes;
+                    bytes = zookeeperHandler.getData(path);
+
+                    Input input = new Input(bytes);
+
+                    int numberOfMetadata = input.readInt();
+                    for (int i = 0; i < numberOfMetadata; ++i) {
+                        String fileName = input.readString();
+                        Double lowerBound = input.readDouble();
+                        Double upperBound = input.readDouble();
+                        Long startTimestamp = input.readLong();
+                        Long endTimestamp = input.readLong();
+                        collector.emit(Streams.FileInformationUpdateStream,
+                                new Values(fileName, new KeyDomain(lowerBound, upperBound),
+                                        new TimeDomain(startTimestamp, endTimestamp)));
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (KeeperException e) {
+                    e.printStackTrace();
+                }
+            }
+
+        }).start();
     }
 
     @Override
@@ -98,13 +153,13 @@ public class MetadataServer extends BaseRichBolt {
                 ++numberOfStaticsReceived;
                 if (numberOfStaticsReceived == numberOfDispatchers) {
                     Double skewnessFactor = getSkewnessFactor(this.histogram);
-                    System.out.println("skewness factor " + skewnessFactor);
+//                    System.out.println("skewness factor " + skewnessFactor);
                     if (skewnessFactor > TopologyConfig.LOAD_BALANCE_THRESHOLD) {
-                        System.out.println("skewness detected!!!");
+//                        System.out.println("skewness detected!!!");
                         RepartitionManager manager = new RepartitionManager(numberOfPartitions, intervalToPartitionMapping,
                                 histogram.getHistogram(), getTotalWorkLoad(histogram));
                         this.intervalToPartitionMapping = manager.getRepartitionPlan();
-                        System.out.println("after repartition " + intervalToPartitionMapping);
+//                        System.out.println("after repartition " + intervalToPartitionMapping);
                         this.balancedPartition = new BalancedPartition(numberOfPartitions, lowerBound, upperBound,
                                 intervalToPartitionMapping);
                         repartitionEnabled = false;
@@ -126,6 +181,24 @@ public class MetadataServer extends BaseRichBolt {
             filePartitionSchemaManager.add(new FileMetaData(fileName, (Double) keyDomain.getLowerBound(),
                     (Double)keyDomain.getUpperBound(), timeDomain.getStartTimestamp(), timeDomain.getEndTimestamp()));
 
+//            ++numberOfFiles;
+
+//            WriteMetaData(fileName, keyDomain, timeDomain);
+
+//            if (numberOfFiles == 150) {
+//                Output metaDataOutput = new Output(50000, 6500000);
+//                metaDataOutput.writeInt(numberOfFiles);
+//                metaDataOutput.write(output.toBytes());
+//                try {
+//                    zookeeperHandler.create(path, metaDataOutput.toBytes());
+//                    System.out.println("Metadata has been written to zookeeper!!!");
+//                } catch (KeeperException e) {
+//                    e.printStackTrace();
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+
             collector.emit(Streams.FileInformationUpdateStream,
                     new Values(fileName, keyDomain, timeDomain));
         } else if (tuple.getSourceStreamId().equals(Streams.TimestampUpdateStream)) {
@@ -141,6 +214,14 @@ public class MetadataServer extends BaseRichBolt {
             repartitionEnabled = true;
             System.out.println("repartition has been enabled!!!");
         }
+    }
+
+    private void WriteMetaData(String fileName, KeyDomain keyDomain, TimeDomain timeDomain) {
+        output.writeString(fileName);
+        output.writeDouble((Double) keyDomain.getLowerBound());
+        output.writeDouble((Double) keyDomain.getUpperBound());
+        output.writeLong(timeDomain.getStartTimestamp());
+        output.writeLong(timeDomain.getEndTimestamp());
     }
 
     @Override
