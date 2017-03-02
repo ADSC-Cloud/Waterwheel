@@ -5,9 +5,11 @@ import indexingTopology.DataTuple;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.streams.Streams;
 import indexingTopology.util.Acker;
+import indexingTopology.util.Permutation;
 import indexingTopology.util.texi.Car;
 import indexingTopology.util.texi.City;
 import indexingTopology.util.texi.TrajectoryGenerator;
+import org.apache.commons.math3.distribution.ZipfDistribution;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -44,6 +46,10 @@ public class Generator extends BaseRichBolt {
 
     private int taskId;
 
+    private ZipfDistribution distribution;
+
+    private Permutation permutation;
+
     public Generator(DataSchema schema, TrajectoryGenerator generator, int payloadSize, City city) {
         this.schema = schema;
         this.generator = generator;
@@ -52,8 +58,9 @@ public class Generator extends BaseRichBolt {
 //        RandomGenerator randomGenerator = new Well19937c();
 //        randomGenerator.setSeed(1000);
 //        this.keyGenerator = new ZipfKeyGenerator(200048, 0.5, randomGenerator);
-//        distribution = new ZipfDistribution(2000048, 0.5);
-        random = new Random(1000);
+        distribution = new ZipfDistribution(200048, 0.5);
+        permutation = new Permutation(200048);
+//        random = new Random(1000);
     }
 
     @Override
@@ -73,8 +80,9 @@ public class Generator extends BaseRichBolt {
 //                    }
                     if (tupleId < acker.currentCount.get() + TopologyConfig.MAX_PENDING) {
                         Car car = generator.generate();
-                        DataTuple dataTuple = new DataTuple(car.id, random.nextDouble(), new String(new char[payloadSize]), timestamp);
-
+                        Integer key = distribution.sample();
+//                        DataTuple dataTuple = new DataTuple(car.id, random.nextDouble(), new String(new char[payloadSize]), timestamp);
+                        DataTuple dataTuple = new DataTuple(car.id, permutation.get(key).doubleValue(), new String(new char[payloadSize]), timestamp);
 //                        System.out.println(tupleId + " has been emitted!!!");
                         collector.emit(Streams.IndexStream, new Values(schema.serializeTuple(dataTuple), tupleId, taskId));
 
@@ -87,6 +95,7 @@ public class Generator extends BaseRichBolt {
         });
         generationThread.start();
     }
+
 
     @Override
     public void execute(Tuple tuple) {
