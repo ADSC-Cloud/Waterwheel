@@ -23,7 +23,9 @@ import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /**
- * Created by acelzj on 21/2/17.
+ * This bolt takes data tuples from its inputQueue and emits the data tuples to downstream bolt.
+ * This bolt has backpressure mechanism.
+ * Unless data tuples are inserted into the input queue, this bolt does not emit any tuple actually.
  */
 public class InputStreamReceiver extends BaseRichBolt {
 
@@ -31,71 +33,38 @@ public class InputStreamReceiver extends BaseRichBolt {
 
     BackPressure backPressure;
 
-    Long tupleId;
-
-    private Random random;
-
     private final DataSchema schema;
-
-    private TrajectoryGenerator generator;
-
-    private City city;
-
-    private int payloadSize;
-
-    private long timestamp;
 
     private int taskId;
 
-    private ZipfDistribution distribution;
+    public ArrayBlockingQueue<DataTuple> inputQueue;
 
-    private Permutation permutation;
-
-    private ArrayBlockingQueue<DataTuple> inputQueue;
-
-    public InputStreamReceiver(DataSchema schema, TrajectoryGenerator generator, int payloadSize, City city) {
+    public InputStreamReceiver(DataSchema schema) {
         this.schema = schema;
-        this.generator = generator;
-        this.city = city;
-        this.payloadSize = payloadSize;
-//        RandomGenerator randomGenerator = new Well19937c();
-//        randomGenerator.setSeed(1000);
-//        this.keyGenerator = new ZipfKeyGenerator(200048, 0.5, randomGenerator);
-        distribution = new ZipfDistribution(200048, 0.5);
-        permutation = new Permutation(200048);
-//        random = new Random(1000);
+        inputQueue = new ArrayBlockingQueue<DataTuple>(10000);
     }
 
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         this.collector = outputCollector;
-        backPressure = new BackPressure(TopologyConfig.EMIT_NUM);
-        tupleId = 0L;
+        backPressure = new BackPressure(TopologyConfig.EMIT_NUM, TopologyConfig.MAX_PENDING);
         taskId = topologyContext.getThisTaskId();
-        Thread generationThread = new Thread(new Runnable() {
+        Thread emittingThread = new Thread(new Runnable() {
             @Override
             public void run() {
                 while (true) {
-//                    try {
-//                        Thread.sleep(1000);
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
-                    if (tupleId < backPressure.currentCount.get() + TopologyConfig.MAX_PENDING) {
                         try {
                             //TODO: dequeue can be optimized by using drainer.
+                            final long tupleId = backPressure.acquireNextTupleId();
                             final DataTuple dataTuple = inputQueue.take();
                             collector.emit(Streams.IndexStream, new Values(schema.serializeTuple(dataTuple), tupleId, taskId));
-                            ++tupleId;
-                            ++timestamp;
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
-                    }
                 }
             }
         });
-        generationThread.start();
+        emittingThread.start();
     }
 
 
@@ -104,8 +73,6 @@ public class InputStreamReceiver extends BaseRichBolt {
         if (tuple.getSourceStreamId().equals(Streams.AckStream)) {
             Long tupleId = tuple.getLongByField("tupleId");
             backPressure.ack(tupleId);
-//            System.out.println("tuple id " + tupleId + "has been acked!!!");
-//            System.out.println(backPressure.pendingIds);
         }
     }
 
