@@ -10,7 +10,7 @@ import java.net.Socket;
 /**
  * Created by robert on 3/3/17.
  */
-public class ServerHandle implements Runnable {
+public abstract class ServerHandle implements Runnable {
 
     ObjectInputStream objectInputStream;
     ObjectOutputStream objectOutputStream;
@@ -44,28 +44,15 @@ public class ServerHandle implements Runnable {
     private Response handleInputObject(Object object) {
         if (object instanceof String) {
             final Response response = new Response();
-            response.message = "This is the result of your query!";
-            return response;
+            response.message = "This is the result of " + object;
         } else if (object instanceof ClientQueryRequest) {
-            DataTuple dataTuple = new DataTuple();
-            dataTuple.add("ID 1");
-            dataTuple.add(100);
-            dataTuple.add(3.14);
-
-            DataTuple dataTuple1 = new DataTuple();
-            dataTuple1.add("ID 2");
-            dataTuple1.add(200);
-            dataTuple1.add(6.34);
-
-            QueryResult queryResult = new QueryResult();
-            queryResult.add(dataTuple);
-            queryResult.add(dataTuple1);
-            return queryResult;
+            return handleClientQueryRequest((ClientQueryRequest)object);
         }
-
-        Response response = new Response();
-        response.message = "Unknown command!";
+        final Response response = new Response();
+        response.message = "Not supported " + object;
         return response;
 
     }
+
+    abstract Response handleClientQueryRequest(ClientQueryRequest clientQueryRequest);
 }
