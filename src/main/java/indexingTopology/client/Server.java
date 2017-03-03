@@ -17,10 +17,6 @@ public class Server {
 
     ServerSocket serverSocket;
 
-    ObjectInputStream objectInputStream;
-
-    ObjectOutputStream objectOutputStream;
-
     ExecutorService executorService;
 
     public Server(int port) {
