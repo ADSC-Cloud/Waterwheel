@@ -5,6 +5,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Created by robert on 2/3/17.
@@ -15,7 +17,11 @@ public class Server {
 
     ServerSocket serverSocket;
 
-    ObjectInputStream inputStream;
+    ObjectInputStream objectInputStream;
+
+    ObjectOutputStream objectOutputStream;
+
+    ExecutorService executorService;
 
     public Server(int port) {
         this.port = port;
@@ -23,26 +29,46 @@ public class Server {
 
     void startDaemon() throws IOException{
         serverSocket = new ServerSocket(port);
-        Socket client = serverSocket.accept();
-        inputStream = new ObjectInputStream(client.getInputStream());
+        executorService = Executors.newCachedThreadPool();
+        while (true) {
+            Socket client = serverSocket.accept();
+            executorService.submit(new ServerHandle(client));
+        }
+//        while(true) {
+//            Socket client = serverSocket.accept();
+//            System.out.println("accepted new client: " + client.getInetAddress().toString());
+//            new Thread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    try {
+//                        System.out.println("Try to create input and output streams!");
+//                        objectOutputStream = new ObjectOutputStream(client.getOutputStream());
+//                        System.out.println("object output stream is created!");
+//                        objectInputStream = new ObjectInputStream(client.getInputStream());
+//                        System.out.println("object input stream is created!");
+//                        while (true) {
+//                            try {
+//                                final Object newObject = objectInputStream.readObject();
+//                                System.out.println("Received: " + newObject);
+//                                final Response response = new Response();
+//                                response.message = "This is the result of your query!";
+//                                objectOutputStream.writeObject(response);
+//                            } catch (ClassNotFoundException e) {
+//                                e.printStackTrace();
+//                            }
+//                        }
+//                    } catch (IOException io) {
+//                        io.printStackTrace();
+//
+//                    }
+//                    System.out.println("client is closed!");
+//                }
+//            }).start();
     }
 
 
     public static void main(String[] args) throws Exception {
-        final ServerSocket serverSocket = new ServerSocket(10000);
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while(true) {
-                    try {
-                        Socket client = serverSocket.accept();
-                        System.out.println(String.format("We accepted a connection from %s", client.getInetAddress().toString()));
-                        new ObjectOutputStream(client.getOutputStream()).writeObject("You are stupid!");
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }).start();
+        final Server server = new Server(10000);
+        server.startDaemon();
     }
 }

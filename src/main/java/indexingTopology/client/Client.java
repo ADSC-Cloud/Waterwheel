@@ -2,6 +2,7 @@ package indexingTopology.client;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 
 /**
@@ -13,6 +14,10 @@ public class Client {
 
     String serverHost;
 
+    ObjectInputStream objectInputStream;
+
+    ObjectOutputStream objectOutputStream;
+
     int port;
 
     public Client(String serverHost, int port) {
@@ -22,14 +27,31 @@ public class Client {
 
     public void connect() throws IOException{
         client = new Socket(serverHost, port);
+        objectOutputStream = new ObjectOutputStream((client.getOutputStream()));
+        objectInputStream = new ObjectInputStream(client.getInputStream());
+        System.out.println("Connected with " + serverHost);
+    }
+
+    public void close() throws IOException {
+        objectInputStream.close();
+        objectOutputStream.close();
+        client.close();
+    }
+
+    public Response queryAPINumberOne() throws IOException, ClassNotFoundException {
+        objectOutputStream.writeObject("string");
+        return (Response)objectInputStream.readObject();
     }
 
 
+
+
     public static void main(String[] args) throws Exception {
-        Socket client = new Socket("localhost", 10000);
-        ObjectInputStream objectInputStream = new ObjectInputStream(client.getInputStream());
-        Object object = objectInputStream.readObject();
-        System.out.println("I get " + object);
+        Client client = new Client("localhost", 10000);
+        client.connect();
+        Response response = client.queryAPINumberOne();
+        System.out.println("Query one is submitted!");
+        System.out.println(response);
     }
 
 }
