@@ -45,6 +45,8 @@ public abstract class ServerHandle implements Runnable {
         if (object instanceof String) {
             final Response response = new Response();
             response.message = "This is the result of " + object;
+        } else if (object instanceof DataTuple) {
+            return handleTupleAppend((DataTuple) object);
         } else if (object instanceof ClientQueryRequest) {
             return handleClientQueryRequest((ClientQueryRequest)object);
         }
@@ -55,4 +57,6 @@ public abstract class ServerHandle implements Runnable {
     }
 
     abstract Response handleClientQueryRequest(ClientQueryRequest clientQueryRequest);
+
+    abstract Response handleTupleAppend(DataTuple tuple);
 }

@@ -33,4 +33,10 @@ public class FackServerHandle extends ServerHandle {
         queryResult.add(dataTuple1);
         return queryResult;
     }
+
+    @Override
+    Response handleTupleAppend(DataTuple tuple) {
+        return null;
+    }
+
 }

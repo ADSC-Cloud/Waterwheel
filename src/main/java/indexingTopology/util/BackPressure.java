@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Created by acelzj on 21/2/17.
  */
-public class Acker {
+public class BackPressure {
 
     public AtomicLong currentCount;
 
@@ -16,11 +16,11 @@ public class Acker {
 
     public List<Long> pendingIds;
 
-    public Acker() {
+    public BackPressure() {
         this(5000);
     }
 
-    public Acker(int emitNumber) {
+    public BackPressure(int emitNumber) {
         currentCount = new AtomicLong(0);
         this.emitNumber = emitNumber;
         pendingIds = new ArrayList<>();

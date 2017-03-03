@@ -20,11 +20,12 @@ import org.apache.storm.tuple.Values;
 
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * Created by acelzj on 21/2/17.
  */
-public class Generator extends BaseRichBolt {
+public class InputStreamReceiver extends BaseRichBolt {
 
     OutputCollector collector;
 
@@ -50,7 +51,9 @@ public class Generator extends BaseRichBolt {
 
     private Permutation permutation;
 
-    public Generator(DataSchema schema, TrajectoryGenerator generator, int payloadSize, City city) {
+    private ArrayBlockingQueue<DataTuple> inputQueue;
+
+    public InputStreamReceiver(DataSchema schema, TrajectoryGenerator generator, int payloadSize, City city) {
         this.schema = schema;
         this.generator = generator;
         this.city = city;
@@ -79,16 +82,15 @@ public class Generator extends BaseRichBolt {
 //                        e.printStackTrace();
 //                    }
                     if (tupleId < backPressure.currentCount.get() + TopologyConfig.MAX_PENDING) {
-                        Car car = generator.generate();
-                        Integer key = distribution.sample();
-//                        DataTuple dataTuple = new DataTuple(car.id, random.nextDouble(), new String(new char[payloadSize]), timestamp);
-                        DataTuple dataTuple = new DataTuple(car.id, permutation.get(key).doubleValue(), new String(new char[payloadSize]), timestamp);
-//                        System.out.println(tupleId + " has been emitted!!!");
-                        collector.emit(Streams.IndexStream, new Values(schema.serializeTuple(dataTuple), tupleId, taskId));
-
-                        ++tupleId;
-
-                        ++timestamp;
+                        try {
+                            //TODO: dequeue can be optimized by using drainer.
+                            final DataTuple dataTuple = inputQueue.take();
+                            collector.emit(Streams.IndexStream, new Values(schema.serializeTuple(dataTuple), tupleId, taskId));
+                            ++tupleId;
+                            ++timestamp;
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
             }
