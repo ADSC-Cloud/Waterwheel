@@ -49,12 +49,12 @@ public class Generator extends InputStreamReceiver {
         this.generator = generator;
         this.city = city;
         this.payloadSize = payloadSize;
-        distribution = new ZipfDistribution(200048, 0.5);
-        permutation = new Permutation(200048);
     }
 
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
+        distribution = new ZipfDistribution(200048, 0.5);
+        permutation = new Permutation(200048);
         super.prepare(map, topologyContext, outputCollector);
         Thread generationThread = new Thread(new Runnable() {
             @Override

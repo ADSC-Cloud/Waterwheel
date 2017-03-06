@@ -18,7 +18,7 @@ public class BackPressure {
 
     public List<Long> pendingIds;
 
-    private Long tupleId;
+    private AtomicLong tupleId;
 
     private long maxPending;
 
@@ -30,13 +30,14 @@ public class BackPressure {
         currentCount = new AtomicLong(0);
         this.emitNumber = emitNumber;
         pendingIds = new ArrayList<>();
-        tupleId = 0L;
+        tupleId = new AtomicLong(0);
         this.maxPending = maxPending;
     }
 
     public void ack(Long tupleId) {
-        if (tupleId % emitNumber != 0)
+        if (tupleId % emitNumber != 0) {
             return;
+        }
         if (tupleId == currentCount.get() + emitNumber) {
 //            currentCount = tupleId;
             currentCount.set(tupleId);
@@ -57,33 +58,33 @@ public class BackPressure {
 
                 for (Long pendingId : idsToRemoved) {
                     pendingIds.remove(pendingId);
-//                    System.out.println(pendingIds);
                 }
             }
         } else if (tupleId > currentCount.get()) {
             pendingIds.add(tupleId);
             Collections.sort(pendingIds);
         } else {
-            new RuntimeException("Tuple id can't be smaller than current count");
+//            throw new RuntimeException("Tuple id can't be smaller than current count");
         }
     }
 
     public Long acquireNextTupleId() throws InterruptedException {
-        while (tupleId >= currentCount.get() + maxPending) {
+        while (tupleId.get() >= currentCount.get() + maxPending) {
             try {
                 Thread.sleep(1);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
-        return tupleId++;
+        final Long id = tupleId.getAndIncrement();
+        return id;
     }
 
-    public Long tryAcquireNextTupleId() {
-        if (tupleId >= currentCount.get() + maxPending)
+    public synchronized Long tryAcquireNextTupleId() {
+        if (tupleId.get() >= currentCount.get() + maxPending)
             return null;
         else
-            return tupleId++;
+            return tupleId.getAndIncrement();
     }
 
 }

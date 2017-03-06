@@ -1,6 +1,9 @@
 package indexingTopology.util;
 
 import org.junit.Test;
+
+import java.util.concurrent.*;
+
 import static org.junit.Assert.*;
 
 /**
@@ -70,5 +73,52 @@ public class BackPressureTest {
 
         backPressure.ack(2L); // a valid and expected ack
         assertEquals(4L, (long) backPressure.tryAcquireNextTupleId());
+    }
+
+    @Test
+    public void TestNoDeadlock() {
+        final int step = 5000;
+        final int maxPending = 100000;
+        final int tuples = 10000000;
+        BackPressure backPressure = new BackPressure(step, maxPending);
+        final LinkedBlockingQueue<Long> queue = new LinkedBlockingQueue<>();
+        Thread consumerThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        Long id = queue.take();
+                        if (id % step == 0) {
+                            backPressure.ack(id);
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+        consumerThread.start();
+        ExecutorService executor = Executors.newFixedThreadPool(1);
+        Future<Long> result = executor.submit(()->{
+            long count = tuples;
+            while(count-- > 0) {
+                try {
+                    Long id = backPressure.acquireNextTupleId();
+                    queue.put(id);
+                } catch (InterruptedException e) {
+
+                }
+            }
+            return 0L;
+        });
+
+        long status = -1;
+        try {
+            status = result.get(10000, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+
+        }
+        assertEquals(0L, status);
+
     }
 }
