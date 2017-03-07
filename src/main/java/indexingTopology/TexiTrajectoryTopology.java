@@ -67,11 +67,11 @@ public class TexiTrajectoryTopology {
 //        builder.setSpout(TupleGenerator, new TexiTrajectoryGenerator(schema, generator, payloadSize, city), 1);
 //        builder.setSpout(TupleGenerator, new TexiTrajectoryGenerator(schemaWithTimestamp, generator, payloadSize, city), 16);
 
-        builder.setBolt(TupleGenerator, new Generator(schemaWithTimestamp, generator, payloadSize, city), 1)
+        builder.setBolt(TupleGenerator, new Generator(schemaWithTimestamp, generator, payloadSize, city), 14)
                 .directGrouping(IndexerBolt, Streams.AckStream);
 
-        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher(schemaWithTimestamp, lowerBound, upperBound, enableLoadBalance, false), 1)
-                .shuffleGrouping(TupleGenerator, Streams.IndexStream)
+        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher(schemaWithTimestamp, lowerBound, upperBound, enableLoadBalance, false), 14)
+                .localOrShuffleGrouping(TupleGenerator, Streams.IndexStream)
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 //                .allGrouping(LogWriter, Streams.ThroughputRequestStream);

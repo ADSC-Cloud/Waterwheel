@@ -83,6 +83,8 @@ public class Generator extends InputStreamReceiver {
         random = new Random(2048);
 
 //        distribution = new ZipfDistribution(200048, 0.5);
+        mean = 500000.0;
+        sigma = 100000.0;
         distribution = new NormalDistribution(mean, sigma);
 //        permutation = new Permutation(200048);
 //        distribution = new ZipfDistribution(200048, 0.5);

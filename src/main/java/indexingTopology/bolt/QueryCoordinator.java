@@ -268,9 +268,9 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
 
             for (String fileName : fileNames) {
                 SubQuery subQuery = new SubQueryOnFile(queryId, leftKey, rightKey, fileName, startTimestamp, endTimestamp);
-//            /*shuffle grouping
+            /*shuffle grouping
             sendSubqueriesByshuffleGrouping(subQuery);
-//             */
+             */
 //            /*task queue
                 try {
                     taskQueue.put(subQuery);
