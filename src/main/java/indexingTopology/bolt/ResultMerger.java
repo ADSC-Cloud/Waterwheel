@@ -146,7 +146,7 @@ public class ResultMerger extends BaseRichBolt {
 //        outputFieldsDeclarer.declareStream(NormalDistributionTopology.NewQueryStream
 //                , new Fields("queryId", "New Query"));
 
-        outputFieldsDeclarer.declareStream(Streams.NewQueryStream
+        outputFieldsDeclarer.declareStream(Streams.QueryFinishedStream
                 , new Fields("queryId", "New Query", "metrics", "numberOfFilesToScan"));
 
         outputFieldsDeclarer.declareStream(Streams.SubQueryReceivedStream, new Fields("receivedMessage"));
@@ -168,7 +168,7 @@ public class ResultMerger extends BaseRichBolt {
     }
 
     private void sendNewQueryPermit(Long queryId) {
-        collector.emit(Streams.NewQueryStream, new Values(queryId, new String("New query can be executed"),
+        collector.emit(Streams.QueryFinishedStream, new Values(queryId, new String("New query can be executed"),
                         null, 0));
     }
 

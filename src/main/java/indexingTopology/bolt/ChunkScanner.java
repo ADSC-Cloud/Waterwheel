@@ -22,12 +22,15 @@ import indexingTopology.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.crypto.Data;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Semaphore;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * Created by acelzj on 11/15/16.
@@ -216,13 +219,24 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt {
 
             long tupleGetStart = System.currentTimeMillis();
             ArrayList<byte[]> tuplesInKeyRange = leaf.getTuplesWithinKeyRange(leftKey, rightKey);
-            ArrayList<byte[]> tuplesWithinTimestamp = getTuplesWithinTimestamp(tuplesInKeyRange, timestampLowerBound, timestampUpperBound);
+
+            //deserialize
+            ArrayList<DataTuple> dataTuples = new ArrayList<>();
+            tuplesInKeyRange.stream().forEach(e -> dataTuples.add(schema.deserializeToDataTuple(e)));
+
+            //filter by timestamp range
+            filterByTimestamp(dataTuples, timestampLowerBound, timestampUpperBound);
+
+            //filter by predicate
+            filterByPredicate(dataTuples, subQuery.getPredicate());
+
             totalTupleGet += (System.currentTimeMillis() - tupleGetStart);
 
-            if (tuplesWithinTimestamp.size() != 0) {
-                tuples.addAll(tuplesWithinTimestamp);
-            }
+            //serialize
+            List<byte[]> serializedDataTuples = new ArrayList<>();
+            dataTuples.stream().forEach(p -> serializedDataTuples.add(schema.serializeTuple(p)));
 
+            tuples.addAll(serializedDataTuples);
         }
 
         long closeStart = System.currentTimeMillis();
@@ -264,19 +278,19 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt {
         blockIdToCacheUnit.put(blockId, cacheUnit);
     }
 
-    private ArrayList<byte[]> getTuplesWithinTimestamp(ArrayList<byte[]> tuples, Long timestampLowerBound, Long timestampUpperBound)
+    private void filterByTimestamp(List<DataTuple> tuples, Long timestampLowerBound, Long timestampUpperBound)
             throws IOException {
 
-        ArrayList<byte[]> tuplesWithinTimestamp = new ArrayList<>();
-        for (int i = 0; i < tuples.size(); ++i) {
-            DataTuple dataTuple = schema.deserializeToDataTuple(tuples.get(i));
-            Long timestamp = (Long) schema.getValue("timestamp", dataTuple);
-            if (timestampLowerBound <= timestamp && timestampUpperBound >= timestamp) {
-                tuplesWithinTimestamp.add(tuples.get(i));
-            }
-        }
+        tuples.stream().filter(p -> {
+            Long timestamp = (Long) schema.getValue("timestamp", p);
+            return timestampLowerBound <= timestamp && timestampUpperBound >= timestamp;
+        }).collect(Collectors.toList());
 
-        return tuplesWithinTimestamp;
+    }
+
+    private void filterByPredicate(List<DataTuple> tuples, Predicate<DataTuple> predicate) {
+        if (predicate != null)
+            tuples.stream().filter(predicate);
     }
 
     private BTreeLeafNode getLeafFromExternalStorage(String fileName, int offset)
@@ -446,4 +460,5 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt {
 
         return bytesToRead;
     }
+
 }

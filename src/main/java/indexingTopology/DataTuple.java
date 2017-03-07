@@ -20,4 +20,4 @@ public class DataTuple extends ArrayList<Object> implements Serializable {
             this.add(o);
         }
     }
-}
+    }

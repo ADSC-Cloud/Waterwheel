@@ -66,19 +66,17 @@ public class TexiTrajectoryTopology {
 
 //        builder.setSpout(TupleGenerator, new TexiTrajectoryGenerator(schema, generator, payloadSize, city), 1);
 //        builder.setSpout(TupleGenerator, new TexiTrajectoryGenerator(schemaWithTimestamp, generator, payloadSize, city), 16);
-        builder.setBolt(TupleGenerator, new Generator(schemaWithTimestamp, generator, payloadSize, city, mean, sigma), 14)
+
+        builder.setBolt(TupleGenerator, new Generator(schemaWithTimestamp, generator, payloadSize, city), 1)
                 .directGrouping(IndexerBolt, Streams.AckStream);
 
-        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher(schemaWithTimestamp, lowerBound, upperBound, enableLoadBalance, false), 14)
-//                .shuffleGrouping(TupleGenerator, Streams.IndexStream)
-                .localOrShuffleGrouping(TupleGenerator, Streams.IndexStream)
+        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher(schemaWithTimestamp, lowerBound, upperBound, enableLoadBalance, false), 1)
+                .shuffleGrouping(TupleGenerator, Streams.IndexStream)
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 //                .allGrouping(LogWriter, Streams.ThroughputRequestStream);
 
-
         builder.setBolt(IndexerBolt, new IngestionBolt(schemaWithTimestamp), 8)
-
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream) // direct grouping should be used.
                 .directGrouping(RangeQueryDecompositionBolt, Streams.TreeCleanStream)
@@ -86,7 +84,7 @@ public class TexiTrajectoryTopology {
         // And RangeQueryDecompositionBolt should emit to this stream via directEmit!!!!!
 
         builder.setBolt(RangeQueryDecompositionBolt, new QueryCoordinator(lowerBound, upperBound), 1)
-                .shuffleGrouping(ResultMergeBolt, Streams.NewQueryStream)
+                .shuffleGrouping(ResultMergeBolt, Streams.QueryFinishedStream)
                 .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSubQueryFinishStream)
                 .shuffleGrouping(MetadataServer, Streams.FileInformationUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
@@ -117,7 +115,6 @@ public class TexiTrajectoryTopology {
         Config conf = new Config();
         conf.setDebug(false);
         conf.setNumWorkers(4);
-
 
         conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
 //        conf.put(Config.SUPERVISOR_CHILDOPTS, "-Xmx2048m");

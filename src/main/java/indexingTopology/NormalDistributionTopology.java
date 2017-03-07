@@ -8,10 +8,6 @@ import indexingTopology.streams.Streams;
 import indexingTopology.bolt.*;
 import indexingTopology.spout.NormalDistributionGenerator;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 /**
  * Created by acelzj on 11/15/16.
  */
@@ -88,7 +84,7 @@ public class NormalDistributionTopology {
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream);
 
         builder.setBolt(RangeQueryDecompositionBolt, new QueryCoordinator(lowerBound, upperBound), 1)
-                .shuffleGrouping(ResultMergeBolt, Streams.NewQueryStream)
+                .shuffleGrouping(ResultMergeBolt, Streams.QueryFinishedStream)
                 .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSubQueryFinishStream)
                 .shuffleGrouping(MetadataServer, Streams.FileInformationUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)

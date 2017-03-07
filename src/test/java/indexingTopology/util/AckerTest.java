@@ -12,42 +12,42 @@ import static org.junit.Assert.*;
 public class AckerTest {
     @Test
     public void ackWithoutPendingIds() throws Exception {
-        Acker acker = new Acker();
-        acker.currentCount = new AtomicLong(5000);
+        BackPressure backPressure = new BackPressure();
+        backPressure.currentCount = new AtomicLong(5000);
 
-        acker.ack(10000L);
-        assertEquals(10000L, acker.currentCount.get());
-        assertEquals(0, acker.pendingIds.size());
+        backPressure.ack(10000L);
+        assertEquals(10000L, backPressure.currentCount.get());
+        assertEquals(0, backPressure.pendingIds.size());
 
-        acker.ack(20000L);
-        assertEquals(10000L, acker.currentCount.get());
-        assertEquals(1, acker.pendingIds.size());
+        backPressure.ack(20000L);
+        assertEquals(10000L, backPressure.currentCount.get());
+        assertEquals(1, backPressure.pendingIds.size());
 
-        acker.ack(25000L);
-        assertEquals(10000L, acker.currentCount.get());
-        assertEquals(2, acker.pendingIds.size());
+        backPressure.ack(25000L);
+        assertEquals(10000L, backPressure.currentCount.get());
+        assertEquals(2, backPressure.pendingIds.size());
 
-        acker.ack(15000L);
-        assertEquals(25000L, acker.currentCount.get());
-        assertEquals(0, acker.pendingIds.size());
+        backPressure.ack(15000L);
+        assertEquals(25000L, backPressure.currentCount.get());
+        assertEquals(0, backPressure.pendingIds.size());
     }
 
     @Test
     public void ackLeavingPendingIds() throws Exception {
-        Acker acker = new Acker();
-        acker.currentCount = new AtomicLong(5000);
+        BackPressure backPressure = new BackPressure();
+        backPressure.currentCount = new AtomicLong(5000);
 
-        acker.ack(10000L);
-        assertEquals(10000L, acker.currentCount.get());
-        assertEquals(0, acker.pendingIds.size());
+        backPressure.ack(10000L);
+        assertEquals(10000L, backPressure.currentCount.get());
+        assertEquals(0, backPressure.pendingIds.size());
 
-        acker.ack(25000L);
-        assertEquals(10000L, acker.currentCount.get());
-        assertEquals(1, acker.pendingIds.size());
+        backPressure.ack(25000L);
+        assertEquals(10000L, backPressure.currentCount.get());
+        assertEquals(1, backPressure.pendingIds.size());
 
-        acker.ack(15000L);
-        assertEquals(15000L, acker.currentCount.get());
-        assertEquals(1, acker.pendingIds.size());
+        backPressure.ack(15000L);
+        assertEquals(15000L, backPressure.currentCount.get());
+        assertEquals(1, backPressure.pendingIds.size());
 
     }
 
