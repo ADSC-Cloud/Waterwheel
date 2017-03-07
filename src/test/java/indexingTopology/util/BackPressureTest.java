@@ -1,5 +1,6 @@
 package indexingTopology.util;
 
+import org.apache.commons.math3.distribution.ZipfDistribution;
 import org.junit.Test;
 
 import java.util.concurrent.*;
@@ -120,5 +121,14 @@ public class BackPressureTest {
         }
         assertEquals(0L, status);
 
+    }
+
+    @Test
+    public void ZipKeyRangeTest() {
+        ZipfDistribution zipfDistribution = new ZipfDistribution(10000, 0.5);
+        long count = 100000;
+        while (count-- > 0) {
+            assertTrue(zipfDistribution.sample() != 0);
+        }
     }
 }

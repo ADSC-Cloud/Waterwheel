@@ -108,7 +108,7 @@ public class TexiTrajectoryTopology {
 
         Config conf = new Config();
         conf.setDebug(false);
-        conf.setNumWorkers(22);
+        conf.setNumWorkers(1);
 
         conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
 //        conf.put(Config.SUPERVISOR_CHILDOPTS, "-Xmx2048m");

@@ -27,10 +27,6 @@ import java.util.Random;
 public class Generator extends InputStreamReceiver {
 
 
-    private Random random;
-
-    private final DataSchema schema;
-
     private TrajectoryGenerator generator;
 
     private City city;
@@ -45,7 +41,6 @@ public class Generator extends InputStreamReceiver {
 
     public Generator(DataSchema schema, TrajectoryGenerator generator, int payloadSize, City city) {
         super(schema);
-        this.schema = schema;
         this.generator = generator;
         this.city = city;
         this.payloadSize = payloadSize;
@@ -62,11 +57,11 @@ public class Generator extends InputStreamReceiver {
                 while (true) {
                     try {
                         Car car = generator.generate();
-                        Integer key = distribution.sample();
+                        Integer key = distribution.sample() - 1;
                         final DataTuple dataTuple = new DataTuple(car.id, permutation.get(key).doubleValue(), new String(new char[payloadSize]), timestamp);
                         inputQueue.put(dataTuple);
                         ++timestamp;
-                    } catch (InterruptedException e) {
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
