@@ -3,6 +3,7 @@ package indexingTopology.bolt;
 import com.esotericsoftware.kryo.Kryo;
 import indexingTopology.DataTuple;
 import indexingTopology.config.TopologyConfig;
+import org.apache.storm.metric.internal.RateTracker;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -43,6 +44,8 @@ public class IngestionBolt<DataType extends Comparable> extends BaseRichBolt imp
 
     private long start;
 
+    private RateTracker rateTracker;
+
     public IngestionBolt(DataSchema schema) {
         this.schema = schema;
     }
@@ -66,6 +69,8 @@ public class IngestionBolt<DataType extends Comparable> extends BaseRichBolt imp
         observable.addObserver(this);
         start = System.currentTimeMillis();
         numTuples = 0;
+
+        rateTracker = new RateTracker(5 * 1000, 5);
     }
 
     @Override
@@ -82,6 +87,8 @@ public class IngestionBolt<DataType extends Comparable> extends BaseRichBolt imp
             Long tupleId = tuple.getLongByField("tupleId");
 
             int taskId = tuple.getIntegerByField("taskId");
+
+            rateTracker.notify(1);
 
             try {
                 inputQueue.put(dataTuple);
@@ -114,6 +121,8 @@ public class IngestionBolt<DataType extends Comparable> extends BaseRichBolt imp
             TimeDomain timeDomain = (TimeDomain) tuple.getValueByField("timeDomain");
             KeyDomain keyDomain = (KeyDomain) tuple.getValueByField("keyDomain");
             indexer.cleanTree(new Domain(keyDomain, timeDomain));
+        } else if (tuple.getSourceStreamId().equals(Streams.ThroughputRequestStream)) {
+            collector.emit(Streams.ThroughputReportStream, new Values(rateTracker.reportRate()));
         }
     }
 
@@ -128,6 +137,8 @@ public class IngestionBolt<DataType extends Comparable> extends BaseRichBolt imp
                 new Fields("timeDomain", "keyDomain"));
 
         outputFieldsDeclarer.declareStream(Streams.AckStream, new Fields("tupleId"));
+
+        outputFieldsDeclarer.declareStream(Streams.ThroughputReportStream, new Fields("throughput"));
     }
 
     @Override

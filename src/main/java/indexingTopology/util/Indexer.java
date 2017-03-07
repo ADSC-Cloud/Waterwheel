@@ -46,7 +46,7 @@ public class Indexer<DataType extends Number> extends Observable {
 
     private Thread inputProcessingThread;
 
-    private final static int numberOfIndexingThreads = 3;
+    private final static int numberOfIndexingThreads = 1;
 
     private final static int numberOfQueryThreads = 1;
 
@@ -279,21 +279,21 @@ public class Indexer<DataType extends Number> extends Observable {
 
                     FileSystemHandler fileSystemHandler = null;
 //                    String fileName = null;
-                    fileName = null;
+//                    fileName = null;
 
-                    writeTreeIntoChunk();
+//                    writeTreeIntoChunk();
 
-                    try {
-                        if (TopologyConfig.HDFSFlag) {
-                            fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
-                        } else {
-                            fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
-                        }
+//                    try {
+//                        if (TopologyConfig.HDFSFlag) {
+//                            fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
+//                        } else {
+//                            fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
+//                        }
                         fileName = "taskId" + taskId + "chunk" + chunkId;
-                        fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+//                        fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
 
 //                    KeyDomain keyDomain = new KeyDomain(minIndexValue, maxIndexValue);
                     keyDomain = new KeyDomain(minIndexValue, maxIndexValue);
@@ -334,6 +334,7 @@ public class Indexer<DataType extends Number> extends Observable {
 
                 inputQueue.drainTo(drainer, 256);
 
+
                 for (DataTuple dataTuple: drainer) {
                     try {
 //                        Double indexValue = tuple.getDoubleByField(indexField);
@@ -356,7 +357,7 @@ public class Indexer<DataType extends Number> extends Observable {
 //                        byte[] serializedTuple = schema.serializeTuple(tuple);
 //
 //                        Pair pair = new Pair(indexValue, serializedTuple);
-
+//
                         pendingQueue.put(dataTuple);
                     } catch (InterruptedException e) {
                         e.printStackTrace();

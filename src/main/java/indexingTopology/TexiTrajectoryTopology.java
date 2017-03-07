@@ -1,20 +1,13 @@
 package indexingTopology;
 
-import indexingTopology.config.TopologyConfig;
 import org.apache.storm.Config;
 import org.apache.storm.StormSubmitter;
 import org.apache.storm.topology.TopologyBuilder;
 import indexingTopology.streams.Streams;
 import indexingTopology.bolt.*;
-import indexingTopology.spout.TexiTrajectoryGenerator;
 import indexingTopology.util.texi.City;
 import indexingTopology.util.texi.TrajectoryGenerator;
 import indexingTopology.util.texi.TrajectoryUniformGenerator;
-
-import java.io.BufferedInputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Created by acelzj on 11/15/16.
@@ -33,12 +26,12 @@ public class TexiTrajectoryTopology {
     public static void main(String[] args) throws Exception {
 
         TopologyBuilder builder = new TopologyBuilder();
-        final int payloadSize = 10;
+        final int payloadSize = 1;
         DataSchema schema = new DataSchema();
 //        schema.addDoubleField("id");
         schema.addLongField("id");
-        schema.addDoubleField("zcode");
-//        schema.addIntField("zcode");
+//        schema.addDoubleField("zcode");
+        schema.addIntField("zcode");
         schema.addVarcharField("payload", payloadSize);
         schema.setPrimaryIndexField("zcode");
 
@@ -57,43 +50,49 @@ public class TexiTrajectoryTopology {
         City city = new City(x1, x2, y1, y2, partitions);
 
 
-        Double lowerBound = 0.0;
+//        Double lowerBound = 0.0;
 
 //        Double upperBound = (double)city.getMaxZCode();
-        Double upperBound = 1.0;
+//        Double upperBound = 200048.0;
+        Double sigma = 100000.0;
+        Double mean = 500000.0;
+        Double lowerBound = 0.0;
+        Double upperBound = mean;
 
         String path = "/home/acelzj";
 
-        boolean enableLoadBalance = false;
+        boolean enableLoadBalance = true;
 
 
 //        builder.setSpout(TupleGenerator, new TexiTrajectoryGenerator(schema, generator, payloadSize, city), 1);
 //        builder.setSpout(TupleGenerator, new TexiTrajectoryGenerator(schemaWithTimestamp, generator, payloadSize, city), 16);
-        builder.setBolt(TupleGenerator, new Generator(schemaWithTimestamp, generator, payloadSize, city), 22)
+        builder.setBolt(TupleGenerator, new Generator(schemaWithTimestamp, generator, payloadSize, city, mean, sigma), 14)
                 .directGrouping(IndexerBolt, Streams.AckStream);
 
-        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher(schemaWithTimestamp, lowerBound, upperBound, enableLoadBalance, false), 22)
-                .shuffleGrouping(TupleGenerator, Streams.IndexStream)
+        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher(schemaWithTimestamp, lowerBound, upperBound, enableLoadBalance, false), 14)
+//                .shuffleGrouping(TupleGenerator, Streams.IndexStream)
+                .localOrShuffleGrouping(TupleGenerator, Streams.IndexStream)
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
-                .allGrouping(MetadataServer, Streams.StaticsRequestStream)
-                .allGrouping(LogWriter, Streams.ThroughputRequestStream);
+                .allGrouping(MetadataServer, Streams.StaticsRequestStream);
+//                .allGrouping(LogWriter, Streams.ThroughputRequestStream);
 
 
-        builder.setBolt(IndexerBolt, new IngestionBolt(schemaWithTimestamp), 22)
+        builder.setBolt(IndexerBolt, new IngestionBolt(schemaWithTimestamp), 8)
 
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream) // direct grouping should be used.
-                .directGrouping(RangeQueryDecompositionBolt, Streams.TreeCleanStream);
+                .directGrouping(RangeQueryDecompositionBolt, Streams.TreeCleanStream)
+                .allGrouping(LogWriter, Streams.ThroughputRequestStream);
         // And RangeQueryDecompositionBolt should emit to this stream via directEmit!!!!!
 
-        builder.setBolt(RangeQueryDecompositionBolt, new QueryCoordinator(lowerBound, upperBound), 22)
+        builder.setBolt(RangeQueryDecompositionBolt, new QueryCoordinator(lowerBound, upperBound), 1)
                 .shuffleGrouping(ResultMergeBolt, Streams.NewQueryStream)
                 .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSubQueryFinishStream)
                 .shuffleGrouping(MetadataServer, Streams.FileInformationUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.TimestampUpdateStream);
 
-        builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner(schemaWithTimestamp), 22)
+        builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner(schemaWithTimestamp), 1)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream)
                 .directGrouping(ResultMergeBolt, Streams.SubQueryReceivedStream);
 //                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream); //make comparision with our method.
@@ -108,14 +107,17 @@ public class TexiTrajectoryTopology {
                 .shuffleGrouping(RangeQueryDispatcherBolt, Streams.StatisticsReportStream)
                 .shuffleGrouping(IndexerBolt, Streams.TimestampUpdateStream)
                 .shuffleGrouping(IndexerBolt, Streams.FileInformationUpdateStream)
-                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.EableRepartitionStream);
+                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.EnableRepartitionStream);
 
         builder.setBolt(LogWriter, new LogWriter(), 1)
-                .shuffleGrouping(RangeQueryDispatcherBolt, Streams.ThroughputReportStream);
+//                .shuffleGrouping(RangeQueryDispatcherBolt, Streams.ThroughputReportStream)
+                .shuffleGrouping(IndexerBolt, Streams.ThroughputReportStream)
+                .shuffleGrouping(MetadataServer, Streams.LoadBalanceStream);
 
         Config conf = new Config();
         conf.setDebug(false);
-        conf.setNumWorkers(22);
+        conf.setNumWorkers(4);
+
 
         conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
 //        conf.put(Config.SUPERVISOR_CHILDOPTS, "-Xmx2048m");

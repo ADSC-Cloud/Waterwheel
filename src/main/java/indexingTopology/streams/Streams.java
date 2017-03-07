@@ -19,10 +19,11 @@ public class Streams {
     public static final String IntervalPartitionUpdateStream = "IntervalPartitionUpdateStream";
     public static final String StaticsRequestStream = "StaticsRequestStream";
     public static final String TreeCleanStream = "TreeCleanStream";
-    public static final String EableRepartitionStream = "EableRepartitionStream";
+    public static final String EnableRepartitionStream = "EnableRepartitionStream";
     public static final String AckStream = "AckStream";
     public static final String ThroughputRequestStream = "ThroughputRequestStream";
     public static final String ThroughputReportStream = "ThroughputReportStream";
     public static final String SubQueryReceivedStream = "SubQueryReceivedStream";
+    public static final String LoadBalanceStream = "LoadBalanceStream";
 }
 

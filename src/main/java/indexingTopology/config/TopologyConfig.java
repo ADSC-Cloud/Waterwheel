@@ -32,7 +32,7 @@ public class TopologyConfig {
 
     public static final int PENDING_QUEUE_CAPACITY = 1024;
 
-    public static final int MAX_PENDING = 100000;
+    public static final int MAX_PENDING = 10000;
 
     public static final int OFFSET_LENGTH = 4;
 

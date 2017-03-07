@@ -118,10 +118,10 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
 
         pendingQueue = new LinkedBlockingQueue<>();
 
-        QueryThread = new Thread(new QueryRunnable());
-        QueryThread.start();
+//        QueryThread = new Thread(new QueryRunnable());
+//        QueryThread.start();
 
-        createQueryHandlingThread();
+//        createQueryHandlingThread();
     }
 
     public void execute(Tuple tuple) {
@@ -187,7 +187,7 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
                 updateStaleBalancedPartition(keyRangeLowerBound, keyRangeUpperBound);
                 if (isPartitionDeletable()) {
                     balancedPartitionToBeDeleted = null;
-                    collector.emit(Streams.EableRepartitionStream, new Values("Partition can be enabled!"));
+                    collector.emit(Streams.EnableRepartitionStream, new Values("Partition can be enabled!"));
                 }
             }
 
@@ -235,7 +235,7 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
 
         outputFieldsDeclarer.declareStream(Streams.TreeCleanStream, new Fields("keyDomain", "timeDomain"));
 
-        outputFieldsDeclarer.declareStream(Streams.EableRepartitionStream, new Fields("Repartition"));
+        outputFieldsDeclarer.declareStream(Streams.EnableRepartitionStream, new Fields("Repartition"));
     }
 
     private void handleQuery(Query<DataType> query) {

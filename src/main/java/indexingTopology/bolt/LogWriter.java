@@ -32,6 +32,8 @@ public class LogWriter extends BaseRichBolt {
 
     int totalReceivedMessages;
 
+    boolean throughputRequestEnable;
+
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         this.collector = outputCollector;
@@ -42,7 +44,9 @@ public class LogWriter extends BaseRichBolt {
 
         throughput = 0.0;
 
-        numDispatchers = topologyContext.getComponentTasks("DispatcherBolt").size();
+        numDispatchers = topologyContext.getComponentTasks("IndexerBolt").size();
+
+        throughputRequestEnable = true;
 
         Thread throughputRequestThread = new Thread(new ThroughputRequestSendingRunnable());
         throughputRequestThread.start();
@@ -52,15 +56,20 @@ public class LogWriter extends BaseRichBolt {
     public void execute(Tuple tuple) {
         if (tuple.getSourceStreamId().equals(Streams.ThroughputReportStream)) {
             ++numReceivedMessages;
-            throughput += tuple.getDoubleByField("throughput");
+            Double realTimeThroughput = tuple.getDoubleByField("throughput");
+            System.out.println("task id " + tuple.getSourceTask() + " " + realTimeThroughput);
+            throughput += realTimeThroughput;
             if (numReceivedMessages == numDispatchers) {
                 ++totalReceivedMessages;
 //                if (totalReceivedMessages == 60) {
                 LOG.info("Throughput : " + throughput);
                 throughput = 0.0;
                 numReceivedMessages = 0;
+                throughputRequestEnable = true;
 //                }
             }
+        } else if (tuple.getSourceStreamId().equals(Streams.LoadBalanceStream)) {
+            System.out.println("Load balance!!!");
         }
     }
 
@@ -73,7 +82,7 @@ public class LogWriter extends BaseRichBolt {
 
         @Override
         public void run() {
-            final int sleepTimeInSecond = 1;
+            final int sleepTimeInSecond = 10;
             while (true) {
                 try {
                     Thread.sleep(sleepTimeInSecond * 1000);
@@ -81,7 +90,10 @@ public class LogWriter extends BaseRichBolt {
                     e.printStackTrace();
                 }
 
-                collector.emit(Streams.ThroughputRequestStream, new Values("Throughput Request"));
+
+                if (throughputRequestEnable) {
+                    collector.emit(Streams.ThroughputRequestStream, new Values("Throughput Request"));
+                }
             }
         }
 

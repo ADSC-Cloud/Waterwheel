@@ -14,7 +14,6 @@ import org.apache.storm.tuple.Values;
 import indexingTopology.metadata.FileMetaData;
 import indexingTopology.metadata.FilePartitionSchemaManager;
 import indexingTopology.streams.Streams;
-import javafx.util.Pair;
 import org.apache.zookeeper.KeeperException;
 
 import java.util.*;
@@ -84,6 +83,8 @@ public class MetadataServer extends BaseRichBolt {
 
         intervalToPartitionMapping = balancedPartition.getIntervalToPartitionMapping();
 
+        System.out.println(intervalToPartitionMapping);
+
         numberOfStaticsReceived = 0;
 
         indexTaskToTimestampMapping = new HashMap<>();
@@ -152,22 +153,30 @@ public class MetadataServer extends BaseRichBolt {
                 this.histogram.merge(histogram);
                 ++numberOfStaticsReceived;
                 if (numberOfStaticsReceived == numberOfDispatchers) {
-                    Double skewnessFactor = getSkewnessFactor(this.histogram);
+//                    Double skewnessFactor = getSkewnessFactor(this.histogram);
 //                    System.out.println("skewness factor " + skewnessFactor);
+                    RepartitionManager manager = new RepartitionManager(numberOfPartitions, intervalToPartitionMapping,
+                            this.histogram);
+                    Double skewnessFactor = manager.getSkewnessFactor();
                     if (skewnessFactor > TopologyConfig.LOAD_BALANCE_THRESHOLD) {
-//                        System.out.println("skewness detected!!!");
-                        RepartitionManager manager = new RepartitionManager(numberOfPartitions, intervalToPartitionMapping,
-                                histogram.getHistogram(), getTotalWorkLoad(histogram));
+                        System.out.println("skewness detected!!!");
+                        System.out.println(this.histogram.getHistogram());
+//                        List<Long> workLoads = getWorkLoads(histogram);
+//                        RepartitionManager manager = new RepartitionManager(numberOfPartitions, intervalToPartitionMapping,
+//                                histogram.getHistogram(), getTotalWorkLoad(workLoads));
                         this.intervalToPartitionMapping = manager.getRepartitionPlan();
-//                        System.out.println("after repartition " + intervalToPartitionMapping);
+                        System.out.println("after repartition " + intervalToPartitionMapping);
                         this.balancedPartition = new BalancedPartition(numberOfPartitions, lowerBound, upperBound,
                                 intervalToPartitionMapping);
                         repartitionEnabled = false;
                         collector.emit(Streams.IntervalPartitionUpdateStream,
 //                                new Values(this.balancedPartition.getIntervalToPartitionMapping()));
                                 new Values(this.balancedPartition));
+
+                        collector.emit(Streams.LoadBalanceStream, new Values("newIntervalPartition"));
                     } else {
-//                        System.out.println("skewness is not detected!!!");
+                        System.out.println("skewness is not detected!!!");
+                        System.out.println(histogram.getHistogram());
                     }
 
                     numberOfStaticsReceived = 0;
@@ -210,7 +219,7 @@ public class MetadataServer extends BaseRichBolt {
             indexTaskToTimestampMapping.put(taskId, endTimestamp);
 
             collector.emit(Streams.TimestampUpdateStream, new Values(taskId, keyDomain, timeDomain));
-        } else if (tuple.getSourceStreamId().equals(Streams.EableRepartitionStream)) {
+        } else if (tuple.getSourceStreamId().equals(Streams.EnableRepartitionStream)) {
             repartitionEnabled = true;
             System.out.println("repartition has been enabled!!!");
         }
@@ -237,30 +246,102 @@ public class MetadataServer extends BaseRichBolt {
 
         outputFieldsDeclarer.declareStream(Streams.StaticsRequestStream,
                 new Fields("Statics Request"));
+
+
+        outputFieldsDeclarer.declareStream(Streams.LoadBalanceStream, new Fields("loadBalance"));
     }
 
 
     private double getSkewnessFactor(Histogram histogram) {
-        Long sum = getTotalWorkLoad(histogram);
-        Long maxWorkload = getMaxWorkLoad(histogram);
+
+        List<Long> workLoads = getWorkLoads(histogram);
+
+        Long sum = getTotalWorkLoad(workLoads);
+//        Long sum = getTotalWorkLoad(histogram);
+//        Long maxWorkload = getMaxWorkLoad(histogram);
+        Long maxWorkload = getMaxWorkLoad(workLoads);
         double averageLoad = sum / (double) numberOfPartitions;
 
         return maxWorkload / averageLoad;
     }
 
-    private Long getTotalWorkLoad(Histogram histogram) {
+
+    public List<Long> getWorkLoads(Histogram histogram) {
+        Map<Integer, Integer> intervalToPartitionMapping = balancedPartition.getIntervalToPartitionMapping();
+
+        List<Long> wordLoads = new ArrayList<>();
+
+        int partitionId = 0;
+
+        long tmpWorkload = 0;
+
+        List<Long> workLoads = histogram.histogramToList();
+
+        for (int intervalId = 0; intervalId < TopologyConfig.NUMBER_OF_INTERVALS; ++intervalId) {
+            if (intervalToPartitionMapping.get(intervalId) != partitionId) {
+                wordLoads.add(tmpWorkload);
+                tmpWorkload = 0;
+                partitionId = intervalToPartitionMapping.get(intervalId);
+            }
+
+            tmpWorkload += workLoads.get(intervalId);
+        }
+
+        wordLoads.add(tmpWorkload);
+
+        return wordLoads;
+    }
+
+//    public Long getTotalWorkLoad(Histogram histogram) {
+//        long ret = 0;
+//
+//        for(long i : histogram.histogramToList()) {
+//            ret += i;
+//        }
+//
+//        return ret;
+//    }
+
+    public Long getTotalWorkLoad(List<Long> workLoads) {
         long ret = 0;
 
-        for(long i : histogram.histogramToList()) {
+        for(long i : workLoads) {
             ret += i;
         }
 
         return ret;
     }
 
-    private Long getMaxWorkLoad(Histogram histogram) {
-        long ret = Long.MIN_VALUE;
-        for(long i : histogram.histogramToList()) {
+//    private Long getMaxWorkLoad(Histogram histogram) {
+//        long ret = Long.MIN_VALUE;
+//        for(long i : histogram.histogramToList()) {
+//            ret = Math.max(ret, i);
+//        }
+//        Map<Integer, Integer> intervalToPartitionMapping = balancedPartition.getIntervalToPartitionMapping();
+//
+//        int partitionId = 0;
+
+//        long tmpWorkload = 0;
+//
+//        List<Long> workLoads = histogram.histogramToList();
+//
+//        for (int intervalId = 0; intervalId < TopologyConfig.NUMBER_OF_INTERVALS; ++intervalId) {
+//            if (intervalToPartitionMapping.get(intervalId) != partitionId) {
+//                ret = Math.max(ret, tmpWorkload);
+//                tmpWorkload = 0;
+//                partitionId = intervalToPartitionMapping.get(intervalId);
+//            }
+//
+//            tmpWorkload += workLoads.get(intervalId);
+//        }
+//
+//        ret = Math.max(ret, tmpWorkload);
+//        return ret;
+//    }
+    private Long getMaxWorkLoad(List<Long> workLoads) {
+        long ret = 0;
+
+        for(long i : workLoads) {
             ret = Math.max(ret, i);
         }
 

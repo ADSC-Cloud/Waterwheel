@@ -9,6 +9,7 @@ import indexingTopology.util.Permutation;
 import indexingTopology.util.texi.Car;
 import indexingTopology.util.texi.City;
 import indexingTopology.util.texi.TrajectoryGenerator;
+import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.ZipfDistribution;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -17,6 +18,7 @@ import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
+import org.apache.storm.utils.Utils;
 
 import java.util.Map;
 import java.util.Random;
@@ -46,21 +48,48 @@ public class Generator extends BaseRichBolt {
 
     private int taskId;
 
-    private ZipfDistribution distribution;
+//    private ZipfDistribution distribution;
+    private NormalDistribution distribution;
 
     private Permutation permutation;
 
-    public Generator(DataSchema schema, TrajectoryGenerator generator, int payloadSize, City city) {
+    private int sleepTimeInSeconds = 30;
+
+    private double offset = 80000;
+
+    private double mean;
+
+    private double sigma;
+
+    public Generator(DataSchema schema, TrajectoryGenerator generator, int payloadSize, City city, double mean, double sigma) {
         this.schema = schema;
         this.generator = generator;
         this.city = city;
         this.payloadSize = payloadSize;
+
+        this.mean = mean;
+        this.sigma = sigma;
 //        RandomGenerator randomGenerator = new Well19937c();
 //        randomGenerator.setSeed(1000);
 //        this.keyGenerator = new ZipfKeyGenerator(200048, 0.5, randomGenerator);
-        distribution = new ZipfDistribution(200048, 0.5);
-        permutation = new Permutation(200048);
 //        random = new Random(1000);
+    }
+
+    private void createDistributionChangingThread() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    Utils.sleep(sleepTimeInSeconds * 1000);
+//                    permutation.shuffle();
+                    if (random.nextDouble() < 0.5) {
+                        distribution = new NormalDistribution(mean, sigma - offset);
+                    } else {
+                        distribution = new NormalDistribution(mean, sigma + offset);
+                    }
+                }
+            }
+        }).start();
     }
 
     @Override
@@ -69,6 +98,12 @@ public class Generator extends BaseRichBolt {
         acker = new Acker(TopologyConfig.EMIT_NUM);
         tupleId = 0L;
         taskId = topologyContext.getThisTaskId();
+
+        random = new Random(2048);
+
+//        distribution = new ZipfDistribution(200048, 0.5);
+        distribution = new NormalDistribution(mean, sigma);
+//        permutation = new Permutation(200048);
         Thread generationThread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -80,9 +115,14 @@ public class Generator extends BaseRichBolt {
 //                    }
                     if (tupleId < acker.currentCount.get() + TopologyConfig.MAX_PENDING) {
                         Car car = generator.generate();
-                        Integer key = distribution.sample();
+//                        Integer key = distribution.sample() - 1;
 //                        DataTuple dataTuple = new DataTuple(car.id, random.nextDouble(), new String(new char[payloadSize]), timestamp);
-                        DataTuple dataTuple = new DataTuple(car.id, permutation.get(key).doubleValue(), new String(new char[payloadSize]), timestamp);
+                        Integer key = (int) distribution.sample();
+//                        System.out.println("sampled key " + key);
+//                        key = key % (int) (mean + 3 * sigma);
+//                        System.out.println("key " + key);
+                        DataTuple dataTuple = new DataTuple(car.id, Math.abs(key) % (int) mean, new String(new char[payloadSize]), timestamp);
+//                        DataTuple dataTuple = new DataTuple(car.id, key.doubleValue(), new String(new char[payloadSize]), timestamp);
 //                        System.out.println(tupleId + " has been emitted!!!");
                         collector.emit(Streams.IndexStream, new Values(schema.serializeTuple(dataTuple), tupleId, taskId));
 
@@ -94,6 +134,8 @@ public class Generator extends BaseRichBolt {
             }
         });
         generationThread.start();
+
+        createDistributionChangingThread();
     }
 
 

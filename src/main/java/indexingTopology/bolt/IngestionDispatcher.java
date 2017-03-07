@@ -60,6 +60,8 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
             targetTasks.addAll(topologyContext.getComponentTasks(componentId));
         }
 
+//        System.out.println(targetTasks);
+
         rateTracker = new RateTracker(5 * 1000, 5);
 
         numberOfPartitions = targetTasks.size();
@@ -80,7 +82,13 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
             balancedPartition.record(indexValue);
 
             int partitionId = balancedPartition.getPartitionId(indexValue);
+
+//            System.out.println("partition id " + partitionId);
+
             int taskId = targetTasks.get(partitionId);
+
+
+//            System.out.println("Task id " + taskId);
 
             rateTracker.notify(1);
 
@@ -92,7 +100,8 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
         } else if (tuple.getSourceStreamId().equals(Streams.IntervalPartitionUpdateStream)){
             System.out.println("partition has been updated!!!");
 //            Map<Integer, Integer> intervalToPartitionMapping = (Map) tuple.getValueByField("newIntervalPartition");
-            balancedPartition = (BalancedPartition) tuple.getValueByField("newIntervalPartition");
+//            balancedPartition = (BalancedPartition) tuple.getValueByField("newIntervalPartition");
+            balancedPartition.setIntervalToPartitionMapping(((BalancedPartition) tuple.getValueByField("newIntervalPartition")).getIntervalToPartitionMapping());
 //            System.out.println(intervalToPartitionMapping);
 //            balancedPartition.setIntervalToPartitionMapping(intervalToPartitionMapping);
         } else if (tuple.getSourceStreamId().equals(Streams.StaticsRequestStream)){

@@ -1,5 +1,7 @@
 package indexingTopology.util;
 
+import indexingTopology.config.TopologyConfig;
+import org.apache.commons.math3.distribution.ZipfDistribution;
 import org.junit.Test;
 
 import java.util.Map;
