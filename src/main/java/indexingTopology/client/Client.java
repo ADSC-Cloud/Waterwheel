@@ -1,5 +1,7 @@
 package indexingTopology.client;
 
+import indexingTopology.data.DataTuple;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -45,7 +47,12 @@ public class Client {
 
     public Response temporalRangeQuery(Number lowKey, Number highKey, long startTime, long endTime) throws IOException,
             ClassNotFoundException {
-        objectOutputStream.writeObject(new ClientQueryRequest<Number>(lowKey, highKey, startTime, endTime));
+        objectOutputStream.writeObject(new QueryRequest<Number>(lowKey, highKey, startTime, endTime));
+        return (Response) objectInputStream.readObject();
+    }
+
+    public Response append(DataTuple dataTuple) throws IOException, ClassNotFoundException {
+        objectOutputStream.writeObject(new AppendRequest(dataTuple));
         return (Response) objectInputStream.readObject();
     }
 
@@ -59,6 +66,9 @@ public class Client {
         Response response = client.temporalRangeQuery(100, 100, 0, 1000);
         System.out.println("Query one is submitted!");
         System.out.println(response);
+
+        response = client.append(new DataTuple("tuple 1#", 100, 200, 300.3));
+        System.out.print(response);
     }
 
 }
