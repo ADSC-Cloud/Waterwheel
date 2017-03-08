@@ -1,5 +1,6 @@
 package indexingTopology;
 
+import indexingTopology.data.DataSchema;
 import org.apache.storm.Config;
 import org.apache.storm.StormSubmitter;
 import org.apache.storm.topology.TopologyBuilder;

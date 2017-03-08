@@ -2,7 +2,7 @@ package indexingTopology.util;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
-import indexingTopology.DataSchema;
+import indexingTopology.data.DataSchema;
 import indexingTopology.exception.UnsupportedGenericException;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;

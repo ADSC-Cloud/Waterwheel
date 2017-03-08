@@ -1,5 +1,6 @@
 package indexingTopology;
 
+import indexingTopology.data.DataSchema;
 import org.apache.storm.Config;
 import org.apache.storm.StormSubmitter;
 import org.apache.storm.topology.TopologyBuilder;
@@ -81,21 +82,23 @@ public class TexiTrajectoryTopology {
 
         builder.setBolt(RangeQueryDecompositionBolt, new QueryCoordinator(lowerBound, upperBound), 1)
                 .shuffleGrouping(ResultMergeBolt, Streams.QueryFinishedStream)
+                .shuffleGrouping(ResultMergeBolt, Streams.PartialQueryResultDeliveryStream)
                 .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSubQueryFinishStream)
                 .shuffleGrouping(MetadataServer, Streams.FileInformationUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.TimestampUpdateStream);
 
         builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner(schemaWithTimestamp), 1)
-                .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream)
-                .directGrouping(ResultMergeBolt, Streams.SubQueryReceivedStream);
-//                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream); //make comparision with our method.
+//                .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream)
+                .directGrouping(ResultMergeBolt, Streams.SubQueryReceivedStream)
+                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream); //make comparision with our method.
 
         builder.setBolt(ResultMergeBolt, new ResultMerger(schemaWithTimestamp), 1)
                 .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSystemQueryStream)
                 .shuffleGrouping(IndexerBolt, Streams.BPlusTreeQueryStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryInformationStream)
-                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryInformationStream);
+                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryInformationStream)
+                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.PartialQueryResultReceivedStream);
 
         builder.setBolt(MetadataServer, new MetadataServer(lowerBound, upperBound), 1)
                 .shuffleGrouping(RangeQueryDispatcherBolt, Streams.StatisticsReportStream)

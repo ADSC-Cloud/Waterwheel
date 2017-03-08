@@ -73,10 +73,10 @@ public class BackPressure {
         while (tupleId.get() >= currentCount.get() + maxPending) {
             try {
                 Thread.sleep(1);
-                if(count++ % 100 == 0) {
-                    System.out.println(String.format("TupleId: %d, currentCount: %d, maxPending: %d", tupleId.get(),
-                            currentCount.get(), maxPending));
-                }
+//                if(count++ % 100 == 0) {
+//                    System.out.println(String.format("TupleId: %d, currentCount: %d, maxPending: %d", tupleId.get(),
+//                            currentCount.get(), maxPending));
+//                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

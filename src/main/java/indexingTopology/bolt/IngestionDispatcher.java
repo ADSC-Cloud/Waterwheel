@@ -1,6 +1,6 @@
 package indexingTopology.bolt;
 
-import indexingTopology.DataTuple;
+import indexingTopology.data.DataTuple;
 import org.apache.storm.metric.internal.RateTracker;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -9,7 +9,7 @@ import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
-import indexingTopology.DataSchema;
+import indexingTopology.data.DataSchema;
 import indexingTopology.streams.Streams;
 import indexingTopology.util.BalancedPartition;
 import indexingTopology.util.Histogram;

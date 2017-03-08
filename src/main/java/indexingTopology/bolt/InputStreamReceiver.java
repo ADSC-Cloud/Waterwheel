@@ -1,15 +1,10 @@
 package indexingTopology.bolt;
 
-import indexingTopology.DataSchema;
-import indexingTopology.DataTuple;
+import indexingTopology.data.DataSchema;
+import indexingTopology.data.DataTuple;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.streams.Streams;
 import indexingTopology.util.BackPressure;
-import indexingTopology.util.Permutation;
-import indexingTopology.util.texi.Car;
-import indexingTopology.util.texi.City;
-import indexingTopology.util.texi.TrajectoryGenerator;
-import org.apache.commons.math3.distribution.ZipfDistribution;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -19,7 +14,6 @@ import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /**

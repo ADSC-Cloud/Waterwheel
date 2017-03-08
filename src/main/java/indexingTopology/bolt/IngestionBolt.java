@@ -1,7 +1,6 @@
 package indexingTopology.bolt;
 
-import com.esotericsoftware.kryo.Kryo;
-import indexingTopology.DataTuple;
+import indexingTopology.data.DataTuple;
 import indexingTopology.config.TopologyConfig;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -9,7 +8,7 @@ import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
-import indexingTopology.DataSchema;
+import indexingTopology.data.DataSchema;
 import indexingTopology.streams.Streams;
 import indexingTopology.util.*;
 import javafx.util.Pair;

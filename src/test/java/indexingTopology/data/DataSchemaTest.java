@@ -1,15 +1,18 @@
-package indexingTopology;
+package indexingTopology.data;
 
+import indexingTopology.data.DataSchema;
+import indexingTopology.data.DataTuple;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.*;
 
 /**
- * Created by acelzj on 20/2/17.
+ * Created by robert on 8/2/17.
  */
 public class DataSchemaTest {
+
+
 
     @Test
     public void SchemaTest() {
@@ -58,5 +61,4 @@ public class DataSchemaTest {
         assertEquals( 16, schema.getTupleLength());
         assertEquals(8, schema.getIndexType().length);
     }
-
 }

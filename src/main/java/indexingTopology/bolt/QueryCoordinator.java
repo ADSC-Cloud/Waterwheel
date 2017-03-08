@@ -1,5 +1,6 @@
 package indexingTopology.bolt;
 
+import indexingTopology.data.PartialQueryResult;
 import indexingTopology.util.*;
 import javafx.util.Pair;
 import org.apache.storm.task.OutputCollector;
@@ -200,6 +201,17 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
             balancedPartition = newBalancedPartition;
 //            System.out.println("partition has been updated in decompostion bolt!!! ");
 //            balancedPartition.setIntervalToPartitionMapping(intervalToPartitionMapping);
+        } else if (tuple.getSourceStreamId().equals(Streams.PartialQueryResultDeliveryStream)) {
+            long queryId = tuple.getLong(0);
+            PartialQueryResult partialQueryResult = (PartialQueryResult) tuple.getValue(1);
+
+            // logic for handling results.
+            System.out.println("Received a partialResult for " + queryId + " " + partialQueryResult.dataTuples.size() + " elements.");
+            if(!partialQueryResult.getEOFFlag()) {
+                collector.emit(Streams.PartialQueryResultReceivedStream, new Values(queryId));
+            } else {
+                System.out.println(String.format("All query results are collected for Query[%d] !!!!", queryId));
+            }
         }
     }
 
@@ -236,6 +248,8 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
         outputFieldsDeclarer.declareStream(Streams.TreeCleanStream, new Fields("keyDomain", "timeDomain"));
 
         outputFieldsDeclarer.declareStream(Streams.EableRepartitionStream, new Fields("Repartition"));
+
+        outputFieldsDeclarer.declareStream(Streams.PartialQueryResultReceivedStream, new Fields("queryId"));
     }
 
     private void handleQuery(Query<DataType> query) {
@@ -257,7 +271,8 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
 //            System.out.println("size " + fileNames.size());
 //        }
 
-        if (fileNames.size() < 64) {
+        if (fileNames.size() < -1) {
+
             collector.emit(Streams.FileSystemQueryInformationStream, new Values(queryId, 0));
         } else {
 
@@ -272,11 +287,11 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
             sendSubqueriesByshuffleGrouping(subQuery);
 //             */
 //            /*task queue
-                try {
-                    taskQueue.put(subQuery);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+//                try {
+//                    taskQueue.put(subQuery);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
 //              */
 
                 /*our method
@@ -285,7 +300,7 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
             }
 
 //            /* task queue
-            sendSubqueriesFromTaskQueue();
+//            sendSubqueriesFromTaskQueue();
 //            */
 
             /*our method
@@ -305,7 +320,7 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
                         Query query = pendingQueue.take();
                         concurrentQueriesSemaphore.acquire();
                         handleQuery(query);
-                    } catch (InterruptedException e) {
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
@@ -333,7 +348,7 @@ public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
                     Long endTimestamp = Long.MAX_VALUE;
 
                     pendingQueue.put(new Query(queryId, leftKey, rightKey, startTimestamp, endTimestamp));
-                } catch (InterruptedException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
 

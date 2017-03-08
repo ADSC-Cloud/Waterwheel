@@ -1,18 +1,15 @@
 package indexingTopology.util;
 
 
-import indexingTopology.DataSchema;
 import indexingTopology.config.TopologyConfig;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.filter.PrefixFilter;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 
 

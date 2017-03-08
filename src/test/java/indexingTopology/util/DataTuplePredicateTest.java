@@ -1,8 +1,7 @@
 package indexingTopology.util;
 
-import indexingTopology.DataSchema;
-import indexingTopology.DataTuple;
-import org.apache.commons.lang.SerializationUtils;
+import indexingTopology.data.DataSchema;
+import indexingTopology.data.DataTuple;
 import org.junit.Test;
 
 import java.util.ArrayList;

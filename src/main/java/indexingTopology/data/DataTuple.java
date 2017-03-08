@@ -1,4 +1,4 @@
-package indexingTopology;
+package indexingTopology.data;
 
 import java.io.Serializable;
 import java.util.ArrayList;

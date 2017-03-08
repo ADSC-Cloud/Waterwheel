@@ -1,10 +1,8 @@
 package indexingTopology.client;
 
-import indexingTopology.DataTuple;
+import indexingTopology.data.DataTuple;
+import indexingTopology.data.PartialQueryResult;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.net.Socket;
 
 /**
@@ -28,10 +26,10 @@ public class FackServerHandle extends ServerHandle {
         dataTuple1.add(200);
         dataTuple1.add(6.34);
 
-        QueryResult queryResult = new QueryResult();
-        queryResult.add(dataTuple);
-        queryResult.add(dataTuple1);
-        return queryResult;
+        PartialQueryResult particalQueryResult = new PartialQueryResult();
+        particalQueryResult.add(dataTuple);
+        particalQueryResult.add(dataTuple1);
+        return particalQueryResult;
     }
 
     @Override

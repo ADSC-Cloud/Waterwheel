@@ -1,17 +1,14 @@
 package indexingTopology.spout;
 
-import indexingTopology.DataTuple;
+import indexingTopology.data.DataTuple;
 import indexingTopology.streams.Streams;
-import indexingTopology.util.generator.ZipfKeyGenerator;
 import org.apache.commons.math3.distribution.ZipfDistribution;
-import org.apache.commons.math3.random.RandomGenerator;
-import org.apache.commons.math3.random.Well19937c;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichSpout;
 import org.apache.storm.tuple.Fields;
-import indexingTopology.DataSchema;
+import indexingTopology.data.DataSchema;
 import indexingTopology.util.texi.Car;
 import indexingTopology.util.texi.City;
 import indexingTopology.util.texi.TrajectoryGenerator;
@@ -20,10 +17,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by acelzj on 7/27/16.
