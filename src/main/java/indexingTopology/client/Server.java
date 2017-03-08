@@ -3,6 +3,7 @@ package indexingTopology.client;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
@@ -11,16 +12,19 @@ import java.util.concurrent.Executors;
 /**
  * Created by robert on 2/3/17.
  */
-public class Server {
+public class Server<T extends ServerHandle> {
 
-    int port;
+    private int port;
 
-    ServerSocket serverSocket;
+    private ServerSocket serverSocket;
 
-    ExecutorService executorService;
+    private ExecutorService executorService;
 
-    public Server(int port) {
+    private Class<ServerHandle> SomeServerHandle;
+
+    public Server(int port, Class<ServerHandle> SomeServerHandle) {
         this.port = port;
+        this.SomeServerHandle = SomeServerHandle;
     }
 
     void startDaemon() throws IOException{
@@ -28,7 +32,17 @@ public class Server {
         executorService = Executors.newCachedThreadPool();
         while (true) {
             Socket client = serverSocket.accept();
-            executorService.submit(new FackServerHandle(client));
+            try {
+                executorService.submit(SomeServerHandle.getDeclaredConstructor(Socket.class).newInstance(client));
+            } catch (NoSuchMethodException e) {
+                e.printStackTrace();
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            }
         }
 //        while(true) {
 //            Socket client = serverSocket.accept();
@@ -64,7 +78,7 @@ public class Server {
 
 
     public static void main(String[] args) throws Exception {
-        final Server server = new Server(10000);
+        final Server server = new Server(10000, FackServerHandle.class);
         server.startDaemon();
     }
 }
