@@ -1,6 +1,6 @@
 package indexingTopology.client;
 
-import indexingTopology.DataTuple;
+import indexingTopology.data.DataTuple;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

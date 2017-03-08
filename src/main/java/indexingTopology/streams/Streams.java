@@ -25,5 +25,7 @@ public class Streams {
     public static final String ThroughputReportStream = "ThroughputReportStream";
     public static final String SubQueryReceivedStream = "SubQueryReceivedStream";
     public static final String LoadBalanceStream = "LoadBalanceStream";
+    public static final String PartialQueryResultDeliveryStream = "PartialQueryResultDeliveryStream";
+    public static final String PartialQueryResultReceivedStream = "PartialQueryResultReceivedStream";
 }
 

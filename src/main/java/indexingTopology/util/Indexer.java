@@ -2,8 +2,8 @@ package indexingTopology.util;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Output;
-import indexingTopology.DataSchema;
-import indexingTopology.DataTuple;
+import indexingTopology.data.DataSchema;
+import indexingTopology.data.DataTuple;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.filesystem.FileSystemHandler;
 import indexingTopology.filesystem.HdfsFileSystemHandler;

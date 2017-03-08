@@ -1,7 +1,8 @@
 package indexingTopology.bolt;
 
-import indexingTopology.DataSchema;
-import indexingTopology.DataTuple;
+
+import indexingTopology.data.DataSchema;
+import indexingTopology.data.DataTuple;
 import indexingTopology.util.Permutation;
 import indexingTopology.util.texi.Car;
 import indexingTopology.util.texi.City;

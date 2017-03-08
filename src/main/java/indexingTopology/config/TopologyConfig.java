@@ -14,7 +14,7 @@ public class TopologyConfig {
 
     public static final int TASK_QUEUE_CAPACITY = 10000;
 
-    public static final int NUMBER_OF_INTERVALS = 100;
+    public static int NUMBER_OF_INTERVALS = 100;
 
     public static final int BTREE_ORDER = 64;
 
@@ -22,7 +22,7 @@ public class TopologyConfig {
 
     public static boolean HDFSFlag = true;
 
-    public static String dataDir = "/home/wangli";
+    public static String dataDir = "/home/lzj";
 
     public static String dataFileDir = "/test_data/uniform_data.txt";
 

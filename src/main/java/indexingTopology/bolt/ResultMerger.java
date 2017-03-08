@@ -1,5 +1,6 @@
 package indexingTopology.bolt;
 
+import indexingTopology.data.PartialQueryResult;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -7,7 +8,7 @@ import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
-import indexingTopology.DataSchema;
+import indexingTopology.data.DataSchema;
 import indexingTopology.streams.Streams;
 import indexingTopology.util.FileScanMetrics;
 
@@ -28,6 +29,8 @@ public class ResultMerger extends BaseRichBolt {
 
     Map<Long, FileScanMetrics> queryIdToFileScanMetrics;
 
+    Map<Long, List<PartialQueryResult>> queryIdToPartialQueryResults;
+
     Map<Long, Map<Integer, List<FileScanMetrics>>> queryIdToTaskIdToTimeMapping;
 
     DataSchema schema;
@@ -47,6 +50,7 @@ public class ResultMerger extends BaseRichBolt {
         queryIdToFileScanMetrics = new HashMap<Long, FileScanMetrics>();
 
         queryIdToTaskIdToTimeMapping = new HashMap<>();
+        queryIdToPartialQueryResults = new HashMap<>();
 
         collector = outputCollector;
     }
@@ -60,7 +64,7 @@ public class ResultMerger extends BaseRichBolt {
 //            System.out.println("queryId" + queryId + " number of tasks to search " + numberOfTasksToSearch);
             queryIdToNumberOfTasksToSearch.put(queryId, numberOfTasksToSearch);
 
-            if (isQueryFinshed(queryId)) {
+            if (isQueryFinished(queryId)) {
 //                printTimeInformation(queryId);
                 sendNewQueryPermit(queryId);
                 removeQueryIdFromMappings(queryId);
@@ -73,23 +77,20 @@ public class ResultMerger extends BaseRichBolt {
 //            System.out.println("queryId" + queryId + " number of files to scan " + numberOfFilesToScan);
             queryIdToNumberOfFilesToScan.put(queryId, numberOfFilesToScan);
 
-            if (isQueryFinshed(queryId)) {
+            // It is possible in a rare case where the query information arrives later than the query result.
+            if (isQueryFinished(queryId)) {
 //                printTimeInformation(queryId);
-                sendNewQueryPermit(queryId);
-                removeQueryIdFromMappings(queryId);
+                finalizeQuery(queryId);
             }
 
         } else if (tuple.getSourceStreamId().equals(Streams.BPlusTreeQueryStream) ||
                 tuple.getSourceStreamId().equals(Streams.FileSystemQueryStream)) {
             long queryId = tuple.getLong(0);
+            System.out.println(String.format("A subquery for Query[%d] is completed!", queryId));
 
-            Integer counter = queryIdToCounter.get(queryId);
-            if (counter == null) {
-                counter = 1;
-            } else {
-                counter = counter + 1;
-            }
-            ArrayList<byte[]> serializedTuples = (ArrayList) tuple.getValue(1);
+            Integer counter = queryIdToCounter.getOrDefault(queryId, 0);
+            counter++;
+            queryIdToCounter.put(queryId, counter);
 
 //            if (tuple.getSourceStreamId().equals(Streams.FileSystemQueryStream)) {
 //                for (int i = 0; i < serializedTuples.size(); ++i) {
@@ -125,21 +126,32 @@ public class ResultMerger extends BaseRichBolt {
                 collector.emitDirect(taskId, Streams.SubQueryReceivedStream, new Values("received"));
             }
 
-            Integer numberOfTuples = queryIdToNumberOfTuples.get(queryId);
-            if (numberOfTuples == null)
-                numberOfTuples = 0;
-            numberOfTuples += serializedTuples.size();
-            queryIdToNumberOfTuples.put(queryId, numberOfTuples);
-            queryIdToCounter.put(queryId, counter);
+            ArrayList<byte[]> serializedTuples = (ArrayList) tuple.getValue(1);
 
-            if (isQueryFinshed(queryId)) {
+            handleNewPartialQueryResult(queryId, serializedTuples);
+
+            if (isQueryFinished(queryId)) {
 //                System.out.println(tuple.getSourceStreamId());
 //                printTimeInformation(queryId);
-                sendNewQueryPermit(queryId);
-                removeQueryIdFromMappings(queryId);
+                finalizeQuery(queryId);
             }
 
+        } else if (tuple.getSourceStreamId().equals(Streams.PartialQueryResultReceivedStream)) {
+            long queryId = tuple.getLong(0);
+            sendAPartialQueryResult(queryId);
         }
+    }
+
+    private void handleNewPartialQueryResult(Long queryId, ArrayList<byte[]> serializedTuples) {
+        PartialQueryResult partialQueryResult = new PartialQueryResult(Integer.MAX_VALUE);
+        serializedTuples.forEach(r -> partialQueryResult.add(schema.deserializeToDataTuple(r)));
+
+        List<PartialQueryResult> results = queryIdToPartialQueryResults.computeIfAbsent(queryId, k->new ArrayList<>());
+        results.add(partialQueryResult);
+
+        Integer numberOfTuples = queryIdToNumberOfTuples.getOrDefault(queryId, 0);
+        numberOfTuples += serializedTuples.size();
+        queryIdToNumberOfTuples.put(queryId, numberOfTuples);
     }
 
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
@@ -150,9 +162,11 @@ public class ResultMerger extends BaseRichBolt {
                 , new Fields("queryId", "New Query", "metrics", "numberOfFilesToScan"));
 
         outputFieldsDeclarer.declareStream(Streams.SubQueryReceivedStream, new Fields("receivedMessage"));
+
+        outputFieldsDeclarer.declareStream(Streams.PartialQueryResultDeliveryStream, new Fields("queryId", "result"));
     }
 
-    private boolean isQueryFinshed(Long queryId) {
+    private boolean isQueryFinished(Long queryId) {
         if (queryIdToNumberOfFilesToScan.get(queryId) != null &&
                 queryIdToNumberOfTasksToSearch.get(queryId) != null) {
             int numberOfFilesToScan = queryIdToNumberOfFilesToScan.get(queryId);
@@ -167,8 +181,44 @@ public class ResultMerger extends BaseRichBolt {
         return false;
     }
 
+
+    private void finalizeQuery(Long queryId) {
+
+        mergeQueryResults(queryId);
+        sendAPartialQueryResult(queryId);
+        sendNewQueryPermit(queryId);
+        removeQueryIdFromMappings(queryId);
+    }
+
+    private void sendAPartialQueryResult(Long queryId) {
+        List<PartialQueryResult> results = queryIdToPartialQueryResults.get(queryId);
+        if (results != null && !results.isEmpty()) {
+            PartialQueryResult result = results.get(0);
+            if (results.size() == 1) {
+                result.setEOFflag();
+            }
+            collector.emit(Streams.PartialQueryResultDeliveryStream, new Values(queryId, result));
+            results.remove(0);
+            if (results.size() == 0) {
+                queryIdToPartialQueryResults.remove(queryId);
+            }
+        }
+
+    }
+
+    private void mergeQueryResults(long queryId) {
+        // This is where aggregation happens.
+
+
+        final int unitSize = 4 * 1024;
+        List<PartialQueryResult> queryResults = queryIdToPartialQueryResults.get(queryId);
+        List<PartialQueryResult> compactedResults = PartialQueryResult.Compact(queryResults, unitSize);
+        queryIdToPartialQueryResults.put(queryId, compactedResults);
+
+    }
+
     private void sendNewQueryPermit(Long queryId) {
-        collector.emit(Streams.QueryFinishedStream, new Values(queryId, new String("New query can be executed"),
+        collector.emit(Streams.QueryFinishedStream, new Values(queryId, "New query can be executed",
                         null, 0));
     }
 

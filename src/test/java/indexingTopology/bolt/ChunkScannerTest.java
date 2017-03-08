@@ -2,19 +2,16 @@ package indexingTopology.bolt;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
-import indexingTopology.DataSchema;
-import indexingTopology.DataTuple;
+import indexingTopology.data.DataSchema;
+import indexingTopology.data.DataTuple;
 import indexingTopology.cache.*;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.filesystem.FileSystemHandler;
 import indexingTopology.filesystem.HdfsFileSystemHandler;
 import indexingTopology.filesystem.LocalFileSystemHandler;
-import indexingTopology.streams.Streams;
 import indexingTopology.util.*;
 import javafx.util.Pair;
-import org.apache.storm.tuple.Values;
 
-import javax.xml.validation.Schema;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;

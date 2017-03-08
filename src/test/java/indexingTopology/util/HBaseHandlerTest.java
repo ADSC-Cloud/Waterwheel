@@ -17,6 +17,7 @@ import static org.junit.Assert.*;
  * Created by acelzj on 27/2/17.
  */
 public class HBaseHandlerTest {
+    /*
     @Test
     public void search() throws Exception {
         HBaseHandler hBaseHandler = new HBaseHandler();
@@ -77,5 +78,5 @@ public class HBaseHandlerTest {
 
         assertEquals(true, admin.tableExists(table.getTableName()));
     }
-
+    */
 }

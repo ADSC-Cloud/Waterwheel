@@ -1,6 +1,6 @@
 package indexingTopology.util;
 
-import indexingTopology.DataTuple;
+import indexingTopology.data.DataTuple;
 
 import java.io.Serializable;
 import java.util.function.Predicate;

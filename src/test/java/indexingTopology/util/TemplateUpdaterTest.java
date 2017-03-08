@@ -1,6 +1,6 @@
 package indexingTopology.util;
 
-import indexingTopology.DataSchema;
+import indexingTopology.data.DataSchema;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
 import org.junit.Test;
@@ -56,8 +56,6 @@ public class TemplateUpdaterTest {
 
 //        bTree.printBtree();
 
-        System.out.println(bTree.getSkewnessFactor());
-
         TemplateUpdater templateUpdater = new TemplateUpdater(order);
 
         Long start = System.currentTimeMillis();
@@ -80,7 +78,6 @@ public class TemplateUpdaterTest {
             leaf = (BTreeLeafNode) leaf.rightSibling;
         }
 
-        System.out.println(newTree.getSkewnessFactor());
 
         assertEquals(total, numberOfTuples);
     }
@@ -125,8 +122,6 @@ public class TemplateUpdaterTest {
         }
 
 
-        System.out.println(bTree.getSkewnessFactor());
-
 //        bTree.printBtree();
 
         TemplateUpdater templateUpdater = new TemplateUpdater(order);
@@ -148,8 +143,6 @@ public class TemplateUpdaterTest {
             assertEquals(duplicatedTime * leaf.getKeyCount(), leaf.getAtomicKeyCount());
             leaf = (BTreeLeafNode) leaf.rightSibling;
         }
-
-        System.out.println(newTree.getSkewnessFactor());
 
     }
 

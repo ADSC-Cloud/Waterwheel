@@ -44,9 +44,9 @@ public class RepartitionManager {
             loadsBeforeRepartition[bin % nbins] += workloads.get(ball);
         }
 //
-        for (int i = 0; i < loadsBeforeRepartition.length; ++i) {
-            System.out.println("bin " + i + " : " + loadsBeforeRepartition[i]);
-        }
+//        for (int i = 0; i < loadsBeforeRepartition.length; ++i) {
+//            System.out.println("bin " + i + " : " + loadsBeforeRepartition[i]);
+//        }
 
 
 
@@ -68,7 +68,7 @@ public class RepartitionManager {
 
         }
 
-        System.out.println(newBallToBinMapping);
+//        System.out.println(newBallToBinMapping);
 
 
 //        Map<Integer, Integer> newBallToBinMapping = new HashMap<>();
@@ -107,10 +107,10 @@ public class RepartitionManager {
             loads[bin % nbins] += workloads.get((int) ball);
         }
 
-        System.out.println("Repartition has been finished!");
-        for (int i = 0; i < loads.length; ++i) {
-            System.out.println("bin " + i + " : " + loads[i]);
-        }
+//        System.out.println("Repartition has been finished!");
+//        for (int i = 0; i < loads.length; ++i) {
+//            System.out.println("bin " + i + " : " + loads[i]);
+//        }
 
         return newBallToBinMapping;
     }

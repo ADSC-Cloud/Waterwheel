@@ -11,6 +11,7 @@ import static org.junit.Assert.*;
  * Created by acelzj on 24/2/17.
  */
 public class ZookeeperHandlerTest {
+    /*
     @Test
     public void create() throws Exception {
         ZookeeperHandler handler = new ZookeeperHandler();
@@ -42,7 +43,7 @@ public class ZookeeperHandlerTest {
 
         int numberOfMetadata = input.readInt();
 
-        System.out.println(numberOfMetadata);
+//        System.out.println(numberOfMetadata);
 
         FilePartitionSchemaManager filePartitionSchemaManager = new FilePartitionSchemaManager();
 
@@ -61,5 +62,5 @@ public class ZookeeperHandlerTest {
 //        System.out.println(filePartitionSchemaManager.search(0, 0.1, 0, Long.MAX_VALUE).size());
 //        System.out.println(filePartitionSchemaManager.search(0, 0.01, 0, Long.MAX_VALUE).size());
     }
-
+    */
 }

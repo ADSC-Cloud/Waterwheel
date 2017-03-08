@@ -1,13 +1,11 @@
 package indexingTopology.bolt;
 
 import com.esotericsoftware.kryo.io.Output;
-import indexingTopology.DataSchema;
+import indexingTopology.data.DataSchema;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.util.*;
 import indexingTopology.util.texi.*;
 import javafx.util.Pair;
-import org.apache.commons.math3.random.RandomGenerator;
-import org.apache.commons.math3.random.Well19937c;
 import org.apache.storm.tuple.Values;
 import org.apache.log4j.Logger;
 
@@ -17,7 +15,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /**

@@ -2,8 +2,8 @@ package indexingTopology.bolt;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
-import indexingTopology.DataSchema;
-import indexingTopology.DataTuple;
+import indexingTopology.data.DataSchema;
+import indexingTopology.data.DataTuple;
 import javafx.util.Pair;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -22,7 +22,6 @@ import indexingTopology.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.crypto.Data;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;

@@ -1,10 +1,7 @@
 package indexingTopology.util;
 
-import indexingTopology.DataSchema;
-import indexingTopology.DataTuple;
-import javafx.util.Pair;
-import org.apache.storm.task.OutputCollector;
-import org.apache.storm.tuple.Tuple;
+import indexingTopology.data.DataSchema;
+import indexingTopology.data.DataTuple;
 
 import java.util.concurrent.ArrayBlockingQueue;
 

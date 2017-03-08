@@ -96,7 +96,7 @@ public class KryoTemplateSerializerTest {
     public void testTemplateAndLeaveDeserialization() throws IOException, UnsupportedGenericException {
 
 
-        System.out.println("Total " + Runtime.getRuntime().totalMemory());
+//        System.out.println("Total " + Runtime.getRuntime().totalMemory());
 
         final int payloadSize = 10;
 
@@ -142,7 +142,7 @@ public class KryoTemplateSerializerTest {
                 indexedData.insert(i, bytes);
             }
 
-            System.out.println("Used : " + (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()));
+//            System.out.println("Used : " + (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()));
 
 //            indexedData.printBtree();
 
@@ -180,7 +180,7 @@ public class KryoTemplateSerializerTest {
 
             String fileName = null;
 
-            System.out.println("Before read " + Runtime.getRuntime().freeMemory());
+//            System.out.println("Before read " + Runtime.getRuntime().freeMemory());
 
             try {
                 if (TopologyConfig.HDFSFlag) {
@@ -202,7 +202,7 @@ public class KryoTemplateSerializerTest {
             long totalStart = System.currentTimeMillis();
 
             long start = System.currentTimeMillis();
-            fileSystemHandler.openFile("/", "taskId48chunk9");
+            fileSystemHandler.openFile("/", "taskId0chunk0");
             fileOpenTime += System.currentTimeMillis() - start;
 
             int fileLength = 64902601;
@@ -221,22 +221,22 @@ public class KryoTemplateSerializerTest {
 
             byte[] templateInBytes = new byte[length];
 
-            System.out.println("length " + length);
+//            System.out.println("length " + length);
             fileSystemHandler.readBytesFromFile(4, templateInBytes);
 
             input = new Input(templateInBytes);
 
             indexedData = kryo.readObject(input, BTree.class);
 
-            System.out.println("template read time " + (System.currentTimeMillis() - templateReadStart));
+//            System.out.println("template read time " + (System.currentTimeMillis() - templateReadStart));
 
 //            indexedData.printBtree();
 
 //            BTreeNode mostLeftNode = indexedData.findInnerNodeShouldContainKey(0.0);
 //            BTreeNode mostRightNode = indexedData.findInnerNodeShouldContainKey(120.0);
 
-            List<Integer> offsets = indexedData.getOffsetsOfLeafNodesShouldContainKeys(0.0
-                    , 1.0);
+            List<Integer> offsets = indexedData.getOffsetsOfLeafNodesShouldContainKeys(0
+                    , 1);
 
             List<byte[]> list = new ArrayList<>();
 
@@ -259,7 +259,6 @@ public class KryoTemplateSerializerTest {
             int tempLength = input1.readInt();
             int totalLength = tempLength + (lastOffset - offsets.get(0));
 
-            System.out.println("template length " + tempLength);
 
             List<BTreeLeafNode> leaves = new ArrayList<>();
 
@@ -267,33 +266,23 @@ public class KryoTemplateSerializerTest {
 
             fileSystemHandler.readBytesFromFile(startOffset + length + 4, bytesToRead);
 
-            System.out.println("leaf read time " + (System.currentTimeMillis() - leafReadStart));
 
             Input input2 = new Input(bytesToRead);
 
             System.out.println(offsets);
 
             for (Integer offset : offsets) {
-
-//                System.out.println(input2.readInt());
-
-//                System.out.println(input2.position());
-
-
-//                System.out.println(input2.position());
-
                 input2.setPosition(input2.position() + 4);
 
                 BTreeLeafNode leafNode = kryo.readObject(input2, BTreeLeafNode.class);
 
                 long tuplgGetStart = System.currentTimeMillis();
 
-                list.addAll(leafNode.getTuplesWithinKeyRange(0.0, 1.0));
+                list.addAll(leafNode.getTuplesWithinKeyRange(0, 1));
 
                 getTupleTime += (System.currentTimeMillis() - tuplgGetStart);
             }
 
-            System.out.println("tuple size " + list.size());
 
 
 //            for (Integer offset : offsets) {
@@ -335,19 +324,20 @@ public class KryoTemplateSerializerTest {
             fileSystemHandler.closeFile();
             fileOpenTime += (System.currentTimeMillis() - start);
 
-            System.out.println("total " + (System.currentTimeMillis() - totalStart));
+//            System.out.println("total " + (System.currentTimeMillis() - totalStart));
 
 
-            System.out.println("file open time " + fileOpenTime);
-            System.out.println("get tuple time " + getTupleTime);
-            System.out.println("leaf read time " + leaveReadTime);
+//            System.out.println("file open time " + fileOpenTime);
+//            System.out.println("get tuple time " + getTupleTime);
+//            System.out.println("leaf read time " + leaveReadTime);
+//
+//            System.out.println("after read " + Runtime.getRuntime().freeMemory());
 
-            System.out.println("after read " + Runtime.getRuntime().freeMemory());
-
-            assertEquals(1261073, list.size());
+            assertEquals(2, list.size());
 //        }
     }
 
+    /*
     @Test
     public void testTemplateUpdateDeserialization() throws UnsupportedGenericException, IOException {
         final int payloadSize = 10;
@@ -361,7 +351,7 @@ public class KryoTemplateSerializerTest {
         TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
         City city = new City(x1, x2, y1, y2, partitions);
 
-        int numTuples = TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK;
+        int numTuples = 1024;
         Long timestamp = 0L;
 
         int chunkId = 0;
@@ -370,17 +360,20 @@ public class KryoTemplateSerializerTest {
 
         BTree indexedData = new BTree(TopologyConfig.BTREE_ORDER);
 
+        Random random = new Random();
+
         while (chunkId <= 1) {
             for (int i = 0; i < numTuples; ++i) {
                 List<Object> values = new ArrayList<>();
                 Car car = generator.generate();
                 values.add((double) car.id);
-                values.add((double) city.getZCodeForALocation(car.x, car.y));
+                Double key = random.nextDouble();
+                values.add(key);
                 values.add(new String(new char[payloadSize]));
                 values.add(timestamp);
                 byte[] bytes = null;
                 bytes = serializeIndexValue(values);
-                indexedData.insert((double) car.id, bytes);
+                indexedData.insert(key, bytes);
             }
 
             byte[] leavesInBytes = indexedData.serializeLeaves();
@@ -431,19 +424,19 @@ public class KryoTemplateSerializerTest {
 
             indexedData = indexedData.clone();
 
-            indexedData.clearPayload();
+//            indexedData.clearPayload();
 
 //            indexedData.printBtree();
 
             for (String fileName : fileNames) {
 
-                byte[] temlateLengthInBytes = new byte[4];
+                byte[] templateLengthInBytes = new byte[4];
 
                 fileSystemHandler.openFile("/", fileName);
 
-                fileSystemHandler.readBytesFromFile(temlateLengthInBytes);
+                fileSystemHandler.readBytesFromFile(templateLengthInBytes);
 
-                Input input = new Input(temlateLengthInBytes);
+                Input input = new Input(templateLengthInBytes);
 
                 int length = input.readInt();
 
@@ -458,8 +451,8 @@ public class KryoTemplateSerializerTest {
 //                BTreeNode mostLeftNode = bTree.findInnerNodeShouldContainKey(994.0);
 //                BTreeNode mostRightNode = bTree.findInnerNodeShouldContainKey(1000.0);
 
-                List<Integer> offsets = indexedData.getOffsetsOfLeafNodesShouldContainKeys(0.0
-                        , 1.0);
+                List<Integer> offsets = bTree.getOffsetsOfLeafNodesShouldContainKeys(0.0, 1.0
+                        );
 
 //                System.out.println(offsets);
 
@@ -483,7 +476,7 @@ public class KryoTemplateSerializerTest {
 
                     BTreeLeafNode leaf = kryo.readObject(input, BTreeLeafNode.class);
 
-                    ArrayList<byte[]> tuples = leaf.getTuplesWithinKeyRange(994.0, 994.0);
+                    ArrayList<byte[]> tuples = leaf.getTuplesWithinKeyRange(0.0, 1.0);
 //                ArrayList<byte[]> tuples = leaf.searchAndGetTuples(994.0);
 
 //                    for (int j = 0; j < tuples.size(); ++j) {
@@ -498,6 +491,7 @@ public class KryoTemplateSerializerTest {
         }
 
     }
+    */
 
     public byte[] serializeIndexValue(List<Object> values) throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();

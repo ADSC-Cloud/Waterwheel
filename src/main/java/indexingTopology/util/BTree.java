@@ -360,6 +360,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		BTreeInnerNode<TKey> currentNode = (BTreeInnerNode) this.root;
 		while (currentNode.children.size() > 0) {
 			BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChildShouldContainKey(key);
+			node.print();
 			currentNode = (BTreeInnerNode) node;
 		}
 		return (BTreeNode) currentNode;

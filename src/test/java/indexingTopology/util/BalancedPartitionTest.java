@@ -1,6 +1,7 @@
 package indexingTopology.util;
 
 import indexingTopology.config.TopologyConfig;
+import junit.framework.TestCase;
 import org.apache.commons.math3.distribution.ZipfDistribution;
 import org.junit.Test;
 
@@ -11,10 +12,26 @@ import static org.junit.Assert.*;
 /**
  * Created by acelzj on 12/17/16.
  */
-public class BalancedPartitionTest {
+public class BalancedPartitionTest extends TestCase{
+
+    int numberOfInterval;
+
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        numberOfInterval = TopologyConfig.NUMBER_OF_INTERVALS;
+        TopologyConfig.NUMBER_OF_INTERVALS = 10;
+    }
+
+    @Override
+    protected void tearDown() throws Exception {
+        super.tearDown();
+        TopologyConfig.NUMBER_OF_INTERVALS = numberOfInterval;
+    }
 
     @Test
     public void testGetIntervalIdNegativeLowerBound() throws Exception {
+
 
         //The test passes when the NUMBER_OF_INTERVALS in the TopologyConfig is set to 10
         BalancedPartition partition = new BalancedPartition(4, -500.0, 500.0);
@@ -41,7 +58,7 @@ public class BalancedPartitionTest {
     }
 
     @Test
-    public void getIntervalIdNegativeBounds() {
+    public void testGetIntervalIdNegativeBounds() {
 
         //The test passes when the NUMBER_OF_INTERVALS in the TopologyConfig is set to 10
         BalancedPartition partition = new BalancedPartition(4, -2000.0, -1000.0);
@@ -68,7 +85,7 @@ public class BalancedPartitionTest {
     }
 
     @Test
-    public void getIntervalIdPositiveBounds() {
+    public void testGetIntervalIdPositiveBounds() {
 
         //The test passes when the NUMBER_OF_INTERVALS in the TopologyConfig is set to 10
         BalancedPartition partition = new BalancedPartition(4, 0.0, 1000.0);
@@ -95,7 +112,7 @@ public class BalancedPartitionTest {
     }
 
     @Test
-    public void getBalancedPartitionPlanPositiveBoundsWithOneTask() throws Exception {
+    public void testGetBalancedPartitionPlanPositiveBoundsWithOneTask() throws Exception {
 
         //The test passes when the NUMBER_OF_INTERVALS in the TopologyConfig is set to 10
 
@@ -115,7 +132,7 @@ public class BalancedPartitionTest {
     }
 
     @Test
-    public void getBalancedPartitionPlanPositiveBoundsWithMultipleTasks() throws Exception {
+    public void testGetBalancedPartitionPlanPositiveBoundsWithMultipleTasks() throws Exception {
 
         //The test passes when the NUMBER_OF_INTERVALS in the TopologyConfig is set to 10
 
@@ -135,7 +152,7 @@ public class BalancedPartitionTest {
     }
 
     @Test
-    public void getBalancedPartitionPlanNegativeLowerBoundWithMultipleTasks() throws Exception {
+    public void testGetBalancedPartitionPlanNegativeLowerBoundWithMultipleTasks() throws Exception {
 
         //The test passes when the NUMBER_OF_INTERVALS in the TopologyConfig is set to 10
 
@@ -155,7 +172,7 @@ public class BalancedPartitionTest {
     }
 
     @Test
-    public void getBalancedPartitionPlanNegativeLowerBoundWithOneTask() throws Exception {
+    public void testGetBalancedPartitionPlanNegativeLowerBoundWithOneTask() throws Exception {
 
         //The test passes when the NUMBER_OF_INTERVALS in the TopologyConfig is set to 10
 
@@ -176,7 +193,7 @@ public class BalancedPartitionTest {
 
 
     @Test
-    public void getBalancedPartitionPlanNegativeBoundsWithMultipleTasks() throws Exception {
+    public void testGetBalancedPartitionPlanNegativeBoundsWithMultipleTasks() throws Exception {
 
         //The test passes when the NUMBER_OF_INTERVALS in the TopologyConfig is set to 10
 
@@ -197,7 +214,7 @@ public class BalancedPartitionTest {
 
 
     @Test
-    public void getBalancedPartitionPlanNegativeBoundsWithOneTask() throws Exception {
+    public void testGetBalancedPartitionPlanNegativeBoundsWithOneTask() throws Exception {
 
         //The test passes when the NUMBER_OF_INTERVALS in the TopologyConfig is set to 10
 
