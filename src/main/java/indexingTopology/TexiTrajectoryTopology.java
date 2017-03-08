@@ -57,7 +57,7 @@ public class TexiTrajectoryTopology {
         Double sigma = 100000.0;
         Double mean = 500000.0;
         Double lowerBound = 0.0;
-        Double upperBound = mean;
+        Double upperBound = 2 * mean;
 
         String path = "/home/acelzj";
 

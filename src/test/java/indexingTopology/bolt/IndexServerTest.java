@@ -213,7 +213,6 @@ public class IndexServerTest {
 //            randomGenerator.setSeed(1000);
 //            KeyGenerator keyGenerator = new ZipfKeyGenerator( 200048, 0.3, randomGenerator);
 //            KeyGenerator keyGenerator = new UniformKeyGenerator();
-//            TrajectoryGenerator generator = new TrajectoryGaussGenerator(10000, x1, x2, y1, y2);
             City city = new City(x1, x2, y1, y2, partitions);
             while (true) {
                 if (inputExhausted) {
