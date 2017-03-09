@@ -61,14 +61,17 @@ public class Client {
 
 
     public static void main(String[] args) throws Exception {
-        Client client = new Client("localhost", 10000);
+        Client client = new Client("localhost", 10001);
         client.connect();
-//        Response response = client.temporalRangeQuery(100, 100, 0, 1000);
-//        System.out.println("Query one is submitted!");
-//        System.out.println(response);
+        Response response = client.temporalRangeQuery(0.0, 10000.0, 0, Long.MAX_VALUE );
+        System.out.println("Query one is submitted!");
+        System.out.println(response);
 
-        Response response = client.append(new DataTuple(100L, 1, "payload", 300L));
-        System.out.print(response);
+
+//        Client client = new Client("localhost", 10000);
+//        client.connect();
+//        Response response = client.append(new DataTuple(100L, 200.3, "payload", System.currentTimeMillis()));
+//        System.out.print(response);
     }
 
 }

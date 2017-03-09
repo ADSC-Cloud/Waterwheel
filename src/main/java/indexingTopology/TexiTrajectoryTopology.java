@@ -35,8 +35,8 @@ public class TexiTrajectoryTopology {
         DataSchema schema = new DataSchema();
 //        schema.addDoubleField("id");
         schema.addLongField("id");
-//        schema.addDoubleField("zcode");
-        schema.addIntField("zcode");
+        schema.addDoubleField("zcode");
+//        schema.addIntField("zcode");
         schema.addVarcharField("payload", payloadSize);
         schema.setPrimaryIndexField("zcode");
 
@@ -60,13 +60,12 @@ public class TexiTrajectoryTopology {
 //        Double upperBound = (double)city.getMaxZCode();
 //        Double upperBound = 200048.0;
         Double sigma = 100000.0;
-        Double mean = 500000.0;
+        Double mean = 5000.0;
         Double lowerBound = 0.0;
         Double upperBound = 2 * mean;
 
-        String path = "/home/acelzj";
 
-        boolean enableLoadBalance = false;
+        final boolean enableLoadBalance = false;
 
 
 //        builder.setSpout(TupleGenerator, new TexiTrajectoryGenerator(schema, generator, payloadSize, city), 1);
@@ -91,7 +90,8 @@ public class TexiTrajectoryTopology {
                 .allGrouping(LogWriter, Streams.ThroughputRequestStream);
         // And RangeQueryDecompositionBolt should emit to this stream via directEmit!!!!!
 
-        builder.setBolt(RangeQueryDecompositionBolt, new QueryCoordinator(lowerBound, upperBound), 1)
+//        builder.setBolt(RangeQueryDecompositionBolt, new QueryCoordinatorWithQueryGenerator<>(lowerBound, upperBound), 1)
+        builder.setBolt(RangeQueryDecompositionBolt, new QueryCoordinatorWithQueryReceiverServer<>(lowerBound, upperBound, 10001), 1)
                 .shuffleGrouping(ResultMergeBolt, Streams.QueryFinishedStream)
                 .shuffleGrouping(ResultMergeBolt, Streams.PartialQueryResultDeliveryStream)
                 .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSubQueryFinishStream)

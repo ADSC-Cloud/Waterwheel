@@ -7,7 +7,6 @@ import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 
@@ -27,7 +26,7 @@ public class InputStreamReceiverServer extends InputStreamReceiver {
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         super.prepare(map, topologyContext, outputCollector);
-        server = new Server(port, BoltServerHandle.class, new Class[]{BlockingQueue.class}, inputQueue);
+        server = new Server(port, AppendServerHandle.class, new Class[]{BlockingQueue.class}, inputQueue);
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -41,11 +40,11 @@ public class InputStreamReceiverServer extends InputStreamReceiver {
 
     }
 
-    public static class BoltServerHandle extends ServerHandle implements AppendRequestHandle {
+    public static class AppendServerHandle extends ServerHandle implements AppendRequestHandle {
 
         BlockingQueue<DataTuple> inputQueue;
 
-        public BoltServerHandle(BlockingQueue<DataTuple> inputQueue) {
+        public AppendServerHandle(BlockingQueue<DataTuple> inputQueue) {
             this.inputQueue = inputQueue;
         }
 

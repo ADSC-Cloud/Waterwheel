@@ -197,11 +197,17 @@ public class ResultMerger extends BaseRichBolt {
             if (results.size() == 1) {
                 result.setEOFflag();
             }
+            System.out.println("A partial query result is sent to coordinator from merger.");
             collector.emit(Streams.PartialQueryResultDeliveryStream, new Values(queryId, result));
             results.remove(0);
             if (results.size() == 0) {
                 queryIdToPartialQueryResults.remove(queryId);
             }
+        } else {
+            PartialQueryResult result = new PartialQueryResult();
+            result.setEOFflag();
+            System.out.println("A empty partial query result is sent to coordinator from merger.");
+            collector.emit(Streams.PartialQueryResultDeliveryStream, new Values(queryId, result));
         }
 
     }

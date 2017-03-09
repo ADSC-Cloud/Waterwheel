@@ -51,7 +51,7 @@ public abstract class ServerHandle implements Runnable{
     void handleInputObject(Object object) {
         try {
             Method method = this.getClass().getMethod("handle", object.getClass());
-            method.invoke(this,object);
+            method.invoke(this, object);
         } catch (Exception e) {
             e.printStackTrace();
         }
