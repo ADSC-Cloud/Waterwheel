@@ -40,38 +40,18 @@ public class Client {
         client.close();
     }
 
-    public Response queryAPINumberOne() throws IOException, ClassNotFoundException {
-        objectOutputStream.writeObject("string");
-        return (Response)objectInputStream.readObject();
-    }
-
-    public Response temporalRangeQuery(Number lowKey, Number highKey, long startTime, long endTime) throws IOException,
-            ClassNotFoundException {
-        objectOutputStream.writeObject(new QueryRequest<Number>(lowKey, highKey, startTime, endTime));
-        return (Response) objectInputStream.readObject();
-    }
-
-    public Response append(DataTuple dataTuple) throws IOException, ClassNotFoundException {
-        objectOutputStream.writeObject(new AppendRequest(dataTuple));
-        return (Response) objectInputStream.readObject();
-    }
-
-
-
-
-
     public static void main(String[] args) throws Exception {
-        Client client = new Client("localhost", 10001);
-        client.connect();
-        Response response = client.temporalRangeQuery(0.0, 10000.0, 0, Long.MAX_VALUE );
+        QueryClient queryClient = new QueryClient("localhost", 10001);
+        queryClient.connect();
+        Response queryResponse = queryClient.temporalRangeQuery(0.0, 10000.0, 0, Long.MAX_VALUE );
         System.out.println("Query one is submitted!");
-        System.out.println(response);
+        System.out.println(queryResponse);
 
 
-//        Client client = new Client("localhost", 10000);
-//        client.connect();
-//        Response response = client.append(new DataTuple(100L, 200.3, "payload", System.currentTimeMillis()));
-//        System.out.print(response);
+        IngestionClient ingestionClient = new IngestionClient("localhost", 10000);
+        queryClient.connect();
+        Response ingestionResponse = ingestionClient.append(new DataTuple(100L, 200.3, "payload", System.currentTimeMillis()));
+        System.out.print(ingestionResponse);
     }
 
 }

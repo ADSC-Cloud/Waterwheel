@@ -2,6 +2,7 @@ package indexingTopology;
 
 import indexingTopology.data.DataSchema;
 import org.apache.storm.Config;
+import org.apache.storm.LocalCluster;
 import org.apache.storm.StormSubmitter;
 import org.apache.storm.generated.Bolt;
 import org.apache.storm.topology.IBasicBolt;
@@ -129,6 +130,9 @@ public class TexiTrajectoryTopology {
         conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
 //        conf.put(Config.SUPERVISOR_CHILDOPTS, "-Xmx2048m");
         conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+
+        LocalCluster cluster = new LocalCluster();
+//        cluster.submitTopology("T1", conf, builder.createTopology());
 
         StormSubmitter.submitTopologyWithProgressBar(args[0], conf, builder.createTopology());
     }
