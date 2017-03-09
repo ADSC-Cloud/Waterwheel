@@ -176,7 +176,7 @@ public class MetadataServer extends BaseRichBolt {
                         collector.emit(Streams.LoadBalanceStream, new Values("newIntervalPartition"));
                     } else {
                         System.out.println("skewness is not detected!!!");
-                        System.out.println(histogram.getHistogram());
+//                        System.out.println(histogram.getHistogram());
                     }
 
                     numberOfStaticsReceived = 0;

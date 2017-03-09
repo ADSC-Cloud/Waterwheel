@@ -3,12 +3,16 @@ package indexingTopology;
 import indexingTopology.data.DataSchema;
 import org.apache.storm.Config;
 import org.apache.storm.StormSubmitter;
+import org.apache.storm.generated.Bolt;
+import org.apache.storm.topology.IBasicBolt;
+import org.apache.storm.topology.IRichBolt;
 import org.apache.storm.topology.TopologyBuilder;
 import indexingTopology.streams.Streams;
 import indexingTopology.bolt.*;
 import indexingTopology.util.texi.City;
 import indexingTopology.util.texi.TrajectoryGenerator;
 import indexingTopology.util.texi.TrajectoryUniformGenerator;
+import org.apache.storm.topology.base.BaseBasicBolt;
 
 /**
  * Created by acelzj on 11/15/16.
@@ -62,22 +66,25 @@ public class TexiTrajectoryTopology {
 
         String path = "/home/acelzj";
 
-        boolean enableLoadBalance = true;
+        boolean enableLoadBalance = false;
 
 
 //        builder.setSpout(TupleGenerator, new TexiTrajectoryGenerator(schema, generator, payloadSize, city), 1);
 //        builder.setSpout(TupleGenerator, new TexiTrajectoryGenerator(schemaWithTimestamp, generator, payloadSize, city), 16);
+//        IRichBolt datasource = new Generator(schemaWithTimestamp, generator, payloadSize, city);
 
-        builder.setBolt(TupleGenerator, new Generator(schemaWithTimestamp, generator, payloadSize, city), 14)
+        IRichBolt datasource = new InputStreamReceiverServer(schemaWithTimestamp, 10000);
+
+        builder.setBolt(TupleGenerator, datasource, 1)
                 .directGrouping(IndexerBolt, Streams.AckStream);
 
-        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher(schemaWithTimestamp, lowerBound, upperBound, enableLoadBalance, false), 14)
+        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher(schemaWithTimestamp, lowerBound, upperBound, enableLoadBalance, false), 1)
                 .localOrShuffleGrouping(TupleGenerator, Streams.IndexStream)
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 //                .allGrouping(LogWriter, Streams.ThroughputRequestStream);
 
-        builder.setBolt(IndexerBolt, new IngestionBolt(schemaWithTimestamp), 8)
+        builder.setBolt(IndexerBolt, new IngestionBolt(schemaWithTimestamp), 1)
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream) // direct grouping should be used.
                 .directGrouping(RangeQueryDecompositionBolt, Streams.TreeCleanStream)
@@ -117,7 +124,7 @@ public class TexiTrajectoryTopology {
 
         Config conf = new Config();
         conf.setDebug(false);
-        conf.setNumWorkers(4);
+        conf.setNumWorkers(1);
 
         conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
 //        conf.put(Config.SUPERVISOR_CHILDOPTS, "-Xmx2048m");

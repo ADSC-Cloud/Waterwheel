@@ -1,7 +1,5 @@
 package indexingTopology.client;
 
-import indexingTopology.data.DataTuple;
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -14,12 +12,21 @@ import java.net.Socket;
 public abstract class ServerHandle implements Runnable{
 
     ObjectInputStream objectInputStream;
-    ObjectOutputStream objectOutputStream;
+    protected ObjectOutputStream objectOutputStream;
     Socket client;
 
-    public ServerHandle(Socket client) {
-        this.client = client;
+//    public ServerHandle(Socket client) {
+//        this.client = client;
+//    }
+
+    public ServerHandle() {
+
     }
+
+    void setClientSocket(Socket clientSocket) {
+        client = clientSocket;
+    }
+
     @Override
     public void run() {
             try {

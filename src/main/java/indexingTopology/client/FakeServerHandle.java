@@ -9,10 +9,9 @@ import java.net.Socket;
 /**
  * Created by robert on 3/3/17.
  */
-public class FackServerHandle extends ServerHandle implements QueryHandle, AppendRequestHandle {
+public class FakeServerHandle extends ServerHandle implements QueryHandle, AppendRequestHandle {
 
-    public FackServerHandle(Socket client) {
-        super(client);
+    public FakeServerHandle(int i) {
     }
 
     public void handle(final QueryRequest clientQueryRequest) throws IOException {
