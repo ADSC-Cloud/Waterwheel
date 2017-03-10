@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 /**
  * Created by acelzj on 11/15/16.
  */
-public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt {
+public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseRichBolt {
 
     OutputCollector collector;
 
@@ -46,7 +46,7 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt {
 
     private static final Logger LOG = LoggerFactory.getLogger(ChunkScanner.class);
 
-    private transient ArrayBlockingQueue<SubQuery> pendingQueue;
+    private transient ArrayBlockingQueue<SubQuery<TKey>> pendingQueue;
 
     private transient Semaphore subQueryHandlingSemaphore;
 
@@ -92,9 +92,9 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt {
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
 
-        blockIdToCacheUnit = new LRUCache<BlockId, CacheUnit>(TopologyConfig.CACHE_SIZE);
+        blockIdToCacheUnit = new LRUCache<>(TopologyConfig.CACHE_SIZE);
 
-        pendingQueue = new ArrayBlockingQueue<SubQuery>(1024);
+        pendingQueue = new ArrayBlockingQueue<>(1024);
 
         subQueryHandlingSemaphore = new Semaphore(1);
 

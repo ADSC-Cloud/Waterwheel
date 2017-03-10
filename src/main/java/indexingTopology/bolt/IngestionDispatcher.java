@@ -27,11 +27,11 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
 
     private List<Integer> targetTasks;
 
-    private Double lowerBound;
+    private IndexType lowerBound;
 
-    private Double upperBound;
+    private IndexType upperBound;
 
-    private BalancedPartition balancedPartition;
+    private BalancedPartition<IndexType> balancedPartition;
 
     private boolean enableLoadBalance;
 
@@ -41,7 +41,7 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
 
     private RateTracker rateTracker;
 
-    public IngestionDispatcher(DataSchema schema, Double lowerBound, Double upperBound, boolean enableLoadBalance,
+    public IngestionDispatcher(DataSchema schema, IndexType lowerBound, IndexType upperBound, boolean enableLoadBalance,
                                boolean generateTimeStamp) {
         this.schema = schema;
         this.lowerBound = lowerBound;
@@ -66,7 +66,7 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
 
         numberOfPartitions = targetTasks.size();
 
-        balancedPartition = new BalancedPartition(numberOfPartitions, lowerBound, upperBound, enableLoadBalance);
+        balancedPartition = new BalancedPartition<>(numberOfPartitions, lowerBound, upperBound, enableLoadBalance);
     }
 
     public void execute(Tuple tuple) {
@@ -113,12 +113,12 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
         }
     }
 
-    private void updateBound(Double indexValue) {
-        if (indexValue > upperBound) {
+    private void updateBound(IndexType indexValue) {
+        if (indexValue.doubleValue() > upperBound.doubleValue()) {
             upperBound = indexValue;
         }
 
-        if (indexValue < lowerBound) {
+        if (indexValue.doubleValue() < lowerBound.doubleValue()) {
             lowerBound = indexValue;
         }
     }

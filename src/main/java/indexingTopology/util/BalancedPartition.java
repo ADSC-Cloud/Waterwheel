@@ -11,9 +11,9 @@ import java.util.Map;
  */
 public class BalancedPartition<T extends Number> implements Serializable{
 
-    private Double lowerBound;
+    private T lowerBound;
 
-    private Double upperBound;
+    private T upperBound;
 
     private int numberOfPartitions;
 
@@ -24,8 +24,8 @@ public class BalancedPartition<T extends Number> implements Serializable{
     private Histogram histogram;
 
     public BalancedPartition(int numberOfPartitions, T lowerBound, T upperBound) {
-        this.lowerBound = lowerBound.doubleValue();
-        this.upperBound = upperBound.doubleValue();
+        this.lowerBound = lowerBound;
+        this.upperBound = upperBound;
         this.numberOfPartitions = numberOfPartitions;
         intervalToPartitionMapping = getBalancedPartitionPlan();
     }
@@ -46,10 +46,10 @@ public class BalancedPartition<T extends Number> implements Serializable{
     }
 
     public Map<Integer, Integer> getBalancedPartitionPlan() {
-        Double distance = (upperBound - lowerBound) / numberOfPartitions;
-        Double miniDistance = (upperBound - lowerBound) / TopologyConfig.NUMBER_OF_INTERVALS;
-        Double keyRangeUpperBound = lowerBound + distance;
-        Double bound = lowerBound + miniDistance;
+        Double distance = (upperBound.doubleValue() - lowerBound.doubleValue()) / numberOfPartitions;
+        Double miniDistance = (upperBound.doubleValue() - lowerBound.doubleValue()) / TopologyConfig.NUMBER_OF_INTERVALS;
+        Double keyRangeUpperBound = lowerBound.doubleValue() + distance;
+        Double bound = lowerBound.doubleValue() + miniDistance;
 
 
         Map<Integer, Integer> intervalToPartitionMapping = new HashMap<>();
@@ -72,10 +72,10 @@ public class BalancedPartition<T extends Number> implements Serializable{
     }
 
     public int getIntervalId(T key) {
-        Double distance = (upperBound - lowerBound) / TopologyConfig.NUMBER_OF_INTERVALS;
+        Double distance = (upperBound.doubleValue() - lowerBound.doubleValue()) / TopologyConfig.NUMBER_OF_INTERVALS;
 
-        Double startLowerBound = lowerBound + distance;
-        Double endUpperBound = upperBound - distance;
+        Double startLowerBound = lowerBound.doubleValue() + distance;
+        Double endUpperBound = upperBound.doubleValue() - distance;
 
         if (key.doubleValue() <= startLowerBound) {
             return 0;

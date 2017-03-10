@@ -24,7 +24,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 /**
  * Created by acelzj on 11/15/16.
  */
-public class IngestionBolt<DataType extends Comparable> extends BaseRichBolt implements Observer {
+public class IngestionBolt extends BaseRichBolt implements Observer {
     private final DataSchema schema;
 
     private OutputCollector collector;

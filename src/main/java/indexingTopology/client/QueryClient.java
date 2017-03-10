@@ -10,9 +10,9 @@ public class QueryClient extends Client {
         super(serverHost, port);
     }
 
-    public Response temporalRangeQuery(Number lowKey, Number highKey, long startTime, long endTime) throws IOException,
+    public QueryResponse temporalRangeQuery(Number lowKey, Number highKey, long startTime, long endTime) throws IOException,
             ClassNotFoundException {
         objectOutputStream.writeObject(new QueryRequest<Number>(lowKey, highKey, startTime, endTime));
-        return (Response) objectInputStream.readObject();
+        return (QueryResponse) objectInputStream.readObject();
     }
 }

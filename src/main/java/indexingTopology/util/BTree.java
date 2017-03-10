@@ -18,7 +18,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	private boolean templateMode;
 
 	public BTree(int order) {
-		this.root = new BTreeLeafNode(order);
+		this.root = new BTreeLeafNode<>(order);
 		templateMode = false;
 	}
 
@@ -39,7 +39,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	 */
 
 	public void insert(TKey key, byte[] serializedTuple) throws UnsupportedGenericException {
-		BTreeLeafNode leaf = null;
+		BTreeLeafNode<TKey> leaf = null;
 		if (templateMode) {
 			leaf = findLeafNodeShouldContainKeyInTemplate(key);
 			leaf.acquireWriteLock();
@@ -167,13 +167,13 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	 * Search the leaf node which should contain the specified key
 	 */
 	@SuppressWarnings("unchecked")
-	private BTreeLeafNode findLeafNodeShouldContainKeyInTemplate(TKey key) {
+	private BTreeLeafNode<TKey> findLeafNodeShouldContainKeyInTemplate(TKey key) {
 		BTreeNode currentNode = this.root;
 		while (currentNode.getNodeType() == TreeNodeType.InnerNode) {
-			BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChild(currentNode.search(key));
+			final BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChild(currentNode.search(key));
 			currentNode = node;
 		}
-		return (BTreeLeafNode) currentNode;
+		return (BTreeLeafNode<TKey>) currentNode;
 	}
 
 
@@ -182,7 +182,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	 * @param key
 	 * @return the leaf node that contains the key
 	 */
-	private BTreeLeafNode findLeafNodeShouldContainKeyInUpdaterWithProtocolTwo(TKey key) {
+	private BTreeLeafNode<TKey> findLeafNodeShouldContainKeyInUpdaterWithProtocolTwo(TKey key) {
         BTreeNode tmpRoot = root;
         root.acquireReadLock();
         while (tmpRoot != root) {
@@ -211,7 +211,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
             currentNode.releaseWriteLock();
             return null;
         }
-        return (BTreeLeafNode) currentNode;
+        return (BTreeLeafNode<TKey>) currentNode;
 	}
 
 	/**
@@ -260,7 +260,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 				((BTreeLeafNode) curr).clearNode();
 
 			} else {
-				q.addAll(((BTreeInnerNode) curr).children);
+				q.addAll(((BTreeInnerNode<TKey>) curr).children);
 			}
 		}
 	}
@@ -276,7 +276,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 				BTreeNode<TKey> curr = q.remove();
 
 				if (curr.getNodeType().equals(TreeNodeType.InnerNode)) {
-					qInner.addAll(((BTreeInnerNode) curr).children);
+					qInner.addAll(((BTreeInnerNode<TKey>) curr).children);
 				}
 				for (TKey k : curr.keys) {
 					//				list.add(k);
@@ -356,14 +356,14 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		return output.toBytes();
 	}
 
-	private BTreeNode findParentOfLeafNodeShouldContainKey(TKey key) {
+	private BTreeNode<TKey> findParentOfLeafNodeShouldContainKey(TKey key) {
 		BTreeInnerNode<TKey> currentNode = (BTreeInnerNode) this.root;
 		while (currentNode.children.size() > 0) {
 			BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChildShouldContainKey(key);
 			node.print();
-			currentNode = (BTreeInnerNode) node;
+			currentNode = (BTreeInnerNode<TKey>) node;
 		}
-		return (BTreeNode) currentNode;
+		return currentNode;
 	}
 
 	@SuppressWarnings("unchecked")
