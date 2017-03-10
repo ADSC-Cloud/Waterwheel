@@ -6,6 +6,7 @@ import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 
+import javax.xml.crypto.Data;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -315,5 +316,34 @@ public class DataSchema implements Serializable {
             tupleLength += dataTypes.get(i).length;
         }
         return tupleLength;
+    }
+
+    public String toString() {
+        String ret = "";
+        for (int i = 0; i < dataTypes.size(); i++) {
+            ret += String.format("%s, %s, %d bytes\n", fieldNames.get(i), dataTypes.get(i).type.toString(),
+                    dataTypes.get(i).length);
+        }
+        ret += String.format("index field: %s\n", indexField);
+        return ret;
+    }
+
+    public boolean equals(Object object) {
+        if (!(object instanceof DataSchema))
+            return false;
+        DataSchema schema = (DataSchema) object;
+        if (schema.dataTypes.size() != this.dataTypes.size())
+            return false;
+        for (int i = 0; i < this.dataTypes.size(); i++) {
+            if (!dataTypes.get(i).equals(this.dataTypes.get(i)))
+                return false;
+            if (!fieldNames.get(i).equals(this.fieldNames.get(i)))
+                return false;
+        }
+
+        if (this.indexField != null && schema.indexField !=null && ! this.indexField.equals(schema.indexField))
+            return false;
+
+        return true;
     }
 }

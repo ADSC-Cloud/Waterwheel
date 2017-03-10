@@ -19,8 +19,13 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
     final private int[] aggregateColumnIndexes;
     final private int groupByIndex;
     final DataSchema inputSchema;
+    final boolean isGlobal;
 
     public Aggregator(DataSchema inputSchema, String groupByField, AggregateField... fields) {
+        this(inputSchema, groupByField, false, fields);
+    }
+
+    public Aggregator(DataSchema inputSchema, String groupByField, boolean isGlobal, AggregateField... fields) {
         this.aggregateFields = fields;
         this.aggregateColumnIndexes = new int[fields.length];
         for (int i = 0; i < fields.length; i++) {
@@ -28,7 +33,9 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
         }
         this.groupByIndex = inputSchema.getFieldIndex(groupByField);
         this.inputSchema = inputSchema;
+        this.isGlobal = isGlobal;
     }
+
 
     public void aggregate(DataTuple dataTuple) {
         //TODO: performance optimization by computing the group-by column index before aggregate.
@@ -58,16 +65,21 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
         DataSchema dataSchema = new DataSchema();
         dataSchema.addField(inputSchema.getDataType(groupByIndex), inputSchema.getFieldName(groupByIndex));
         for (AggregateField aggregateField: aggregateFields) {
+            String fieldName;
+
+            if (isGlobal)
+                fieldName = aggregateField.fieldName;
+            else
+                fieldName = aggregateField.aggregateFieldName();
+
             if (aggregateField.function instanceof Count) {
-                dataSchema.addDoubleField(String.format("count(%s)", aggregateField.fieldName));
+                dataSchema.addDoubleField(fieldName);
             } else if (aggregateField.function instanceof Sum) {
-                dataSchema.addDoubleField(String.format("sum(%s)", aggregateField.fieldName));
+                dataSchema.addDoubleField(fieldName);
             } else if (aggregateField.function instanceof Min) {
-                dataSchema.addField(inputSchema.getDataType(aggregateField.fieldName), String.format("min(%s)",
-                        aggregateField.fieldName));
+                dataSchema.addField(inputSchema.getDataType(aggregateField.fieldName), fieldName);
             } else if (aggregateField.function instanceof Max) {
-                dataSchema.addField(inputSchema.getDataType(aggregateField.fieldName), String.format("max(%s)",
-                        aggregateField.fieldName));
+                dataSchema.addField(inputSchema.getDataType(aggregateField.fieldName), fieldName);
             }
         }
         return dataSchema;
@@ -93,6 +105,15 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
             partialQueryResult.add(dataTuple);
         }
         return partialQueryResult;
+    }
+
+    public Aggregator<Key> generateGlobalAggregator() {
+        DataSchema globalInputSchema = getOutputDataSchema();
+        AggregateField[] newAggregateFields = new AggregateField[aggregateFields.length];
+        for (int i = 0; i < aggregateFields.length; i++) {
+            newAggregateFields[i] = new AggregateField(aggregateFields[i].function, aggregateFields[i].aggregateFieldName());
+        }
+        return new Aggregator<Key>(globalInputSchema, inputSchema.getFieldName(groupByIndex), true, newAggregateFields);
     }
 
 }
