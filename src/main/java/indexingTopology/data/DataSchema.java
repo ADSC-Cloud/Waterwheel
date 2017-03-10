@@ -71,6 +71,12 @@ public class DataSchema implements Serializable {
         dataTypes.add(dataType);
     }
 
+    public void addField(DataType dataType, String fieldName) {
+        dataFieldNameToIndex.put(fieldName, fieldNames.size());
+        fieldNames.add(fieldName);
+        dataTypes.add(dataType);
+    }
+
     public void addVarcharField(String name, int length) {
         final DataType dataType = new DataType(String.class, length);
         dataFieldNameToIndex.put(name, fieldNames.size());
@@ -85,6 +91,13 @@ public class DataSchema implements Serializable {
         dataTypes.add(dataType);
     }
 
+//    public DataType getFieldDataType(String fieldName) {
+//        return dataTypes.get(getFieldIndex(fieldName));
+//    }
+//
+//    public DataType getFieldDataType(int index) {
+//        return dataTypes.get(index);
+//    }
 
     public Fields getFieldsObject() {
         return new Fields(fieldNames);
@@ -253,13 +266,25 @@ public class DataSchema implements Serializable {
         return indexField;
     }
 
+    public String getFieldName(int index) {
+        return fieldNames.get(index);
+    }
+
     public DataType getDataType(String name) {
         final int offset = dataFieldNameToIndex.get(name);
         return dataTypes.get(offset);
     }
 
+    public DataType getDataType(int index) {
+        return dataTypes.get(index);
+    }
+
     public DataType getIndexType() {
         return getDataType(indexField);
+    }
+
+    public int getFieldIndex(String fieldName) {
+        return dataFieldNameToIndex.get(fieldName);
     }
 
     public int getNumberOfFields() {

@@ -10,7 +10,7 @@ public class DataTuple extends ArrayList<Object> implements Serializable {
     public DataTuple() {
     }
 
-    public DataTuple(Object... fields) {
+    public DataTuple(Comparable... fields) {
         super(fields.length);
         Object[] objects = fields;
         int length = fields.length;
@@ -20,4 +20,25 @@ public class DataTuple extends ArrayList<Object> implements Serializable {
             this.add(o);
         }
     }
+
+    public boolean equals(Object object) {
+        if (! (object instanceof DataTuple))
+            return false;
+        DataTuple tuple = (DataTuple) object;
+        if (tuple.size() != this.size())
+            return false;
+        for (int i = 0; i < this.size(); i++) {
+            if (!this.get(i).equals(tuple.get(i)))
+                return false;
+        }
+        return true;
     }
+
+    public String toDataTypes() {
+        String ret = "";
+        for (Object object: this) {
+            ret += object.getClass().toString() + " ";
+        }
+        return ret;
+    }
+}

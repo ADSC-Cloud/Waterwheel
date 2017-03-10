@@ -281,10 +281,10 @@ abstract public class QueryCoordinator<DataType extends Number> extends BaseRich
 
 
             for (String fileName : fileNames) {
-                SubQuery subQuery = new SubQueryOnFile(queryId, leftKey, rightKey, fileName, startTimestamp, endTimestamp);
-            /*shuffle grouping
+                SubQuery subQuery = new SubQueryOnFile(queryId, leftKey, rightKey, fileName, startTimestamp, endTimestamp, query.predicate, query.aggregator);
+            //shuffle grouping
             sendSubqueriesByshuffleGrouping(subQuery);
-             */
+
 //            /*task queue
 //                try {
 //                    taskQueue.put(subQuery);
@@ -361,7 +361,8 @@ abstract public class QueryCoordinator<DataType extends Number> extends BaseRich
             Integer taskId = indexServers.get(partitionId);
             Long timestamp = indexTaskToTimestampMapping.get(taskId);
             if (timestamp <= endTimestamp && timestamp >= startTimestamp) {
-                SubQuery subQuery = new SubQuery(query.id, query.leftKey, query.rightKey, query.startTimestamp, query.endTimestamp, query.predicate, query.aggregator);
+                SubQuery subQuery = new SubQuery<>(query.id, query.leftKey, query.rightKey, query.startTimestamp,
+                        query.endTimestamp, query.predicate, query.aggregator);
                 collector.emitDirect(taskId, Streams.BPlusTreeQueryStream, new Values(subQuery));
                 ++numberOfTasksToSearch;
             }
