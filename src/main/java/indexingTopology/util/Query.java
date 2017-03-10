@@ -1,5 +1,6 @@
 package indexingTopology.util;
 
+import indexingTopology.aggregator.Aggregator;
 import indexingTopology.data.DataTuple;
 
 import java.io.Serializable;
@@ -14,7 +15,8 @@ public class Query <T extends Number> implements Serializable {
     public Long startTimestamp;
     public Long endTimestamp;
     public long id;
-    public Predicate<DataTuple> predicate;
+    public DataTuplePredicate predicate;
+    public Aggregator aggregator;
     public Query(T leftKey, T rightKey, Long startTimestamp, Long endTimestamp) {
         this.leftKey = leftKey;
         this.rightKey = rightKey;
@@ -28,8 +30,11 @@ public class Query <T extends Number> implements Serializable {
         this.startTimestamp = startTimestamp;
         this.endTimestamp = endTimestamp;
     }
-    public void setPredicate(Predicate<DataTuple> predicate) {
+    public void setPredicate(DataTuplePredicate predicate) {
         this.predicate = predicate;
+    }
+    public void setAggregator(Aggregator aggregator) {
+        this.aggregator = aggregator;
     }
 
 }

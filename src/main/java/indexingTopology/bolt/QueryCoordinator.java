@@ -361,7 +361,7 @@ abstract public class QueryCoordinator<DataType extends Number> extends BaseRich
             Integer taskId = indexServers.get(partitionId);
             Long timestamp = indexTaskToTimestampMapping.get(taskId);
             if (timestamp <= endTimestamp && timestamp >= startTimestamp) {
-                SubQuery subQuery = new SubQuery(query.id, query.leftKey, query.rightKey, query.startTimestamp, query.endTimestamp);
+                SubQuery subQuery = new SubQuery(query.id, query.leftKey, query.rightKey, query.startTimestamp, query.endTimestamp, query.predicate, query.aggregator);
                 collector.emitDirect(taskId, Streams.BPlusTreeQueryStream, new Values(subQuery));
                 ++numberOfTasksToSearch;
             }

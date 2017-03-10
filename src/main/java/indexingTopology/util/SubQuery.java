@@ -1,5 +1,7 @@
 package indexingTopology.util;
 
+import indexingTopology.aggregator.Aggregator;
+
 import java.io.Serializable;
 
 public class SubQuery <T extends Number> implements Serializable {
@@ -16,6 +18,8 @@ public class SubQuery <T extends Number> implements Serializable {
 
     private DataTuplePredicate predicate;
 
+    private Aggregator aggregator;
+
 
     public SubQuery(long queryId, T leftKey, T rightKey, Long startTimestamp, Long endTimestamp, DataTuplePredicate predicate) {
         this.queryId = queryId;
@@ -25,6 +29,18 @@ public class SubQuery <T extends Number> implements Serializable {
         this.endTimestamp = endTimestamp;
         this.predicate = predicate;
     }
+
+    public SubQuery(long queryId, T leftKey, T rightKey, Long startTimestamp, Long endTimestamp, DataTuplePredicate predicate, Aggregator aggregator) {
+        this.queryId = queryId;
+        this.leftKey = leftKey;
+        this.rightKey = rightKey;
+        this.startTimestamp = startTimestamp;
+        this.endTimestamp = endTimestamp;
+        this.predicate = predicate;
+        this.aggregator = aggregator;
+    }
+
+
 
     public SubQuery(long queryId, T leftKey, T rightKey
             ,Long startTimestamp, Long endTimestamp) {
