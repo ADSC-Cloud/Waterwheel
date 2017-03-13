@@ -226,7 +226,6 @@ public class AggregationTest {
         globalAggregator.aggregate(localAggregator2.getResults().dataTuples);
 
         PartialQueryResult result = globalAggregator.getResults();
-        System.out.println(result);
         Collections.sort(result.dataTuples, (DataTuple t1, DataTuple t2) -> ((Comparable)t1.get(0)).compareTo(t2.get(0)) );
         assertEquals(result.dataTuples.get(0), new DataTuple(1.0, 1L, 1.0, 1.0, 1L, 1L, 1.0));
         assertEquals(result.dataTuples.get(1), new DataTuple(2.0, 2L, 3.0, 2.0, 2L, 2L, 4.0));

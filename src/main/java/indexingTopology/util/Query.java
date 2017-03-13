@@ -17,23 +17,19 @@ public class Query <T extends Number> implements Serializable {
     public long id;
     public DataTuplePredicate predicate;
     public Aggregator aggregator;
-    public Query(T leftKey, T rightKey, Long startTimestamp, Long endTimestamp) {
-        this.leftKey = leftKey;
-        this.rightKey = rightKey;
-        this.startTimestamp = startTimestamp;
-        this.endTimestamp = endTimestamp;
-    }
+
     public Query(long id, T leftKey, T rightKey, Long startTimestamp, Long endTimestamp) {
+        this(id, leftKey, rightKey, startTimestamp, endTimestamp, null, null);
+    }
+
+    public Query(long id, T leftKey, T rightKey, Long startTimestamp, Long endTimestamp, DataTuplePredicate predicate,
+                 Aggregator aggregator) {
         this.id = id;
         this.leftKey = leftKey;
         this.rightKey = rightKey;
         this.startTimestamp = startTimestamp;
         this.endTimestamp = endTimestamp;
-    }
-    public void setPredicate(DataTuplePredicate predicate) {
         this.predicate = predicate;
-    }
-    public void setAggregator(Aggregator aggregator) {
         this.aggregator = aggregator;
     }
 

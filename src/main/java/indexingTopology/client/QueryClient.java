@@ -1,5 +1,7 @@
 package indexingTopology.client;
 
+import indexingTopology.util.Query;
+
 import java.io.IOException;
 
 /**
@@ -13,6 +15,11 @@ public class QueryClient extends Client {
     public QueryResponse temporalRangeQuery(Number lowKey, Number highKey, long startTime, long endTime) throws IOException,
             ClassNotFoundException {
         objectOutputStream.writeObject(new QueryRequest<Number>(lowKey, highKey, startTime, endTime));
+        return (QueryResponse) objectInputStream.readObject();
+    }
+
+    public QueryResponse query(QueryRequest query) throws IOException, ClassNotFoundException  {
+        objectOutputStream.writeObject(query);
         return (QueryResponse) objectInputStream.readObject();
     }
 }

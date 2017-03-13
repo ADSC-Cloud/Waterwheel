@@ -87,24 +87,13 @@ public class QueryCoordinatorWithQueryReceiverServer<DataType extends Number> ex
             try {
                 final long queryid = queryIdGenerator.getAndIncrement();
 
-                LinkedBlockingQueue<PartialQueryResult> results = queryresults.computeIfAbsent(queryid, k -> new LinkedBlockingQueue<>());
+                LinkedBlockingQueue<PartialQueryResult> results =
+                        queryresults.computeIfAbsent(queryid, k -> new LinkedBlockingQueue<>());
 
                 LOG.info(String.format("A new Query[%d] ({0}, {1}, {2}, {3}) is added to the pending queue.", queryid),
                         request.low, request.high, request.startTime, request.endTime);
-                pendingQueryQueue.put(new Query<>(queryid, request.low, request.high, request.startTime, request.endTime));
-//                DataTuple dataTuple = new DataTuple();
-//                dataTuple.add("ID 1");
-//                dataTuple.add(100);
-//                dataTuple.add(3.14);
-//
-//                DataTuple dataTuple1 = new DataTuple();
-//                dataTuple1.add("ID 2");
-//                dataTuple1.add(200);
-//                dataTuple1.add(6.34);
-//
-//                PartialQueryResult particalQueryResult = new PartialQueryResult();
-//                particalQueryResult.add(dataTuple);
-//                particalQueryResult.add(dataTuple1);
+                pendingQueryQueue.put(new Query<>(queryid, request.low, request.high, request.startTime,
+                        request.endTime, request.predicate, request.aggregator));
                 objectOutputStream.writeObject(new QueryResponse(results.take(), queryid));
             } catch (InterruptedException e) {
                 e.printStackTrace();

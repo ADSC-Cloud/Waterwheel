@@ -113,7 +113,7 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
         for (int i = 0; i < aggregateFields.length; i++) {
             newAggregateFields[i] = new AggregateField(aggregateFields[i].function, aggregateFields[i].aggregateFieldName());
         }
-        return new Aggregator<Key>(globalInputSchema, inputSchema.getFieldName(groupByIndex), true, newAggregateFields);
+        return new Aggregator<>(globalInputSchema, inputSchema.getFieldName(groupByIndex), true, newAggregateFields);
     }
 
 }
