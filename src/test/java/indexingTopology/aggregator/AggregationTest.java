@@ -137,7 +137,7 @@ public class AggregationTest {
 
         DataSchema outputSchema = aggregator.getOutputDataSchema();
         assertEquals(Integer.class, outputSchema.getDataType(0).type);
-        assertEquals(Double.class, outputSchema.getDataType(1).type);
+        assertEquals(Long.class, outputSchema.getDataType(1).type);
         assertEquals(Double.class, outputSchema.getDataType(2).type);
         assertEquals(Double.class, outputSchema.getDataType(3).type);
         assertEquals(Long.class, outputSchema.getDataType(4).type);
@@ -166,7 +166,7 @@ public class AggregationTest {
 
         DataSchema outputSchema = aggregator.getOutputDataSchema();
         assertEquals(Integer.class, outputSchema.getDataType(0).type);
-        assertEquals(Double.class, outputSchema.getDataType(1).type);
+        assertEquals(Long.class, outputSchema.getDataType(1).type);
         assertEquals(Double.class, outputSchema.getDataType(2).type);
         assertEquals(Double.class, outputSchema.getDataType(3).type);
         assertEquals(Long.class, outputSchema.getDataType(4).type);
@@ -227,9 +227,9 @@ public class AggregationTest {
 
         PartialQueryResult result = globalAggregator.getResults();
         Collections.sort(result.dataTuples, (DataTuple t1, DataTuple t2) -> ((Comparable)t1.get(0)).compareTo(t2.get(0)) );
-        assertEquals(result.dataTuples.get(0), new DataTuple(1.0, 1L, 1.0, 1.0, 1L, 1L, 1.0));
-        assertEquals(result.dataTuples.get(1), new DataTuple(2.0, 2L, 3.0, 2.0, 2L, 2L, 4.0));
-        assertEquals(result.dataTuples.get(2), new DataTuple(3.0, 2L, 4.0, 3.0, 3L, 2L, 5.0));
+        assertEquals(result.dataTuples.get(0), new DataTuple(1.0, 1.0, 1.0, 1.0, 1L, 1L, 1.0));
+        assertEquals(result.dataTuples.get(1), new DataTuple(2.0, 2.0, 3.0, 2.0, 2L, 2L, 4.0));
+        assertEquals(result.dataTuples.get(2), new DataTuple(3.0, 2.0, 4.0, 3.0, 3L, 2L, 5.0));
     }
 
 

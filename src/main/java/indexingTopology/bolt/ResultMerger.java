@@ -1,6 +1,9 @@
 package indexingTopology.bolt;
 
+import indexingTopology.aggregator.Aggregator;
 import indexingTopology.data.PartialQueryResult;
+import indexingTopology.util.Query;
+import indexingTopology.util.SubQuery;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -73,19 +76,21 @@ public class ResultMerger extends BaseRichBolt {
         } else if (tuple.getSourceStreamId()
                 .equals(Streams.FileSystemQueryInformationStream)) {
             int numberOfFilesToScan = tuple.getInteger(1);
-            Long queryId = tuple.getLong(0);
+            Query query = (Query) tuple.getValue(0);
+            Long queryId = query.queryId;
 //            System.out.println("queryId" + queryId + " number of files to scan " + numberOfFilesToScan);
             queryIdToNumberOfFilesToScan.put(queryId, numberOfFilesToScan);
 
             // It is possible in a rare case where the query information arrives later than the query result.
             if (isQueryFinished(queryId)) {
 //                printTimeInformation(queryId);
-                finalizeQuery(queryId);
+                finalizeQuery(query);
             }
 
         } else if (tuple.getSourceStreamId().equals(Streams.BPlusTreeQueryStream) ||
                 tuple.getSourceStreamId().equals(Streams.FileSystemQueryStream)) {
-            long queryId = tuple.getLong(0);
+            SubQuery subQuery = (SubQuery)tuple.getValue(0);
+            long queryId = subQuery.getQueryId();
             System.out.println(String.format("A subquery for Query[%d] is completed!", queryId));
 
             Integer counter = queryIdToCounter.getOrDefault(queryId, 0);
@@ -128,12 +133,12 @@ public class ResultMerger extends BaseRichBolt {
 
             ArrayList<byte[]> serializedTuples = (ArrayList) tuple.getValue(1);
 
-            handleNewPartialQueryResult(queryId, serializedTuples);
+            handleNewPartialQueryResult(subQuery, serializedTuples);
 
             if (isQueryFinished(queryId)) {
 //                System.out.println(tuple.getSourceStreamId());
 //                printTimeInformation(queryId);
-                finalizeQuery(queryId);
+                finalizeQuery(subQuery);
             }
 
         } else if (tuple.getSourceStreamId().equals(Streams.PartialQueryResultReceivedStream)) {
@@ -142,9 +147,15 @@ public class ResultMerger extends BaseRichBolt {
         }
     }
 
-    private void handleNewPartialQueryResult(Long queryId, ArrayList<byte[]> serializedTuples) {
+    private void handleNewPartialQueryResult(SubQuery subQuery, ArrayList<byte[]> serializedTuples) {
+        long queryId = subQuery.getQueryId();
         PartialQueryResult partialQueryResult = new PartialQueryResult(Integer.MAX_VALUE);
-        serializedTuples.forEach(r -> partialQueryResult.add(schema.deserializeToDataTuple(r)));
+        if (subQuery.getAggregator() != null) {
+            final DataSchema inputSchema = subQuery.getAggregator().getOutputDataSchema();
+            serializedTuples.forEach(r -> partialQueryResult.add(inputSchema.deserializeToDataTuple(r)));
+        } else {
+            serializedTuples.forEach(r -> partialQueryResult.add(schema.deserializeToDataTuple(r)));
+        }
 
         List<PartialQueryResult> results = queryIdToPartialQueryResults.computeIfAbsent(queryId, k->new ArrayList<>());
         results.add(partialQueryResult);
@@ -182,9 +193,9 @@ public class ResultMerger extends BaseRichBolt {
     }
 
 
-    private void finalizeQuery(Long queryId) {
-
-        mergeQueryResults(queryId);
+    private void finalizeQuery(SubQuery subQuery) {
+        final Long queryId = subQuery.getQueryId();
+        mergeQueryResults(subQuery);
         sendAPartialQueryResult(queryId);
         sendNewQueryPermit(queryId);
         removeQueryIdFromMappings(queryId);
@@ -212,13 +223,22 @@ public class ResultMerger extends BaseRichBolt {
 
     }
 
-    private void mergeQueryResults(long queryId) {
+    private void mergeQueryResults(SubQuery subQuery) {
         // This is where aggregation happens.
 
+        final long queryId = subQuery.getQueryId();
 
         final int unitSize = 4 * 1024;
         List<PartialQueryResult> queryResults = queryIdToPartialQueryResults.get(queryId);
-        List<PartialQueryResult> compactedResults = PartialQueryResult.Compact(queryResults, unitSize);
+
+        List<PartialQueryResult> compactedResults = null;
+        if (subQuery.getAggregator() != null) {
+            Aggregator globalAggregator = subQuery.getAggregator().generateGlobalAggregator();
+            queryResults.forEach(r -> globalAggregator.aggregate(r.dataTuples));
+            compactedResults = PartialQueryResult.Compact(globalAggregator.getResults(), unitSize);
+        } else {
+            compactedResults = PartialQueryResult.Compact(queryResults, unitSize);
+        }
         queryIdToPartialQueryResults.put(queryId, compactedResults);
 
     }

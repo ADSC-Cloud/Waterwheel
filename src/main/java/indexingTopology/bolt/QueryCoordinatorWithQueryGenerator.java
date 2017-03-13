@@ -12,7 +12,7 @@ import java.util.*;
 /**
  * Created by acelzj on 11/15/16.
  */
-public class QueryCoordinatorWithQueryGenerator<DataType extends Number> extends QueryCoordinator<DataType> {
+public class QueryCoordinatorWithQueryGenerator<T extends Number & Comparable<T>> extends QueryCoordinator<T> {
 
 
     private long queryId;
@@ -21,7 +21,7 @@ public class QueryCoordinatorWithQueryGenerator<DataType extends Number> extends
 
     private static final Logger LOG = LoggerFactory.getLogger(QueryCoordinatorWithQueryGenerator.class);
 
-    public QueryCoordinatorWithQueryGenerator(DataType lowerBound, DataType upperBound) {
+    public QueryCoordinatorWithQueryGenerator(T lowerBound, T upperBound) {
         super(lowerBound, upperBound);
     }
 

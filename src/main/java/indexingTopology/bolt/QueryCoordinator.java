@@ -26,7 +26,7 @@ import java.util.concurrent.Semaphore;
 /**
  * Created by acelzj on 11/15/16.
  */
-abstract public class QueryCoordinator<DataType extends Number> extends BaseRichBolt {
+abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends BaseRichBolt {
 
     private OutputCollector collector;
 
@@ -54,8 +54,8 @@ abstract public class QueryCoordinator<DataType extends Number> extends BaseRich
 
     private int numberOfPartitions;
 
-    private DataType lowerBound;
-    private DataType upperBound;
+    private T lowerBound;
+    private T upperBound;
 
     private AtomicDouble minIndexValue;
     private AtomicDouble maxIndexValue;
@@ -69,7 +69,7 @@ abstract public class QueryCoordinator<DataType extends Number> extends BaseRich
 
     private static final Logger LOG = LoggerFactory.getLogger(QueryCoordinator.class);
 
-    public QueryCoordinator(DataType lowerBound, DataType upperBound) {
+    public QueryCoordinator(T lowerBound, T upperBound) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
     }
@@ -126,8 +126,8 @@ abstract public class QueryCoordinator<DataType extends Number> extends BaseRich
             TimeDomain timeDomain = (TimeDomain) tuple.getValueByField("timeDomain");
             KeyDomain keyDomain = (KeyDomain) tuple.getValueByField("keyDomain");
 
-            filePartitionSchemaManager.add(new FileMetaData(fileName, ((DataType) keyDomain.getLowerBound()).doubleValue(),
-                    ((DataType) keyDomain.getUpperBound()).doubleValue(), timeDomain.getStartTimestamp(), timeDomain.getEndTimestamp()));
+            filePartitionSchemaManager.add(new FileMetaData(fileName, ((T) keyDomain.getLowerBound()).doubleValue(),
+                    ((T) keyDomain.getUpperBound()).doubleValue(), timeDomain.getStartTimestamp(), timeDomain.getEndTimestamp()));
         } else if (tuple.getSourceStreamId().equals(Streams.QueryFinishedStream)) {
             Long queryId = tuple.getLong(0);
 
@@ -176,8 +176,8 @@ abstract public class QueryCoordinator<DataType extends Number> extends BaseRich
 
             indexTaskToTimestampMapping.put(taskId, endTimestamp);
 
-            DataType keyRangeLowerBound = (DataType) keyDomain.getLowerBound();
-            DataType keyRangeUpperBound = (DataType) keyDomain.getUpperBound();
+            T keyRangeLowerBound = (T) keyDomain.getLowerBound();
+            T keyRangeUpperBound = (T) keyDomain.getUpperBound();
 
             if (balancedPartitionToBeDeleted != null) {
                 updateStaleBalancedPartition(keyRangeLowerBound, keyRangeUpperBound);
@@ -221,7 +221,7 @@ abstract public class QueryCoordinator<DataType extends Number> extends BaseRich
         return staleIntervalIdToPartitionIdMapping.equals(intervalIdToPartitionIdMapping);
     }
 
-    private void updateStaleBalancedPartition(DataType keyRangeLowerBound, DataType keyRangeUpperBound) {
+    private void updateStaleBalancedPartition(T keyRangeLowerBound, T keyRangeUpperBound) {
         Map<Integer, Integer> intervalIdToPartitionIdMapping = balancedPartition.getIntervalToPartitionMapping();
         Integer startIntervalId = balancedPartition.getIntervalId(keyRangeLowerBound);
         Integer endIntervalId = balancedPartition.getIntervalId(keyRangeUpperBound);
@@ -251,15 +251,15 @@ abstract public class QueryCoordinator<DataType extends Number> extends BaseRich
         outputFieldsDeclarer.declareStream(Streams.PartialQueryResultReceivedStream, new Fields("queryId"));
     }
 
-    private void handleQuery(Query<DataType> query) {
+    private void handleQuery(Query<T> query) {
         generateSubQueriesOnTheInsertionServer(query);
         generateSubqueriesOnTheFileScanner(query);
     }
 
-    private void generateSubqueriesOnTheFileScanner(Query<DataType> query) {
-        Long queryId = query.id;
-        DataType leftKey = query.leftKey;
-        DataType rightKey = query.rightKey;
+    private void generateSubqueriesOnTheFileScanner(Query<T> query) {
+        Long queryId = query.getQueryId();
+        T leftKey = query.leftKey;
+        T rightKey = query.rightKey;
         Long startTimestamp = query.startTimestamp;
         Long endTimestamp = query.endTimestamp;
 
@@ -272,7 +272,7 @@ abstract public class QueryCoordinator<DataType extends Number> extends BaseRich
 
         if (fileNames.size() < -1) {
 
-            collector.emit(Streams.FileSystemQueryInformationStream, new Values(queryId, 0));
+            collector.emit(Streams.FileSystemQueryInformationStream, new Values(query, 0));
         } else {
 
             queryIdToStartTime.put(queryId, new Pair(System.currentTimeMillis(), fileNames.size()));
@@ -306,7 +306,7 @@ abstract public class QueryCoordinator<DataType extends Number> extends BaseRich
                 sendSubqueriesFromTaskQueues();
             */
 
-            collector.emit(Streams.FileSystemQueryInformationStream, new Values(queryId, fileNames.size()));
+            collector.emit(Streams.FileSystemQueryInformationStream, new Values(query, fileNames.size()));
         }
     }
 
@@ -336,12 +336,11 @@ abstract public class QueryCoordinator<DataType extends Number> extends BaseRich
     }
 
 
-    private void generateSubQueriesOnTheInsertionServer(Query<DataType> query) {
+    private void generateSubQueriesOnTheInsertionServer(Query<T> query) {
         int numberOfTasksToSearch = 0;
-
-        Long queryId = query.id;
-        DataType leftKey = query.leftKey;
-        DataType rightKey = query.rightKey;
+        Long queryId = query.queryId;
+        T leftKey = query.leftKey;
+        T rightKey = query.rightKey;
         Long startTimestamp = query.startTimestamp;
         Long endTimestamp = query.endTimestamp;
 
@@ -361,7 +360,7 @@ abstract public class QueryCoordinator<DataType extends Number> extends BaseRich
             Integer taskId = indexServers.get(partitionId);
             Long timestamp = indexTaskToTimestampMapping.get(taskId);
             if (timestamp <= endTimestamp && timestamp >= startTimestamp) {
-                SubQuery subQuery = new SubQuery<>(query.id, query.leftKey, query.rightKey, query.startTimestamp,
+                SubQuery subQuery = new SubQuery(query.getQueryId(), query.leftKey, query.rightKey, query.startTimestamp,
                         query.endTimestamp, query.predicate, query.aggregator);
                 collector.emitDirect(taskId, Streams.BPlusTreeQueryStream, new Values(subQuery));
                 ++numberOfTasksToSearch;
@@ -384,7 +383,7 @@ abstract public class QueryCoordinator<DataType extends Number> extends BaseRich
         return partitionIds;
     }
 
-    private List<Integer> getPartitionIds(BalancedPartition balancedPartition, DataType leftKey, DataType rightKey) {
+    private List<Integer> getPartitionIds(BalancedPartition balancedPartition, T leftKey, T rightKey) {
         Integer startPartitionId = balancedPartition.getPartitionId(leftKey);
         Integer endPartitionId = balancedPartition.getPartitionId(rightKey);
 

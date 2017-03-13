@@ -1,7 +1,6 @@
 package indexingTopology.bolt;
 
 import indexingTopology.client.*;
-import indexingTopology.data.DataTuple;
 import indexingTopology.data.PartialQueryResult;
 import indexingTopology.util.Query;
 import org.apache.storm.task.OutputCollector;
@@ -18,7 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Created by acelzj on 11/15/16.
  */
-public class QueryCoordinatorWithQueryReceiverServer<DataType extends Number> extends QueryCoordinator<DataType> {
+public class QueryCoordinatorWithQueryReceiverServer<T extends Number & Comparable<T>> extends QueryCoordinator<T> {
 
     private final int port;
 
@@ -32,7 +31,7 @@ public class QueryCoordinatorWithQueryReceiverServer<DataType extends Number> ex
 
     private static final Logger LOG = LoggerFactory.getLogger(QueryCoordinatorWithQueryReceiverServer.class);
 
-    public QueryCoordinatorWithQueryReceiverServer(DataType lowerBound, DataType upperBound, int port) {
+    public QueryCoordinatorWithQueryReceiverServer(T lowerBound, T upperBound, int port) {
         super(lowerBound, upperBound);
         this.port = port;
     }

@@ -15,10 +15,7 @@ import indexingTopology.util.*;
 import javafx.util.Pair;
 import org.apache.storm.tuple.Values;
 
-import java.util.Map;
-import java.util.List;
-import java.util.Observable;
-import java.util.Observer;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /**
@@ -157,10 +154,13 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
 
             } else if (s.equals("query result")) {
                 Pair pair = ((Indexer) o).getQueryResult();
-                Long queryId = (Long) pair.getKey();
-                List<byte[]> serializedTuplesWithinTimestamp = (List<byte[]>) pair.getValue();
-
-                collector.emit(Streams.BPlusTreeQueryStream, new Values(queryId, serializedTuplesWithinTimestamp));
+                SubQuery subQuery = (SubQuery) pair.getKey();
+                List<byte[]> queryResults = (List<byte[]>) pair.getValue();
+//                List<byte[]> serializedTuples = new ArrayList<>();
+//                for(DataTuple dataTuple: queryResults) {
+//                    serializedTuples.add(schema.serializeTuple(dataTuple));
+//                }
+                collector.emit(Streams.BPlusTreeQueryStream, new Values(subQuery, queryResults));
             }
         }
     }

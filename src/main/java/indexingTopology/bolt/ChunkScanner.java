@@ -233,7 +233,14 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
             //serialize
             List<byte[]> serializedDataTuples = new ArrayList<>();
-            dataTuples.stream().forEach(p -> serializedDataTuples.add(schema.serializeTuple(p)));
+
+            if (subQuery.getAggregator() != null) {
+                DataSchema outputSchema = subQuery.getAggregator().getOutputDataSchema();
+                dataTuples.stream().forEach(p -> serializedDataTuples.add(outputSchema.serializeTuple(p)));
+            } else {
+                dataTuples.stream().forEach(p -> serializedDataTuples.add(schema.serializeTuple(p)));
+            }
+
 
             tuples.addAll(serializedDataTuples);
         }
@@ -257,7 +264,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
 //        collector.emit(Streams.FileSystemQueryStream, new Values(queryId, tuples, metrics));
 //        tuples.clear();
-        collector.emit(Streams.FileSystemQueryStream, new Values(queryId, tuples, metrics));
+        collector.emit(Streams.FileSystemQueryStream, new Values(subQuery, tuples, metrics));
 
 //        collector.emit(Streams.FileSubQueryFinishStream, new Values("finished"));
     }

@@ -3,6 +3,7 @@ package indexingTopology.aggregator;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import indexingTopology.data.PartialQueryResult;
+import sun.security.provider.Sun;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -14,7 +15,7 @@ import java.util.Map;
  */
 public class Aggregator<Key extends Number & Comparable<Key>> implements Serializable{
 
-    private Map<Key, Object[]> aggregationResults = new HashMap<>();
+    transient private Map<Key, Object[]> aggregationResults = new HashMap<>();
     private AggregateField[] aggregateFields;
     final private int[] aggregateColumnIndexes;
     final private int groupByIndex;
@@ -39,6 +40,11 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
 
     public void aggregate(DataTuple dataTuple) {
         //TODO: performance optimization by computing the group-by column index before aggregate.
+
+        if (aggregationResults == null) {
+            aggregationResults = new HashMap<>();
+        }
+
         Key group = (Key) dataTuple.get(groupByIndex);
         aggregationResults.computeIfAbsent(group, p -> {
             Object[] aggregationValues = new Object[aggregateFields.length];
@@ -73,7 +79,7 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
                 fieldName = aggregateField.aggregateFieldName();
 
             if (aggregateField.function instanceof Count) {
-                dataSchema.addDoubleField(fieldName);
+                dataSchema.addLongField(fieldName);
             } else if (aggregateField.function instanceof Sum) {
                 dataSchema.addDoubleField(fieldName);
             } else if (aggregateField.function instanceof Min) {
@@ -111,7 +117,10 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
         DataSchema globalInputSchema = getOutputDataSchema();
         AggregateField[] newAggregateFields = new AggregateField[aggregateFields.length];
         for (int i = 0; i < aggregateFields.length; i++) {
-            newAggregateFields[i] = new AggregateField(aggregateFields[i].function, aggregateFields[i].aggregateFieldName());
+            if (aggregateFields[i].function instanceof Count)
+                newAggregateFields[i] = new AggregateField(new Sum(), aggregateFields[i].aggregateFieldName());
+            else
+                newAggregateFields[i] = new AggregateField(aggregateFields[i].function, aggregateFields[i].aggregateFieldName());
         }
         return new Aggregator<>(globalInputSchema, inputSchema.getFieldName(groupByIndex), true, newAggregateFields);
     }

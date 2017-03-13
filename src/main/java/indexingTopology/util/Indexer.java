@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Created by acelzj on 1/3/17.
  */
-public class Indexer<DataType extends Number> extends Observable {
+public class Indexer<DataType extends Number & Comparable<DataType>> extends Observable {
 
     private ArrayBlockingQueue<DataTuple> pendingQueue;
 
@@ -513,25 +513,36 @@ public class Indexer<DataType extends Number> extends Observable {
                 Long startTimestamp = subQuery.getStartTimestamp();
                 Long endTimestamp = subQuery.getEndTimestamp();
 
-                List<byte[]> serializedTuples = new ArrayList<>();
-                List<byte[]> serializedTuplesWithinTimestamp = new ArrayList<>();
-
-
-                serializedTuples.addAll(indexedData.searchRange((Comparable) leftKey, (Comparable) rightKey));
+                List<byte[]> serializedTuples = indexedData.searchRange(leftKey, rightKey);
+                List<DataTuple> dataTuples = new ArrayList<>();
 
 
                 for (int i = 0; i < serializedTuples.size(); ++i) {
                     DataTuple dataTuple = schema.deserializeToDataTuple(serializedTuples.get(i));
                     Long timestamp = (Long) schema.getValue("timestamp", dataTuple);
                     if (timestamp >= startTimestamp && timestamp <= endTimestamp) {
-                        serializedTuplesWithinTimestamp.add(serializedTuples.get(i));
+                        if (subQuery.getPredicate() == null || subQuery.getPredicate().test(dataTuple))
+                            dataTuples.add(dataTuple);
                     }
+                }
+
+                if (subQuery.getAggregator() != null) {
+                    subQuery.getAggregator().aggregate(dataTuples);
+                    dataTuples = subQuery.getAggregator().getResults().dataTuples;
+                }
+
+                List<byte[]> serializedQueryResults = new ArrayList<>();
+                for(DataTuple dataTuple: dataTuples) {
+                    if (subQuery.getAggregator() != null)
+                        serializedQueryResults.add(subQuery.getAggregator().getOutputDataSchema().serializeTuple(dataTuple));
+                    else
+                        serializedQueryResults.add(schema.serializeTuple(dataTuple));
                 }
 
                 processQuerySemaphore.release();
 
                 try {
-                    queryResultQueue.put(new Pair(queryId, serializedTuplesWithinTimestamp));
+                    queryResultQueue.put(new Pair(subQuery, serializedQueryResults));
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
