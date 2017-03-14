@@ -102,10 +102,14 @@ public class Generator extends InputStreamReceiver {
 //                        Integer key = distribution.sample() - 1;
 //                        DataTuple dataTuple = new DataTuple(car.id, random.nextDouble(), new String(new char[payloadSize]), timestamp);
                         Integer key = (int) distribution.sample();
+
+                        while (key > mean + 3 * sigma || key < mean - 3 * sigma) {
+                            key = (int) distribution.sample();
+                        }
 //                        System.out.println("sampled key " + key);
 //                        key = key % (int) (mean + 3 * sigma);
 //                        System.out.println("key " + key);
-                        final DataTuple dataTuple = new DataTuple(car.id, Math.abs(key) % ((int) (2 * mean)), new String(new char[payloadSize]), timestamp);
+                        final DataTuple dataTuple = new DataTuple(car.id, key, new String(new char[payloadSize]), timestamp);
 //                        DataTuple dataTuple = new DataTuple(car.id, key.doubleValue(), new String(new char[payloadSize]), timestamp);
 //                        System.out.println(tupleId + " has been emitted!!!");
                         inputQueue.put(dataTuple);
@@ -118,7 +122,7 @@ public class Generator extends InputStreamReceiver {
         });
         generationThread.start();
 
-        createDistributionChangingThread();
+//        createDistributionChangingThread();
     }
 
 }

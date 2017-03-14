@@ -212,7 +212,7 @@ public class Indexer<DataType extends Number> extends Observable {
 
             while (true) {
 
-//                if (executed.get() >= TopologyConfig.SKEWNESS_DETECTION_THRESHOLD) {
+//                if (executed.get() >= TopologyConfig.) {
 //                    if (indexedData.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
 //                        while (!pendingQueue.isEmpty()) {
 //                            try {
@@ -281,19 +281,19 @@ public class Indexer<DataType extends Number> extends Observable {
 //                    String fileName = null;
 //                    fileName = null;
 
-//                    writeTreeIntoChunk();
+                    writeTreeIntoChunk();
 
-//                    try {
-//                        if (TopologyConfig.HDFSFlag) {
-//                            fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
-//                        } else {
-//                            fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
-//                        }
+                    try {
+                        if (TopologyConfig.HDFSFlag) {
+                            fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
+                        } else {
+                            fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
+                        }
                         fileName = "taskId" + taskId + "chunk" + chunkId;
-//                        fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    }
+                        fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
 
 //                    KeyDomain keyDomain = new KeyDomain(minIndexValue, maxIndexValue);
                     keyDomain = new KeyDomain(minIndexValue, maxIndexValue);
