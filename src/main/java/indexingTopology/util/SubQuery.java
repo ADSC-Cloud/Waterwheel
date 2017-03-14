@@ -1,20 +1,24 @@
 package indexingTopology.util;
 
+import indexingTopology.aggregator.Aggregator;
+
 import java.io.Serializable;
 
 public class SubQuery <T extends Number> implements Serializable {
 
-    private long queryId;
+    public long queryId;
 
-    private T leftKey;
+    public T leftKey;
 
-    private T rightKey;
+    public T rightKey;
 
-    private Long startTimestamp;
+    public Long startTimestamp;
 
-    private Long endTimestamp;
+    public Long endTimestamp;
 
-    private DataTuplePredicate predicate;
+    public DataTuplePredicate predicate;
+
+    public Aggregator aggregator;
 
 
     public SubQuery(long queryId, T leftKey, T rightKey, Long startTimestamp, Long endTimestamp, DataTuplePredicate predicate) {
@@ -25,6 +29,18 @@ public class SubQuery <T extends Number> implements Serializable {
         this.endTimestamp = endTimestamp;
         this.predicate = predicate;
     }
+
+    public SubQuery(long queryId, T leftKey, T rightKey, Long startTimestamp, Long endTimestamp, DataTuplePredicate predicate, Aggregator aggregator) {
+        this.queryId = queryId;
+        this.leftKey = leftKey;
+        this.rightKey = rightKey;
+        this.startTimestamp = startTimestamp;
+        this.endTimestamp = endTimestamp;
+        this.predicate = predicate;
+        this.aggregator = aggregator;
+    }
+
+
 
     public SubQuery(long queryId, T leftKey, T rightKey
             ,Long startTimestamp, Long endTimestamp) {
@@ -53,6 +69,17 @@ public class SubQuery <T extends Number> implements Serializable {
 
     public DataTuplePredicate getPredicate() {
         return predicate;
+    }
+
+    public Aggregator getAggregator() {
+        return aggregator;
+    }
+
+    public String toString() {
+        String str = "Query: ";
+        str += String.format("key: [%s, %s], time: [%d, %d], predicate: %s, aggregator: %s", leftKey, rightKey,
+                startTimestamp, endTimestamp, predicate, aggregator);
+        return str;
     }
 
 }

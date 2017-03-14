@@ -6,6 +6,7 @@ import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 
+import javax.xml.crypto.Data;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -71,6 +72,12 @@ public class DataSchema implements Serializable {
         dataTypes.add(dataType);
     }
 
+    public void addField(DataType dataType, String fieldName) {
+        dataFieldNameToIndex.put(fieldName, fieldNames.size());
+        fieldNames.add(fieldName);
+        dataTypes.add(dataType);
+    }
+
     public void addVarcharField(String name, int length) {
         final DataType dataType = new DataType(String.class, length);
         dataFieldNameToIndex.put(name, fieldNames.size());
@@ -85,6 +92,13 @@ public class DataSchema implements Serializable {
         dataTypes.add(dataType);
     }
 
+//    public DataType getFieldDataType(String fieldName) {
+//        return dataTypes.get(getFieldIndex(fieldName));
+//    }
+//
+//    public DataType getFieldDataType(int index) {
+//        return dataTypes.get(index);
+//    }
 
     public Fields getFieldsObject() {
         return new Fields(fieldNames);
@@ -253,13 +267,25 @@ public class DataSchema implements Serializable {
         return indexField;
     }
 
+    public String getFieldName(int index) {
+        return fieldNames.get(index);
+    }
+
     public DataType getDataType(String name) {
         final int offset = dataFieldNameToIndex.get(name);
         return dataTypes.get(offset);
     }
 
+    public DataType getDataType(int index) {
+        return dataTypes.get(index);
+    }
+
     public DataType getIndexType() {
         return getDataType(indexField);
+    }
+
+    public int getFieldIndex(String fieldName) {
+        return dataFieldNameToIndex.get(fieldName);
     }
 
     public int getNumberOfFields() {
@@ -290,5 +316,34 @@ public class DataSchema implements Serializable {
             tupleLength += dataTypes.get(i).length;
         }
         return tupleLength;
+    }
+
+    public String toString() {
+        String ret = "";
+        for (int i = 0; i < dataTypes.size(); i++) {
+            ret += String.format("%s, %s, %d bytes\n", fieldNames.get(i), dataTypes.get(i).type.toString(),
+                    dataTypes.get(i).length);
+        }
+        ret += String.format("index field: %s\n", indexField);
+        return ret;
+    }
+
+    public boolean equals(Object object) {
+        if (!(object instanceof DataSchema))
+            return false;
+        DataSchema schema = (DataSchema) object;
+        if (schema.dataTypes.size() != this.dataTypes.size())
+            return false;
+        for (int i = 0; i < this.dataTypes.size(); i++) {
+            if (!dataTypes.get(i).equals(this.dataTypes.get(i)))
+                return false;
+            if (!fieldNames.get(i).equals(this.fieldNames.get(i)))
+                return false;
+        }
+
+        if (this.indexField != null && schema.indexField !=null && ! this.indexField.equals(schema.indexField))
+            return false;
+
+        return true;
     }
 }

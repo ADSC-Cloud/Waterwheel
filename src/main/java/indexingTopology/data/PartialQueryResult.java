@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * Created by robert on 3/3/17.
  */
-public class PartialQueryResult extends Response {
+public class PartialQueryResult implements Response {
 
     public List<DataTuple> dataTuples = new ArrayList<>();
 
@@ -17,6 +17,12 @@ public class PartialQueryResult extends Response {
     private int capacity;
 
     private boolean EOFflag = false;
+
+    public PartialQueryResult(PartialQueryResult partialQueryResult) {
+        this.capacity = partialQueryResult.capacity;
+        this.EOFflag = partialQueryResult.EOFflag;
+        this.dataTuples = partialQueryResult.dataTuples;
+    }
 
     public PartialQueryResult(int capacity) {
         this.capacity = capacity;

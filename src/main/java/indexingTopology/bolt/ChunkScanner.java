@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 /**
  * Created by acelzj on 11/15/16.
  */
-public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt {
+public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseRichBolt {
 
     OutputCollector collector;
 
@@ -46,7 +46,7 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt {
 
     private static final Logger LOG = LoggerFactory.getLogger(ChunkScanner.class);
 
-    private transient ArrayBlockingQueue<SubQuery> pendingQueue;
+    private transient ArrayBlockingQueue<SubQuery<TKey>> pendingQueue;
 
     private transient Semaphore subQueryHandlingSemaphore;
 
@@ -92,9 +92,9 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt {
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
 
-        blockIdToCacheUnit = new LRUCache<BlockId, CacheUnit>(TopologyConfig.CACHE_SIZE);
+        blockIdToCacheUnit = new LRUCache<>(TopologyConfig.CACHE_SIZE);
 
-        pendingQueue = new ArrayBlockingQueue<SubQuery>(1024);
+        pendingQueue = new ArrayBlockingQueue<>(1024);
 
         subQueryHandlingSemaphore = new Semaphore(1);
 
@@ -233,7 +233,14 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt {
 
             //serialize
             List<byte[]> serializedDataTuples = new ArrayList<>();
-            dataTuples.stream().forEach(p -> serializedDataTuples.add(schema.serializeTuple(p)));
+
+            if (subQuery.getAggregator() != null) {
+                DataSchema outputSchema = subQuery.getAggregator().getOutputDataSchema();
+                dataTuples.stream().forEach(p -> serializedDataTuples.add(outputSchema.serializeTuple(p)));
+            } else {
+                dataTuples.stream().forEach(p -> serializedDataTuples.add(schema.serializeTuple(p)));
+            }
+
 
             tuples.addAll(serializedDataTuples);
         }
@@ -257,7 +264,7 @@ public class ChunkScanner <TKey extends Comparable<TKey>> extends BaseRichBolt {
 
 //        collector.emit(Streams.FileSystemQueryStream, new Values(queryId, tuples, metrics));
 //        tuples.clear();
-        collector.emit(Streams.FileSystemQueryStream, new Values(queryId, tuples, metrics));
+        collector.emit(Streams.FileSystemQueryStream, new Values(subQuery, tuples, metrics));
 
 //        collector.emit(Streams.FileSubQueryFinishStream, new Values("finished"));
     }

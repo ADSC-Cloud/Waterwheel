@@ -21,15 +21,15 @@ import java.util.*;
 /**
  * Created by acelzj on 12/12/16.
  */
-public class MetadataServer extends BaseRichBolt {
+public class MetadataServer <Key extends Number> extends BaseRichBolt {
 
     private OutputCollector collector;
 
     private Map<Integer, Integer> intervalToPartitionMapping;
 
-    private Double upperBound;
+    private Key upperBound;
 
-    private Double lowerBound;
+    private Key lowerBound;
 
     private FilePartitionSchemaManager filePartitionSchemaManager;
 
@@ -62,7 +62,7 @@ public class MetadataServer extends BaseRichBolt {
     private String path = "/MetadataNode";
 
 
-    public MetadataServer(Double lowerBound, Double upperBound) {
+    public MetadataServer(Key lowerBound, Key upperBound) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
     }
@@ -166,7 +166,7 @@ public class MetadataServer extends BaseRichBolt {
 //                                histogram.getHistogram(), getTotalWorkLoad(workLoads));
                         this.intervalToPartitionMapping = manager.getRepartitionPlan();
                         System.out.println("after repartition " + intervalToPartitionMapping);
-                        this.balancedPartition = new BalancedPartition(numberOfPartitions, lowerBound, upperBound,
+                        this.balancedPartition = new BalancedPartition<>(numberOfPartitions, lowerBound, upperBound,
                                 intervalToPartitionMapping);
                         repartitionEnabled = false;
                         collector.emit(Streams.IntervalPartitionUpdateStream,
@@ -176,7 +176,7 @@ public class MetadataServer extends BaseRichBolt {
                         collector.emit(Streams.LoadBalanceStream, new Values("newIntervalPartition"));
                     } else {
                         System.out.println("skewness is not detected!!!");
-                        System.out.println(histogram.getHistogram());
+//                        System.out.println(histogram.getHistogram());
                     }
 
                     numberOfStaticsReceived = 0;

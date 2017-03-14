@@ -1,9 +1,12 @@
 package indexingTopology.client;
 
+import indexingTopology.data.DataTuple;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by robert on 2/3/17.
@@ -32,33 +35,37 @@ public class Client {
         System.out.println("Connected with " + serverHost);
     }
 
+    public void connectWithTimeout(int timeoutInMilliseconds) throws IOException {
+        long startTime = System.currentTimeMillis();
+        while (true) {
+            try {
+                connect();
+                break;
+            } catch (IOException e) {
+                if (System.currentTimeMillis() - startTime >= timeoutInMilliseconds)
+                    throw e;
+            }
+        }
+    }
+
     public void close() throws IOException {
         objectInputStream.close();
         objectOutputStream.close();
         client.close();
     }
 
-    public Response queryAPINumberOne() throws IOException, ClassNotFoundException {
-        objectOutputStream.writeObject("string");
-        return (Response)objectInputStream.readObject();
-    }
-
-    public Response temporalRangeQuery(Number lowKey, Number highKey, long startTime, long endTime) throws IOException,
-            ClassNotFoundException {
-        objectOutputStream.writeObject(new ClientQueryRequest<Number>(lowKey, highKey, startTime, endTime));
-        return (Response) objectInputStream.readObject();
-    }
-
-
-
-
-
     public static void main(String[] args) throws Exception {
-        Client client = new Client("localhost", 10000);
-        client.connect();
-        Response response = client.temporalRangeQuery(100, 100, 0, 1000);
+        QueryClient queryClient = new QueryClient("localhost", 10001);
+        queryClient.connect();
+        Response queryResponse = queryClient.temporalRangeQuery(0.0, 10000.0, 0, Long.MAX_VALUE );
         System.out.println("Query one is submitted!");
-        System.out.println(response);
+        System.out.println(queryResponse);
+
+//
+//        IngestionClient ingestionClient = new IngestionClient("localhost", 10000);
+//        ingestionClient.connect();
+//        Response ingestionResponse = ingestionClient.append(new DataTuple(100L, 200.3, "payload", System.currentTimeMillis()));
+//        System.out.print(ingestionResponse);
     }
 
 }

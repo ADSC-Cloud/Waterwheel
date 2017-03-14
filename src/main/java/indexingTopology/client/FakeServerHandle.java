@@ -3,19 +3,18 @@ package indexingTopology.client;
 import indexingTopology.data.DataTuple;
 import indexingTopology.data.PartialQueryResult;
 
+import java.io.IOException;
 import java.net.Socket;
 
 /**
  * Created by robert on 3/3/17.
  */
-public class FackServerHandle extends ServerHandle {
+public class FakeServerHandle extends ServerHandle implements QueryHandle, AppendRequestHandle {
 
-    public FackServerHandle(Socket client) {
-        super(client);
+    public FakeServerHandle(int i) {
     }
 
-    @Override
-    Response handleClientQueryRequest(ClientQueryRequest clientQueryRequest) {
+    public void handle(final QueryRequest clientQueryRequest) throws IOException {
         DataTuple dataTuple = new DataTuple();
         dataTuple.add("ID 1");
         dataTuple.add(100);
@@ -29,12 +28,14 @@ public class FackServerHandle extends ServerHandle {
         PartialQueryResult particalQueryResult = new PartialQueryResult();
         particalQueryResult.add(dataTuple);
         particalQueryResult.add(dataTuple1);
-        return particalQueryResult;
+        objectOutputStream.writeObject(new QueryResponse(particalQueryResult, 1L));
+
     }
 
+
     @Override
-    Response handleTupleAppend(DataTuple tuple) {
-        return null;
+    public void handle(final AppendRequest tuple) throws IOException {
+        objectOutputStream.writeObject(new MessageResponse(String.format("Insertion [%s] success!", tuple.dataTuple)));
     }
 
 }

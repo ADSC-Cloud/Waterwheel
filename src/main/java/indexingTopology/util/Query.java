@@ -1,5 +1,6 @@
 package indexingTopology.util;
 
+import indexingTopology.aggregator.Aggregator;
 import indexingTopology.data.DataTuple;
 
 import java.io.Serializable;
@@ -8,28 +9,23 @@ import java.util.function.Predicate;
 /**
  * Created by robert on 9/2/17.
  */
-public class Query <T extends Number> implements Serializable {
-    public T leftKey;
-    public T rightKey;
-    public Long startTimestamp;
-    public Long endTimestamp;
-    public long id;
-    public Predicate<DataTuple> predicate;
-    public Query(T leftKey, T rightKey, Long startTimestamp, Long endTimestamp) {
-        this.leftKey = leftKey;
-        this.rightKey = rightKey;
-        this.startTimestamp = startTimestamp;
-        this.endTimestamp = endTimestamp;
-    }
+public class Query <T extends Number> extends SubQuery<T> {
+
+
     public Query(long id, T leftKey, T rightKey, Long startTimestamp, Long endTimestamp) {
-        this.id = id;
-        this.leftKey = leftKey;
-        this.rightKey = rightKey;
-        this.startTimestamp = startTimestamp;
-        this.endTimestamp = endTimestamp;
+        super(id, leftKey, rightKey, startTimestamp, endTimestamp, null, null);
     }
-    public void setPredicate(Predicate<DataTuple> predicate) {
-        this.predicate = predicate;
+
+    public Query(long id, T leftKey, T rightKey, Long startTimestamp, Long endTimestamp, DataTuplePredicate predicate,
+                 Aggregator aggregator) {
+        super(id, leftKey, rightKey, startTimestamp, endTimestamp, predicate, aggregator);
+    }
+
+    public String toString() {
+        String str = "Query: ";
+        str += String.format("key: [%s, %s], time: [%d, %d], predicate: %s, aggregator: %s", leftKey, rightKey,
+                startTimestamp, endTimestamp, predicate, aggregator);
+        return str;
     }
 
 }

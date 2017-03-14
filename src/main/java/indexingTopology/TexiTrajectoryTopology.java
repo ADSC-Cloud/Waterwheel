@@ -1,10 +1,11 @@
 package indexingTopology;
 
 import indexingTopology.data.DataSchema;
+import indexingTopology.util.TopologyGenerator;
 import org.apache.storm.Config;
 import org.apache.storm.StormSubmitter;
+import org.apache.storm.generated.StormTopology;
 import org.apache.storm.topology.TopologyBuilder;
-import indexingTopology.streams.Streams;
 import indexingTopology.bolt.*;
 import indexingTopology.util.texi.City;
 import indexingTopology.util.texi.TrajectoryGenerator;
@@ -31,8 +32,8 @@ public class TexiTrajectoryTopology {
         DataSchema schema = new DataSchema();
 //        schema.addDoubleField("id");
         schema.addLongField("id");
-//        schema.addDoubleField("zcode");
-        schema.addIntField("zcode");
+        schema.addDoubleField("zcode");
+//        schema.addIntField("zcode");
         schema.addVarcharField("payload", payloadSize);
         schema.setPrimaryIndexField("zcode");
 
@@ -60,70 +61,31 @@ public class TexiTrajectoryTopology {
         Double lowerBound = mean - 3 * sigma;
         Double upperBound = mean + 3 * sigma;
 
-        String path = "/home/acelzj";
 
-        boolean enableLoadBalance = true;
+        final boolean enableLoadBalance = false;
 
+//        InputStreamReceiver dataSource = new InputStreamReceiverServer(schemaWithTimestamp, 10000);
+        InputStreamReceiver dataSource = new Generator(schemaWithTimestamp, generator, payloadSize, city);
 
-//        builder.setSpout(TupleGenerator, new TexiTrajectoryGenerator(schema, generator, payloadSize, city), 1);
-//        builder.setSpout(TupleGenerator, new TexiTrajectoryGenerator(schemaWithTimestamp, generator, payloadSize, city), 16);
+//        QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound, upperBound, 10001);
+        QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryGenerator<>(lowerBound, upperBound);
 
-        builder.setBolt(TupleGenerator, new Generator(schemaWithTimestamp, generator, payloadSize, city), 14)
-                .directGrouping(IndexerBolt, Streams.AckStream);
+        TopologyGenerator<Double> topologyGenerator = new TopologyGenerator<>();
 
-        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher(schemaWithTimestamp, lowerBound, upperBound, enableLoadBalance, false), 14)
-                .localOrShuffleGrouping(TupleGenerator, Streams.IndexStream)
-                .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
-                .allGrouping(MetadataServer, Streams.StaticsRequestStream);
-//                .allGrouping(LogWriter, Streams.ThroughputRequestStream);
-
-        builder.setBolt(IndexerBolt, new IngestionBolt(schemaWithTimestamp), 8)
-                .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
-                .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream) // direct grouping should be used.
-                .directGrouping(RangeQueryDecompositionBolt, Streams.TreeCleanStream)
-                .allGrouping(LogWriter, Streams.ThroughputRequestStream);
-        // And RangeQueryDecompositionBolt should emit to this stream via directEmit!!!!!
-
-        builder.setBolt(RangeQueryDecompositionBolt, new QueryCoordinator(lowerBound, upperBound), 1)
-                .shuffleGrouping(ResultMergeBolt, Streams.QueryFinishedStream)
-                .shuffleGrouping(ResultMergeBolt, Streams.PartialQueryResultDeliveryStream)
-                .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSubQueryFinishStream)
-                .shuffleGrouping(MetadataServer, Streams.FileInformationUpdateStream)
-                .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
-                .shuffleGrouping(MetadataServer, Streams.TimestampUpdateStream);
-
-        builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner(schemaWithTimestamp), 1)
-//                .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream)
-                .directGrouping(ResultMergeBolt, Streams.SubQueryReceivedStream)
-                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream); //make comparision with our method.
-
-        builder.setBolt(ResultMergeBolt, new ResultMerger(schemaWithTimestamp), 1)
-                .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSystemQueryStream)
-                .shuffleGrouping(IndexerBolt, Streams.BPlusTreeQueryStream)
-                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryInformationStream)
-                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryInformationStream)
-                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.PartialQueryResultReceivedStream);
-
-        builder.setBolt(MetadataServer, new MetadataServer(lowerBound, upperBound), 1)
-                .shuffleGrouping(RangeQueryDispatcherBolt, Streams.StatisticsReportStream)
-                .shuffleGrouping(IndexerBolt, Streams.TimestampUpdateStream)
-                .shuffleGrouping(IndexerBolt, Streams.FileInformationUpdateStream)
-                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.EnableRepartitionStream);
-
-        builder.setBolt(LogWriter, new LogWriter(), 1)
-//                .shuffleGrouping(RangeQueryDispatcherBolt, Streams.ThroughputReportStream)
-                .shuffleGrouping(IndexerBolt, Streams.ThroughputReportStream)
-                .shuffleGrouping(MetadataServer, Streams.LoadBalanceStream);
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schemaWithTimestamp, lowerBound, upperBound, enableLoadBalance, dataSource, queryCoordinator);
 
         Config conf = new Config();
         conf.setDebug(false);
-        conf.setNumWorkers(4);
+        conf.setNumWorkers(1);
 
         conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
 //        conf.put(Config.SUPERVISOR_CHILDOPTS, "-Xmx2048m");
         conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
-        StormSubmitter.submitTopologyWithProgressBar(args[0], conf, builder.createTopology());
+//        LocalCluster cluster = new LocalCluster();
+//        cluster.submitTopology("T1", conf, builder.createTopology());
+
+        StormSubmitter.submitTopologyWithProgressBar(args[0], conf, topology);
     }
 
 }
