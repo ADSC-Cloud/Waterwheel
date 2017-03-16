@@ -29,13 +29,14 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
     private static final String LogWriter = "LogWriter";
 
     public StormTopology generateIndexingTopology(DataSchema dataSchema, Key lowerBound, Key upperBound, boolean enableLoadBalance,
-                                                  InputStreamReceiver dataSource, QueryCoordinator<Key> queryCoordinator ) {
+                                                  InputStreamReceiver dataSource, QueryCoordinator<Key> queryCoordinator,
+                                                  DataTupleMapper dataTupleMapper) {
         TopologyBuilder builder = new TopologyBuilder();
 
         builder.setBolt(TupleGenerator, dataSource, 1)
                 .directGrouping(IndexerBolt, Streams.AckStream);
 
-        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher<>(dataSchema, lowerBound, upperBound, enableLoadBalance, false), 1)
+        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher<>(dataSchema, lowerBound, upperBound, enableLoadBalance, false, dataTupleMapper), 1)
                 .localOrShuffleGrouping(TupleGenerator, Streams.IndexStream)
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
@@ -81,5 +82,10 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
                 .shuffleGrouping(MetadataServer, Streams.LoadBalanceStream);
 
         return builder.createTopology();
+    }
+
+    public StormTopology generateIndexingTopology(DataSchema dataSchema, Key lowerBound, Key upperBound, boolean enableLoadBalance,
+                                                  InputStreamReceiver dataSource, QueryCoordinator<Key> queryCoordinator) {
+        return generateIndexingTopology(dataSchema, lowerBound, upperBound, enableLoadBalance, dataSource, queryCoordinator, null);
     }
 }

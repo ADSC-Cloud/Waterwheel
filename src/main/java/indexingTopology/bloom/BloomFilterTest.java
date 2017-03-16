@@ -3,9 +3,6 @@ package indexingTopology.bloom;
 import com.google.common.base.Charsets;
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
-import com.google.common.io.LittleEndianDataInputStream;
-import com.oracle.tools.packager.IOUtils;
-import com.sun.glass.ui.SystemClipboard;
 
 import java.io.*;
 
