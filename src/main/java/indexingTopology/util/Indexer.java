@@ -14,9 +14,10 @@ import javafx.util.Pair;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -32,7 +33,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
     private Map<Domain, BTree> domainToBTreeMapping;
 
-    private BTree indexedData;
+    private BTree bTree;
 
     private IndexingRunnable indexingRunnable;
 
@@ -72,9 +73,8 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
     private int taskId;
 
-    private Semaphore processQuerySemaphore;
-
-    private BTree clonedIndexedData;
+//    private Semaphore processQuerySemaphore;
+    private Lock lock;
 
     private TimeDomain timeDomain;
 
@@ -87,11 +87,11 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
     private ArrayBlockingQueue<Pair> informationToUpdatePendingQueue;
 
     private Integer estimatedSize;
+    private Integer estimatedDataSize;
 
     private int tupleLength;
 
     private int keyLength;
-
 
     private Long start;
 
@@ -121,9 +121,10 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
         this.schema = schema.duplicate();
 
-        this.processQuerySemaphore = new Semaphore(1);
+//        this.processQuerySemaphore = new Semaphore(1);
+        this.lock = new ReentrantLock();
 
-        this.indexedData = new BTree(TopologyConfig.BTREE_ORDER);
+        this.bTree = new BTree(TopologyConfig.BTREE_ORDER);
 
         kryo = new Kryo();
         kryo.register(BTree.class, new KryoTemplateSerializer());
@@ -135,6 +136,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
         this.taskId = taskId;
 
         this.estimatedSize = 0;
+        this.estimatedDataSize = 0;
 
         this.queryPendingQueue = queryPendingQueue;
 
@@ -212,8 +214,8 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
             while (true) {
 
-//                if (executed.get() >= TopologyConfig.) {
-//                    if (indexedData.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
+//                if (estimatedDataSize >= TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE * TopologyConfig.CHUNK_SIZE) {
+//                    if (bTree.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
 //                        while (!pendingQueue.isEmpty()) {
 //                            try {
 //                                Thread.sleep(1);
@@ -221,40 +223,25 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 //                                e.printStackTrace();
 //                            }
 //                        }
-
-//                        System.out.println("pengding queue has been empty, the template can be rebuilt!!!");
-
 //                        terminateIndexingThreads();
-
-//                        System.out.println("indexing threads have been terminated!!!");
-
-//                        try {
-//                            System.out.println("trying to acquire the semaphore");
-//                            System.out.println("queue length " + processQuerySemaphore.getQueueLength() + "processing runnable");
-//                            processQuerySemaphore.acquire();
-//                            if (processQuerySemaphore.tryAcquire()) {
-//                            System.out.println("semaphore has been acquired in input processing runnable!!!");
-//                        } catch (InterruptedException e) {
-//                            e.printStackTrace();
-//                        }
-//                                terminateIndexingThreads();
-
-//                                System.out.println("begin to rebuild the template!!!");
-
-//                                long start = System.currentTimeMillis();
-
-//                                indexedData = templateUpdater.createTreeWithBulkLoading(indexedData);
-
-//                                processQuerySemaphore.release();
-
-//                                System.out.println("Time used to update template " + (System.currentTimeMillis() - start));
-
-//                              System.out.println("New tree has been built");
 //
-//                                executed.set(0L);
+//                        lock.lock();
+
+//                        System.out.println("begin to rebuild the template!!!");
 //
-//                                createIndexingThread();
-//                            }
+//                        long start = System.currentTimeMillis();
+//
+//                        bTree = templateUpdater.createTreeWithBulkLoading(bTree);
+//
+//                        lock.unlock();
+
+//                        System.out.println("Time used to update template " + (System.currentTimeMillis() - start));
+//
+//                        System.out.println("New tree has been built");
+
+//                        estimatedDataSize = 0;
+
+//                        createIndexingThread();
 //                    }
 //                }
 //                System.out.println("size " + estimatedSize);
@@ -278,8 +265,6 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                     terminateIndexingThreads();
 
                     FileSystemHandler fileSystemHandler = null;
-//                    String fileName = null;
-//                    fileName = null;
 
                     writeTreeIntoChunk();
 
@@ -300,10 +285,17 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 //                    TimeDomain timeDomain = new TimeDomain(minTimestamp, maxTimestamp);
                     timeDomain = new TimeDomain(minTimestamp, maxTimestamp);
 
-                    domainToBTreeMapping.put(new Domain(minTimestamp, maxTimestamp, minIndexValue, maxIndexValue), indexedData);
+//                    domainToBTreeMapping.put(new Domain(minTimestamp, maxTimestamp, minIndexValue, maxIndexValue), bTree);
+                    domainToBTreeMapping.put(new Domain(minTimestamp, maxTimestamp, minIndexValue, maxIndexValue), bTree);
 
-//                    indexedData = indexedData.clone();
-                    clonedIndexedData = indexedData.clone();
+//                    bTree = bTree.getTemplate();
+                    lock.lock();
+                    bTree = bTree.getTemplate();
+                    lock.unlock();
+//                    if (filledBPlusTree == null) {
+//                        System.out.println("cloned Indexed data null");
+//                        System.exit(120);
+//                    }
 
                     try {
                         informationToUpdatePendingQueue.put(new Pair(fileName, new Domain(keyDomain, timeDomain)));
@@ -314,8 +306,8 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                     setChanged();
                     notifyObservers("information update");
 
-                    clonedIndexedData.clearPayload();
-
+//                    filledBPlusTree.clearPayload();
+//                    bTree.clearPayload();
                     executed.set(0L);
 
                     minIndexValue = Double.MAX_VALUE;
@@ -370,6 +362,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                 numTuples += drainer.size();
 
                 estimatedSize += (drainer.size() * (keyLength + tupleLength + TopologyConfig.OFFSET_LENGTH));
+                estimatedDataSize += (drainer.size() * (keyLength + tupleLength + TopologyConfig.OFFSET_LENGTH));
 
                 drainer.clear();
 
@@ -426,11 +419,15 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                         localCount++;
                         final DataType indexValue = (DataType) schema.getIndexValue(tuple);
                         final byte[] serializedTuple = schema.serializeTuple(tuple);
-                        if (clonedIndexedData != null) {
-                            clonedIndexedData.insert((Comparable) indexValue, serializedTuple);
-                        } else {
-                            indexedData.insert((Comparable) indexValue, serializedTuple);
-                        }
+//                        if (filledBPlusTree != null) {
+//                            filledBPlusTree.insert((Comparable) indexValue, serializedTuple);
+//                        } else {
+//                            if (bTree == null) {
+//                                System.exit(111);
+//                                System.out.println("indexed data is null");
+//                            }
+                            bTree.insert((Comparable) indexValue, serializedTuple);
+//                        }
                     }
 
                     executed.addAndGet(drainer.size());
@@ -492,11 +489,11 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
         public void run() {
             while (true) {
 
-                try {
-                    processQuerySemaphore.acquire();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+//                try {
+//                    processQuerySemaphore.acquire();
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
 
                 SubQuery<DataType> subQuery = null;
 
@@ -513,7 +510,17 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                 Long startTimestamp = subQuery.getStartTimestamp();
                 Long endTimestamp = subQuery.getEndTimestamp();
 
-                List<byte[]> serializedTuples = indexedData.searchRange(leftKey, rightKey);
+                lock.lock();
+
+                List<byte[]> serializedTuples = new ArrayList<>();
+                serializedTuples.addAll(bTree.searchRange(leftKey, rightKey));
+
+                List<BTree> bTrees = new ArrayList<>(domainToBTreeMapping.values());
+                for (BTree bTree : bTrees) {
+                    serializedTuples.addAll(bTree.searchRange(leftKey, rightKey));
+                }
+                lock.unlock();
+
                 List<DataTuple> dataTuples = new ArrayList<>();
 
 
@@ -521,8 +528,9 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                     DataTuple dataTuple = schema.deserializeToDataTuple(serializedTuples.get(i));
                     Long timestamp = (Long) schema.getValue("timestamp", dataTuple);
                     if (timestamp >= startTimestamp && timestamp <= endTimestamp) {
-                        if (subQuery.getPredicate() == null || subQuery.getPredicate().test(dataTuple))
+                        if (subQuery.getPredicate() == null || subQuery.getPredicate().test(dataTuple)) {
                             dataTuples.add(dataTuple);
+                        }
                     }
                 }
 
@@ -533,13 +541,15 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
                 List<byte[]> serializedQueryResults = new ArrayList<>();
                 for(DataTuple dataTuple: dataTuples) {
-                    if (subQuery.getAggregator() != null)
+                    if (subQuery.getAggregator() != null) {
                         serializedQueryResults.add(subQuery.getAggregator().getOutputDataSchema().serializeTuple(dataTuple));
-                    else
+                    }
+                    else {
                         serializedQueryResults.add(schema.serializeTuple(dataTuple));
+                    }
                 }
 
-                processQuerySemaphore.release();
+//                processQuerySemaphore.release();
 
                 try {
                     queryResultQueue.put(new Pair(subQuery, serializedQueryResults));
@@ -555,9 +565,9 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
     public void cleanTree(Domain domain) {
 //        System.out.println("a tree has been removed!!!");
-        indexedData = clonedIndexedData;
-        clonedIndexedData = null;
+        lock.lock();
         domainToBTreeMapping.remove(domain);
+        lock.unlock();
     }
 
 
@@ -582,8 +592,6 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
     }
 
     private void writeTreeIntoChunk() {
-
-        BTree bTree = clonedIndexedData == null ? indexedData : clonedIndexedData;
 
         Output output = new Output(60000000, 500000000);
 

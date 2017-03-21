@@ -18,7 +18,7 @@ import static org.junit.Assert.*;
  */
 public class BTreeTest {
     @Test
-    public void testClone() throws Exception, UnsupportedGenericException {
+    public void testGetTemplate() throws Exception, UnsupportedGenericException {
         int order = 4;
         BTree bTree = new BTree(order);
 
@@ -47,38 +47,51 @@ public class BTreeTest {
             bTree.insert((double) key, bytes);
         }
 
+        BTreeLeafNode leaf = bTree.getLeftMostLeaf();
+        int numberOfLeaves = 0;
+        while (leaf != null) {
+            ++numberOfLeaves;
+            leaf = (BTreeLeafNode) leaf.rightSibling;
+        }
+
 //        bTree.printBtree();
 
         for (Integer key : keys) {
             assertEquals(1, bTree.searchRange((double) key, (double) key).size());
         }
 
-        BTree newBTree = bTree.clone();
+        BTree template = bTree.getTemplate();
 
 
         bTree.getRoot().keys = null;
 
 
         for (Integer key : keys) {
-            assertEquals(1, newBTree.searchRange((double) key, (double) key).size());
+            assertEquals(0, template.searchRange((double) key, (double) key).size());
         }
 
-        BTreeLeafNode leaf = newBTree.getLeftMostLeaf();
+        template.printBtree();
+
+        leaf = template.getLeftMostLeaf();
 
         while (leaf != null) {
             leaf = (BTreeLeafNode) leaf.rightSibling;
         }
 
-        newBTree.clearPayload();
+//        newBTree.clearPayload();
 
-        leaf = newBTree.getLeftMostLeaf();
+        int count = 0;
+        leaf = template.getLeftMostLeaf();
         while (leaf != null) {
             assertEquals(0, leaf.keyCount);
             assertEquals(0, leaf.atomicKeyCount.get());
             assertEquals(0, leaf.tuples.size());
             assertEquals(0, leaf.offsets.size());
             leaf = (BTreeLeafNode) leaf.rightSibling;
+            ++count;
         }
+
+        assertEquals(count, numberOfLeaves);
     }
 
     @Test

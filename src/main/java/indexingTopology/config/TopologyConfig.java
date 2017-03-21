@@ -14,7 +14,7 @@ public class TopologyConfig {
 
     public static final int TASK_QUEUE_CAPACITY = 10000;
 
-    public static int NUMBER_OF_INTERVALS = 100;
+    public static int NUMBER_OF_INTERVALS = 100000;
 
     public static final int BTREE_ORDER = 64;
 
@@ -24,7 +24,8 @@ public class TopologyConfig {
 
     public static String dataDir = "/home/lzj";
 
-    public static String dataFileDir = "/test_data/uniform_data.txt";
+    public static String dataFileDir = "/home/lzj/taxi-trajectory";
+//    public static String dataFileDir = "/home/acelzj/Downloads/taxi-trajectory";
 
     public static String logDir = "/logs";
 
@@ -51,4 +52,5 @@ public class TopologyConfig {
 
     public static final String HBASE_MASTER = "192.168.0.237:60000";
 
+    public static final boolean SHUFFLE_GROUPING_FLAG = false;
 }

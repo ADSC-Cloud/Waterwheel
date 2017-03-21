@@ -27,8 +27,8 @@ public class QueryCoordinatorWithQueryGenerator<T extends Number & Comparable<T>
 
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         super.prepare(map, topologyContext, outputCollector);
-        queryGenerationThread = new Thread(new QueryRunnable());
-        queryGenerationThread.start();
+//        queryGenerationThread = new Thread(new QueryRunnable());
+//        queryGenerationThread.start();
 
     }
 

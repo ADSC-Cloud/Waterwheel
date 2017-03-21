@@ -206,13 +206,12 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
     @Override
     public BTreeNode deepCopy(List<BTreeNode> nodes) {
         BTreeLeafNode node = new BTreeLeafNode(ORDER);
-        node.keyCount = keyCount;
+//        node.keyCount = keyCount;
 
-        node.keys = (ArrayList) keys.clone();
-        node.tuples = (ArrayList) tuples.clone();
-        node.offsets = (ArrayList) offsets.clone();
-        node.atomicKeyCount.set(this.atomicKeyCount.get());
-
+//        node.keys = (ArrayList) keys.getTemplate();
+//        node.tuples = (ArrayList) tuples.getTemplate();
+//        node.offsets = (ArrayList) offsets.getTemplate();
+//        node.atomicKeyCount.set(this.atomicKeyCount.get());
         nodes.add(node);
         return node;
     }

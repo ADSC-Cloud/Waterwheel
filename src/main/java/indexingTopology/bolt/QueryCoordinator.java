@@ -282,15 +282,15 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
             for (String fileName : fileNames) {
                 SubQuery subQuery = new SubQueryOnFile(queryId, leftKey, rightKey, fileName, startTimestamp, endTimestamp, query.predicate, query.aggregator);
-            //shuffle grouping
-            sendSubqueriesByshuffleGrouping(subQuery);
+//            shuffle grouping
+//            sendSubqueriesByshuffleGrouping(subQuery);
 
 //            /*task queue
-//                try {
-//                    taskQueue.put(subQuery);
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
+                try {
+                    taskQueue.put(subQuery);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
 //              */
 
                 /*our method
@@ -299,7 +299,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             }
 
 //            /* task queue
-//            sendSubqueriesFromTaskQueue();
+            sendSubqueriesFromTaskQueue();
 //            */
 
             /*our method

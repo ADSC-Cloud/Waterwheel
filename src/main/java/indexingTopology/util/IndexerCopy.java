@@ -450,7 +450,7 @@ public class IndexerCopy {
 
 //                    System.out.println("a chunk has been full");
 
-//                    indexedData = indexedData.clone();
+//                    indexedData = indexedData.getTemplate();
 //                    terminateQueryThreads();
 
                     if (templateMode) {

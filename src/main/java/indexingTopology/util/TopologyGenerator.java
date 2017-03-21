@@ -1,6 +1,7 @@
 package indexingTopology.util;
 
 import indexingTopology.bolt.*;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.streams.Streams;
 import indexingTopology.util.texi.City;
@@ -32,16 +33,16 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
                                                   InputStreamReceiver dataSource, QueryCoordinator<Key> queryCoordinator ) {
         TopologyBuilder builder = new TopologyBuilder();
 
-        builder.setBolt(TupleGenerator, dataSource, 1)
+        builder.setBolt(TupleGenerator, dataSource, 8)
                 .directGrouping(IndexerBolt, Streams.AckStream);
 
-        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher<>(dataSchema, lowerBound, upperBound, enableLoadBalance, false), 1)
+        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher<>(dataSchema, lowerBound, upperBound, enableLoadBalance, false), 8)
                 .localOrShuffleGrouping(TupleGenerator, Streams.IndexStream)
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 //                .allGrouping(LogWriter, Streams.ThroughputRequestStream);
 
-        builder.setBolt(IndexerBolt, new IngestionBolt(dataSchema), 1)
+        builder.setBolt(IndexerBolt, new IngestionBolt(dataSchema), 8)
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream) // direct grouping should be used.
                 .directGrouping(RangeQueryDecompositionBolt, Streams.TreeCleanStream)
@@ -57,10 +58,17 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.TimestampUpdateStream);
 
-        builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner<Key>(dataSchema), 1)
+
+        if (TopologyConfig.SHUFFLE_GROUPING_FLAG) {
+            builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner<Key>(dataSchema), 1)
 //                .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream)
-                .directGrouping(ResultMergeBolt, Streams.SubQueryReceivedStream)
-                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream); //make comparision with our method.
+                    .directGrouping(ResultMergeBolt, Streams.SubQueryReceivedStream)
+                    .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream); //make comparision with our method.
+        } else {
+            builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner<Key>(dataSchema), 1)
+                    .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream)
+                    .directGrouping(ResultMergeBolt, Streams.SubQueryReceivedStream);
+        }
 
         builder.setBolt(ResultMergeBolt, new ResultMerger(dataSchema), 1)
                 .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSystemQueryStream)

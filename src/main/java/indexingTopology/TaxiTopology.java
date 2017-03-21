@@ -1,20 +1,18 @@
 package indexingTopology;
 
+import indexingTopology.bolt.*;
 import indexingTopology.data.DataSchema;
 import indexingTopology.util.TopologyGenerator;
+import indexingTopology.util.texi.City;
 import org.apache.storm.Config;
 import org.apache.storm.StormSubmitter;
 import org.apache.storm.generated.StormTopology;
 import org.apache.storm.topology.TopologyBuilder;
-import indexingTopology.bolt.*;
-import indexingTopology.util.texi.City;
-import indexingTopology.util.texi.TrajectoryGenerator;
-import indexingTopology.util.texi.TrajectoryUniformGenerator;
 
 /**
- * Created by acelzj on 11/15/16.
+ * Created by acelzj on 16/3/17.
  */
-public class TexiTrajectoryTopology {
+public class TaxiTopology {
 
     static final String TupleGenerator = "TupleGenerator";
     static final String RangeQueryDispatcherBolt = "DispatcherBolt";
@@ -31,10 +29,11 @@ public class TexiTrajectoryTopology {
         final int payloadSize = 1;
         DataSchema schema = new DataSchema();
 //        schema.addDoubleField("id");
-        schema.addLongField("id");
-//        schema.addDoubleField("zcode");
+        schema.addIntField("id");
         schema.addIntField("zcode");
-        schema.addVarcharField("payload", payloadSize);
+        schema.addDoubleField("longitude");
+        schema.addDoubleField("latitude");
+//        schema.addIntField("zcode");
         schema.setPrimaryIndexField("zcode");
 
 
@@ -42,13 +41,12 @@ public class TexiTrajectoryTopology {
         schemaWithTimestamp.addLongField("timestamp");
 
 
-        final double x1 = 0;
-        final double x2 = 1000;
-        final double y1 = 0;
-        final double y2 = 500;
-        final int partitions = 100;
+        final double x1 = 115.0;
+        final double x2 = 117.0;
+        final double y1 = 39.0;
+        final double y2 = 41.0;
+        final int partitions = 1024;
 
-        TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
         City city = new City(x1, x2, y1, y2, partitions);
 
 
@@ -56,16 +54,16 @@ public class TexiTrajectoryTopology {
 
 //        Double upperBound = (double)city.getMaxZCode();
 //        Double upperBound = 200048.0;
-        Double sigma = 100000.0;
-        Double mean = 500000.0;
-        Double lowerBound = mean - 3 * sigma;
-        Double upperBound = mean + 3 * sigma;
+//        Double sigma = 100000.0;
+//        Double mean = 500000.0;
+        Double lowerBound = 0.0;
+        Double upperBound = city.getMaxZCode() * 1.0;
 
 
-        final boolean enableLoadBalance = false;
+        final boolean enableLoadBalance = true;
 
 //        InputStreamReceiver dataSource = new InputStreamReceiverServer(schemaWithTimestamp, 10000);
-        InputStreamReceiver dataSource = new Generator(schemaWithTimestamp, generator, payloadSize, city);
+        InputStreamReceiver dataSource = new TaxiDataGenerator(schemaWithTimestamp, city);
 
 //        QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound, upperBound, 10001);
         QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryGenerator<>(lowerBound, upperBound);
@@ -83,9 +81,8 @@ public class TexiTrajectoryTopology {
         conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 //        LocalCluster cluster = new LocalCluster();
-//        cluster.submitTopology("T1", conf, builder.createTopology());
+//        cluster.submitTopology("T1", conf, topology);
 
         StormSubmitter.submitTopologyWithProgressBar(args[0], conf, topology);
     }
-
 }

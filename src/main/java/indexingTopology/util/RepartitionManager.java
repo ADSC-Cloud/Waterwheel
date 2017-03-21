@@ -120,7 +120,7 @@ public class RepartitionManager {
 
         List<Long> workLoads = getWorkLoads();
 
-        System.out.println("workloads " + workLoads);
+//        System.out.println("workloads " + workLoads);
 
         Long sum = getTotalWorkLoad(workLoads);
 //        Long sum = getTotalWorkLoad(histogram);

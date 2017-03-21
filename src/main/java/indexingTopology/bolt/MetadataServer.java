@@ -160,12 +160,12 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
                     Double skewnessFactor = manager.getSkewnessFactor();
                     if (skewnessFactor > TopologyConfig.LOAD_BALANCE_THRESHOLD) {
                         System.out.println("skewness detected!!!");
-                        System.out.println(this.histogram.getHistogram());
+//                        System.out.println(this.histogram.getHistogram());
 //                        List<Long> workLoads = getWorkLoads(histogram);
 //                        RepartitionManager manager = new RepartitionManager(numberOfPartitions, intervalToPartitionMapping,
 //                                histogram.getHistogram(), getTotalWorkLoad(workLoads));
                         this.intervalToPartitionMapping = manager.getRepartitionPlan();
-                        System.out.println("after repartition " + intervalToPartitionMapping);
+//                        System.out.println("after repartition " + intervalToPartitionMapping);
                         this.balancedPartition = new BalancedPartition<>(numberOfPartitions, lowerBound, upperBound,
                                 intervalToPartitionMapping);
                         repartitionEnabled = false;

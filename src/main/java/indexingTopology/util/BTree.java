@@ -2,6 +2,7 @@ package indexingTopology.util;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Output;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
 
 import java.io.*;
@@ -13,7 +14,7 @@ import java.util.*;
  * so there are two different classes for each kind of node.
  * @param <TKey> the data type of the key
  */
-public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializable, Cloneable{
+public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializable {
 	private volatile BTreeNode<TKey> root;
 	private boolean templateMode;
 
@@ -291,11 +292,12 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		}
 	}
 
-    @Override
-	public BTree clone(){
+
+	public BTree getTemplate() {
 		BTree bTree = null;
-		try {
-			bTree = (BTree) super.clone();
+//		try {
+//			bTree = (BTree) super.getTemplate();
+			bTree = new BTree(TopologyConfig.BTREE_ORDER);
 
 			List<BTreeNode> leafNodes = new ArrayList<>();
 
@@ -313,9 +315,9 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
                 }
                 ++count;
             }
-		} catch (CloneNotSupportedException e) {
-			e.printStackTrace();
-		}
+//		} catch (CloneNotSupportedException e) {
+//			e.printStackTrace();
+//		}
 		return bTree;
 	}
 
@@ -339,6 +341,14 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		Kryo kryo = new Kryo();
 		kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
 		int count = 0;
+
+		if (this.root == leaf) {
+			this.root = new BTreeInnerNode(TopologyConfig.BTREE_ORDER);
+
+			((BTreeInnerNode) root).setChild(0, leaf);
+		}
+
+
 		while (leaf != null) {
 			offset = output.position();
 
@@ -357,6 +367,11 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	}
 
 	private BTreeNode<TKey> findParentOfLeafNodeShouldContainKey(TKey key) {
+
+		if (root.getKeyCount() == 0) {
+			return root;
+		}
+
 		BTreeInnerNode<TKey> currentNode = (BTreeInnerNode) this.root;
 		while (currentNode.children.size() > 0) {
 			BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChildShouldContainKey(key);

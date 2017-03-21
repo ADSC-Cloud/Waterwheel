@@ -266,7 +266,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 //        tuples.clear();
         collector.emit(Streams.FileSystemQueryStream, new Values(subQuery, tuples, metrics));
 
-//        collector.emit(Streams.FileSubQueryFinishStream, new Values("finished"));
+        collector.emit(Streams.FileSubQueryFinishStream, new Values("finished"));
     }
 
 
