@@ -60,7 +60,11 @@ public class ZOrderCoding implements Serializable {
     static public void main(String[] args) {
         ZOrderCoding zOrderCoding = new ZOrderCoding(256);
         System.out.println("bits:" + zOrderCoding.xBits);
-        System.out.println("getBits(3): " + zOrderCoding.getBits(3));
-        System.out.println("getBits(4): " + zOrderCoding.getBits(4));
+//        System.out.println("getBits(3): " + zOrderCoding.getBits(256));
+//        System.out.println("getBits(4): " + zOrderCoding.getBits(4000));
+
+        System.out.println(zOrderCoding.getZCode(100, 100));
+        System.out.println(zOrderCoding.getZCode(255, 254));
+//        System.out.println(zOrderCoding.getZCode(200000, 200000));
     }
 }

@@ -11,6 +11,7 @@ import indexingTopology.bolt.QueryCoordinatorWithQueryReceiverServer;
 import indexingTopology.client.*;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
+import indexingTopology.util.DataTupleMapper;
 import indexingTopology.util.DataTuplePredicate;
 import indexingTopology.util.TopologyGenerator;
 import indexingTopology.util.texi.City;
@@ -26,7 +27,9 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Collections;
+import java.util.function.Function;
 
 /**
  * Created by robert on 10/3/17.
@@ -393,6 +396,79 @@ public class TopologyOverallTest {
             killOptions.set_wait_secs(0);
             cluster.killTopology(topologyName);
             Thread.sleep(5000);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    @Test
+    public void testTopologyIntegerFilterWithTrivialMapper() {
+
+        final int ingestionPort = 10050;
+        final int queryPort = 10051;
+        final String topologyName = "test_5";
+
+        DataSchema schema = new DataSchema();
+        schema.addIntField("f1");
+        schema.addIntField("f2");
+        schema.addIntField("f3");
+        schema.addLongField("timestamp");
+        schema.setPrimaryIndexField("f1");
+
+
+        Integer lowerBound = 0;
+        Integer upperBound = 5000;
+
+        final boolean enableLoadBalance = false;
+
+        InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort);
+        QueryCoordinator<Integer> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound, upperBound, queryPort);
+
+        TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
+
+        DataTupleMapper dataTupleMapper = new DataTupleMapper(schema, (Serializable & Function<DataTuple, DataTuple>) t -> t);
+
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
+                enableLoadBalance, dataSource, queryCoordinator, dataTupleMapper);
+
+        Config conf = new Config();
+        conf.setDebug(false);
+        conf.setNumWorkers(1);
+
+        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+//        conf.put(Config.SUPERVISOR_CHILDOPTS, "-Xmx2048m");
+        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+
+        LocalCluster cluster = new LocalCluster();
+        cluster.submitTopology(topologyName, conf, topology);
+
+
+        int start = 0;
+        int step = 1;
+        int numberOfTuples = 50;
+
+        try {
+//            Thread.sleep(10000);
+            IngestionClient ingestionClient = new IngestionClient("localhost", ingestionPort);
+            ingestionClient.connectWithTimeout(10000);
+            for (int i = 0; i < numberOfTuples; i++) {
+                ingestionClient.append(new DataTuple(start + step * i, 0, 0, System.currentTimeMillis()));
+            }
+
+            Thread.sleep(1000);
+
+            QueryClient queryClient = new QueryClient("localhost", queryPort);
+            queryClient.connectWithTimeout(10000);
+            QueryResponse response = queryClient.temporalRangeQuery(0, 40, 0, Long.MAX_VALUE);
+
+            assertEquals(41, response.dataTuples.size());
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopology(topologyName);
+            Thread.sleep(5000);
+
 
         } catch (Exception e) {
             e.printStackTrace();

@@ -1,6 +1,7 @@
 package indexingTopology.bolt;
 
 import indexingTopology.data.DataTuple;
+import indexingTopology.util.DataTupleMapper;
 import org.apache.storm.metric.internal.RateTracker;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -23,7 +24,9 @@ import java.util.*;
 public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt {
     OutputCollector collector;
 
-    private final DataSchema schema;
+    private final DataSchema outputSchema;
+
+    private final DataSchema inputSchema;
 
     private List<Integer> targetTasks;
 
@@ -39,15 +42,30 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
 
     private boolean generateTimeStamp;
 
+    private DataTupleMapper tupleMapper;
+
     private RateTracker rateTracker;
 
-    public IngestionDispatcher(DataSchema schema, IndexType lowerBound, IndexType upperBound, boolean enableLoadBalance,
-                               boolean generateTimeStamp) {
-        this.schema = schema;
+    public IngestionDispatcher(DataSchema dataSchema, IndexType lowerBound, IndexType upperBound, boolean enableLoadBalance,
+                               boolean generateTimeStamp, DataTupleMapper tupleMapper) {
+        this.tupleMapper = tupleMapper;
+        if (tupleMapper == null) {
+            this.inputSchema = dataSchema;
+            this.outputSchema = dataSchema;
+        } else {
+            this.inputSchema = tupleMapper.getOriginalSchema();
+            this.outputSchema = dataSchema;
+        }
+
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
         this.enableLoadBalance = enableLoadBalance;
         this.generateTimeStamp = generateTimeStamp;
+    }
+
+    public IngestionDispatcher(DataSchema outputSchema, IndexType lowerBound, IndexType upperBound, boolean enableLoadBalance,
+                                          boolean generateTimeStamp) {
+        this(outputSchema, lowerBound, upperBound, enableLoadBalance, generateTimeStamp, null);
     }
 
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
@@ -77,11 +95,14 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
             Long tupleId = tuple.getLongByField("tupleId");
             int sourceTaskId = tuple.getIntegerByField("taskId");
 //                updateBound(indexValue);
-            DataTuple dataTuple = schema.deserializeToDataTuple(dataTupleBytes);
-            IndexType indexValue = (IndexType) schema.getIndexValue(dataTuple);
 
-//            System.out.println(indexValue);
+            DataTuple dataTuple = inputSchema.deserializeToDataTuple(dataTupleBytes);
 
+            if (tupleMapper != null) {
+                dataTuple = tupleMapper.map(dataTuple);
+            }
+
+            IndexType indexValue = (IndexType) outputSchema.getIndexValue(dataTuple);
 
             balancedPartition.record(indexValue);
 
@@ -101,7 +122,7 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
 //            collector.emitDirect(taskId, Streams.IndexStream, tuple, new Values(dataTuple));
 //            collector.emitDirect(taskId, Streams.IndexStream, tuple, new Values(schema.serializeTuple(dataTuple)));
 //            collector.emitDirect(taskId, Streams.IndexStream, tuple, new Values(schema.serializeTuple(dataTuple), tupleId));
-            collector.emitDirect(taskId, Streams.IndexStream, new Values(schema.serializeTuple(dataTuple), tupleId, sourceTaskId));
+            collector.emitDirect(taskId, Streams.IndexStream, new Values(outputSchema.serializeTuple(dataTuple), tupleId, sourceTaskId));
 //            collector.ack(tuple);
         } else if (tuple.getSourceStreamId().equals(Streams.IntervalPartitionUpdateStream)){
             System.out.println("partition has been updated!!!");
