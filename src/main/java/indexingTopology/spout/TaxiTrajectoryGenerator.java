@@ -23,8 +23,8 @@ import java.util.Random;
 /**
  * Created by acelzj on 7/27/16.
  */
-public class TexiTrajectoryGenerator extends BaseRichSpout {
-    private static final Logger LOG = LoggerFactory.getLogger(TexiTrajectoryGenerator.class);
+public class TaxiTrajectoryGenerator extends BaseRichSpout {
+    private static final Logger LOG = LoggerFactory.getLogger(TaxiTrajectoryGenerator.class);
 
     SpoutOutputCollector collector_;
     File file;
@@ -43,7 +43,7 @@ public class TexiTrajectoryGenerator extends BaseRichSpout {
 
     private Random random;
 
-    public TexiTrajectoryGenerator(DataSchema schema, TrajectoryGenerator generator, int payloadSize, City city)
+    public TaxiTrajectoryGenerator(DataSchema schema, TrajectoryGenerator generator, int payloadSize, City city)
             throws FileNotFoundException {
         this.schema = schema;
         this.generator = generator;
