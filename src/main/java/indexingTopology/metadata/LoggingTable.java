@@ -1,11 +1,11 @@
 package indexingTopology.metadata;
 
-/**
- * Created by john on 27/3/17.
- */
+import indexingTopology.config.TopologyConfig;
+
 import com.github.davidmoten.rtree.RTree;
 import com.github.davidmoten.rtree.geometry.Geometries;
 import com.github.davidmoten.rtree.geometry.Rectangle;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -18,7 +18,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 
-import indexingTopology.config.TopologyConfig;
 
 /**
  * Created by john on 26/3/17.
@@ -34,12 +33,27 @@ public class LoggingTable {
     private static long sizeInBytes = 0;
     private static final int minChildren = 2;
     private static final int maxChildren = 4;
+    private static RTree<FileMetaData, Rectangle> rTree = RTree.minChildren(minChildren).maxChildren(maxChildren).create();
+
+
+    /**
+     * Get the RTree maintained by LoggingTable
+     * @return a RTree object constructed by appending operations
+     */
+    public static RTree<FileMetaData, Rectangle> getrTree () {
+        return rTree;
+    }
 
     /**
      * append a meta data item to the meta log file. If the file does not exist,
      * create a new file defined in {@link TopologyConfig#HDFS_META_LOG_NAME}
      */
     public static synchronized void append(FileMetaData fileMetaData) throws IOException {
+
+        // add it to RTree first
+        rTree = rTree.add(fileMetaData, Geometries.rectangle(fileMetaData.keyRangeLowerBound, fileMetaData.startTime,
+                fileMetaData.keyRangeUpperBound, fileMetaData.endTime));
+
         Configuration conf = new Configuration();
         conf.set("dfs.replication", "1");
         conf.setBoolean("dfs.support.append", true);
@@ -103,7 +117,7 @@ public class LoggingTable {
         // check if the meta log file exist
         if (!fileSystem.exists(path)) throw new FileNotFoundException("Meta log file does not exist!");
 
-        RTree<FileMetaData, Rectangle> rTree = RTree.minChildren(minChildren).maxChildren(maxChildren).create();
+        RTree<FileMetaData, Rectangle> newRTree = RTree.minChildren(minChildren).maxChildren(maxChildren).create();
         byte[] bytes = new byte[(int) sizeInBytes];
 
         // read all meta log from HDFS to ByteBuffer, need to revise to blocked reading mode.
@@ -132,11 +146,11 @@ public class LoggingTable {
             FileMetaData fileMetaData = new FileMetaData(fileName, keyRangeLowerBound, keyRangeUpperBound, startTime, endTime);
 
             // add one FileMetaData item to RTree
-            rTree = rTree.add(fileMetaData, Geometries.rectangle(fileMetaData.keyRangeLowerBound, fileMetaData.startTime,
+            newRTree = newRTree.add(fileMetaData, Geometries.rectangle(fileMetaData.keyRangeLowerBound, fileMetaData.startTime,
                     fileMetaData.keyRangeUpperBound, fileMetaData.endTime));
         }
 
-        return rTree;
+        return newRTree;
     }
 
     /**
@@ -156,5 +170,9 @@ public class LoggingTable {
         Path path = new Path(TopologyConfig.HDFS_META_LOG_PATH);
 
         fileSystem.delete(path, false);
+    }
+
+    public static void visualize() {
+        rTree.visualize(600, 600).save("target/original.png");
     }
 }
