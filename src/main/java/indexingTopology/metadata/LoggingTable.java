@@ -40,7 +40,7 @@ public class LoggingTable {
      * Get the RTree maintained by LoggingTable
      * @return a RTree object constructed by appending operations
      */
-    public static RTree<FileMetaData, Rectangle> getrTree () {
+    public static RTree<FileMetaData, Rectangle> getRTree() {
         return rTree;
     }
 
