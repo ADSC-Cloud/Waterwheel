@@ -16,7 +16,6 @@ public class TopologyConfig {
     public static boolean RECONSTRUCT_SCHEMA = true;
     public static final String HDFS_META_LOG_PATH = "hdfs://localhost:9000/user/john/metaLog.txt";
     public static final String HDFS_HOST_LOCAL = "hdfs://localhost:9000/";
-    public static final String HDFS_META_LOG_NAME = "metaLog.dat";
 
     public static final int NUMBER_TUPLES_OF_A_CHUNK = 600000;
 //    public static final int NUMBER_TUPLES_OF_A_CHUNK = 200000;
