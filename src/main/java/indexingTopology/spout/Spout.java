@@ -11,10 +11,6 @@ import org.apache.storm.utils.Utils;
 import java.util.Map;
 import java.util.Random;
 
-
-/**
- * Created by john on 30/3/17.
- */
 public class Spout extends BaseRichSpout {
 
     private SpoutOutputCollector spoutOutputCollector;

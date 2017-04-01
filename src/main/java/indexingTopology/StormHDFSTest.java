@@ -16,9 +16,8 @@ import org.apache.storm.topology.TopologyBuilder;
 import org.apache.storm.utils.Utils;
 import indexingTopology.spout.Spout;
 
-
 /**
- * Created by john on 30/3/17.
+ * Test the HDFSHandler class
  */
 public class StormHDFSTest {
 

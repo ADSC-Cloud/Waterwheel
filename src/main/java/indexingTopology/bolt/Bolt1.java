@@ -12,9 +12,6 @@ import org.apache.storm.tuple.Values;
 
 import java.util.Map;
 
-/**
- * Created by john on 30/3/17.
- */
 public class Bolt1 extends BaseRichBolt {
 
     OutputCollector outputCollector;

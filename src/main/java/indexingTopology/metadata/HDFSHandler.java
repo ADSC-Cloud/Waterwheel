@@ -28,9 +28,6 @@ import java.net.URISyntaxException;
 import java.util.Random;
 import java.util.Scanner;
 
-/**
- * Created by john on 1/4/17.
- */
 public class HDFSHandler {
     private static String default_stream_name = "hdfs-stream";
     private static final int minChildren = 2;

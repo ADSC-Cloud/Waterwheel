@@ -1,8 +1,5 @@
 package indexingTopology.metadata;
 
-/**
- * Created by john on 1/4/17.
- */
 public class HDFSBoltConfig {
     /**
      * Used for maintaining persistent meta logs in HDFS. In case reconstruction
