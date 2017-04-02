@@ -123,8 +123,11 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
     }
 
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
+//        outputFieldsDeclarer.declareStream(Streams.FileInformationUpdateStream,
+//                new Fields("fileName", "keyDomain", "timeDomain"));
+
         outputFieldsDeclarer.declareStream(Streams.FileInformationUpdateStream,
-                new Fields("fileName", "keyDomain", "timeDomain"));
+                new Fields("fileName", "keyDomain", "timeDomain", "tupleCount"));
 
         outputFieldsDeclarer.declareStream(Streams.BPlusTreeQueryStream,
                 new Fields("queryId", "serializedTuples"));
@@ -135,6 +138,7 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
         outputFieldsDeclarer.declareStream(Streams.AckStream, new Fields("tupleId"));
 
         outputFieldsDeclarer.declareStream(Streams.ThroughputReportStream, new Fields("throughput"));
+
     }
 
     @Override
@@ -142,15 +146,17 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
         if (o instanceof Indexer) {
             String s = (String) arg;
             if (s.equals("information update")) {
-                Pair domainInformation = ((Indexer) o).getDomainInformation();
-                String fileName = (String) domainInformation.getKey();
-                Domain domain = (Domain) domainInformation.getValue();
+                FileInformation fileInformation = ((Indexer) o).getFileInformation();
+                String fileName = fileInformation.getFileName();
+                Domain domain = fileInformation.getDomain();
                 KeyDomain keyDomain = new KeyDomain(domain.getLowerBound(), domain.getUpperBound());
                 TimeDomain timeDomain = new TimeDomain(domain.getStartTimestamp(), domain.getEndTimestamp());
+                Long numTuples = fileInformation.getNumberOfRecords();
 
-                collector.emit(Streams.FileInformationUpdateStream, new Values(fileName, keyDomain, timeDomain));
+                collector.emit(Streams.FileInformationUpdateStream, new Values(fileName, keyDomain, timeDomain, numTuples));
 
                 collector.emit(Streams.TimestampUpdateStream, new Values(timeDomain, keyDomain));
+
 
             } else if (s.equals("query result")) {
                 Pair pair = ((Indexer) o).getQueryResult();

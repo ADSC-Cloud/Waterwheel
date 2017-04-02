@@ -58,6 +58,7 @@ public class RepartitionManager {
         for(Integer ball: balls) {
             if (accumulatedWeight > averWeight) {
                 bin++;
+                bin = Math.min(bin, nbins - 1);
                 accumulatedWeight -= currentWeight;
                 accumulatedWeight -= averWeight - currentWeight;
                 currentWeight = 0;

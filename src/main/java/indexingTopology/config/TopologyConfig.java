@@ -4,11 +4,11 @@ package indexingTopology.config;
  * Created by acelzj on 7/21/16.
  */
 public class TopologyConfig {
-    public static final double REBUILD_TEMPLATE_PERCENTAGE = 0.3;
+    public static final double REBUILD_TEMPLATE_THRESHOLD = 5.0;
 
     public static final String HDFS_HOST = "hdfs://192.168.0.237:54310/";
 
-    public static final int NUMBER_TUPLES_OF_A_CHUNK = 600000;
+    public static final int NUMBER_TUPLES_OF_A_CHUNK = 600000 * 2;
 //    public static final int NUMBER_TUPLES_OF_A_CHUNK = 200000;
     public static final int CACHE_SIZE = 10000;
 
@@ -24,20 +24,23 @@ public class TopologyConfig {
 
     public static String dataDir = "/home/lzj";
 
-    public static String dataFileDir = "/home/lzj/taxi-trajectory";
-//    public static String dataFileDir = "/home/acelzj/Downloads/taxi-trajectory";
+//    public static String dataFileDir = "/home/lzj/taxi-trajectory";
+//    public static String dataFileDir = "/home/lzj/dataset/20150430_processed.txt";
+    public static String dataFileDir = "/home/acelzj/Downloads/taxi-trajectory";
+//    public static String dataFileDir = "/home/acelzj/Downloads/dataset/20150430.txt";
 
     public static String logDir = "/logs";
 
-    public static double SKEWNESS_DETECTION_THRESHOLD = 0.2;
+    public static double SKEWNESS_DETECTION_THRESHOLD = 0.3;
 
-    public static final int PENDING_QUEUE_CAPACITY = 1024;
+//    public static final int PENDING_QUEUE_CAPACITY = 1024;
+    public static final int PENDING_QUEUE_CAPACITY = 600001 * 2;
 
     public static final int MAX_PENDING = 10000;
 
     public static final int OFFSET_LENGTH = 4;
 
-    public static final int CHUNK_SIZE = 58000000 / 6;
+    public static final int CHUNK_SIZE = 58000000 / 4;
 //    public static final int CHUNK_SIZE = 6 * 1024 * 1024;
 
     public static final int EMIT_NUM = 5000;
@@ -53,4 +56,8 @@ public class TopologyConfig {
     public static final String HBASE_MASTER = "192.168.0.237:60000";
 
     public static final boolean SHUFFLE_GROUPING_FLAG = false;
+
+    public static final int AVERAGE_STRING_LENGTH = 21;
+
+    public static final boolean TASK_QUEUE_MODEL = false;
 }

@@ -2,7 +2,6 @@ package indexingTopology.util;
 
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.util.texi.City;
-import javafx.util.Pair;
 
 import java.io.*;
 import java.text.DecimalFormat;
@@ -41,10 +40,12 @@ public class TaxiDataReader {
 
         Map<Integer, Integer> zcodeHistogram = new HashMap<>();
 
-        final double x1 = 115.0;
+        Map<Integer, Integer> zcodes = new HashMap<>();
+
+        final double x1 = 116.2;
         final double x2 = 117.0;
-        final double y1 = 39.0;
-        final double y2 = 41.0;
+        final double y1 = 39.6;
+        final double y2 = 40.6;
         final int partitions = 1024;
 
         City city = new City(x1, x2, y1, y2, partitions);
@@ -55,7 +56,7 @@ public class TaxiDataReader {
 //            e.printStackTrace();
 //        }
 
-        Long numberOfRecord = 0L;
+        int numberOfRecord = 0;
 
 //        while (fileNumber <= 10357) {
 
@@ -139,10 +140,16 @@ public class TaxiDataReader {
                         latitudeHistogram.put(y, latitudeHistogram.get(y) + 1);
                     }
 
-                    if (zcodeHistogram.get(zcode / 10000) == null) {
-                        zcodeHistogram.put(zcode / 10000, 1);
+                    if (zcodeHistogram.get(zcode / 1000) == null) {
+                        zcodeHistogram.put(zcode / 1000, 1);
                     } else {
-                        zcodeHistogram.put(zcode / 10000, zcodeHistogram.get(zcode / 10000) + 1);
+                        zcodeHistogram.put(zcode / 1000, zcodeHistogram.get(zcode / 1000) + 1);
+                    }
+
+                    if (zcodes.get(zcode) == null) {
+                        zcodes.put(zcode, 1);
+                    } else {
+                        zcodes.put(zcode, zcodes.get(zcode) + 1);
                     }
                 }
             }
@@ -151,40 +158,129 @@ public class TaxiDataReader {
 
         System.out.println(numberOfRecord);
 
-        System.out.println("Xmin " + Xmin);
-        System.out.println("Xmax " + Xmax);
+//        System.out.println("Xmin " + Xmin);
+//        System.out.println("Xmax " + Xmax);
 
-        System.out.println("Ymin " + Ymin);
-        System.out.println("Ymax " + Ymax);
+//        System.out.println("Ymin " + Ymin);
+//        System.out.println("Ymax " + Ymax);
 
 //        City city = new City(0.0, 300.0, 0.0, 100.0, 10000);
 
+        System.out.println(zcodes.size());
+
         System.out.println(city.getMaxZCode());
 
-        System.out.println("max zcode " + maxZCode);
-        System.out.println("min zcode " + minZCode);
+//        System.out.println("max zcode " + maxZCode);
+//        System.out.println("min zcode " + minZCode);
 
         Object[] keys = longitudeHistogram.keySet().toArray();
         Arrays.sort(keys);
 
-        for (int i = 0; i < keys.length; ++i) {
-            System.out.println(keys[i] + " " + longitudeHistogram.get(keys[i]));
-        }
+//        int startIndex = 0;
+//        int endIndex = 0;
 
 
-        keys = latitudeHistogram.keySet().toArray();
-        Arrays.sort(keys);
+//        for (int i = 0; i < keys.length; ++i) {
+//            if ((Double) keys[i] == 116.3) {
+//                startIndex = i;
+//            }
+//            if ((Double) keys[i] == 117.0) {
+//                endIndex = i;
+//            }
 
-        for (int i = 0; i < keys.length; ++i) {
-            System.out.println(keys[i] + " " + latitudeHistogram.get(keys[i]));
-        }
+//            System.out.println(keys[i] + " " + longitudeHistogram.get(keys[i]));
+//        }
+
+//        int numRecords = 0;
+//        for (int i = startIndex; i <= endIndex; ++i) {
+//            numRecords += longitudeHistogram.get(keys[i]);
+//        }
+//
+//        System.out.println(numRecords * 1.0 / numberOfRecord);
+
+
+
+//        keys = latitudeHistogram.keySet().toArray();
+//        Arrays.sort(keys);
+
+//        for (int i = 0; i < keys.length; ++i) {
+//            if ((Double) keys[i] == 39.7) {
+//                startIndex = i;
+//            }
+//            if ((Double) keys[i] == 40.5) {
+//                endIndex = i;
+//            }
+//            System.out.println(keys[i] + " " + latitudeHistogram.get(keys[i]));
+//        }
+
+//        numRecords = 0;
+//        for (int i = startIndex; i <= endIndex; ++i) {
+//            numRecords += latitudeHistogram.get(keys[i]);
+//        }
+//        System.out.println(numRecords * 1.0 / numberOfRecord);
 
 
         keys = zcodeHistogram.keySet().toArray();
         Arrays.sort(keys);
 
+        System.out.println(keys[3]);
+
+//        System.out.println(keys.length);
+
+//        int startKey = (Integer) keys[0];
+
+//        for (double selectivity = 0.001; selectivity <= 0.1; selectivity *= 10) {
+            int frequency = 0;
+            double selectivity = 0.75;
+
+            int startIndex = 3;
+
+            for (int i = startIndex;i < keys.length; ++i) {
+//            if (((int) keys[i]) * 1000 >= 4000 && ((int) keys[i]) * 1000 <= 130000) {
+//                frequency += zcodeHistogram.get(keys[i]);
+//            }
+//                System.out.println("" + (Integer) keys[i] * 1000 + " " + zcodeHistogram.get(keys[i]));
+            frequency += zcodeHistogram.get(keys[i]);
+//            System.out.println(zcodesInIndexing.keySet().size());
+                if (frequency >= numberOfRecord * selectivity) {
+//                    System.out.println(city.getMaxZCode() * selectivity);
+                    System.out.println("key " + (Integer) keys[startIndex] * 1000);
+                    System.out.println("frequency " + frequency);
+                    System.out.println("key " + (Integer) keys[i] * 1000);
+                    break;
+                }
+            }
+//        }
+
+
+//        System.out.println(frequency * 1.0 / numberOfRecord);
+
+        /*
+        selectivity = Math.sqrt(0.01);
+        frequency = 0;
         for (int i = 0; i < keys.length; ++i) {
-            System.out.println("" + (Integer) keys[i] * 10000 + " " + zcodeHistogram.get(keys[i]));
+//            System.out.println("" + (Integer) keys[i] * 1000 + " " + zcodeHistogram.get(keys[i]));
+            frequency += zcodeHistogram.get(keys[i]);
+            if (frequency >= zcodesInIndexing.keySet().size() * selectivity) {
+                System.out.println(zcodesInIndexing.keySet().size() * selectivity);
+                System.out.println(frequency);
+                System.out.println((Integer) keys[i] * 1000);
+                break;
+            }
         }
+
+        selectivity = Math.sqrt(0.1);
+        frequency = 0;
+        for (int i = 0; i < keys.length; ++i) {
+//            System.out.println("" + (Integer) keys[i] * 1000 + " " + zcodeHistogram.get(keys[i]));
+            frequency += zcodeHistogram.get(keys[i]);
+            if (frequency >= zcodesInIndexing.keySet().size() * selectivity) {
+                System.out.println(zcodesInIndexing.keySet().size() * selectivity);
+                System.out.println(frequency);
+                System.out.println((Integer) keys[i] * 1000);
+                break;
+            }
+        }
+        */
     }
 }

@@ -3,6 +3,7 @@ package indexingTopology.bolt;
 
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
+import indexingTopology.util.FrequencyRestrictor;
 import indexingTopology.util.Permutation;
 import indexingTopology.util.texi.Car;
 import indexingTopology.util.texi.City;
@@ -46,6 +47,8 @@ public class Generator extends InputStreamReceiver {
 
     private Random random;
 
+    private FrequencyRestrictor frequencyRestrictor;
+
     public Generator(DataSchema schema, TrajectoryGenerator generator, int payloadSize, City city) {
         super(schema);
         this.generator = generator;
@@ -86,8 +89,9 @@ public class Generator extends InputStreamReceiver {
 
 //        distribution = new ZipfDistribution(200048, 0.5);
         mean = 500000.0;
-        sigma = 100000.0;
+        sigma = 5000.0;
         distribution = new NormalDistribution(mean, sigma);
+        frequencyRestrictor = new FrequencyRestrictor(1500000, 50);
 //        permutation = new Permutation(200048);
 //        distribution = new ZipfDistribution(200048, 0.5);
 //        permutation = new Permutation(200048);

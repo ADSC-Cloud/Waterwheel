@@ -125,7 +125,7 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
             collector.emitDirect(taskId, Streams.IndexStream, new Values(outputSchema.serializeTuple(dataTuple), tupleId, sourceTaskId));
 //            collector.ack(tuple);
         } else if (tuple.getSourceStreamId().equals(Streams.IntervalPartitionUpdateStream)){
-            System.out.println("partition has been updated!!!");
+//            System.out.println("partition has been updated!!!");
 //            Map<Integer, Integer> intervalToPartitionMapping = (Map) tuple.getValueByField("newIntervalPartition");
 //            balancedPartition = (BalancedPartition) tuple.getValueByField("newIntervalPartition");
             balancedPartition.setIntervalToPartitionMapping(((BalancedPartition) tuple.getValueByField("newIntervalPartition")).getIntervalToPartitionMapping());

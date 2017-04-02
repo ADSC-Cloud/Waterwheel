@@ -98,6 +98,7 @@ public class KryoTemplateSerializerTest {
 
 //        System.out.println("Total " + Runtime.getRuntime().totalMemory());
 
+
         final int payloadSize = 10;
 
         final double x1 = 0;
@@ -189,11 +190,12 @@ public class KryoTemplateSerializerTest {
                     fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
                 }
 
-                fileName = "taskId" + 0 + "chunk" + 0;
-                fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
+//                fileName = "taskId" + 0 + "chunk" + 0;
+//                fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
             } catch (IOException e) {
                 e.printStackTrace();
             }
+
 
             byte[] temlateLengthInBytes = new byte[4];
 
@@ -202,11 +204,12 @@ public class KryoTemplateSerializerTest {
             long totalStart = System.currentTimeMillis();
 
             long start = System.currentTimeMillis();
-            fileSystemHandler.openFile("/", "taskId0chunk0");
+            fileSystemHandler.openFile("/", "taskId94chunk34");
             fileOpenTime += System.currentTimeMillis() - start;
 
-            int fileLength = 64902601;
-            byte[] bytesToRead = new byte[fileLength];
+            byte[] bytesToRead;
+//            int fileLength = 13157874;
+//            byte[] bytesToRead = new byte[fileLength];
 //            long wholeStart = System.currentTimeMillis();
 //            fileSystemHandler.readBytesFromFile(0, bytesToRead);
 //            System.out.println("time " + (System.currentTimeMillis() - wholeStart));
@@ -236,7 +239,7 @@ public class KryoTemplateSerializerTest {
 //            BTreeNode mostRightNode = indexedData.findInnerNodeShouldContainKey(120.0);
 
             List<Integer> offsets = indexedData.getOffsetsOfLeafNodesShouldContainKeys(0
-                    , 1);
+                    , 130000);
 
             List<byte[]> list = new ArrayList<>();
 
@@ -245,7 +248,7 @@ public class KryoTemplateSerializerTest {
 
             long getTupleTime = 0;
 
-            System.out.println(offsets.size());
+//            System.out.println(offsets.size());
 
             int startOffset = offsets.get(0);
 
@@ -265,7 +268,7 @@ public class KryoTemplateSerializerTest {
             bytesToRead = new byte[totalLength + 4];
 
             fileSystemHandler.readBytesFromFile(startOffset + length + 4, bytesToRead);
-
+//            System.out.println("leaf bytes read " + (System.currentTimeMillis() - leafReadStart));
 
             Input input2 = new Input(bytesToRead);
 
@@ -278,7 +281,7 @@ public class KryoTemplateSerializerTest {
 
                 long tuplgGetStart = System.currentTimeMillis();
 
-                list.addAll(leafNode.getTuplesWithinKeyRange(0, 1));
+                list.addAll(leafNode.getTuplesWithinKeyRange(0, 130000));
 
                 getTupleTime += (System.currentTimeMillis() - tuplgGetStart);
             }
@@ -333,7 +336,7 @@ public class KryoTemplateSerializerTest {
 //
 //            System.out.println("after read " + Runtime.getRuntime().freeMemory());
 
-            assertEquals(2, list.size());
+//            assertEquals(2, list.size());
 //        }
     }
 

@@ -56,13 +56,14 @@ public class TexiTrajectoryTopology {
 
 //        Double upperBound = (double)city.getMaxZCode();
 //        Double upperBound = 200048.0;
-        Double sigma = 100000.0;
+//        Double variance = 1000.0;
+        Double sigma = 5000.0;
         Double mean = 500000.0;
         Double lowerBound = mean - 3 * sigma;
         Double upperBound = mean + 3 * sigma;
 
 
-        final boolean enableLoadBalance = false;
+        final boolean enableLoadBalance = true;
 
 //        InputStreamReceiver dataSource = new InputStreamReceiverServer(schemaWithTimestamp, 10000);
         InputStreamReceiver dataSource = new Generator(schemaWithTimestamp, generator, payloadSize, city);
@@ -76,7 +77,7 @@ public class TexiTrajectoryTopology {
 
         Config conf = new Config();
         conf.setDebug(false);
-        conf.setNumWorkers(4);
+        conf.setNumWorkers(11);
 
         conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
 //        conf.put(Config.SUPERVISOR_CHILDOPTS, "-Xmx2048m");

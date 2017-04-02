@@ -28,6 +28,8 @@ public class LogWriter extends BaseRichBolt {
 
     Double throughput;
 
+    private int waitTimeInSecond = 5;
+
     private static final Logger LOG = LoggerFactory.getLogger(LogWriter.class);
 
     int totalReceivedMessages;
@@ -57,7 +59,7 @@ public class LogWriter extends BaseRichBolt {
         if (tuple.getSourceStreamId().equals(Streams.ThroughputReportStream)) {
             ++numReceivedMessages;
             Double realTimeThroughput = tuple.getDoubleByField("throughput");
-            System.out.println("task id " + tuple.getSourceTask() + " " + realTimeThroughput);
+//            System.out.println("task id " + tuple.getSourceTask() + " " + realTimeThroughput);
             throughput += realTimeThroughput;
             if (numReceivedMessages == numDispatchers) {
                 ++totalReceivedMessages;
@@ -82,6 +84,11 @@ public class LogWriter extends BaseRichBolt {
 
         @Override
         public void run() {
+            try {
+                Thread.sleep(waitTimeInSecond * 1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             final int sleepTimeInSecond = 10;
             while (true) {
                 try {

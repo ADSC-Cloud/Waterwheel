@@ -1,29 +1,23 @@
 package indexingTopology.util;
 
-import clojure.lang.ArraySeq;
-import com.esotericsoftware.kryo.io.Output;
-import indexingTopology.util.texi.Car;
-import indexingTopology.util.texi.TrajectoryGenerator;
-import indexingTopology.util.texi.TrajectoryUniformGenerator;
+import indexingTopology.config.TopologyConfig;
+import indexingTopology.util.texi.City;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.storm.metric.internal.RateTracker;
-import org.omg.Messaging.SYNC_WITH_TRANSPORT;
 
-import java.io.IOException;
-import java.io.SyncFailedException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Created by acelzj on 27/2/17.
+ * Created by acelzj on 31/3/17.
  */
-public class HBaseTester {
+public class TaxiHBaseTester {
 
     int numberOfIndexingThreads;
 
@@ -35,19 +29,29 @@ public class HBaseTester {
 
     private HBaseHandler hBaseHandler;
 
-    private int sleepTimeInSecond = 60;
+    private int sleepTimeInSecond = 5;
 
     final int batchSize = 5000;
 
     RateTracker rateTracker = new RateTracker(50 * 1000, 50);
 
-    String tableName = "TexiTable";
-    String columnFamilyName = "Trajectory";
+    String tableName = "TaxiTable";
+    String columnFamilyName = "Beijing";
+
+    List<Integer> taxiIds = new ArrayList<>();
+    List<Double> longitudes = new ArrayList<>();
+    List<Double> latitudes = new ArrayList<>();
+    List<Integer> zcodes = new ArrayList<>();
+
+    File folder = new File(TopologyConfig.dataFileDir);
+    File[] listOfFiles = folder.listFiles();
+
+    BufferedReader bufferedReader = null;
 
 
 //    private int batchSize;
 
-    public HBaseTester(int numberOfIndexingThreads) throws Exception {
+    public TaxiHBaseTester(int numberOfIndexingThreads) throws Exception {
         this.numberOfIndexingThreads = numberOfIndexingThreads;
         totalRecord = new AtomicInteger(0);
         indexingThreads = new ArrayList<>();
@@ -59,6 +63,51 @@ public class HBaseTester {
         }
 
 
+        final double x1 = 116.2;
+        final double x2 = 117.0;
+        final double y1 = 39.6;
+        final double y2 = 40.6;
+        final int partitions = 1024;
+
+        City city = new City(x1, x2, y1, y2, partitions);
+
+        for (int i = 0; i < listOfFiles.length; ++i) {
+            File file = listOfFiles[i];
+            try {
+                bufferedReader = new BufferedReader(new FileReader(file));
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+
+            while (true) {
+                String text = null;
+                try {
+                    text = bufferedReader.readLine();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                if (text == null) {
+                    break;
+                } else {
+                    String[] data = text.split(",");
+
+                    Integer taxiId = Integer.parseInt(data[0]);
+                    taxiIds.add(taxiId);
+
+                    Double longitude = Double.parseDouble(data[2]);
+                    longitudes.add(longitude);
+
+                    Double latitude = Double.parseDouble(data[3]);
+                    latitudes.add(latitude);
+
+                    int zcode = city.getZCodeForALocation(longitude, latitude);
+                    zcodes.add(zcode);
+                }
+            }
+
+        }
+
 
         try {
             hBaseHandler.creatTable(tableName, columnFamilyName, null);
@@ -66,7 +115,7 @@ public class HBaseTester {
             e.printStackTrace();
         }
         Long start = System.currentTimeMillis();
-        createIndexingThread(24);
+        createIndexingThread(numberOfIndexingThreads);
 
         Thread queryThread = new Thread(new QueryRunnable());
         queryThread.start();
@@ -95,11 +144,11 @@ public class HBaseTester {
     }
 
     private void createIndexingThread(int n) {
-        if(indexingRunnable == null) {
-            indexingRunnable = new IndexingRunnable();
-        }
+//        if(indexingRunnable == null) {
+//            indexingRunnable = new IndexingRunnable();
+//        }
         for(int i = 0; i < n; i++) {
-            Thread indexThread = new Thread(indexingRunnable);
+            Thread indexThread = new Thread(new IndexingRunnable(i));
             indexThread.start();
 //            System.out.println(String.format("Thread %d is created!", indexThread.getId()));
             indexingThreads.add(indexThread);
@@ -108,30 +157,54 @@ public class HBaseTester {
 
     class IndexingRunnable implements Runnable {
 
+        int id;
+        int step;
+
+        List<Double> latitudesInIndexing = new ArrayList<>();
+        List<Double> longitudesInIndexing = new ArrayList<>();
+        List<Integer> taxiIdsInIndexing = new ArrayList<>();
+        List<Integer> zcodesInIndexing = new ArrayList<>();
+
+        final double x1 = 116.2;
+        final double x2 = 117.0;
+        final double y1 = 39.6;
+        final double y2 = 40.6;
+        final int partitions = 1024;
+
+        City city = new City(x1, x2, y1, y2, partitions);
+
+        public IndexingRunnable(int id) {
+            this.id = id;
+            step = 0;
+        }
+
         @Override
         public void run() {
 
+            int index = 0;
+            while (index < taxiIds.size()) {
+                index = id + step * numberOfIndexingThreads;
+                if (index >= listOfFiles.length) {
+                    break;
+                }
 
-            final double x1 = 0;
-            final double x2 = 1000;
-            final double y1 = 0;
-            final double y2 = 500;
-            final int partitions = 100;
-            final int payloadSize = 10;
+                ++step;
 
+//                while (index < taxiIdsInIndexing.size()) {
+                        Integer taxiId = taxiIds.get(index);
+                        taxiIdsInIndexing.add(taxiId);
 
+                        Double longitude = longitudes.get(index);
+                        longitudesInIndexing.add(longitude);
 
-//            Long numberOfRecord = 0L;
+                        Double latitude = latitudes.get(index);
+                        latitudesInIndexing.add(latitude);
 
-            final Long toTalRecord = 1000000L;
+                        int zcode = city.getZCodeForALocation(longitude, latitude);
+                        zcodesInIndexing.add(zcode);
+//                }
+            }
 
-            Long timestamp = 0L;
-
-            Random random = new Random(1000);
-
-            TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
-
-            long duration = 0;
 
             Connection connection = hBaseHandler.getConnection();
             Table table = null;
@@ -143,46 +216,52 @@ public class HBaseTester {
 
             List<Put> batchPut = new ArrayList<>();
 
-
-
             int numberOfPut = 0;
 
-            Long start = System.currentTimeMillis();
+            index = 0;
             while (totalRecord.get() < 1500000000) {
-                Car car = generator.generate();
-                Double zcode = random.nextDouble();
-                String s = new String(new char[payloadSize]);
-//
-                String rowKey = "" + String.format("%.8f", zcode) + "-" + String.format("%08d", System.currentTimeMillis()) + "-" + String.format("%5d", car.id);
-//
-//            String rowKey = "" + zcode;
+                Integer taxiId = taxiIdsInIndexing.get(index);
+                Double latitude = latitudesInIndexing.get(index);
+                Double longitude = longitudesInIndexing.get(index);
+                Integer zcode = zcodesInIndexing.get(index);
+                Long timestamp = System.currentTimeMillis();
+
+                String rowKey = "" + String.format("%07d", zcode) + "-" + timestamp + "-" + String.format("%05d", taxiId);
 
                 byte[] bytes = Bytes.toBytes(rowKey);
 
-
-
                 Put put = new Put(bytes);
 
+                try {
+                    hBaseHandler.addIntValue(table, columnFamilyName, "id", bytes, taxiId, put);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                try {
+                    hBaseHandler.addIntValue(table, columnFamilyName, "zcode", bytes, zcode, put);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                try {
+                    hBaseHandler.addDoubleValue(table, columnFamilyName, "latitude", bytes, latitude, put);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                try {
+                    hBaseHandler.addDoubleValue(table, columnFamilyName, "longitude", bytes, longitude, put);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
 
 
-//            long start = System.currentTimeMillis();
                 try {
-                    hBaseHandler.addLongValue(table, columnFamilyName, "id", bytes, car.id, put);
+                    hBaseHandler.addLongValue(table, columnFamilyName, "timestamp", bytes, timestamp, put);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-//            System.out.println(System.currentTimeMillis() - start);
-                try {
-                    hBaseHandler.addDoubleValue(table, columnFamilyName, "zcode", bytes, zcode, put);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-//            System.out.println(System.currentTimeMillis() - start);
-                try {
-                    hBaseHandler.addStringValue(table, columnFamilyName, "payload", bytes, s, put);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+
 //            duration += (System.currentTimeMillis() - start);
 
 //            Long start = System.currentTimeMillis();
@@ -213,7 +292,10 @@ public class HBaseTester {
 
                 rateTracker.notify(1);
 //
-                ++timestamp;
+                ++index;
+                if (index >= taxiIdsInIndexing.size()) {
+                    index = 0;
+                }
 //            hBaseHandler.search(tableName, columnFamilyName, columns, Bytes.toBytes(rowKey), Bytes.toBytes(rowKey));
             }
 
@@ -226,24 +308,7 @@ public class HBaseTester {
             }
 
 
-//            duration = System.currentTimeMillis() - start;
-//            System.out.println("Throughput : " + (toTalRecord * 1000 / duration) + " / s");
 
-
-//        String startRowKey = "" + String.format("%.8f", 0.0) + "-" + String.format("%08d", 0);
-
-//        String endRowKey = "" + String.format("%.8f", 0.1) + "-" + String.format("%08d", Long.MAX_VALUE);
-
-//        List<String> columnNames = new ArrayList<>();
-//        columnNames.add("id");
-//        columnNames.add("zcode");
-//        columnNames.add("payload");
-//        columnNames.add("timestamp");
-
-//        long start = System.currentTimeMillis();
-//        hBaseHandler.search(table, columnFamilyName, columnNames, Bytes.toBytes(startRowKey), Bytes.toBytes(endRowKey));
-//        System.out.println(System.currentTimeMillis() - start);
-            System.out.println("Throughput : " + (totalRecord.get() * 1000.0 / (System.currentTimeMillis() - start)));
         }
 
 
@@ -270,9 +335,16 @@ public class HBaseTester {
             }
 
             while (true) {
+
+                try {
+                    Thread.sleep(30 * 1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
                 Long endTimestamp = System.currentTimeMillis();
-                String startRowKey = "" + String.format("%.8f", 0.0);
-                String endRowKey = "" + String.format("%.8f", 0.01);
+                String startRowKey = "" + String.format("%07d", 3000);
+                String endRowKey = "" + String.format("%07d", 17000);
 
 
                 Long startTimestamp = endTimestamp - sleepTimeInSecond * 1000;
@@ -282,7 +354,8 @@ public class HBaseTester {
                 List<String> columnNames = new ArrayList<>();
                 columnNames.add("id");
                 columnNames.add("zcode");
-                columnNames.add("payload");
+                columnNames.add("latitude");
+                columnNames.add("longitude");
                 columnNames.add("timestamp");
 
                 long start = System.currentTimeMillis();
@@ -296,7 +369,8 @@ public class HBaseTester {
         }
     }
 
+
     public static void main(String[] args) throws Exception {
-        HBaseTester hBaseTester = new HBaseTester(8);
+        TaxiHBaseTester taxiHBaseTester = new TaxiHBaseTester(1);
     }
 }

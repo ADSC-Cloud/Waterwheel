@@ -61,6 +61,16 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
 
     private String path = "/MetadataNode";
 
+    private Long maxTimestamp;
+
+    private Long minTimestamp;
+
+    private int targetFileNums = 300;
+
+    private Long numTuples;
+
+    private Map<Integer, Integer> taskIdToFileNumMapping;
+
 
     public MetadataServer(Key lowerBound, Key upperBound) {
         this.lowerBound = lowerBound;
@@ -83,7 +93,6 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
 
         intervalToPartitionMapping = balancedPartition.getIntervalToPartitionMapping();
 
-        System.out.println(intervalToPartitionMapping);
 
         numberOfStaticsReceived = 0;
 
@@ -95,7 +104,14 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
 
         numberOfFiles = 0;
 
+        numTuples = 0L;
+
         output = new Output(50000, 6500000);
+
+        minTimestamp = Long.MAX_VALUE;
+        maxTimestamp = Long.MIN_VALUE;
+
+        taskIdToFileNumMapping = new HashMap<>();
 
         try {
             zookeeperHandler = new ZookeeperHandler();
@@ -107,7 +123,7 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
         staticsRequestSendingThread.start();
 
 
-//        createMetadataSendingThread();
+        createMetadataSendingThread();
     }
 
     private void createMetadataSendingThread() {
@@ -159,7 +175,7 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
                             this.histogram);
                     Double skewnessFactor = manager.getSkewnessFactor();
                     if (skewnessFactor > TopologyConfig.LOAD_BALANCE_THRESHOLD) {
-                        System.out.println("skewness detected!!!");
+//                        System.out.println("skewness detected!!!");
 //                        System.out.println(this.histogram.getHistogram());
 //                        List<Long> workLoads = getWorkLoads(histogram);
 //                        RepartitionManager manager = new RepartitionManager(numberOfPartitions, intervalToPartitionMapping,
@@ -175,7 +191,7 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
 
                         collector.emit(Streams.LoadBalanceStream, new Values("newIntervalPartition"));
                     } else {
-                        System.out.println("skewness is not detected!!!");
+//                        System.out.println("skewness is not detected!!!");
 //                        System.out.println(histogram.getHistogram());
                     }
 
@@ -187,26 +203,58 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
             String fileName = tuple.getString(0);
             TimeDomain timeDomain = (TimeDomain) tuple.getValueByField("timeDomain");
             KeyDomain keyDomain = (KeyDomain) tuple.getValueByField("keyDomain");
+            Long tupleCount = tuple.getLongByField("tupleCount");
             filePartitionSchemaManager.add(new FileMetaData(fileName, (Double) keyDomain.getLowerBound(),
                     (Double)keyDomain.getUpperBound(), timeDomain.getStartTimestamp(), timeDomain.getEndTimestamp()));
 
-//            ++numberOfFiles;
+//            System.out.println(timeDomain.getEndTimestamp() - timeDomain.getStartTimestamp());
 
-//            WriteMetaData(fileName, keyDomain, timeDomain);
+            int taskId = tuple.getSourceTask();
 
-//            if (numberOfFiles == 150) {
-//                Output metaDataOutput = new Output(50000, 6500000);
-//                metaDataOutput.writeInt(numberOfFiles);
-//                metaDataOutput.write(output.toBytes());
-//                try {
-//                    zookeeperHandler.create(path, metaDataOutput.toBytes());
-//                    System.out.println("Metadata has been written to zookeeper!!!");
-//                } catch (KeeperException e) {
-//                    e.printStackTrace();
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
-//            }
+            if (taskIdToFileNumMapping.get(taskId) == null) {
+                taskIdToFileNumMapping.put(taskId, 1);
+            } else {
+                taskIdToFileNumMapping.put(taskId, taskIdToFileNumMapping.get(taskId) + 1);
+            }
+
+
+            ++numberOfFiles;
+
+            Long timestampUpperBound = timeDomain.getEndTimestamp();
+            Long timestampLowerBound = timeDomain.getStartTimestamp();
+
+            if (numberOfFiles <= targetFileNums) {
+                if (timestampLowerBound < minTimestamp) {
+                    minTimestamp = timestampLowerBound;
+                }
+
+                if (timestampUpperBound > maxTimestamp) {
+                    maxTimestamp = timestampUpperBound;
+                }
+
+                numTuples += tupleCount;
+            }
+
+            WriteMetaData(fileName, keyDomain, timeDomain);
+
+            if (numberOfFiles == targetFileNums) {
+                Output metaDataOutput = new Output(50000, 65000000);
+                metaDataOutput.writeInt(numberOfFiles);
+                metaDataOutput.write(output.toBytes());
+                try {
+                    zookeeperHandler.create(path, metaDataOutput.toBytes());
+                    System.out.println("Metadata has been written to zookeeper!!!");
+                    System.out.println("timestamp lower bound " + minTimestamp);
+                    System.out.println("timestamp upper bound " + maxTimestamp);
+//                    System.out.println(taskIdToFileNumMapping);
+//                    System.out.println("tuple count" + numTuples);
+                } catch (KeeperException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
 
             collector.emit(Streams.FileInformationUpdateStream,
                     new Values(fileName, keyDomain, timeDomain));
@@ -221,7 +269,7 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
             collector.emit(Streams.TimestampUpdateStream, new Values(taskId, keyDomain, timeDomain));
         } else if (tuple.getSourceStreamId().equals(Streams.EnableRepartitionStream)) {
             repartitionEnabled = true;
-            System.out.println("repartition has been enabled!!!");
+//            System.out.println("repartition has been enabled!!!");
         }
     }
 

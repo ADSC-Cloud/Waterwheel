@@ -21,6 +21,16 @@ public class FileScanMetrics implements Serializable {
 
     private Long leafBytesReadingTime;
 
+    private Long numberOfRecords;
+
+    private Long lengthReadTime;
+
+    private Long totalBytesReadTime;
+
+    private String fileName;
+
+    private Long subqueryStartTime;
+    private Long subqueryEndTime;
     public FileScanMetrics() {
 
     }
@@ -66,12 +76,49 @@ public class FileScanMetrics implements Serializable {
         return tupleGettingTime;
     }
 
+
     public Long getTotalTime() {
         return totalTime;
     }
 
     public Long getFileOpenAndCloseTime() {
         return fileOpenAndCloseTime;
+    }
+
+    public void setNumberOfRecords(Long numberOfRecords) {
+        this.numberOfRecords = numberOfRecords;
+    }
+
+    public Long getNumberOfRecords() {
+        return numberOfRecords;
+    }
+
+    public void setLengthReadTime(Long time) {
+        this.lengthReadTime = time;
+    }
+
+    public void setTotalBytesReadTime(Long time) {
+        this.totalBytesReadTime = time;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public void setSubqueryStartTime(Long subqueryStartTime) {
+        this.subqueryStartTime = subqueryStartTime;
+    }
+
+    public void setSubqueryEndTime(Long subqueryEndTime) {
+        this.subqueryEndTime = subqueryEndTime;
+    }
+
+    public Long getSubqueryStartTime() {
+        return subqueryStartTime;
+    }
+
+    public Long getSubqueryEndTime() {
+        return subqueryEndTime;
     }
 
 //    public void addWithAnotherMetrics(FileScanMetrics otherMetrics) {
@@ -92,6 +139,8 @@ public class FileScanMetrics implements Serializable {
         return "total time " + totalTime + " file open and close time " + fileOpenAndCloseTime
                 + " tuple search time " + tupleGettingTime + " template reading time " + templateReadingTime
                 + " leaf reading time " + leafReadingTime + " search offset time " + searchTime
-                + " leaf bytes reading time" + leafBytesReadingTime;
+                + " leaf bytes reading time" + leafBytesReadingTime + " length read time" + lengthReadTime
+                + " total bytes read time" + totalBytesReadTime + " file name" + fileName
+                + " subquery start time " + subqueryStartTime + " subquery end time " + subqueryEndTime;
     }
 }

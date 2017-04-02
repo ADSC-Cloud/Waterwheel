@@ -53,7 +53,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
     private AtomicLong executed;
 
-    private int numTuples;
+    private Long numTuples;
 
     private MemChunk chunk;
 
@@ -63,11 +63,11 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
     private Kryo kryo;
 
-    private Double minIndexValue = Double.MAX_VALUE;
-    private Double maxIndexValue = Double.MIN_VALUE;
+    private Double minIndexValue;
+    private Double maxIndexValue;
 
-    private Long minTimestamp = Long.MAX_VALUE;
-    private Long maxTimestamp = Long.MIN_VALUE;
+    private Long minTimestamp;
+    private Long maxTimestamp;
 
     private DataSchema schema;
 
@@ -84,7 +84,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
     private ArrayBlockingQueue<Pair> queryResultQueue;
 
-    private ArrayBlockingQueue<Pair> informationToUpdatePendingQueue;
+    private ArrayBlockingQueue<FileInformation> informationToUpdatePendingQueue;
 
     private Integer estimatedSize;
     private Integer estimatedDataSize;
@@ -100,7 +100,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
         queryResultQueue = new ArrayBlockingQueue<Pair>(100);
 
-        informationToUpdatePendingQueue = new ArrayBlockingQueue<Pair>(10);
+        informationToUpdatePendingQueue = new ArrayBlockingQueue<FileInformation>(10);
 
         this.inputQueue = inputQueue;
 
@@ -110,7 +110,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
         executed = new AtomicLong(0);
 
-        numTuples = 0;
+        numTuples = 0L;
 
         chunkId = 0;
 
@@ -141,6 +141,12 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
         this.queryPendingQueue = queryPendingQueue;
 
         this.domainToBTreeMapping = new HashMap<>();
+
+        minIndexValue = Double.MAX_VALUE;
+        maxIndexValue = Double.MIN_VALUE;
+
+        minTimestamp = Long.MAX_VALUE;
+        maxTimestamp = Long.MIN_VALUE;
 
         inputProcessingThread = new Thread(new InputProcessingRunnable());
 
@@ -214,8 +220,8 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
             while (true) {
 
-//                if (estimatedDataSize >= TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE * TopologyConfig.CHUNK_SIZE) {
-//                    if (bTree.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_PERCENTAGE) {
+                if (estimatedDataSize >= TopologyConfig.SKEWNESS_DETECTION_THRESHOLD * TopologyConfig.CHUNK_SIZE) {
+                    if (bTree.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_THRESHOLD) {
 //                        while (!pendingQueue.isEmpty()) {
 //                            try {
 //                                Thread.sleep(1);
@@ -223,27 +229,27 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 //                                e.printStackTrace();
 //                            }
 //                        }
-//                        terminateIndexingThreads();
+                        terminateIndexingThreads();
 //
-//                        lock.lock();
+                        lock.lock();
 
 //                        System.out.println("begin to rebuild the template!!!");
 //
 //                        long start = System.currentTimeMillis();
 //
-//                        bTree = templateUpdater.createTreeWithBulkLoading(bTree);
+                        bTree = templateUpdater.createTreeWithBulkLoading(bTree);
 //
-//                        lock.unlock();
+                        lock.unlock();
 
 //                        System.out.println("Time used to update template " + (System.currentTimeMillis() - start));
 //
 //                        System.out.println("New tree has been built");
 
-//                        estimatedDataSize = 0;
+                        estimatedDataSize = 0;
 
-//                        createIndexingThread();
-//                    }
-//                }
+                        createIndexingThread();
+                    }
+                }
 //                System.out.println("size " + estimatedSize);
 //                System.out.println("tuple " + numTuples);
 
@@ -265,6 +271,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                     terminateIndexingThreads();
 
                     FileSystemHandler fileSystemHandler = null;
+
 
                     writeTreeIntoChunk();
 
@@ -298,7 +305,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 //                    }
 
                     try {
-                        informationToUpdatePendingQueue.put(new Pair(fileName, new Domain(keyDomain, timeDomain)));
+                        informationToUpdatePendingQueue.put(new FileInformation(fileName, new Domain(keyDomain, timeDomain), numTuples));
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -313,11 +320,14 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                     minIndexValue = Double.MAX_VALUE;
                     maxIndexValue = Double.MIN_VALUE;
 
+                    minTimestamp = Long.MAX_VALUE;
+                    maxTimestamp = Long.MIN_VALUE;
+
                     createIndexingThread();
 
                     start = System.currentTimeMillis();
 
-                    numTuples = 0;
+                    numTuples = 0L;
 
                     estimatedSize = 0;
 
@@ -354,9 +364,6 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    }
                 }
 
                 numTuples += drainer.size();
@@ -571,14 +578,14 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
     }
 
 
-    public Pair getDomainInformation() {
-        Pair pair = null;
+    public FileInformation getFileInformation() {
+        FileInformation fileInformation = null;
         try {
-            pair = informationToUpdatePendingQueue.take();
+            fileInformation = informationToUpdatePendingQueue.take();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        return pair;
+        return fileInformation;
     }
 
     public Pair getQueryResult() {

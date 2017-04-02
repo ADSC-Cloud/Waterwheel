@@ -1,15 +1,21 @@
 package indexingTopology.util;
 
 
+import com.esotericsoftware.kryo.io.Input;
 import indexingTopology.config.TopologyConfig;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInput;
+import java.io.DataInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -138,16 +144,28 @@ public class HBaseHandler {
 //        table.put(put);
     }
 
-    public void search(Table table, String columnFamilyName, List<String> columns, byte[] startRow, byte[] endRow) throws IOException {
+    public void search(Table table, String columnFamilyName, List<String> columns, byte[] startRow, byte[] endRow, Long startTimestamp, Long endTimestamp, String columnValue) throws IOException {
 //        TableName tableName = TableName.valueOf(name);
 //        Table table = connection.getTable(tableName);
 
         Scan scan = new Scan(startRow, endRow);
 
+        List<Filter> listForFilters = new ArrayList<Filter>();
+
+        listForFilters.add(new SingleColumnValueFilter(Bytes.toBytes(columnFamilyName), Bytes.toBytes(columnValue), CompareFilter.CompareOp.GREATER_OR_EQUAL, Bytes.toBytes(startTimestamp)));
+        listForFilters.add(new SingleColumnValueFilter(Bytes.toBytes(columnFamilyName), Bytes.toBytes(columnValue), CompareFilter.CompareOp.LESS_OR_EQUAL, Bytes.toBytes(endTimestamp)));
+
+        Filter filterList = new FilterList(FilterList.Operator.MUST_PASS_ALL,
+                listForFilters);
+
         for (String columnName : columns) {
             scan.addColumn(Bytes.toBytes(columnFamilyName), Bytes.toBytes(columnName));
         }
 
+//        Filter filter = new ColumnRangeFilter(Bytes.toBytes(startTimestamp), true,
+//                Bytes.toBytes(endTimestamp), true);
+
+        scan.setFilter(filterList);
 //        PrefixFilter prefixFilter = new PrefixFilter(bytes);
 //        scan.setFilter(prefixFilter);
 //        ResultScanner resultScanner = table.getScanner(scan);
@@ -156,12 +174,26 @@ public class HBaseHandler {
 //        Result row = table.get(new Get(bytes));
         int count = 0;
 
+
         for (Result result = scanner.next(); result != null; result = scanner.next()) {
             ++count;
+//
+//            int i = 0;
+//            String s = "";
+//
+//            if ( result.containsColumn(Bytes.toBytes(columnFamilyName), Bytes.toBytes("zcode")) ) {
+//                int destIp = Bytes.toInt(result.getValue(Bytes.toBytes(columnFamilyName), Bytes.toBytes("zcode")));
+//                System.out.println("Value: " + destIp + " ");
+//            }
+//
+//            if ( result.containsColumn(Bytes.toBytes(columnFamilyName), Bytes.toBytes("timestamp")) ) {
+//                long timestamp = Bytes.toLong(result.getValue(Bytes.toBytes(columnFamilyName), Bytes.toBytes("timestamp")));
+//                System.out.println("Value: " + timestamp + " ");
+//            }
+
         }
 
-//            System.out.println("Found row : " + result);
-//            printRow(result);
+        System.out.println("*******" + count + "******");
 
         scanner.close();
     }

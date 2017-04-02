@@ -1,23 +1,28 @@
 package indexingTopology.bolt;
 
 import com.esotericsoftware.kryo.io.Output;
+import com.google.common.net.InetAddresses;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
-import indexingTopology.util.*;
-import indexingTopology.util.texi.City;
+import indexingTopology.util.BTree;
+import indexingTopology.util.MemChunk;
+import indexingTopology.util.TemplateUpdater;
 import javafx.util.Pair;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
- * Created by acelzj on 7/2/17.
+ * Created by acelzj on 22/3/17.
  */
-public class TestIndexing {
+public class NetworkTestIndexing {
     private ArrayBlockingQueue<Pair> inputQueue;
 
     private BTree indexedData;
@@ -74,31 +79,28 @@ public class TestIndexing {
 
     private Map<Integer, Integer> countMapping;
 
-    File folder;
-
-    File[] listOfFiles;
-
-    private int numberOfKeys;
-
-    private Random random;
-
-    private int tupleLength;
-
     private AtomicInteger estimatedSize;
 
     private AtomicInteger estimatedDataSize;
     private AtomicInteger totalDataSize;
 
+    File file;
+
+    private int numberOfKeys;
+    private Random random;
+
+    private int tupleLength;
+
     private CheckingSkewnessRunnable checkingSkewnessRunnbale;
 
-    private Semaphore clearFinishingSemaphore;
+    private boolean rebuildable;
 
-
-    public TestIndexing(int btreeOrder, int numberOfIndexingThreads, int numberOfQueryThreads, boolean templateMode) {
+    public NetworkTestIndexing(int btreeOrder, int numberOfIndexingThreads, int numberOfQueryThreads, boolean templateMode, boolean rebuildable) {
 
         this.numberOfQueryThreads = numberOfQueryThreads;
         this.numberOfIndexingThreads = numberOfIndexingThreads;
         this.templateMode = templateMode;
+        this.rebuildable = rebuildable;
 
         inputQueue = new ArrayBlockingQueue<Pair>(TopologyConfig.PENDING_QUEUE_CAPACITY);
 
@@ -112,12 +114,6 @@ public class TestIndexing {
 
         totalTime = 0L;
 
-        estimatedSize = new AtomicInteger(0);
-        estimatedDataSize = new AtomicInteger(0);
-        totalDataSize = new AtomicInteger(0);
-
-        clearFinishingSemaphore = new Semaphore(1);
-
         totalQueryTime = 0L;
 
         numberOfRebuild = 0;
@@ -128,11 +124,9 @@ public class TestIndexing {
 
         numberOfQueries = new AtomicInteger(0);
 
-        fieldNames = new ArrayList<String>(Arrays.asList("id", "zcode", "longitude", "latitude", "timestamp"));
-        valueTypes = new ArrayList<Class>(Arrays.asList(Integer.class, Integer.class, Double.class, Double.class, Long.class));
+        fieldNames = new ArrayList<String>(Arrays.asList("status", "source_ip", "dest_ip", "url", "timestamp"));
+        valueTypes = new ArrayList<Class>(Arrays.asList(Integer.class, Integer.class, Integer.class, String.class, Long.class));
 
-
-        tupleLength = getTupleLength();
 //        fieldNames = new ArrayList<String>(Arrays.asList("id", "zcode", "payload", "timestamp"));
 //        valueTypes = new ArrayList<Class>(Arrays.asList(Long.class, Double.class, String.class, Long.class));
 
@@ -140,65 +134,30 @@ public class TestIndexing {
 
         executedInChekingThread = new AtomicLong(0);
 
-        folder = new File(TopologyConfig.dataFileDir);
-
-        listOfFiles = folder.listFiles();
+        file = new File(TopologyConfig.dataFileDir);
 
         countMapping = new HashMap<>();
 
         numberOfKeys = 0;
 
+        tupleLength = 20;
+
+        estimatedSize = new AtomicInteger(0);
+        estimatedDataSize = new AtomicInteger(0);
+        totalDataSize = new AtomicInteger(0);
+
         Thread emitThread = new Thread(new Runnable() {
             public void run() {
-                final double x1 = 115.0;
-                final double x2 = 117.0;
-                final double y1 = 39.0;
-                final double y2 = 41.0;
-                final int partitions = 1024;
-//
-                City city = new City(x1, x2, y1, y2, partitions);
-
-//                final double x1 = 0;
-//                final double x2 = 1000;
-//                final double y1 = 0;
-//                final double y2 = 500;
-//                final int partitions = 100;
-
-//                final int payloadSize = 10;
-
                 int numTuples = 0;
 
                 long timestamp = 0;
 
-                int index = -1;
+                String dataPattern = "\\[(\\d+-\\d+-\\d+\\s+\\d+:\\d+:\\d+\\.\\d+)\\]\\s+\\[(-?\\d+)\\]\\s+(\\d+\\.\\d+\\.\\d+\\.\\d+)\\s+(\\d+\\.\\d+\\.\\d+\\.\\d+)\\s+(\\d+\\.\\d+\\.\\d+\\.\\d+)\\s+(http.*)";
 
-//                TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
-//                RandomGenerator randomGenerator = new Well19937c();
-//                randomGenerator.setSeed(1000);
-//                KeyGenerator keyGenerator = new ZipfKeyGenerator( 200048, 0.5, randomGenerator);
-//                KeyGenerator keyGenerator = new RoundRobinKeyGenerator(TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK);
-//                KeyGenerator keyGenerator = new UniformKeyGenerator();
+                Pattern r = Pattern.compile(dataPattern);
 
                 while (true) {
                     try {
-//                        Car car = generator.generate();
-//                        Double key = keyGenerator.generate();
-//                        List<Object> values = new ArrayList<>();
-//                        values.add(car.id);
-//                        values.add(key);
-//                        values.add(new String(new char[payloadSize]));
-//                        values.add(timestamp);
-
-
-//                        byte[] serializedTuples = serializeValues(values);
-                        ++index;
-                        if (index >= listOfFiles.length) {
-//                            index = 0;
-                            System.out.println(chunkId.get());
-                            break;
-                        }
-//
-                        File file = listOfFiles[index];
                         try {
                             bufferedReader = new BufferedReader(new FileReader(file));
                         } catch (FileNotFoundException e) {
@@ -216,46 +175,51 @@ public class TestIndexing {
                             if (text == null) {
                                 break;
                             } else {
-                                String[] data = text.split(",");
+                                Matcher m = r.matcher(text);
 
-                                Integer taxiId = Integer.parseInt(data[0]);
+                                if (m.find()) {
+                                    int status = Integer.parseInt(m.group(2));
 
-                                Double longitude = Double.parseDouble(data[2]);
+                                    InetAddress inetAddress = InetAddresses.forString(m.group(3));
+                                    int sourceIp = InetAddresses.coerceToInteger(inetAddress);
 
-                                Double latitude = Double.parseDouble(data[3]);
+                                    inetAddress = InetAddresses.forString(m.group(4));
+                                    int destIp = InetAddresses.coerceToInteger(inetAddress);
 
-                                int zcode = city.getZCodeForALocation(longitude, latitude);
+                                    String url = m.group(6);
 
-                                List<Object> values = new ArrayList<>();
-                                values.add(taxiId);
-                                values.add(zcode);
-                                values.add(longitude);
-                                values.add(latitude);
-                                values.add(timestamp);
+                                    List<Object> values = new ArrayList<>();
+                                    values.add(status);
+                                    values.add(sourceIp);
+                                    values.add(destIp);
+                                    values.add(url.substring(0, 21));
+                                    values.add(timestamp);
 
-                                byte[] serializedTuples = serializeValues(values);
-//
-                                ++timestamp;
+                                    byte[] serializedTuples = serializeValues(values);
+                                    inputQueue.put(new Pair(sourceIp, serializedTuples));
 
-                                inputQueue.put(new Pair(zcode, serializedTuples));
+                                    if (countMapping.get(destIp) == null) {
+                                        countMapping.put(destIp, 1);
+                                    } else {
+                                        countMapping.put(destIp, countMapping.get(destIp) + 1);
+                                    }
 
-                                estimatedSize.addAndGet(tupleLength);
-//                                estimatedDataSize.addAndGet(tupleLength);
-                                totalDataSize.addAndGet(tupleLength);
-
-                                if (countMapping.get(zcode) == null) {
-                                    countMapping.put(zcode, 1);
-                                } else {
-                                    countMapping.put(zcode, countMapping.get(zcode) + 1);
+                                    estimatedSize.addAndGet(tupleLength + 21);
+//                                    estimatedDataSize.addAndGet(tupleLength + url.length());
+                                    totalDataSize.addAndGet(tupleLength + 21);
                                 }
-//                                inputQueue.put(new Pair(key, serializedTuples));
+
+
+                                ++timestamp;
                                 ++numTuples;
                                 ++total;
                             }
 
+//                            System.out.println(estimatedSize);
+
 
 //                            System.out.println(file.getName());
-//                        System.out.println(numTuples);
+//                        System.out.println(total);
 //                        System.out.println(index);
 
                             if (estimatedSize.get() >= TopologyConfig.CHUNK_SIZE) {
@@ -263,31 +227,30 @@ public class TestIndexing {
                                 long start = System.currentTimeMillis();
                                 while (!inputQueue.isEmpty()) {
                                     try {
+//                                        System.out.println(inputQueue.size());
                                         Thread.sleep(1);
                                     } catch (InterruptedException e) {
                                         e.printStackTrace();
                                     }
                                 }
-
-
                                 totalTime += System.currentTimeMillis() - start;
 
-//                                checkingSkewnessRunnbale.terminate();
-//                                checkingSkewnessThread.join();
-//                                checkingSkewnessRunnbale = new CheckingSkewnessRunnable();
+                                if (rebuildable) {
+                                    checkingSkewnessRunnbale.terminate();
+                                    checkingSkewnessThread.join();
+                                    checkingSkewnessRunnbale = new CheckingSkewnessRunnable();
+                                }
 
+//                                System.out.println("finished!!!");
 
                                 try {
                                     // synchronizing indexing threads
-//                                    clearFinishingSemaphore.acquire();
                                     indexingRunnable.setInputExhausted();
                                     for (Thread thread : indexingThreads) {
                                         thread.join();
                                     }
                                     indexingThreads.clear();
                                     indexingRunnable = new IndexingRunnable();
-//                                    clearFinishingSemaphore.release();
-
 
 //                                    queryRunnable.terminate();
 //                                    for (Thread thread : queryThreads) {
@@ -296,12 +259,10 @@ public class TestIndexing {
 //                                    queryThreads.clear();
 //                                    queryRunnable = new QueryRunnable();
 
-//                                    estimatedSize = 0;
-
-                                    numberOfKeys += countMapping.keySet().size();
-
                                     estimatedSize.set(0);
                                     estimatedDataSize.set(0);
+
+                                    numberOfKeys += countMapping.keySet().size();
 
                                     numTuples = 0;
                                     chunkId.incrementAndGet();
@@ -311,9 +272,11 @@ public class TestIndexing {
                                         public void run() {
                                             waitForInputQueueFilled();
                                             createIndexingThread();
-                                            checkingSkewnessThread = new Thread(checkingSkewnessRunnbale);
-                                            checkingSkewnessThread.start();
-//                                            createQueryThread();
+                                            if (rebuildable) {
+                                                checkingSkewnessThread = new Thread(checkingSkewnessRunnbale);
+                                                checkingSkewnessThread.start();
+                                            }
+//                                    createQueryThread();
                                         }
                                     }).start();
 
@@ -327,19 +290,17 @@ public class TestIndexing {
 
 //                    System.out.println(numberOfQueries.get());
 
-//                                if (totalDataSize.get() >= numberOfChunks * TopologyConfig.CHUNK_SIZE) {
-//                                    clearFinishingSemaphore.acquire();
-//                                    System.out.println(String.format("Index throughput = %f tuple / s", total / (double) (totalTime) * 1000));
-//                                    indexingRunnable.setInputExhausted();
-//                                    for (Thread thread : indexingThreads) {
-//                                        try {
-//                                            thread.join();
-//                                        } catch (InterruptedException e) {
-//                                            e.printStackTrace();
-//                                        }
-//                                    }
-//                                    indexingThreads.clear();
-//                                    clearFinishingSemaphore.release();
+                                if (totalDataSize.get() >= numberOfChunks * TopologyConfig.CHUNK_SIZE) {
+                                    System.out.println(String.format("Index throughput = %f tuple / s", total / (double) (totalTime) * 1000));
+                                    indexingRunnable.setInputExhausted();
+                                    for (Thread thread : indexingThreads) {
+                                        try {
+                                            thread.join();
+                                        } catch (InterruptedException e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                    indexingThreads.clear();
 
 //                                    queryRunnable.terminate();
 //                                    for (Thread thread : queryThreads) {
@@ -348,27 +309,30 @@ public class TestIndexing {
 //                                    queryThreads.clear();
 //                                    queryRunnable = new QueryRunnable();
 
-//                                    System.out.println("total rebuild time " + totalRebuildTime);
-//                                    System.out.println("average rebuild time " + (totalRebuildTime * 1.0 / numberOfRebuild));
-//                                    System.out.println("number of rebuild " + numberOfRebuild);
+                                    System.out.println("total rebuild time " + totalRebuildTime);
+                                    System.out.println("average rebuild time " + (totalRebuildTime * 1.0 / numberOfRebuild));
+                                    System.out.println("number of rebuild " + numberOfRebuild);
 //                        System.out.println("total time " + totalTime);
-//                                    System.out.println("average time in a chunk" + totalTime / numberOfChunks);
-//                                    System.out.println("average number of rebuild in a chunk " + numberOfRebuild * 1.0 / numberOfChunks);
+                                    System.out.println("average time in a chunk" + totalTime * 1.0 / numberOfChunks);
+                                    System.out.println("average number of rebuild in a chunk " + numberOfRebuild * 1.0 / numberOfChunks);
 
-//                                    System.out.println(numberOfKeys * 1.0 / numberOfChunks);
+                                    System.out.println(numberOfKeys * 1.0 / numberOfChunks);
+
+                                    System.out.println(total);
+//                                    System.out.println(totalQueryTime);
 //                                    System.out.println("average query time " + totalQueryTime * 1.0 / numberOfQueries.get());
-//                                    break;
-//                                }
+                                    break;
+                                }
                             }
                         }
 
 
-                        } catch(InterruptedException e){
-                            e.printStackTrace();
-                        } catch(IOException e){
-                            e.printStackTrace();
-                        }
+                    } catch(InterruptedException e){
+                        e.printStackTrace();
+                    } catch(IOException e){
+                        e.printStackTrace();
                     }
+                }
 //                }
             }
 
@@ -377,18 +341,18 @@ public class TestIndexing {
 
 
 
-
-
 //        populateInputQueueWithMoreTuples(5000);
         waitForInputQueueFilled();
 
 //        System.out.println("Indexing threads have been created!!!");
 
-//        createIndexingThread();
+        createIndexingThread();
 
-//        checkingSkewnessRunnbale = new CheckingSkewnessRunnable();
-//        checkingSkewnessThread = new Thread(checkingSkewnessRunnbale);
-//        checkingSkewnessThread.start();
+        if (rebuildable) {
+            checkingSkewnessRunnbale = new CheckingSkewnessRunnable();
+            checkingSkewnessThread = new Thread(checkingSkewnessRunnbale);
+            checkingSkewnessThread.start();
+        }
 
 //        createQueryThread();
 
@@ -451,12 +415,14 @@ public class TestIndexing {
                 if (terminating) {
                     break;
                 }
+
 //                    System.out.println(chunkId);
 //                    System.out.println(executedInChekingThread.get());
 //                    System.out.println(indexedData.getSkewnessFactor());
                 if (chunkId.get() > 0 && estimatedDataSize.get() >= TopologyConfig.CHUNK_SIZE * TopologyConfig.SKEWNESS_DETECTION_THRESHOLD) {
 //                        System.out.println("Before rebuilt " + indexedData.getSkewnessFactor());
 //                    if (indexedData.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_THRESHOLD) {
+//                    System.out.println(estimatedDataSize.get());
                         indexingRunnable.setInputExhausted();
                         for (Thread thread : indexingThreads) {
                             try {
@@ -468,6 +434,9 @@ public class TestIndexing {
                         }
                         indexingThreads.clear();
                         indexingRunnable = new IndexingRunnable();
+
+
+
 //                            System.out.println("begin to rebuild the template!!!");
 
                         long start = System.currentTimeMillis();
@@ -480,9 +449,11 @@ public class TestIndexing {
 
                         ++numberOfRebuild;
 
+                        estimatedDataSize.set(0);
+
 //                        System.out.println("New tree has been built");
 //
-                        estimatedDataSize.set(0);
+//                            executedInChekingThread.set(0L);
 
 //                            TopologyConfig.SKEWNESS_DETECTION_THRESHOLD = 0.01;
 //
@@ -492,7 +463,6 @@ public class TestIndexing {
             }
         }
     }
-
 
 
     class QueryRunnable implements Runnable {
@@ -506,30 +476,30 @@ public class TestIndexing {
             int count = 0;
             while (true) {
 //                try {
-                    if(terminating) {
-                        break;
-                    }
+                if(terminating) {
+                    break;
+                }
 
 
-                    Integer key = random.nextInt(1048576);
 //                    Thread.sleep(1);
-                    Integer leftKey = key;
-                    Integer rightKey = key;
-//                    Double indexValue = random.nextDouble() * 700 + 300;
-//                        s2.acquire();
-                    long start = System.currentTimeMillis();
-                    indexedData.searchRange(leftKey, rightKey);
+                Integer key = random.nextInt(2118413320);
+//                    Thread.sleep(1);
+                Integer leftKey = key;
+                Integer rightKey = key;
+
+                long start = System.currentTimeMillis();
+                indexedData.searchRange(leftKey, rightKey);
 
 //                    bulkLoader.pointSearch(indexValue);
 
 
 
                 long time = System.currentTimeMillis() - start;
-//                        indexedData.searchRange(leftKey, rightKey);
                 numberOfQueries.incrementAndGet();
+//                        indexedData.searchRange(leftKey, rightKey);
 //                        s2.release();
 //                        indexedData.searchRange(leftKey, rightKey);
-                    totalQueryTime += time;
+                totalQueryTime += time;
 
 //                    System.out.println(numberOfQueries.get());
 
@@ -537,7 +507,7 @@ public class TestIndexing {
 //                        System.out.println("**********");
 //                    }
 
-//                    if (numberOfQueries.get() == 5000) {
+//                if (numberOfQueries.get() == 5000) {
 //                        double aveQueryTime = (double) totalTime.get() / (double) numberOfQueries;
 //                        System.out.println(aveQueryTime);
 //                        String content = "" + aveQueryTime;
@@ -545,12 +515,12 @@ public class TestIndexing {
 //                        byte[] contentInBytes = content.getBytes();
 //                        byte[] nextLineInBytes = newline.getBytes();
 //                        System.out.println(String.format("%d queries executed!", numberOfQueries));
-//                        System.out.println("latency per query: " + totalQueryTime / (double)5000 + " ms");
-//                        totalQueryTime = 0L;
-//                        numberOfQueries.set(0);
-//                        break;
+//                    System.out.println("latency per query: " + totalQueryTime / (double)5000 + " ms");
+//                    totalQueryTime = 0L;
+//                    numberOfQueries.set(0);
+//                    break;
 //                        totalTime = new AtomicLong(0);
-//                    }
+//                }
 //
 //                } catch (IOException e) {
 //                    e.printStackTrace();
@@ -582,23 +552,6 @@ public class TestIndexing {
         //As we add timestamp for a field, so we need to serialize the timestamp
 //        output.writeLong((Long) values.get(valueTypes.size()));
         return output.toBytes();
-    }
-
-    public int getTupleLength() {
-        int tupleLength = 0;
-        for (int i = 0; i < valueTypes.size(); i++) {
-            if (valueTypes.get(i).equals(Double.class)) {
-                tupleLength += 8;
-            } else if (valueTypes.get(i).equals(String.class)) {
-                tupleLength += 10;
-            } else if (valueTypes.get(i).equals(Long.class)) {
-                tupleLength += 8;
-            } else if (valueTypes.get(i).equals(Integer.class)) {
-                tupleLength += 4;
-            }
-        }
-
-        return tupleLength;
     }
 
 
@@ -691,9 +644,10 @@ public class TestIndexing {
 //                        final Double indexValue = (Double) pair.getKey();
                         final byte[] serializedTuple = (byte[]) pair.getValue();
                         indexedData.insert(indexValue, serializedTuple);
-                        estimatedDataSize.addAndGet(tupleLength);
+
+                        estimatedDataSize.addAndGet(tupleLength + 21);
                     }
-                    executed.addAndGet(drainer.size());
+//                    executed.addAndGet(drainer.size());
 //                    executedInChekingThread.addAndGet(drainer.size());
 //                    total.addAndGet(drainer.size());
                     drainer.clear();
@@ -779,6 +733,6 @@ public class TestIndexing {
     public static void main(String[] args) {
         int bTreeOrder = 64;
 
-        TestIndexing test = new TestIndexing(bTreeOrder, 4, 0, true);
+        NetworkTestIndexing test = new NetworkTestIndexing(bTreeOrder, 4, 4, true, false);
     }
 }

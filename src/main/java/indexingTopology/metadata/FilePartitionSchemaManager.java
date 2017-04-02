@@ -48,4 +48,7 @@ public class FilePartitionSchemaManager {
         return search(Double.MIN_VALUE, Double.MAX_VALUE, startTime, endTime);
     }
 
+    public RTree getRTree() {
+        return tree;
+    }
 }

@@ -3,6 +3,7 @@ package indexingTopology.bolt;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
+import indexingTopology.util.FrequencyRestrictor;
 import indexingTopology.util.texi.Car;
 import indexingTopology.util.texi.City;
 import indexingTopology.util.texi.TrajectoryGenerator;
@@ -24,7 +25,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class TaxiDataGenerator extends InputStreamReceiver {
     private City city;
 
-    BufferedReader bufferedReader = null;
+    private BufferedReader bufferedReader = null;
 
     String fileName;
 
@@ -44,6 +45,8 @@ public class TaxiDataGenerator extends InputStreamReceiver {
     List<Double> longitudes;
     List<Double> latitudes;
     List<Integer> zcodes;
+
+    private FrequencyRestrictor frequencyRestrictor;
 
     public TaxiDataGenerator(DataSchema schema, City city) {
         super(schema);
@@ -70,6 +73,8 @@ public class TaxiDataGenerator extends InputStreamReceiver {
         longitudes = new ArrayList<>();
         taxiIds = new ArrayList<>();
         zcodes = new ArrayList<>();
+
+//        frequencyRestrictor = new FrequencyRestrictor(500000 / 24, 50);
 
         int index = 0;
         while (true) {
@@ -178,6 +183,12 @@ public class TaxiDataGenerator extends InputStreamReceiver {
                         Double longitude = longitudes.get(index);
                         Double latitude = latitudes.get(index);
                         Long timestamp = System.currentTimeMillis();
+
+//                        try {
+//                            frequencyRestrictor.getPermission(1);
+//                        } catch (InterruptedException e) {
+//                            e.printStackTrace();
+//                        }
 
                         final DataTuple dataTuple = new DataTuple(taxiId, zcode, longitude, latitude, timestamp);
                         try {

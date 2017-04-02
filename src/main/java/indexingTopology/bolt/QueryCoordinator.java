@@ -1,5 +1,7 @@
 package indexingTopology.bolt;
 
+import com.github.davidmoten.rtree.RTree;
+import com.github.davidmoten.rtree.Visualizer;
 import indexingTopology.data.PartialQueryResult;
 import indexingTopology.util.*;
 import javafx.util.Pair;
@@ -34,7 +36,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private Semaphore concurrentQueriesSemaphore;
 
-    private static final int MAX_NUMBER_OF_CONCURRENT_QUERIES = 5;
+    private static final int MAX_NUMBER_OF_CONCURRENT_QUERIES = 1;
 
     private long queryId;
 
@@ -110,7 +112,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
         setTimestamps();
 
-        numberOfPartitions = queryServers.size();
+        numberOfPartitions = indexServers.size();
         balancedPartition = new BalancedPartition(numberOfPartitions, lowerBound, upperBound);
 
         balancedPartitionToBeDeleted = null;
@@ -126,6 +128,9 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             TimeDomain timeDomain = (TimeDomain) tuple.getValueByField("timeDomain");
             KeyDomain keyDomain = (KeyDomain) tuple.getValueByField("keyDomain");
 
+//            System.out.println("start " + timeDomain.getStartTimestamp());
+//            System.out.println("end" + timeDomain.getEndTimestamp());
+
             filePartitionSchemaManager.add(new FileMetaData(fileName, ((T) keyDomain.getLowerBound()).doubleValue(),
                     ((T) keyDomain.getUpperBound()).doubleValue(), timeDomain.getStartTimestamp(), timeDomain.getEndTimestamp()));
         } else if (tuple.getSourceStreamId().equals(Streams.QueryFinishedStream)) {
@@ -139,8 +144,10 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
                 Long start = (Long) pair.getKey();
                 int fileSize = (Integer) pair.getValue();
 //                LOG.info("query id " + queryId);
+//                LOG.info("Query start time " + start);
+//                LOG.info("Query end time " + System.currentTimeMillis());
                 LOG.info("Query time " + (System.currentTimeMillis() - start));
-//                LOG.info("file size " + fileSize);
+                LOG.info("file size " + fileSize);
                 queryIdToStartTime.remove(queryId);
             }
 
@@ -151,13 +158,20 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
             int taskId = tuple.getSourceTask();
 
-//            /*task queue model
-            sendSubqueryToTask(taskId);
-//            */
 
-            /*our method
-            sendSubquery(taskId);
+            if (TopologyConfig.TASK_QUEUE_MODEL) {
+                sendSubqueryToTask(taskId);
+            } else {
+                sendSubquery(taskId);
+            }
+
+            /*task queue model
+            sendSubqueryToTask(taskId);
             */
+
+//            /*our method
+//            sendSubquery(taskId);
+//            */
 
         } else if (tuple.getSourceStreamId().equals(Streams.QueryGenerateStream)) {
             Query query = (Query) tuple.getValueByField("query");
@@ -203,11 +217,11 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             handlePartialQueryResult(queryId, partialQueryResult);
 
             // logic for handling results.
-            System.out.println("Received a partialResult for " + queryId + " " + partialQueryResult.dataTuples.size() + " elements.");
+//            System.out.println("Received a partialResult for " + queryId + " " + partialQueryResult.dataTuples.size() + " elements.");
             if(!partialQueryResult.getEOFFlag()) {
                 collector.emit(Streams.PartialQueryResultReceivedStream, new Values(queryId));
             } else {
-                System.out.println(String.format("All query results are collected for Query[%d] !!!!", queryId));
+//                System.out.println(String.format("All query results are collected for Query[%d] !!!!", queryId));
             }
         }
     }
@@ -270,12 +284,11 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 //            System.out.println("size " + fileNames.size());
 //        }
 
-        if (fileNames.size() < -1) {
+        if (fileNames.size() <= 0) {
 
             collector.emit(Streams.FileSystemQueryInformationStream, new Values(query, 0));
         } else {
 
-            queryIdToStartTime.put(queryId, new Pair(System.currentTimeMillis(), fileNames.size()));
 
 //            System.out.println("query id " + queryId);
 
@@ -285,29 +298,48 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 //            shuffle grouping
 //            sendSubqueriesByshuffleGrouping(subQuery);
 
-//            /*task queue
+            /*task queue
                 try {
                     taskQueue.put(subQuery);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-//              */
+              */
 
-                /*our method
-                putSubqueryToTaskQueues(subQuery);
-                */
+                if (TopologyConfig.SHUFFLE_GROUPING_FLAG) {
+                    sendSubqueriesByshuffleGrouping(subQuery);
+                } else if (TopologyConfig.TASK_QUEUE_MODEL) {
+                    try {
+                        taskQueue.put(subQuery);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    putSubqueryToTaskQueues(subQuery);
+                }
+
+//                /*our method
+//                putSubqueryToTaskQueues(subQuery);
+//                */
             }
 
-//            /* task queue
-            sendSubqueriesFromTaskQueue();
-//            */
-
-            /*our method
+            if (TopologyConfig.TASK_QUEUE_MODEL) {
+                sendSubqueriesFromTaskQueue();
+            } else {
                 sendSubqueriesFromTaskQueues();
+            }
+
+            /* task queue
+            sendSubqueriesFromTaskQueue();
             */
+
+//            /*our method
+//                sendSubqueriesFromTaskQueues();
+//            */
 
             collector.emit(Streams.FileSystemQueryInformationStream, new Values(query, fileNames.size()));
         }
+        queryIdToStartTime.put(queryId, new Pair(System.currentTimeMillis(), fileNames.size()));
     }
 
     private void createQueryHandlingThread() {
@@ -338,7 +370,9 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private void generateSubQueriesOnTheInsertionServer(Query<T> query) {
         int numberOfTasksToSearch = 0;
+
         Long queryId = query.queryId;
+
         T leftKey = query.leftKey;
         T rightKey = query.rightKey;
         Long startTimestamp = query.startTimestamp;
@@ -347,6 +381,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
         List<Integer> partitionIdsInBalancedPartition = getPartitionIds(balancedPartition, leftKey, rightKey);
         List<Integer> partitionIdsInStalePartition = null;
+
 
         if (balancedPartitionToBeDeleted != null) {
             partitionIdsInStalePartition = getPartitionIds(balancedPartitionToBeDeleted, leftKey, rightKey);

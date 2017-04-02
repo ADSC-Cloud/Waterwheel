@@ -64,12 +64,13 @@ public class ResultMerger extends BaseRichBolt {
             int numberOfTasksToSearch = tuple.getInteger(1);
             Long queryId = tuple.getLong(0);
 
-//            System.out.println("queryId" + queryId + " number of tasks to search " + numberOfTasksToSearch);
+//            System.out.println("queryId " + queryId + " number of tasks to search " + numberOfTasksToSearch);
             queryIdToNumberOfTasksToSearch.put(queryId, numberOfTasksToSearch);
 
             if (isQueryFinished(queryId)) {
 //                printTimeInformation(queryId);
                 sendNewQueryPermit(queryId);
+                printTimeInformation(queryId);
                 removeQueryIdFromMappings(queryId);
             }
 
@@ -78,12 +79,12 @@ public class ResultMerger extends BaseRichBolt {
             int numberOfFilesToScan = tuple.getInteger(1);
             Query query = (Query) tuple.getValue(0);
             Long queryId = query.queryId;
-//            System.out.println("queryId" + queryId + " number of files to scan " + numberOfFilesToScan);
+//            System.out.println("queryId " + queryId + " number of files to scan " + numberOfFilesToScan);
             queryIdToNumberOfFilesToScan.put(queryId, numberOfFilesToScan);
 
             // It is possible in a rare case where the query information arrives later than the query result.
             if (isQueryFinished(queryId)) {
-//                printTimeInformation(queryId);
+                printTimeInformation(queryId);
                 finalizeQuery(query);
             }
 
@@ -91,7 +92,7 @@ public class ResultMerger extends BaseRichBolt {
                 tuple.getSourceStreamId().equals(Streams.FileSystemQueryStream)) {
             SubQuery subQuery = (SubQuery)tuple.getValue(0);
             long queryId = subQuery.getQueryId();
-            System.out.println(String.format("A subquery for Query[%d] is completed!", queryId));
+//            System.out.println(String.format("A subquery for Query[%d] is completed!", queryId));
 
             Integer counter = queryIdToCounter.getOrDefault(queryId, 0);
             counter++;
@@ -108,26 +109,31 @@ public class ResultMerger extends BaseRichBolt {
                 int taskId = tuple.getSourceTask();
                 FileScanMetrics fileScanMetrics = (FileScanMetrics) tuple.getValueByField("metrics");
 //                        System.out.println(queryId + "has been finished");
-//                if (queryIdToTaskIdToTimeMapping.get(queryId) == null) {
-//                    Map<Integer, List<FileScanMetrics>> taskIdToTimeMapping = new HashMap<>();
-//                    List<FileScanMetrics> time = new ArrayList<>();
-//                    time.add(fileScanMetrics);
-//                    taskIdToTimeMapping.put(taskId, time);
-//                    queryIdToTaskIdToTimeMapping.put(queryId, taskIdToTimeMapping);
-//                } else {
-//                    Map<Integer, List<FileScanMetrics>> taskIdToMetricsMapping = queryIdToTaskIdToTimeMapping.get(queryId);
-//                    if (taskIdToMetricsMapping.get(taskId) == null) {
-//                        List<FileScanMetrics> time = new ArrayList<>();
-//                        time.add(fileScanMetrics);
-//                        taskIdToMetricsMapping.put(taskId, time);
-//                        queryIdToTaskIdToTimeMapping.put(queryId, taskIdToMetricsMapping);
-//                    } else {
-//                        List<FileScanMetrics> time = taskIdToMetricsMapping.get(taskId);
-//                        time.add(fileScanMetrics);
-//                        taskIdToMetricsMapping.put(taskId, time);
-//                        queryIdToTaskIdToTimeMapping.put(queryId, taskIdToMetricsMapping);
-//                    }
-//                }
+
+
+                if (queryIdToTaskIdToTimeMapping.get(queryId) == null) {
+                    Map<Integer, List<FileScanMetrics>> taskIdToTimeMapping = new HashMap<>();
+                    List<FileScanMetrics> time = new ArrayList<>();
+                    time.add(fileScanMetrics);
+                    taskIdToTimeMapping.put(taskId, time);
+                    queryIdToTaskIdToTimeMapping.put(queryId, taskIdToTimeMapping);
+                } else {
+                    Map<Integer, List<FileScanMetrics>> taskIdToMetricsMapping = queryIdToTaskIdToTimeMapping.get(queryId);
+                    if (taskIdToMetricsMapping.get(taskId) == null) {
+                        List<FileScanMetrics> time = new ArrayList<>();
+                        time.add(fileScanMetrics);
+                        taskIdToMetricsMapping.put(taskId, time);
+                        queryIdToTaskIdToTimeMapping.put(queryId, taskIdToMetricsMapping);
+                    } else {
+                        List<FileScanMetrics> time = taskIdToMetricsMapping.get(taskId);
+                        time.add(fileScanMetrics);
+                        taskIdToMetricsMapping.put(taskId, time);
+                        queryIdToTaskIdToTimeMapping.put(queryId, taskIdToMetricsMapping);
+                    }
+
+                }
+
+
                 collector.emitDirect(taskId, Streams.SubQueryReceivedStream, new Values("received"));
             }
 
@@ -137,7 +143,7 @@ public class ResultMerger extends BaseRichBolt {
 
             if (isQueryFinished(queryId)) {
 //                System.out.println(tuple.getSourceStreamId());
-//                printTimeInformation(queryId);
+                printTimeInformation(queryId);
                 finalizeQuery(subQuery);
             }
 
@@ -268,24 +274,49 @@ public class ResultMerger extends BaseRichBolt {
 
     private void printTimeInformation(Long queryId) {
         Map<Integer, List<FileScanMetrics>> taskIdToTimeMapping = queryIdToTaskIdToTimeMapping.get(queryId);
-        if (taskIdToTimeMapping != null) {
-            System.out.println("query id " + queryId + "has been finished ");
-            Set<Integer> taskIds = taskIdToTimeMapping.keySet();
-            for (Integer taskId : taskIds) {
-                List<FileScanMetrics> time = taskIdToTimeMapping.get(taskId);
-                if (time != null) {
-                    System.out.println("" + taskId);
-                    for (FileScanMetrics fileScanMetrics : time) {
-                        System.out.println(fileScanMetrics);
-                    }
-//                    Long sum = 0L;
-//                    for (Long t : time) {
-//                        sum += t;
+//        if (queryId < 10) {
+        Long totalQueryTime = 0L;
+
+        int numberOfSubqueries = 0;
+            if (taskIdToTimeMapping != null) {
+//            System.out.println("query id " + queryId + "has been finished ");
+                Set<Integer> taskIds = taskIdToTimeMapping.keySet();
+//                Long numberOfRecords = 0L;
+//                Long totalTime = 0L;
+//                for (Integer taskId : taskIds) {
+//                    List<FileScanMetrics> records = taskIdToTimeMapping.get(taskId);
+//                    for (FileScanMetrics fileScanMetrics : records) {
+//                        numberOfRecords += fileScanMetrics.getNumberOfRecords();
+//                        totalTime += fileScanMetrics.getTotalTime();
 //                    }
-//                    System.out.println("task id " + taskId + " total "  + sum);
+
+                for (Integer taskId : taskIds) {
+                    List<FileScanMetrics> records = taskIdToTimeMapping.get(taskId);
+                    for (FileScanMetrics fileScanMetrics : records) {
+                        totalQueryTime += fileScanMetrics.getTotalTime();
+                        ++numberOfSubqueries;
+                    }
+
+                    /*
+                    if (records != null) {
+                        Long time = 0L;
+                        for (FileScanMetrics fileScanMetrics : records) {
+                            System.out.println(fileScanMetrics);
+                            time += fileScanMetrics.getTotalTime();
+                        }
+                        System.out.println("task id " + taskId + " " + time);
+                        System.out.println("file size " + records.size());
+                    }
+                    */
                 }
-            }
+
+                System.out.println("Query time " + (totalQueryTime / numberOfSubqueries));
+//            }
+//                System.out.println("query id " + queryId + " " + numberOfRecords);
+//            }
         }
+
+        queryIdToTaskIdToTimeMapping.remove(queryId);
     }
 
 }

@@ -5,6 +5,7 @@ import indexingTopology.data.DataSchema;
 import indexingTopology.util.TopologyGenerator;
 import indexingTopology.util.texi.City;
 import org.apache.storm.Config;
+import org.apache.storm.LocalCluster;
 import org.apache.storm.StormSubmitter;
 import org.apache.storm.generated.StormTopology;
 import org.apache.storm.topology.TopologyBuilder;
@@ -41,10 +42,10 @@ public class TaxiTopology {
         schemaWithTimestamp.addLongField("timestamp");
 
 
-        final double x1 = 115.0;
+        final double x1 = 116.2;
         final double x2 = 117.0;
-        final double y1 = 39.0;
-        final double y2 = 41.0;
+        final double y1 = 39.6;
+        final double y2 = 40.6;
         final int partitions = 1024;
 
         City city = new City(x1, x2, y1, y2, partitions);
@@ -74,7 +75,7 @@ public class TaxiTopology {
 
         Config conf = new Config();
         conf.setDebug(false);
-        conf.setNumWorkers(4);
+        conf.setNumWorkers(12);
 
         conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
 //        conf.put(Config.SUPERVISOR_CHILDOPTS, "-Xmx2048m");
