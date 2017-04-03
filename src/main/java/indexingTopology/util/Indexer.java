@@ -14,6 +14,7 @@ import javafx.util.Pair;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
@@ -222,39 +223,19 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
                 if (estimatedDataSize >= TopologyConfig.SKEWNESS_DETECTION_THRESHOLD * TopologyConfig.CHUNK_SIZE) {
                     if (bTree.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_THRESHOLD) {
-//                        while (!pendingQueue.isEmpty()) {
-//                            try {
-//                                Thread.sleep(1);
-//                            } catch (InterruptedException e) {
-//                                e.printStackTrace();
-//                            }
-//                        }
                         terminateIndexingThreads();
-//
+
                         lock.lock();
-
-//                        System.out.println("begin to rebuild the template!!!");
-//
-//                        long start = System.currentTimeMillis();
-//
                         bTree = templateUpdater.createTreeWithBulkLoading(bTree);
-//
                         lock.unlock();
-
-//                        System.out.println("Time used to update template " + (System.currentTimeMillis() - start));
-//
-//                        System.out.println("New tree has been built");
 
                         estimatedDataSize = 0;
 
                         createIndexingThread();
                     }
                 }
-//                System.out.println("size " + estimatedSize);
-//                System.out.println("tuple " + numTuples);
 
 
-//                if (numTuples >= TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK) {
                 if (estimatedSize >= TopologyConfig.CHUNK_SIZE) {
                     while (!pendingQueue.isEmpty()) {
                         try {
@@ -264,14 +245,10 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                         }
                     }
 
-//                    System.out.println("A chunk full " + (System.currentTimeMillis() - start)*1.0 / 1000);
-
-//                    System.out.println("Throughput " + executed.get() * 1000 / ((System.currentTimeMillis() - start)*1.0));
 
                     terminateIndexingThreads();
 
                     FileSystemHandler fileSystemHandler = null;
-
 
                     writeTreeIntoChunk();
 
@@ -292,17 +269,11 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 //                    TimeDomain timeDomain = new TimeDomain(minTimestamp, maxTimestamp);
                     timeDomain = new TimeDomain(minTimestamp, maxTimestamp);
 
-//                    domainToBTreeMapping.put(new Domain(minTimestamp, maxTimestamp, minIndexValue, maxIndexValue), bTree);
                     domainToBTreeMapping.put(new Domain(minTimestamp, maxTimestamp, minIndexValue, maxIndexValue), bTree);
 
-//                    bTree = bTree.getTemplate();
                     lock.lock();
                     bTree = bTree.getTemplate();
                     lock.unlock();
-//                    if (filledBPlusTree == null) {
-//                        System.out.println("cloned Indexed data null");
-//                        System.exit(120);
-//                    }
 
                     try {
                         informationToUpdatePendingQueue.put(new FileInformation(fileName, new Domain(keyDomain, timeDomain), numTuples));
@@ -334,12 +305,23 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                     ++chunkId;
                 }
 
-                inputQueue.drainTo(drainer, 256);
 
+                DataTuple firstDataTuple = null;
+                try {
+                    firstDataTuple = inputQueue.poll(10, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                if (firstDataTuple == null) {
+                    continue;
+                }
+
+                drainer.add(firstDataTuple);
+                inputQueue.drainTo(drainer, 256);
 
                 for (DataTuple dataTuple: drainer) {
                     try {
-//                        Double indexValue = tuple.getDoubleByField(indexField);
                         Long timeStamp = (Long) schema.getValue("timestamp", dataTuple);
 
                         DataType indexValue = (DataType) schema.getIndexValue(dataTuple);
@@ -356,10 +338,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                         if (timeStamp > maxTimestamp) {
                             maxTimestamp = timeStamp;
                         }
-//                        byte[] serializedTuple = schema.serializeTuple(tuple);
-//
-//                        Pair pair = new Pair(indexValue, serializedTuple);
-//
+
                         pendingQueue.put(dataTuple);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
@@ -370,6 +349,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
                 estimatedSize += (drainer.size() * (keyLength + tupleLength + TopologyConfig.OFFSET_LENGTH));
                 estimatedDataSize += (drainer.size() * (keyLength + tupleLength + TopologyConfig.OFFSET_LENGTH));
+
 
                 drainer.clear();
 
@@ -387,7 +367,6 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
 
         Long startTime;
-        AtomicInteger threadIndex = new AtomicInteger(0);
 
         Object syn = new Object();
 
@@ -404,37 +383,31 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
             ArrayList<DataTuple> drainer = new ArrayList<>();
             while (true) {
                 try {
-//                        Pair pair = queue.poll(1, TimeUnit.MILLISECONDS);
-//                        if (pair == null) {
-//                        if(!first)
-//                            Thread.sleep(100);
 
+                    DataTuple firstDataTuple = null;
+                    try {
+                        firstDataTuple = pendingQueue.poll(10, TimeUnit.MILLISECONDS);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                    if (firstDataTuple == null) {
+                        if (inputExhausted) {
+                            break;
+                        } else {
+                            continue;
+                        }
+                    }
+
+                    drainer.add(firstDataTuple);
                     pendingQueue.drainTo(drainer, 256);
 
-//                    System.out.println(String.format("%d executed ", executed.get()));
-//                    System.out.println(String.format("%d tuples have been drained to drainer ", drainer.size()));
-
-//                        Pair pair = queue.poll(10, TimeUnit.MILLISECONDS);
-                    if (drainer.size() == 0) {
-                        if (inputExhausted)
-                            break;
-                        else
-                            continue;
-                    }
 
                     for (DataTuple tuple : drainer) {
                         localCount++;
                         final DataType indexValue = (DataType) schema.getIndexValue(tuple);
                         final byte[] serializedTuple = schema.serializeTuple(tuple);
-//                        if (filledBPlusTree != null) {
-//                            filledBPlusTree.insert((Comparable) indexValue, serializedTuple);
-//                        } else {
-//                            if (bTree == null) {
-//                                System.exit(111);
-//                                System.out.println("indexed data is null");
-//                            }
-                            bTree.insert((Comparable) indexValue, serializedTuple);
-//                        }
+                        bTree.insert((Comparable) indexValue, serializedTuple);
                     }
 
                     executed.addAndGet(drainer.size());
@@ -446,11 +419,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                     e.printStackTrace();
                 }
             }
-//            if(first) {
-//                System.out.println(String.format("Index throughput = %f tuple / s", executed.get() / (double) (System.currentTimeMillis() - startTime) * 1000));
-//                System.out.println("Thread execution time: " + (System.currentTimeMillis() - startTime) + " ms.");
-//            }
-//                System.out.println("Indexing thread " + Thread.currentThread().getId() + " is terminated with " + localCount + " tuples processed!");
+
         }
     }
 

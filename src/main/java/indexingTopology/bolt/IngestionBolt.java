@@ -87,7 +87,9 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
             rateTracker.notify(1);
 
             try {
+//                System.out.println("trying to put");
                 inputQueue.put(dataTuple);
+//                System.out.println("put finished");
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } finally {
@@ -103,6 +105,8 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
 //                collector.ack(tuple);
 //                System.out.println("tuple id " + tupleId);
                 if (tupleId % TopologyConfig.EMIT_NUM == 0) {
+//                    System.out.println("tuple id " + tupleId + " has been acked!!!");
+//                    System.out.println(inputQueue.size());
                     collector.emitDirect(taskId, Streams.AckStream, new Values(tupleId));
                 }
             }

@@ -123,7 +123,7 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
         staticsRequestSendingThread.start();
 
 
-        createMetadataSendingThread();
+//        createMetadataSendingThread();
     }
 
     private void createMetadataSendingThread() {

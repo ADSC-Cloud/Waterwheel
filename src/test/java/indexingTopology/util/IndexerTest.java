@@ -56,6 +56,7 @@ public class IndexerTest implements Observer {
             inputQueue.put(dataTuple);
         }
 
+
         Thread.sleep(1000);
 
         Long queryId = 0L;

@@ -24,9 +24,9 @@ public class TopologyConfig {
 
     public static String dataDir = "/home/lzj";
 
-//    public static String dataFileDir = "/home/lzj/taxi-trajectory";
+    public static String dataFileDir = "/home/lzj/taxi-trajectory";
 //    public static String dataFileDir = "/home/lzj/dataset/20150430_processed.txt";
-    public static String dataFileDir = "/home/acelzj/Downloads/taxi-trajectory";
+//    public static String dataFileDir = "/home/acelzj/Downloads/taxi-trajectory";
 //    public static String dataFileDir = "/home/acelzj/Downloads/dataset/20150430.txt";
 
     public static String logDir = "/logs";
