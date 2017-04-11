@@ -36,7 +36,7 @@ public class NetworkDataGenerator extends InputStreamReceiver {
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         super.prepare(map, topologyContext, outputCollector);
 
-//        frequencyRestrictor = new FrequencyRestrictor(500000 / 24, 50);
+        frequencyRestrictor = new FrequencyRestrictor(50000 / 24, 50);
 
         try {
             bufferedReader = new BufferedReader(new FileReader(new File(TopologyConfig.dataFileDir)));
@@ -75,11 +75,11 @@ public class NetworkDataGenerator extends InputStreamReceiver {
                         String url = data[2];
                         Long timestamp = System.currentTimeMillis();
 
-//                        try {
-//                            frequencyRestrictor.getPermission(1);
-//                        } catch (InterruptedException e) {
-//                            e.printStackTrace();
-//                        }
+                        try {
+                            frequencyRestrictor.getPermission(1);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
 
                         final DataTuple dataTuple = new DataTuple(sourceIp, destIp, url, timestamp);
                         try {
@@ -92,6 +92,6 @@ public class NetworkDataGenerator extends InputStreamReceiver {
                 }
             }
         });
-//        generationThread.start();
+        generationThread.start();
     }
 }

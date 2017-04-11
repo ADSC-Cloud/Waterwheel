@@ -1,8 +1,8 @@
 package indexingTopology.util;
 
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.util.texi.City;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.BufferedMutator;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Table;
@@ -29,17 +29,18 @@ public class NetworkHBaseTester {
 
     private HBaseHandler hBaseHandler;
 
-    private int sleepTimeInSecond = 5;
+    private int sleepTimeInSecond = 60;
 
     final int batchSize = 5000;
 
-    RateTracker rateTracker = new RateTracker(50 * 1000, 50);
+    Long offset = (long) Integer.MAX_VALUE + 1;
+
+    RateTracker rateTracker = new RateTracker(5 * 1000, 50);
 
     String tableName = "Network";
     String columnFamilyName = "network";
 
 
-    BufferedReader bufferedReader = null;
 
 
 //    private int batchSize;
@@ -56,30 +57,29 @@ public class NetworkHBaseTester {
         }
 
 
-        try {
-            hBaseHandler.creatTable(tableName, columnFamilyName, null);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
 
-
-        bufferedReader = new BufferedReader(new FileReader(new File(TopologyConfig.dataFileDir)));
+//        try {
+//            hBaseHandler.createTable(tableName, columnFamilyName, null);
+//            System.out.println("created!!!");
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
 
 
         Long start = System.currentTimeMillis();
         createIndexingThread(numberOfIndexingThreads);
 
-        Thread queryThread = new Thread(new QueryRunnable());
-        queryThread.start();
+//        Thread queryThread = new Thread(new QueryRunnable());
+//        queryThread.start();
 
         new Thread(new Runnable() {
             @Override
             public void run() {
-                try {
-                    Thread.sleep(sleepTimeInSecond * 1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+//                try {
+//                    Thread.sleep(sleepTimeInSecond * 1000);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
                 while (true) {
                     try {
                         Thread.sleep(5 * 1000);
@@ -87,15 +87,16 @@ public class NetworkHBaseTester {
                         e.printStackTrace();
                     }
 
-                    System.out.println("Throughput " + rateTracker.reportRate());
-                    System.out.println("***************");
+//                    System.out.println("Throughput " + rateTracker.reportRate());
+                    System.out.println(rateTracker.reportRate());
+//                    System.out.println("***************");
                 }
             }
         }).start();
 
     }
 
-    private void createIndexingThread(int n) {
+    private void createIndexingThread(int n) throws FileNotFoundException {
 //        if(indexingRunnable == null) {
 //            indexingRunnable = new IndexingRunnable();
 //        }
@@ -109,13 +110,25 @@ public class NetworkHBaseTester {
 
     class IndexingRunnable implements Runnable {
 
+        BufferedReader bufferedReader;
+
+        IndexingRunnable() throws FileNotFoundException {
+        }
+
         @Override
         public void run() {
 
             Connection connection = hBaseHandler.getConnection();
-            Table table = null;
             try {
-                table = connection.getTable(TableName.valueOf(tableName));
+                this.bufferedReader = new BufferedReader(new FileReader(new File(TopologyConfig.dataFileDir)));
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+//            Table table = null;
+            BufferedMutator table = null;
+            try {
+//                table = connection.getTable(TableName.valueOf(tableName));
+                table = connection.getBufferedMutator(TableName.valueOf(tableName));
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -146,10 +159,12 @@ public class NetworkHBaseTester {
                 } else {
                     String[] data = text.split(" ");
 
-                    Integer sourceIp = Integer.parseInt(data[0]);
-                    Integer destIp = Integer.parseInt(data[1]);
+                    Long sourceIp = (long) Integer.parseInt(data[0]) + offset;
+                    Long destIp = (long) Integer.parseInt(data[1]) + offset;
                     String url = data[2];
                     Long timestamp = System.currentTimeMillis();
+
+
 
                     String rowKey = "" + String.format("%010d", destIp) + "-" + timestamp + "-" + String.format("%010d", sourceIp);
 
@@ -159,26 +174,27 @@ public class NetworkHBaseTester {
 
                     Put put = new Put(bytes);
 
+
                     try {
-                        hBaseHandler.addIntValue(table, columnFamilyName, "sourceIp", bytes, sourceIp, put);
+                        hBaseHandler.addLongValue(columnFamilyName, "sourceIp", bytes, sourceIp, put);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                     try {
-                        hBaseHandler.addIntValue(table, columnFamilyName, "destIp", bytes, destIp, put);
+                        hBaseHandler.addLongValue(columnFamilyName, "destIp", bytes, destIp, put);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
 
                     try {
-                        hBaseHandler.addStringValue(table, columnFamilyName, "url", bytes, url, put);
+                        hBaseHandler.addStringValue(columnFamilyName, "url", bytes, url, put);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
 
 
                     try {
-                        hBaseHandler.addLongValue(table, columnFamilyName, "timestamp", bytes, timestamp, put);
+                        hBaseHandler.addLongValue(columnFamilyName, "timestamp", bytes, timestamp, put);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -189,7 +205,8 @@ public class NetworkHBaseTester {
 
                     if (numberOfPut == batchSize) {
                         try {
-                            table.put(batchPut);
+//                            table.put(batchPut);
+                            table.mutate(batchPut);
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -207,7 +224,8 @@ public class NetworkHBaseTester {
 
             if (batchPut.size() != 0) {
                 try {
-                    table.put(batchPut);
+//                    table.put(batchPut);
+                    table.mutate(batchPut);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -220,11 +238,11 @@ public class NetworkHBaseTester {
 
         @Override
         public void run() {
-            try {
-                Thread.sleep(sleepTimeInSecond * 1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+//            try {
+//                Thread.sleep(sleepTimeInSecond * 1000);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
 
             Connection connection = hBaseHandler.getConnection();
 
@@ -235,28 +253,26 @@ public class NetworkHBaseTester {
                 e.printStackTrace();
             }
 
-            while (true) {
+            Long queryId = 0L;
+
+            while (queryId < 20) {
 
                 try {
-                    Thread.sleep(30 * 1000);
+                    Thread.sleep(10 * 1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
 
                 Long endTimestamp = System.currentTimeMillis();
 
-                System.out.println(endTimestamp);
+                Long leftKey = 1074640000L + offset;
+                Long rightKey = 1709410000L + offset;
 
-                try {
-                    Thread.sleep(5 * 1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                String startRowKey = "" + String.format("%010d", 236120000);
-                String endRowKey = "" + String.format("%010d", 236800000);
 
-                System.out.println(startRowKey);
-                System.out.println(endRowKey);
+                String startRowKey = "" + String.format("%010d", leftKey);
+//                String startRowKey = "" + String.format("%011d", 1074640000);
+                String endRowKey = "" + String.format("%010d", rightKey);
+//                String endRowKey = "" + String.format("%011d", 1709410000);
 
 
                 Long startTimestamp = endTimestamp - sleepTimeInSecond * 1000;
@@ -276,12 +292,14 @@ public class NetworkHBaseTester {
                     e.printStackTrace();
                 }
                 System.out.println(System.currentTimeMillis() - start);
+
+                ++queryId;
             }
         }
     }
 
 
     public static void main(String[] args) throws Exception {
-        NetworkHBaseTester networkHBaseTester = new NetworkHBaseTester(1);
+        NetworkHBaseTester networkHBaseTester = new NetworkHBaseTester(24);
     }
 }

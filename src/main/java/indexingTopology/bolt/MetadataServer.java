@@ -211,6 +211,8 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
 
             int taskId = tuple.getSourceTask();
 
+            /*
+
             if (taskIdToFileNumMapping.get(taskId) == null) {
                 taskIdToFileNumMapping.put(taskId, 1);
             } else {
@@ -254,7 +256,7 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
                     e.printStackTrace();
                 }
             }
-
+            */
 
             collector.emit(Streams.FileInformationUpdateStream,
                     new Values(fileName, keyDomain, timeDomain));

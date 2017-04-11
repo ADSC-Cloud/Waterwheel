@@ -53,11 +53,11 @@ public class HBaseHandler {
         admin.createTable(table);
     }
 
-    public void creatTable(String tableName, String familyName, String indexField) throws Exception {
+    public void createTable(String tableName, String familyName, String indexField) throws Exception {
         HTableDescriptor table = new HTableDescriptor(TableName.valueOf(tableName));
 
-        if (indexField != null) {
-        }
+        table.setRegionReplication(1);
+
 
         table.addFamily(new HColumnDescriptor(familyName));
 
@@ -99,7 +99,7 @@ public class HBaseHandler {
         return table.getFamilies().size();
     }
 
-    public void addIntValue(Table table, String columnFamilyName, String columnName, byte[] rowKey, Integer data, Put put) throws IOException {
+    public void addIntValue(String columnFamilyName, String columnName, byte[] rowKey, Integer data, Put put) throws IOException {
 //        TableName tableName = TableName.valueOf(name);
 
 //        Put put = new Put(rowKey);
@@ -110,7 +110,7 @@ public class HBaseHandler {
 //        table.put(put);
     }
 
-    public void addDoubleValue(Table table, String columnFamilyName, String columnName, byte[] rowKey, Double data, Put put) throws IOException {
+    public void addDoubleValue(String columnFamilyName, String columnName, byte[] rowKey, Double data, Put put) throws IOException {
 //        TableName tableName = TableName.valueOf(name);
 
 //        Put put = new Put(rowKey);
@@ -121,7 +121,7 @@ public class HBaseHandler {
 //        table.put(put);
     }
 
-    public void addLongValue(Table table, String columnFamilyName, String columnName, byte[] rowKey, Long data, Put put) throws IOException {
+    public void addLongValue(String columnFamilyName, String columnName, byte[] rowKey, Long data, Put put) throws IOException {
 //        TableName tableName = TableName.valueOf(name);
 
 //        Put put = new Put(rowKey);
@@ -133,7 +133,7 @@ public class HBaseHandler {
     }
 
 
-    public void addStringValue(Table table, String columnFamilyName, String columnName, byte[] rowKey, String data, Put put) throws IOException {
+    public void addStringValue(String columnFamilyName, String columnName, byte[] rowKey, String data, Put put) throws IOException {
 //        TableName tableName = TableName.valueOf(name);
 
 //        Put put = new Put(rowKey);

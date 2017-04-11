@@ -19,7 +19,7 @@ public class QueryCoordinatorWithQueryGenerator<T extends Number & Comparable<T>
 
     private Thread queryGenerationThread;
 
-    private int sleepTimeInSeconds = 30;
+    private int sleepTimeInSeconds = 300;
 
     private static final Logger LOG = LoggerFactory.getLogger(QueryCoordinatorWithQueryGenerator.class);
 
@@ -43,7 +43,7 @@ public class QueryCoordinatorWithQueryGenerator<T extends Number & Comparable<T>
     class QueryRunnable implements Runnable {
 
         public void run() {
-//            Long startTimestamp = System.currentTimeMillis();
+            Long startTimestamp = System.currentTimeMillis();
             try {
                 Thread.sleep(sleepTimeInSeconds * 1000);
             } catch (InterruptedException e) {
@@ -51,7 +51,7 @@ public class QueryCoordinatorWithQueryGenerator<T extends Number & Comparable<T>
             }
             while (queryId < 30) {
                 try {
-//                    Thread.sleep(10 * 1000);
+                    Thread.sleep(10 * 1000);
 
 //                    network 0.01
 //                    Integer leftKey = 236120000;
@@ -62,8 +62,8 @@ public class QueryCoordinatorWithQueryGenerator<T extends Number & Comparable<T>
 //                    Integer rightKey = 1709410000;
 
 //                    network 0.1
-//                    Integer leftKey = 1001380000;
-//                    Integer rightKey = 1780920000;
+                    Integer leftKey = 1001380000;
+                    Integer rightKey = 1780920000;
 
 
 //                    network 0.25
@@ -84,8 +84,8 @@ public class QueryCoordinatorWithQueryGenerator<T extends Number & Comparable<T>
 
 
 //                    taxi 0.01
-                    Integer leftKey = 3000;
-                    Integer rightKey = 17000;
+//                    Integer leftKey = 3000;
+//                    Integer rightKey = 17000;
 
 //                    taxi 0.05
 //                    Integer leftKey = 3000;
@@ -120,11 +120,11 @@ public class QueryCoordinatorWithQueryGenerator<T extends Number & Comparable<T>
 //                    Long endTimestamp =  ((int) ((end - startTimestamp) * Math.sqrt(selectivity))) + startTimestamp;
 //                    Long endTimestamp = System.currentTimeMillis();
 //                    Long startTimestamp = endTimestamp - sleepTimeInSeconds * 1000;
-//                    startTimestamp += 10 * 1000;
-//                    Long endTimestamp = startTimestamp + sleepTimeInSeconds * 1000;
+                    startTimestamp += 10 * 1000;
+                    Long endTimestamp = startTimestamp + sleepTimeInSeconds * 1000;
 
-                    Long startTimestamp = 0L;
-                    Long endTimestamp = Long.MAX_VALUE;
+//                    Long startTimestamp = 0L;
+//                    Long endTimestamp = Long.MAX_VALUE;
 
                     pendingQueue.put(new Query(queryId, leftKey, rightKey, startTimestamp, endTimestamp));
                 } catch (Exception e) {

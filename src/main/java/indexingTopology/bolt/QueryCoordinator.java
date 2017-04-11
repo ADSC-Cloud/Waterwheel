@@ -143,7 +143,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             if (pair != null) {
                 Long start = (Long) pair.getKey();
                 int fileSize = (Integer) pair.getValue();
-//                LOG.info("query id " + queryId);
+                LOG.info("query id " + queryId);
 //                LOG.info("Query start time " + start);
 //                LOG.info("Query end time " + System.currentTimeMillis());
                 LOG.info("Query time " + (System.currentTimeMillis() - start));
@@ -307,6 +307,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
             collector.emit(Streams.FileSystemQueryInformationStream, new Values(query, fileNames.size()));
         }
+        System.out.println(queryId + " " + fileNames.size());
         queryIdToStartTime.put(queryId, new Pair(System.currentTimeMillis(), fileNames.size()));
     }
 
@@ -362,13 +363,15 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
         for (Integer partitionId : partitionIds) {
             Integer taskId = indexServers.get(partitionId);
             Long timestamp = indexTaskToTimestampMapping.get(taskId);
-            if (timestamp <= endTimestamp && timestamp >= startTimestamp) {
+            if ((timestamp <= endTimestamp && timestamp >= startTimestamp) || (timestamp <= startTimestamp)) {
                 SubQuery subQuery = new SubQuery(query.getQueryId(), query.leftKey, query.rightKey, query.startTimestamp,
                         query.endTimestamp, query.predicate, query.aggregator);
                 collector.emitDirect(taskId, Streams.BPlusTreeQueryStream, new Values(subQuery));
                 ++numberOfTasksToSearch;
             }
         }
+
+        System.out.println(queryId + " " + numberOfTasksToSearch);
 
         collector.emit(Streams.BPlusTreeQueryInformationStream, new Values(queryId, numberOfTasksToSearch));
     }
@@ -431,8 +434,11 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             ArrayBlockingQueue<SubQuery> taskQueue = taskIdToTaskQueue.get(taskId);
             SubQuery subQuery = taskQueue.poll();
             if (subQuery != null) {
+
                 collector.emitDirect(taskId, Streams.FileSystemQueryStream
                         , new Values(subQuery));
+
+                System.out.println("task Id " + taskId);
             }
         }
     }

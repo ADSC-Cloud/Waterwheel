@@ -368,15 +368,18 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 
 	private BTreeNode<TKey> findParentOfLeafNodeShouldContainKey(TKey key) {
 
-		if (root.getKeyCount() == 0) {
+
+		if (root.getKeyCount() == 0 && ((BTreeInnerNode) root).children.size() == 0) {
 			return root;
 		}
+
 
 		BTreeInnerNode<TKey> currentNode = (BTreeInnerNode) this.root;
 		while (currentNode.children.size() > 0) {
 			BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChildShouldContainKey(key);
 			currentNode = (BTreeInnerNode<TKey>) node;
 		}
+
 		return currentNode;
 	}
 
@@ -385,14 +388,16 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		BTreeNode leftNode = findParentOfLeafNodeShouldContainKey(leftKey);
 		BTreeNode rightNode = findParentOfLeafNodeShouldContainKey(rightKey);
 
+
 		List<Integer> offsets = new ArrayList<Integer>();
 		BTreeInnerNode<TKey> currentNode = (BTreeInnerNode) leftNode;
+
 		while (currentNode != rightNode) {
 			offsets.addAll(currentNode.offsets);
 			currentNode = (BTreeInnerNode) currentNode.rightSibling;
 		}
-		offsets.addAll(((BTreeInnerNode) rightNode).offsets);
 
+		offsets.addAll(((BTreeInnerNode) rightNode).offsets);
 		return offsets;
 	}
 

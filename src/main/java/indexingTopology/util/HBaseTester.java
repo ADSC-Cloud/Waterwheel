@@ -1,7 +1,5 @@
 package indexingTopology.util;
 
-import clojure.lang.ArraySeq;
-import com.esotericsoftware.kryo.io.Output;
 import indexingTopology.util.texi.Car;
 import indexingTopology.util.texi.TrajectoryGenerator;
 import indexingTopology.util.texi.TrajectoryUniformGenerator;
@@ -11,10 +9,8 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.storm.metric.internal.RateTracker;
-import org.omg.Messaging.SYNC_WITH_TRANSPORT;
 
 import java.io.IOException;
-import java.io.SyncFailedException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -61,7 +57,7 @@ public class HBaseTester {
 
 
         try {
-            hBaseHandler.creatTable(tableName, columnFamilyName, null);
+            hBaseHandler.createTable(tableName, columnFamilyName, null);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -167,19 +163,19 @@ public class HBaseTester {
 
 //            long start = System.currentTimeMillis();
                 try {
-                    hBaseHandler.addLongValue(table, columnFamilyName, "id", bytes, car.id, put);
+                    hBaseHandler.addLongValue(columnFamilyName, "id", bytes, car.id, put);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
 //            System.out.println(System.currentTimeMillis() - start);
                 try {
-                    hBaseHandler.addDoubleValue(table, columnFamilyName, "zcode", bytes, zcode, put);
+                    hBaseHandler.addDoubleValue(columnFamilyName, "zcode", bytes, zcode, put);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
 //            System.out.println(System.currentTimeMillis() - start);
                 try {
-                    hBaseHandler.addStringValue(table, columnFamilyName, "payload", bytes, s, put);
+                    hBaseHandler.addStringValue(columnFamilyName, "payload", bytes, s, put);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

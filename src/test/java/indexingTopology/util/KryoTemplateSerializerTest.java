@@ -204,7 +204,7 @@ public class KryoTemplateSerializerTest {
             long totalStart = System.currentTimeMillis();
 
             long start = System.currentTimeMillis();
-            fileSystemHandler.openFile("/", "taskId94chunk34");
+            fileSystemHandler.openFile("/", "taskId85chunk0");
             fileOpenTime += System.currentTimeMillis() - start;
 
             byte[] bytesToRead;
@@ -233,13 +233,16 @@ public class KryoTemplateSerializerTest {
 
 //            System.out.println("template read time " + (System.currentTimeMillis() - templateReadStart));
 
-//            indexedData.printBtree();
+            indexedData.printBtree();
 
 //            BTreeNode mostLeftNode = indexedData.findInnerNodeShouldContainKey(0.0);
 //            BTreeNode mostRightNode = indexedData.findInnerNodeShouldContainKey(120.0);
 
-            List<Integer> offsets = indexedData.getOffsetsOfLeafNodesShouldContainKeys(0
-                    , 130000);
+//        System.out.println(((BTreeInnerNode) indexedData.getRoot()).getChild(0).getClass());
+
+            List<Integer> offsets = indexedData.getOffsetsOfLeafNodesShouldContainKeys(236120000
+                    , 236800000);
+
 
             List<byte[]> list = new ArrayList<>();
 
@@ -272,10 +275,10 @@ public class KryoTemplateSerializerTest {
 
             Input input2 = new Input(bytesToRead);
 
-            System.out.println(offsets);
 
             for (Integer offset : offsets) {
                 input2.setPosition(input2.position() + 4);
+
 
                 BTreeLeafNode leafNode = kryo.readObject(input2, BTreeLeafNode.class);
 

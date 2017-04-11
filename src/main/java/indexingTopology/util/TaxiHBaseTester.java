@@ -3,9 +3,7 @@ package indexingTopology.util;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.util.texi.City;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.storm.metric.internal.RateTracker;
 
@@ -31,9 +29,9 @@ public class TaxiHBaseTester {
 
     private int sleepTimeInSecond = 5;
 
-    final int batchSize = 5000;
+    final int batchSize = 1;
 
-    RateTracker rateTracker = new RateTracker(50 * 1000, 50);
+    RateTracker rateTracker = new RateTracker(5 * 1000, 50);
 
     String tableName = "TaxiTable";
     String columnFamilyName = "Beijing";
@@ -70,6 +68,8 @@ public class TaxiHBaseTester {
         final int partitions = 1024;
 
         City city = new City(x1, x2, y1, y2, partitions);
+
+
 
         for (int i = 0; i < listOfFiles.length; ++i) {
             File file = listOfFiles[i];
@@ -109,34 +109,41 @@ public class TaxiHBaseTester {
         }
 
 
-        try {
-            hBaseHandler.creatTable(tableName, columnFamilyName, null);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+
+
+
+//        try {
+//            hBaseHandler.createTable(tableName, columnFamilyName, null);
+//            System.out.println("created!!");
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+
+
+
         Long start = System.currentTimeMillis();
         createIndexingThread(numberOfIndexingThreads);
 
-        Thread queryThread = new Thread(new QueryRunnable());
-        queryThread.start();
+//        Thread queryThread = new Thread(new QueryRunnable());
+//        queryThread.start();
+
 
         new Thread(new Runnable() {
             @Override
             public void run() {
-                try {
-                    Thread.sleep(sleepTimeInSecond * 1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+//                try {
+//                    Thread.sleep(sleepTimeInSecond * 1000);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
                 while (true) {
                     try {
                         Thread.sleep(5 * 1000);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-
-                    System.out.println("Throughput " + rateTracker.reportRate());
-                    System.out.println("***************");
+//
+                    System.out.println(rateTracker.reportRate());
                 }
             }
         }).start();
@@ -207,12 +214,15 @@ public class TaxiHBaseTester {
 
 
             Connection connection = hBaseHandler.getConnection();
-            Table table = null;
+//            Table table = null;
+            BufferedMutator table = null;
             try {
-                table = connection.getTable(TableName.valueOf(tableName));
+//                table = connection.getTable(TableName.valueOf(tableName));
+                table = connection.getBufferedMutator(TableName.valueOf(tableName));
             } catch (IOException e) {
                 e.printStackTrace();
             }
+
 
             List<Put> batchPut = new ArrayList<>();
 
@@ -233,31 +243,31 @@ public class TaxiHBaseTester {
                 Put put = new Put(bytes);
 
                 try {
-                    hBaseHandler.addIntValue(table, columnFamilyName, "id", bytes, taxiId, put);
+                    hBaseHandler.addIntValue(columnFamilyName, "id", bytes, taxiId, put);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
                 try {
-                    hBaseHandler.addIntValue(table, columnFamilyName, "zcode", bytes, zcode, put);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                try {
-                    hBaseHandler.addDoubleValue(table, columnFamilyName, "latitude", bytes, latitude, put);
+                    hBaseHandler.addIntValue(columnFamilyName, "zcode", bytes, zcode, put);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
 
                 try {
-                    hBaseHandler.addDoubleValue(table, columnFamilyName, "longitude", bytes, longitude, put);
+                    hBaseHandler.addDoubleValue(columnFamilyName, "latitude", bytes, latitude, put);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                try {
+                    hBaseHandler.addDoubleValue(columnFamilyName, "longitude", bytes, longitude, put);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
 
 
                 try {
-                    hBaseHandler.addLongValue(table, columnFamilyName, "timestamp", bytes, timestamp, put);
+                    hBaseHandler.addLongValue(columnFamilyName, "timestamp", bytes, timestamp, put);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -271,7 +281,10 @@ public class TaxiHBaseTester {
 
                 if (numberOfPut == batchSize) {
                     try {
-                        table.put(batchPut);
+//                        table.put(batchPut);
+                        table.mutate(batchPut);
+                        rateTracker.notify(batchSize);
+//                        table.flush();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -290,7 +303,7 @@ public class TaxiHBaseTester {
 //
                 totalRecord.addAndGet(1);
 
-                rateTracker.notify(1);
+
 //
                 ++index;
                 if (index >= taxiIdsInIndexing.size()) {
@@ -301,7 +314,8 @@ public class TaxiHBaseTester {
 
             if (batchPut.size() != 0) {
                 try {
-                    table.put(batchPut);
+//                    table.put(batchPut);
+                    table.mutate(batchPut);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -319,11 +333,18 @@ public class TaxiHBaseTester {
 
         @Override
         public void run() {
+
+//            Long startTime = System.currentTimeMillis();
+
+//            Long endTimestamp = startTime;
+
             try {
                 Thread.sleep(sleepTimeInSecond * 1000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+
+            System.out.println("begin search");
 
             Connection connection = hBaseHandler.getConnection();
 
@@ -334,17 +355,23 @@ public class TaxiHBaseTester {
                 e.printStackTrace();
             }
 
-            while (true) {
+            Long queryId = 0L;
+
+
+            while (queryId < 20) {
 
                 try {
-                    Thread.sleep(30 * 1000);
+                    Thread.sleep(10 * 1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
 
                 Long endTimestamp = System.currentTimeMillis();
+//                Long endTimestamp = System.currentTimeMillis() - 300 * 1000;
                 String startRowKey = "" + String.format("%07d", 3000);
-                String endRowKey = "" + String.format("%07d", 17000);
+//                String endRowKey = "" + String.format("%07d", 17000);
+//                String endRowKey = "" + String.format("%07d", 52000);
+                String endRowKey = "" + String.format("%07d", 108000);
 
 
                 Long startTimestamp = endTimestamp - sleepTimeInSecond * 1000;
@@ -365,12 +392,14 @@ public class TaxiHBaseTester {
                     e.printStackTrace();
                 }
                 System.out.println(System.currentTimeMillis() - start);
+
+                ++queryId;
             }
         }
     }
 
 
     public static void main(String[] args) throws Exception {
-        TaxiHBaseTester taxiHBaseTester = new TaxiHBaseTester(1);
+        TaxiHBaseTester taxiHBaseTester = new TaxiHBaseTester(24);
     }
 }

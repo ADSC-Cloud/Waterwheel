@@ -2,30 +2,40 @@ package indexingTopology.bolt;
 
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
-import indexingTopology.data.DataTuple;
+import indexingTopology.streams.Streams;
 import indexingTopology.util.FrequencyRestrictor;
-import indexingTopology.util.texi.Car;
+import indexingTopology.util.HBaseHandler;
 import indexingTopology.util.texi.City;
-import indexingTopology.util.texi.TrajectoryGenerator;
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.BufferedMutator;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.storm.metric.internal.RateTracker;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.topology.base.BaseRichBolt;
+import org.apache.storm.tuple.Fields;
+import org.apache.storm.tuple.Tuple;
+import org.apache.storm.tuple.Values;
 
 import java.io.*;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- * Created by acelzj on 15/3/17.
+ * Created by acelzj on 4/4/17.
  */
-public class TaxiDataGenerator extends InputStreamReceiver {
+public class HBaseTaxiGenerator extends BaseRichBolt{
+
     private City city;
 
     private BufferedReader bufferedReader = null;
+
+    private RateTracker rateTracker;
 
     String fileName;
 
@@ -41,40 +51,85 @@ public class TaxiDataGenerator extends InputStreamReceiver {
 
     int size;
 
+    OutputCollector collector;
+
     List<Integer> taxiIds;
     List<Double> longitudes;
     List<Double> latitudes;
     List<Integer> zcodes;
 
-    private FrequencyRestrictor frequencyRestrictor;
+//    transient Table table;
+    transient BufferedMutator table;
 
-    public TaxiDataGenerator(DataSchema schema, City city) {
-        super(schema);
+    String tableName = "TaxiTable";
+    String columnFamilyName = "Beijing";
+
+    private int batchSize = 1;
+
+    private List<Put> puts;
+
+    private transient HBaseHandler hBaseHandler;
+
+    FrequencyRestrictor frequencyRestrictor;
+
+    public HBaseTaxiGenerator(City city) {
         this.city = city;
     }
 
-    @Override
-    public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
-        super.prepare(map, topologyContext, outputCollector);
 
-        generatorIds = topologyContext.getComponentTasks("TupleGenerator");
+    @Override
+    public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
+
+        this.collector = collector;
+
+        rateTracker = new RateTracker(5 * 1000, 5);
+
+        generatorIds = context.getComponentTasks("IndexerBolt");
 
         size = generatorIds.size();
-
-        taskId = topologyContext.getThisTaskId();
 
         folder = new File(TopologyConfig.dataFileDir);
 
         listOfFiles = folder.listFiles();
 
+        frequencyRestrictor = new FrequencyRestrictor(50000 / 24, 50);
+
         step = 0;
+
+        hBaseHandler = null;
+        try {
+            hBaseHandler = new HBaseHandler();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        taskId = context.getThisTaskId();
+
+//        if (generatorIds.indexOf(taskId) == 0) {
+//            try {
+//                hBaseHandler.createTable(tableName, columnFamilyName, null);
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//        }
+
+        table = null;
+        Connection connection = hBaseHandler.getConnection();
+        try {
+//            table = connection.getTable(TableName.valueOf(tableName));
+            table = connection.getBufferedMutator(TableName.valueOf(tableName));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
 
         latitudes = new ArrayList<>();
         longitudes = new ArrayList<>();
         taxiIds = new ArrayList<>();
         zcodes = new ArrayList<>();
 
-//        frequencyRestrictor = new FrequencyRestrictor(50000 / 24, 50);
+        puts = new ArrayList<>();
 
         int index = 0;
         while (true) {
@@ -190,12 +245,60 @@ public class TaxiDataGenerator extends InputStreamReceiver {
 //                            e.printStackTrace();
 //                        }
 
-                        final DataTuple dataTuple = new DataTuple(taxiId, zcode, longitude, latitude, timestamp);
+                        String rowKey = "" + String.format("%07d", zcode) + "-" + timestamp + "-" + String.format("%05d", taxiId);
+
+                        byte[] bytes = Bytes.toBytes(rowKey);
+
+                        Put put = new Put(bytes);
+
                         try {
-                            inputQueue.put(dataTuple);
-                        } catch (InterruptedException e) {
+                            hBaseHandler.addIntValue(columnFamilyName, "id", bytes, taxiId, put);
+                        } catch (IOException e) {
                             e.printStackTrace();
                         }
+                        try {
+                            hBaseHandler.addIntValue(columnFamilyName, "zcode", bytes, zcode, put);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+                        try {
+                            hBaseHandler.addDoubleValue(columnFamilyName, "latitude", bytes, latitude, put);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+                        try {
+                            hBaseHandler.addDoubleValue(columnFamilyName, "longitude", bytes, longitude, put);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+
+                        try {
+                            hBaseHandler.addLongValue(columnFamilyName, "timestamp", bytes, timestamp, put);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+                        puts.add(put);
+
+                        if (puts.size() == batchSize) {
+                            try {
+//                                table.put(put);
+                                frequencyRestrictor.getPermission(1);
+                                table.mutate(put);
+                                rateTracker.notify(batchSize);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            puts.clear();
+                        }
+
+
+
                         ++index;
                         if (index >= taxiIds.size()) {
                             index = 0;
@@ -205,5 +308,17 @@ public class TaxiDataGenerator extends InputStreamReceiver {
             }
         });
         generationThread.start();
+    }
+
+    @Override
+    public void execute(Tuple input) {
+        if (input.getSourceStreamId().equals(Streams.ThroughputRequestStream)) {
+            collector.emit(Streams.ThroughputReportStream, new Values(rateTracker.reportRate()));
+        }
+    }
+
+    @Override
+    public void declareOutputFields(OutputFieldsDeclarer declarer) {
+        declarer.declareStream(Streams.ThroughputReportStream, new Fields("throughput"));
     }
 }

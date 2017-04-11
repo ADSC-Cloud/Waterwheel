@@ -4,7 +4,7 @@ package indexingTopology.config;
  * Created by acelzj on 7/21/16.
  */
 public class TopologyConfig {
-    public static final double REBUILD_TEMPLATE_THRESHOLD = 5.0;
+    public static final double REBUILD_TEMPLATE_THRESHOLD = 10.0;
 
     public static final String HDFS_HOST = "hdfs://192.168.0.237:54310/";
 

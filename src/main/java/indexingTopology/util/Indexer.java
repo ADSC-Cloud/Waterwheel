@@ -221,19 +221,19 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
             while (true) {
 
-                if (estimatedDataSize >= TopologyConfig.SKEWNESS_DETECTION_THRESHOLD * TopologyConfig.CHUNK_SIZE) {
-                    if (bTree.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_THRESHOLD) {
-                        terminateIndexingThreads();
-
-                        lock.lock();
-                        bTree = templateUpdater.createTreeWithBulkLoading(bTree);
-                        lock.unlock();
-
-                        estimatedDataSize = 0;
-
-                        createIndexingThread();
-                    }
-                }
+//                if (chunkId > 0 && estimatedDataSize >= TopologyConfig.SKEWNESS_DETECTION_THRESHOLD * TopologyConfig.CHUNK_SIZE) {
+//                    if (bTree.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_THRESHOLD) {
+//                        terminateIndexingThreads();
+//
+//                        lock.lock();
+//                        bTree = templateUpdater.createTreeWithBulkLoading(bTree);
+//                        lock.unlock();
+//
+//                        estimatedDataSize = 0;
+//
+//                        createIndexingThread();
+//                    }
+//                }
 
 
                 if (estimatedSize >= TopologyConfig.CHUNK_SIZE) {

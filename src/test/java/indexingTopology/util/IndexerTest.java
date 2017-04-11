@@ -49,6 +49,7 @@ public class IndexerTest implements Observer {
 
         int numberOfTuples = 100000;
 
+        System.out.println("sed -i 's/${JAVA_HOME}/\\/usr\\/lib\\/jvm/\\/jdk1.8.0_112/g' hadoop-env.sh");
 
         Long timestamp = 0L;
         for (int i = 0; i < numberOfTuples; ++i) {

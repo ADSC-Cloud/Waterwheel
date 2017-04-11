@@ -165,6 +165,9 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         Long timestampUpperBound = subQuery.getEndTimestamp();
 
 
+        System.out.println(fileName);
+
+
 //        System.out.println(fileName);
 
         FileScanMetrics metrics = new FileScanMetrics();
@@ -200,6 +203,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
 //        long searchOffsetsStart = System.currentTimeMillis();
         List<Integer> offsets = template.getOffsetsOfLeafNodesShouldContainKeys(leftKey, rightKey);
+
 //        metrics.setSearchTime(System.currentTimeMillis() - searchOffsetsStart);
 
 //        long readLeafBytesStart = System.currentTimeMillis();

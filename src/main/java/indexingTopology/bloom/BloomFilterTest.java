@@ -34,7 +34,7 @@ public class BloomFilterTest {
         }
 
         ByteArrayOutputStream os = new ByteArrayOutputStream(10000);
-        bloomFilter.writeTo(os);
+//        bloomFilter.writeTo(os);
         System.out.println(os.toByteArray().length + " bits");
 
 

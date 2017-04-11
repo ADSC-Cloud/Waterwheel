@@ -77,11 +77,11 @@ public class TexiTrajectoryTopology {
 
         Config conf = new Config();
         conf.setDebug(false);
-        conf.setNumWorkers(11);
+        conf.setNumWorkers(6);
 
-        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+//        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
 //        conf.put(Config.SUPERVISOR_CHILDOPTS, "-Xmx2048m");
-        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+//        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 //        LocalCluster cluster = new LocalCluster();
 //        cluster.submitTopology("T1", conf, builder.createTopology());
