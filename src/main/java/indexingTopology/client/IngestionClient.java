@@ -14,6 +14,7 @@ public class IngestionClient extends Client {
 
     public Response append(DataTuple dataTuple) throws IOException, ClassNotFoundException {
         objectOutputStream.writeObject(new AppendRequest(dataTuple));
-        return (Response) objectInputStream.readObject();
+//        return (Response) objectInputStream.readObject();
+        return null;
     }
 }

@@ -15,6 +15,7 @@ import org.apache.storm.tuple.Values;
 
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * This bolt takes data tuples from its inputQueue and emits the data tuples to downstream bolt.
@@ -31,7 +32,7 @@ public class InputStreamReceiver extends BaseRichBolt {
 
     private int taskId;
 
-    public ArrayBlockingQueue<DataTuple> inputQueue;
+    public LinkedBlockingQueue<DataTuple> inputQueue;
 
     public InputStreamReceiver(DataSchema schema) {
         this.schema = schema;
@@ -40,7 +41,7 @@ public class InputStreamReceiver extends BaseRichBolt {
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         this.collector = outputCollector;
-        inputQueue = new ArrayBlockingQueue<>(10000);
+        inputQueue = new LinkedBlockingQueue<>(10000);
         backPressure = new BackPressure(TopologyConfig.EMIT_NUM, TopologyConfig.MAX_PENDING);
         taskId = topologyContext.getThisTaskId();
         Thread emittingThread = new Thread(new Runnable() {

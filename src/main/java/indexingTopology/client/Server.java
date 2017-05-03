@@ -31,7 +31,6 @@ public class Server<T extends ServerHandle> {
     public Server(int port, Class<ServerHandle> SomeServerHandle, Class<?>[] classTypes, Object... args) {
         this.port = port;
         this.SomeServerHandle = SomeServerHandle;
-        System.out.println("args: " + args.toString());
         this.serverHandleArgs = args;
         this.classTypes = classTypes;
     }
@@ -55,11 +54,15 @@ public class Server<T extends ServerHandle> {
 //                }
                 MethodHandle constructor = MethodHandles.publicLookup().findConstructor(SomeServerHandle, MethodType.methodType(void.class, classTypes));
                 System.out.println("serverHandleArgs: " + serverHandleArgs);
-                System.out.println("serverHandleArgs[0]: " + serverHandleArgs[0]);
-                if (serverHandleArgs.length > 4) {
+                int servcerHandleArgsCount = 0;
+                if(serverHandleArgs != null) {
+                    servcerHandleArgsCount = serverHandleArgs.length;
+                }
+
+                if (servcerHandleArgsCount> 4) {
                     throw new RuntimeException("ServerHandle parameters cannot exceed 4.");
                 }
-                switch (serverHandleArgs.length) {
+                switch (servcerHandleArgsCount) {
                     case 0: handle = (ServerHandle) constructor.invoke(); break;
                     case 1: handle = (ServerHandle) constructor.invoke(serverHandleArgs[0]);break;
                     case 2: handle = (ServerHandle) constructor.invoke(serverHandleArgs[0], serverHandleArgs[1]);break;

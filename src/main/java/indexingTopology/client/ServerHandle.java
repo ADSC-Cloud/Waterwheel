@@ -35,9 +35,9 @@ public abstract class ServerHandle implements Runnable{
                 while (true) {
                     try {
                         final Object newObject = objectInputStream.readObject();
-                        System.out.println("Received: " + newObject);
+//                        System.out.println("Received: " + newObject);
                         handleInputObject(newObject);
-                        System.out.println("Handled: " + newObject);
+//                        System.out.println("Handled: " + newObject);
                     } catch (ClassNotFoundException e) {
                         e.printStackTrace();
                     }
