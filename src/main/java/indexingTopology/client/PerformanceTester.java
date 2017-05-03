@@ -45,10 +45,10 @@ public class PerformanceTester {
         return thread;
     }
 
-    static double testAppendThroughput(int tuples, int payload) throws IOException, ClassNotFoundException,
+    static double testAppendThroughput(String host, int tuples, int payload) throws IOException, ClassNotFoundException,
             InterruptedException {
 
-        IngestionClient client = new IngestionClient("localhost", 1024);
+        IngestionClient client = new IngestionClient(host, 1024);
         client.connect();
         char[] charArray = new char[payload];
         Arrays.fill(charArray, ' ');
@@ -67,6 +67,11 @@ public class PerformanceTester {
         return ret;
     }
 
+    static double testAppendThroughput(int tuples, int payload) throws IOException, ClassNotFoundException,
+            InterruptedException {
+        return testAppendThroughput("localhost", tuples, payload);
+    }
+
     static public void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
         String option = args[0];
         System.out.println("args: " + option);
@@ -80,7 +85,11 @@ public class PerformanceTester {
             launchServerDaemon(1024);
         } else if (option.equals("client")) {
             System.out.println("Client!");
-            double throughput = testAppendThroughput(1000000,64);
+            String serverHost = "localhost";
+            if (args.length > 1 && args[1] != null) {
+                serverHost = args[1];
+            }
+            double throughput = testAppendThroughput(serverHost, 1000000,64);
             System.out.println("Throughput: " + throughput);
         }
     }
