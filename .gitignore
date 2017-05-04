@@ -1,3 +1,5 @@
+*.dat
+
 *.iml
 .idea
 .idea/libraries/*.xml
