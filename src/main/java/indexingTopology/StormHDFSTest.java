@@ -21,7 +21,7 @@ import indexingTopology.spout.Spout;
  */
 public class StormHDFSTest {
 
-    static final boolean LOCAL_MODE = false;
+    private static final boolean LOCAL_MODE = true;
 
     public static void main(String[] args) throws Exception {
         Config config = new Config();
