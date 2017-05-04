@@ -62,7 +62,7 @@ public class Client {
         System.out.println(queryResponse);
 
 //
-//        IngestionClient ingestionClient = new IngestionClient("localhost", 10000);
+//        OneTuplePerTransferIngestionClient ingestionClient = new OneTuplePerTransferIngestionClient("localhost", 10000);
 //        ingestionClient.connect();
 //        Response ingestionResponse = ingestionClient.append(new DataTuple(100L, 200.3, "payload", System.currentTimeMillis()));
 //        System.out.print(ingestionResponse);

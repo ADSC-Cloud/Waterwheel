@@ -9,9 +9,9 @@ import java.io.ObjectOutputStream;
 /**
  * Created by robert on 8/3/17.
  */
-public class AppendRequest extends ClientRequest {
+public class AppendTupleRequest extends ClientRequest {
     public DataTuple dataTuple;
-    AppendRequest(DataTuple dataTuple) {
+    AppendTupleRequest(DataTuple dataTuple) {
         this.dataTuple = dataTuple;
     }
 }

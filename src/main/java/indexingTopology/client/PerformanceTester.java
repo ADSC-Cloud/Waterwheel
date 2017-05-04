@@ -1,6 +1,7 @@
 package indexingTopology.client;
 
 import indexingTopology.data.DataTuple;
+import org.apache.commons.lang.RandomStringUtils;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -14,7 +15,7 @@ public class PerformanceTester {
 
         int count = 0;
         @Override
-        public void handle(AppendRequest tuple) throws IOException {
+        public void handle(AppendTupleRequest tuple) throws IOException {
             if((int)tuple.dataTuple.get(0) != count) {
                 System.err.println(String.format("Received: %d, Expected %d", (int)tuple.dataTuple.get(0), count));
             }
@@ -48,13 +49,13 @@ public class PerformanceTester {
     static double testAppendThroughput(String host, int tuples, int payload) throws IOException, ClassNotFoundException,
             InterruptedException {
 
-        IngestionClient client = new IngestionClient(host, 1024);
+        OneTuplePerTransferIngestionClient client = new OneTuplePerTransferIngestionClient(host, 1024);
         client.connect();
         char[] charArray = new char[payload];
         Arrays.fill(charArray, ' ');
-        String str = new String(charArray);
         long start = System.currentTimeMillis();
         int count = 0;
+        String str =  RandomStringUtils.random(payload);
         while(count <= tuples) {
             client.append(new DataTuple(count, 3, str));
             count ++;
@@ -89,7 +90,8 @@ public class PerformanceTester {
             if (args.length > 1 && args[1] != null) {
                 serverHost = args[1];
             }
-            double throughput = testAppendThroughput(serverHost, 1000000,64);
+            System.out.println("host: " + serverHost);
+            double throughput = testAppendThroughput(serverHost, 1000000, 64);
             System.out.println("Throughput: " + throughput);
         }
     }

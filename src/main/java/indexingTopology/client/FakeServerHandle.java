@@ -4,7 +4,6 @@ import indexingTopology.data.DataTuple;
 import indexingTopology.data.PartialQueryResult;
 
 import java.io.IOException;
-import java.net.Socket;
 
 /**
  * Created by robert on 3/3/17.
@@ -34,7 +33,7 @@ public class FakeServerHandle extends ServerHandle implements QueryHandle, Appen
 
 
     @Override
-    public void handle(final AppendRequest tuple) throws IOException {
+    public void handle(final AppendTupleRequest tuple) throws IOException {
         objectOutputStream.writeObject(new MessageResponse(String.format("Insertion [%s] success!", tuple.dataTuple)));
     }
 

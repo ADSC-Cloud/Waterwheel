@@ -49,7 +49,7 @@ public class InputStreamReceiverServer extends InputStreamReceiver {
         }
 
         @Override
-        public void handle(AppendRequest tuple) throws IOException {
+        public void handle(AppendTupleRequest tuple) throws IOException {
             DataTuple dataTuple = tuple.dataTuple;
             try {
                 inputQueue.put(dataTuple);

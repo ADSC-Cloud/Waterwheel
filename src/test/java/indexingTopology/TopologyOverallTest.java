@@ -12,21 +12,14 @@ import indexingTopology.client.*;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import indexingTopology.util.DataTupleMapper;
-import indexingTopology.util.DataTuplePredicate;
 import indexingTopology.util.TopologyGenerator;
-import indexingTopology.util.texi.City;
-import indexingTopology.util.texi.TrajectoryGenerator;
-import indexingTopology.util.texi.TrajectoryUniformGenerator;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
-import org.apache.storm.StormSubmitter;
 import org.apache.storm.generated.KillOptions;
 import org.apache.storm.generated.StormTopology;
-import org.apache.storm.topology.TopologyBuilder;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.function.Function;
@@ -81,10 +74,10 @@ public class TopologyOverallTest {
 
         try {
 //            Thread.sleep(10000);
-            IngestionClient ingestionClient = new IngestionClient("localhost", ingestionPort);
-            ingestionClient.connectWithTimeout(10000);
+            OneTuplePerTransferIngestionClient oneTuplePerTransferIngestionClient = new OneTuplePerTransferIngestionClient("localhost", ingestionPort);
+            oneTuplePerTransferIngestionClient.connectWithTimeout(10000);
             for (int i = 0; i < numberOfTuples; i++) {
-                ingestionClient.append(new DataTuple(start + step * i, 0.0, 0.0, System.currentTimeMillis()));
+                oneTuplePerTransferIngestionClient.append(new DataTuple(start + step * i, 0.0, 0.0, System.currentTimeMillis()));
             }
 
             Thread.sleep(1000);
@@ -150,10 +143,10 @@ public class TopologyOverallTest {
 
         try {
 //            Thread.sleep(10000);
-            IngestionClient ingestionClient = new IngestionClient("localhost", ingestionPort);
-            ingestionClient.connectWithTimeout(10000);
+            OneTuplePerTransferIngestionClient oneTuplePerTransferIngestionClient = new OneTuplePerTransferIngestionClient("localhost", ingestionPort);
+            oneTuplePerTransferIngestionClient.connectWithTimeout(10000);
             for (int i = 0; i < numberOfTuples; i++) {
-                ingestionClient.append(new DataTuple(start + step * i, 0, 0, System.currentTimeMillis()));
+                oneTuplePerTransferIngestionClient.append(new DataTuple(start + step * i, 0, 0, System.currentTimeMillis()));
             }
 
             Thread.sleep(1000);
@@ -221,10 +214,10 @@ public class TopologyOverallTest {
 
         try {
 //            Thread.sleep(10000);
-            IngestionClient ingestionClient = new IngestionClient("localhost", ingestionPort);
-            ingestionClient.connectWithTimeout(10000);
+            OneTuplePerTransferIngestionClient oneTuplePerTransferIngestionClient = new OneTuplePerTransferIngestionClient("localhost", ingestionPort);
+            oneTuplePerTransferIngestionClient.connectWithTimeout(10000);
             for (int i = 0; i < numberOfTuples; i++) {
-                ingestionClient.append(new DataTuple(start + step * i, 0.0, 0.0, System.currentTimeMillis()));
+                oneTuplePerTransferIngestionClient.append(new DataTuple(start + step * i, 0.0, 0.0, System.currentTimeMillis()));
             }
 
             Thread.sleep(1000);
@@ -290,10 +283,10 @@ public class TopologyOverallTest {
 
         try {
 //            Thread.sleep(10000);
-            IngestionClient ingestionClient = new IngestionClient("localhost", ingestionPort);
-            ingestionClient.connectWithTimeout(10000);
+            OneTuplePerTransferIngestionClient oneTuplePerTransferIngestionClient = new OneTuplePerTransferIngestionClient("localhost", ingestionPort);
+            oneTuplePerTransferIngestionClient.connectWithTimeout(10000);
             for (int i = 0; i < numberOfTuples; i++) {
-                ingestionClient.append(new DataTuple(start + step * i, 0.0, 0.0, System.currentTimeMillis()));
+                oneTuplePerTransferIngestionClient.append(new DataTuple(start + step * i, 0.0, 0.0, System.currentTimeMillis()));
             }
 
             Thread.sleep(1000);
@@ -362,10 +355,10 @@ public class TopologyOverallTest {
 
         try {
 //            Thread.sleep(10000);
-            IngestionClient ingestionClient = new IngestionClient("localhost", ingestionPort);
-            ingestionClient.connectWithTimeout(10000);
+            OneTuplePerTransferIngestionClient oneTuplePerTransferIngestionClient = new OneTuplePerTransferIngestionClient("localhost", ingestionPort);
+            oneTuplePerTransferIngestionClient.connectWithTimeout(10000);
             for (int i = 0; i < numberOfTuples; i++) {
-                ingestionClient.append(new DataTuple(start + step * i, i % 10, 4, System.currentTimeMillis()));
+                oneTuplePerTransferIngestionClient.append(new DataTuple(start + step * i, i % 10, 4, System.currentTimeMillis()));
             }
 
             Thread.sleep(1000);
@@ -451,10 +444,10 @@ public class TopologyOverallTest {
 
         try {
 //            Thread.sleep(10000);
-            IngestionClient ingestionClient = new IngestionClient("localhost", ingestionPort);
-            ingestionClient.connectWithTimeout(10000);
+            OneTuplePerTransferIngestionClient oneTuplePerTransferIngestionClient = new OneTuplePerTransferIngestionClient("localhost", ingestionPort);
+            oneTuplePerTransferIngestionClient.connectWithTimeout(10000);
             for (int i = 0; i < numberOfTuples; i++) {
-                ingestionClient.append(new DataTuple(start + step * i, 0, 0, System.currentTimeMillis()));
+                oneTuplePerTransferIngestionClient.append(new DataTuple(start + step * i, 0, 0, System.currentTimeMillis()));
             }
 
             Thread.sleep(1000);
