@@ -17,4 +17,9 @@ public class OneTuplePerTransferIngestionClient extends Client implements Ingest
 //        return (Response) objectInputStream.readObject();
         return null;
     }
+
+    @Override
+    public void appendInBatch(DataTuple tuple) throws IOException, ClassNotFoundException {
+
+    }
 }

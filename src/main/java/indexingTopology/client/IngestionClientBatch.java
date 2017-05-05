@@ -25,14 +25,18 @@ public class IngestionClientBatch extends Client implements IngestionClient {
 
     public Response append(DataTuple dataTuple) throws IOException, ClassNotFoundException {
 
-        while (!dataTupleBlock.add(dataTuple)) {
+        objectOutputStream.writeObject(dataTuple);
+
+//        return (Response) objectInputStream.readObject();
+        return null;
+    }
+
+    @Override
+    public void appendInBatch(DataTuple tuple) throws IOException, ClassNotFoundException {
+        while (!dataTupleBlock.add(tuple)) {
             dataTupleBlock.serialize();
             objectOutputStream.writeObject(dataTupleBlock);
             dataTupleBlock = new DataTupleBlock(schema, batchSize);
         }
-
-
-//        return (Response) objectInputStream.readObject();
-        return null;
     }
 }

@@ -1,6 +1,8 @@
 package indexingTopology.client;
 
+import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
+import indexingTopology.data.DataTupleBlock;
 import org.apache.commons.lang.RandomStringUtils;
 
 import java.io.IOException;
@@ -11,7 +13,8 @@ import java.util.Arrays;
  */
 public class PerformanceTester {
 
-    public static class PerformanceTesterServerHandle extends ServerHandle implements QueryHandle, AppendRequestHandle {
+    public static class PerformanceTesterServerHandle extends ServerHandle implements QueryHandle, AppendRequestHandle,
+    AppendRequestBatchModeHandle {
 
         int count = 0;
         @Override
@@ -29,6 +32,11 @@ public class PerformanceTester {
         @Override
         public void handle(QueryRequest clientQueryRequest) throws IOException {
 
+        }
+
+        @Override
+        public void handle(DataTupleBlock tuple) throws IOException {
+            tuple.deserialize();
         }
     }
 
@@ -73,13 +81,45 @@ public class PerformanceTester {
         return testAppendThroughput("localhost", tuples, payload);
     }
 
+    static double testAppendBatchModeThroughput(String host, int tuples, int payload) throws IOException, ClassNotFoundException,
+            InterruptedException {
+
+        DataSchema schema = new DataSchema();
+        schema.addIntField("id");
+        schema.addDoubleField("value");
+        schema.addVarcharField("payload", payload);
+
+        IngestionClientBatch client = new IngestionClientBatch(host, 1024, schema,40960);
+        client.connect();
+        char[] charArray = new char[payload];
+        Arrays.fill(charArray, ' ');
+        long start = System.currentTimeMillis();
+        int count = 0;
+        String str =  RandomStringUtils.random(payload);
+        while(count <= tuples) {
+            client.appendInBatch(new DataTuple(count, 3.0, str));
+            count ++;
+            if (count % 1000 == 0) {
+                System.out.println("Client: append " + count);
+            }
+        }
+        double ret = tuples / (System.currentTimeMillis() - (double)start) * 1000;
+//        thread.join();
+        return ret;
+    }
+
+    static double testAppendBatchModeThroughput(int tuples, int payload) throws IOException, ClassNotFoundException,
+            InterruptedException {
+        return testAppendBatchModeThroughput("localhost", tuples, payload);
+    }
+
     static public void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
         String option = args[0];
         System.out.println("args: " + option);
         if(option.equals("both")) {
             System.out.println("both!");
             launchServerDaemon(1024);
-            double throughput = testAppendThroughput(10000,64);
+            double throughput = testAppendBatchModeThroughput(1000000,64);
             System.out.println("Throughput: " + throughput);
         } else if (option.equals("server")) {
             System.out.println("Server!");
@@ -91,7 +131,7 @@ public class PerformanceTester {
                 serverHost = args[1];
             }
             System.out.println("host: " + serverHost);
-            double throughput = testAppendThroughput(serverHost, 1000000, 64);
+            double throughput = testAppendBatchModeThroughput(serverHost, 1000000, 64);
             System.out.println("Throughput: " + throughput);
         }
     }
