@@ -1,7 +1,7 @@
 package indexingTopology.data;
 
 
-import indexingTopology.client.Response;
+import indexingTopology.client.IResponse;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * Created by robert on 3/3/17.
  */
-public class PartialQueryResult implements Response {
+public class PartialQueryResult implements IResponse {
 
     public List<DataTuple> dataTuples = new ArrayList<>();
 

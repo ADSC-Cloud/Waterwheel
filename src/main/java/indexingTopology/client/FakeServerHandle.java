@@ -33,7 +33,7 @@ public class FakeServerHandle extends ServerHandle implements QueryHandle, Appen
 
 
     @Override
-    public void handle(final AppendTupleRequest tuple) throws IOException {
+    public void handle(final AppendRequest tuple) throws IOException {
         objectOutputStream.writeObject(new MessageResponse(String.format("Insertion [%s] success!", tuple.dataTuple)));
     }
 

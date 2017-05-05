@@ -3,12 +3,10 @@ package indexingTopology.client;
 import indexingTopology.aggregator.Aggregator;
 import indexingTopology.util.DataTuplePredicate;
 
-import java.util.function.Predicate;
-
 /**
  * Created by robert on 3/3/17.
  */
-public class QueryRequest<T extends Number>  extends ClientRequest{
+public class QueryRequest<T extends Number>  extends IClientRequest {
     final public T low;
     final public T high;
     final public long startTime;

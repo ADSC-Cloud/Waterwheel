@@ -1,17 +1,14 @@
 package indexingTopology.client;
 
-import indexingTopology.data.DataTuple;
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by robert on 2/3/17.
  */
-public class Client {
+public class ClientSkeleton {
 
     Socket client;
 
@@ -23,7 +20,7 @@ public class Client {
 
     int port;
 
-    public Client(String serverHost, int port) {
+    public ClientSkeleton(String serverHost, int port) {
         this.serverHost = serverHost;
         this.port = port;
     }
@@ -57,14 +54,14 @@ public class Client {
     }
 
     public static void main(String[] args) throws Exception {
-        QueryClient queryClient = new QueryClient("localhost", 10001);
+        QueryClientSkeleton queryClient = new QueryClientSkeleton("localhost", 10001);
         queryClient.connect();
-        Response queryResponse = queryClient.temporalRangeQuery(0.0, 10000.0, 0, Long.MAX_VALUE );
+        IResponse queryResponse = queryClient.temporalRangeQuery(0.0, 10000.0, 0, Long.MAX_VALUE );
         System.out.println("Query one is submitted!");
         System.out.println(queryResponse);
 
 //
-//        OneTuplePerTransferIngestionClient ingestionClient = new OneTuplePerTransferIngestionClient("localhost", 10000);
+//        OneTuplePerTransferIngestionClientSkeleton ingestionClient = new OneTuplePerTransferIngestionClientSkeleton("localhost", 10000);
 //        ingestionClient.connect();
 //        Response ingestionResponse = ingestionClient.append(new DataTuple(100L, 200.3, "payload", System.currentTimeMillis()));
 //        System.out.print(ingestionResponse);

@@ -40,7 +40,7 @@ public class InputStreamReceiverServer extends InputStreamReceiver {
 
     }
 
-    public static class AppendServerHandle extends ServerHandle implements AppendRequestHandle {
+    public static class AppendServerHandle extends ServerHandle implements AppendRequestHandle, IAppendRequestBatchModeHandle {
 
         BlockingQueue<DataTuple> inputQueue;
 
@@ -49,15 +49,26 @@ public class InputStreamReceiverServer extends InputStreamReceiver {
         }
 
         @Override
-        public void handle(AppendTupleRequest tuple) throws IOException {
+        public void handle(AppendRequest tuple) throws IOException {
             DataTuple dataTuple = tuple.dataTuple;
             try {
                 inputQueue.put(dataTuple);
-                objectOutputStream.writeObject(new MessageResponse("Inserted!"));
             } catch (InterruptedException e) {
                 e.printStackTrace();
                 objectOutputStream.writeObject(new MessageResponse("Timeout!"));
             }
+        }
+
+        @Override
+        public void handle(AppendRequestBatchMode tuple) throws IOException {
+            tuple.dataTupleBlock.deserialize();
+            tuple.dataTupleBlock.tuples.forEach(t -> {
+                try {
+                    inputQueue.put(t);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
         }
     }
 }

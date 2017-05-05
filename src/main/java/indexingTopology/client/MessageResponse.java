@@ -3,7 +3,7 @@ package indexingTopology.client;
 /**
  * Created by robert on 8/3/17.
  */
-public class MessageResponse implements Response{
+public class MessageResponse implements IResponse {
     String message;
     public MessageResponse(String message) {
         this.message = message;

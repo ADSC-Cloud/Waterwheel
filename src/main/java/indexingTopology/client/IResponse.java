@@ -5,6 +5,6 @@ import java.io.Serializable;
 /**
  * Created by robert on 3/3/17.
  */
-public interface Response extends Serializable {
+public interface IResponse extends Serializable {
 
 }

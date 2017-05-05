@@ -2,7 +2,6 @@ package indexingTopology.client;
 
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
-import indexingTopology.data.DataTupleBlock;
 import org.apache.commons.lang.RandomStringUtils;
 
 import java.io.IOException;
@@ -14,11 +13,11 @@ import java.util.Arrays;
 public class PerformanceTester {
 
     public static class PerformanceTesterServerHandle extends ServerHandle implements QueryHandle, AppendRequestHandle,
-    AppendRequestBatchModeHandle {
+            IAppendRequestBatchModeHandle {
 
         int count = 0;
         @Override
-        public void handle(AppendTupleRequest tuple) throws IOException {
+        public void handle(AppendRequest tuple) throws IOException {
             if((int)tuple.dataTuple.get(0) != count) {
                 System.err.println(String.format("Received: %d, Expected %d", (int)tuple.dataTuple.get(0), count));
             }
@@ -35,9 +34,10 @@ public class PerformanceTester {
         }
 
         @Override
-        public void handle(DataTupleBlock tuple) throws IOException {
-            tuple.deserialize();
-            System.out.println(String.format("Received %d tuples.", tuple.tuples.size()));
+        public void handle(AppendRequestBatchMode request) throws IOException {
+            request.dataTupleBlock.deserialize();
+            count += request.dataTupleBlock.tuples.size();
+            System.out.println(String.format("Received %d tuples.", count));
         }
     }
 
@@ -58,7 +58,7 @@ public class PerformanceTester {
     static double testAppendThroughput(String host, int tuples, int payload) throws IOException, ClassNotFoundException,
             InterruptedException {
 
-        OneTuplePerTransferIngestionClient client = new OneTuplePerTransferIngestionClient(host, 1024);
+        IngestionClient client = new IngestionClient(host, 1024);
         client.connect();
         char[] charArray = new char[payload];
         Arrays.fill(charArray, ' ');
@@ -69,7 +69,7 @@ public class PerformanceTester {
             client.append(new DataTuple(count, 3, str));
             count ++;
             if (count % 1000 == 0) {
-                System.out.println("Client: append " + count);
+                System.out.println("ClientSkeleton: append " + count);
             }
         }
         double ret = tuples / (System.currentTimeMillis() - (double)start) * 1000;
@@ -90,20 +90,21 @@ public class PerformanceTester {
         schema.addDoubleField("value");
         schema.addVarcharField("payload", payload);
 
-        IngestionClientBatch client = new IngestionClientBatch(host, 1024, schema,1024);
+        IngestionClientBatchMode client = new IngestionClientBatchMode(host, 1024, schema,1024);
         client.connect();
         char[] charArray = new char[payload];
         Arrays.fill(charArray, ' ');
         long start = System.currentTimeMillis();
         int count = 0;
         String str =  RandomStringUtils.random(payload);
-        while(count <= tuples) {
+        while(count < tuples) {
             client.appendInBatch(new DataTuple(count, 3.0, str));
             count ++;
             if (count % 1000 == 0) {
-                System.out.println("Client: append " + count);
+                System.out.println("ClientSkeleton: append " + count);
             }
         }
+        client.flush();
         double ret = tuples / (System.currentTimeMillis() - (double)start) * 1000;
 //        thread.join();
         return ret;
@@ -120,19 +121,19 @@ public class PerformanceTester {
         if(option.equals("both")) {
             System.out.println("both!");
             launchServerDaemon(1024);
-            double throughput = testAppendBatchModeThroughput(1000000,8);
+            double throughput = testAppendBatchModeThroughput(1000000,64);
             System.out.println("Throughput: " + throughput);
         } else if (option.equals("server")) {
             System.out.println("Server!");
             launchServerDaemon(1024);
         } else if (option.equals("client")) {
-            System.out.println("Client!");
+            System.out.println("ClientSkeleton!");
             String serverHost = "localhost";
             if (args.length > 1 && args[1] != null) {
                 serverHost = args[1];
             }
             System.out.println("host: " + serverHost);
-            double throughput = testAppendBatchModeThroughput(serverHost, 1000000, 8);
+            double throughput = testAppendBatchModeThroughput(serverHost, 1000000, 64);
             System.out.println("Throughput: " + throughput);
         }
     }

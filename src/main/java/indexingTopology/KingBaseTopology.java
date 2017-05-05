@@ -65,9 +65,6 @@ public class KingBaseTopology {
         final boolean enableLoadBalance = false;
 
         InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, 10000);
-//        InputStreamReceiver dataSource = new Generator(schema, generator, payloadSize, city);
-
-//        QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound, upperBound, 10001);
         QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryGenerator<>(lowerBound, upperBound);
 
         TopologyGenerator<Double> topologyGenerator = new TopologyGenerator<>();

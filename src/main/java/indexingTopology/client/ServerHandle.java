@@ -56,6 +56,4 @@ public abstract class ServerHandle implements Runnable{
             e.printStackTrace();
         }
     }
-
-
 }

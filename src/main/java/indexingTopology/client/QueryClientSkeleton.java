@@ -1,14 +1,12 @@
 package indexingTopology.client;
 
-import indexingTopology.util.Query;
-
 import java.io.IOException;
 
 /**
  * Created by robert on 9/3/17.
  */
-public class QueryClient extends Client {
-    public QueryClient(String serverHost, int port) {
+public class QueryClientSkeleton extends ClientSkeleton {
+    public QueryClientSkeleton(String serverHost, int port) {
         super(serverHost, port);
     }
 

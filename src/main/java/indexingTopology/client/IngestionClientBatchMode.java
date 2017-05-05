@@ -9,21 +9,21 @@ import java.io.IOException;
 /**
  * Created by robert on 9/3/17.
  */
-public class IngestionClientBatch extends Client implements IngestionClient {
+public class IngestionClientBatchMode extends ClientSkeleton implements IIngestionClient {
 
     DataSchema schema;
     int batchSize;
 
     DataTupleBlock dataTupleBlock;
 
-    public IngestionClientBatch(String serverHost, int port, DataSchema schema, int batchSize) {
+    public IngestionClientBatchMode(String serverHost, int port, DataSchema schema, int batchSize) {
         super(serverHost, port);
         this.schema = schema;
         this.batchSize = batchSize;
         dataTupleBlock = new DataTupleBlock(schema, batchSize);
     }
 
-    public Response append(DataTuple dataTuple) throws IOException, ClassNotFoundException {
+    public IResponse append(DataTuple dataTuple) throws IOException, ClassNotFoundException {
 
         objectOutputStream.writeObject(dataTuple);
 
@@ -34,9 +34,14 @@ public class IngestionClientBatch extends Client implements IngestionClient {
     @Override
     public void appendInBatch(DataTuple tuple) throws IOException, ClassNotFoundException {
         while (!dataTupleBlock.add(tuple)) {
-            dataTupleBlock.serialize();
-            objectOutputStream.writeObject(dataTupleBlock);
-            dataTupleBlock = new DataTupleBlock(schema, batchSize);
+            flush();
         }
+    }
+
+    @Override
+    public void flush() throws IOException, ClassNotFoundException {
+        dataTupleBlock.serialize();
+        objectOutputStream.writeObject(new AppendRequestBatchMode(dataTupleBlock));
+        dataTupleBlock = new DataTupleBlock(schema, batchSize);
     }
 }

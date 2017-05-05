@@ -74,7 +74,7 @@ public class TopologyOverallTest {
 
         try {
 //            Thread.sleep(10000);
-            OneTuplePerTransferIngestionClient oneTuplePerTransferIngestionClient = new OneTuplePerTransferIngestionClient("localhost", ingestionPort);
+            IngestionClient oneTuplePerTransferIngestionClient = new IngestionClient("localhost", ingestionPort);
             oneTuplePerTransferIngestionClient.connectWithTimeout(10000);
             for (int i = 0; i < numberOfTuples; i++) {
                 oneTuplePerTransferIngestionClient.append(new DataTuple(start + step * i, 0.0, 0.0, System.currentTimeMillis()));
@@ -82,7 +82,7 @@ public class TopologyOverallTest {
 
             Thread.sleep(1000);
 
-            QueryClient queryClient = new QueryClient("localhost", queryPort);
+            QueryClientSkeleton queryClient = new QueryClientSkeleton("localhost", queryPort);
             queryClient.connectWithTimeout(10000);
             QueryResponse response = queryClient.temporalRangeQuery(0.0, 10000.0, 0, Long.MAX_VALUE);
 
@@ -143,7 +143,7 @@ public class TopologyOverallTest {
 
         try {
 //            Thread.sleep(10000);
-            OneTuplePerTransferIngestionClient oneTuplePerTransferIngestionClient = new OneTuplePerTransferIngestionClient("localhost", ingestionPort);
+            IngestionClient oneTuplePerTransferIngestionClient = new IngestionClient("localhost", ingestionPort);
             oneTuplePerTransferIngestionClient.connectWithTimeout(10000);
             for (int i = 0; i < numberOfTuples; i++) {
                 oneTuplePerTransferIngestionClient.append(new DataTuple(start + step * i, 0, 0, System.currentTimeMillis()));
@@ -151,7 +151,7 @@ public class TopologyOverallTest {
 
             Thread.sleep(1000);
 
-            QueryClient queryClient = new QueryClient("localhost", queryPort);
+            QueryClientSkeleton queryClient = new QueryClientSkeleton("localhost", queryPort);
             queryClient.connectWithTimeout(10000);
             QueryResponse response = queryClient.temporalRangeQuery(0, 40, 0, Long.MAX_VALUE);
 
@@ -214,7 +214,7 @@ public class TopologyOverallTest {
 
         try {
 //            Thread.sleep(10000);
-            OneTuplePerTransferIngestionClient oneTuplePerTransferIngestionClient = new OneTuplePerTransferIngestionClient("localhost", ingestionPort);
+            IngestionClient oneTuplePerTransferIngestionClient = new IngestionClient("localhost", ingestionPort);
             oneTuplePerTransferIngestionClient.connectWithTimeout(10000);
             for (int i = 0; i < numberOfTuples; i++) {
                 oneTuplePerTransferIngestionClient.append(new DataTuple(start + step * i, 0.0, 0.0, System.currentTimeMillis()));
@@ -222,7 +222,7 @@ public class TopologyOverallTest {
 
             Thread.sleep(1000);
 
-            QueryClient queryClient = new QueryClient("localhost", queryPort);
+            QueryClientSkeleton queryClient = new QueryClientSkeleton("localhost", queryPort);
             queryClient.connectWithTimeout(10000);
             QueryResponse response = queryClient.temporalRangeQuery(0.0, 9.5, 0, Long.MAX_VALUE);
 
@@ -283,7 +283,7 @@ public class TopologyOverallTest {
 
         try {
 //            Thread.sleep(10000);
-            OneTuplePerTransferIngestionClient oneTuplePerTransferIngestionClient = new OneTuplePerTransferIngestionClient("localhost", ingestionPort);
+            IngestionClient oneTuplePerTransferIngestionClient = new IngestionClient("localhost", ingestionPort);
             oneTuplePerTransferIngestionClient.connectWithTimeout(10000);
             for (int i = 0; i < numberOfTuples; i++) {
                 oneTuplePerTransferIngestionClient.append(new DataTuple(start + step * i, 0.0, 0.0, System.currentTimeMillis()));
@@ -291,7 +291,7 @@ public class TopologyOverallTest {
 
             Thread.sleep(1000);
 
-            QueryClient queryClient = new QueryClient("localhost", queryPort);
+            QueryClientSkeleton queryClient = new QueryClientSkeleton("localhost", queryPort);
             queryClient.connectWithTimeout(10000);
 //            QueryResponse response = queryClient.temporalRangeQuery(0.0, 9.5, 0, Long.MAX_VALUE);
             QueryResponse response = queryClient.query(new QueryRequest<>(0.0, 9.5, 0, Long.MAX_VALUE, t -> (Double)schema.getValue("f1", t) > 5, null));
@@ -355,7 +355,7 @@ public class TopologyOverallTest {
 
         try {
 //            Thread.sleep(10000);
-            OneTuplePerTransferIngestionClient oneTuplePerTransferIngestionClient = new OneTuplePerTransferIngestionClient("localhost", ingestionPort);
+            IngestionClient oneTuplePerTransferIngestionClient = new IngestionClient("localhost", ingestionPort);
             oneTuplePerTransferIngestionClient.connectWithTimeout(10000);
             for (int i = 0; i < numberOfTuples; i++) {
                 oneTuplePerTransferIngestionClient.append(new DataTuple(start + step * i, i % 10, 4, System.currentTimeMillis()));
@@ -363,7 +363,7 @@ public class TopologyOverallTest {
 
             Thread.sleep(1000);
 
-            QueryClient queryClient = new QueryClient("localhost", queryPort);
+            QueryClientSkeleton queryClient = new QueryClientSkeleton("localhost", queryPort);
             queryClient.connectWithTimeout(10000);
 
             Aggregator<Integer> aggregator = new Aggregator<>(schema, "f2", new AggregateField[]{
@@ -444,7 +444,7 @@ public class TopologyOverallTest {
 
         try {
 //            Thread.sleep(10000);
-            OneTuplePerTransferIngestionClient oneTuplePerTransferIngestionClient = new OneTuplePerTransferIngestionClient("localhost", ingestionPort);
+            IngestionClient oneTuplePerTransferIngestionClient = new IngestionClient("localhost", ingestionPort);
             oneTuplePerTransferIngestionClient.connectWithTimeout(10000);
             for (int i = 0; i < numberOfTuples; i++) {
                 oneTuplePerTransferIngestionClient.append(new DataTuple(start + step * i, 0, 0, System.currentTimeMillis()));
@@ -452,7 +452,7 @@ public class TopologyOverallTest {
 
             Thread.sleep(1000);
 
-            QueryClient queryClient = new QueryClient("localhost", queryPort);
+            QueryClientSkeleton queryClient = new QueryClientSkeleton("localhost", queryPort);
             queryClient.connectWithTimeout(10000);
             QueryResponse response = queryClient.temporalRangeQuery(0, 40, 0, Long.MAX_VALUE);
 
