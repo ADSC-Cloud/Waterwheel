@@ -1,5 +1,8 @@
 package indexingTopology.data;
 
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +15,7 @@ public class DataTupleBlock implements Serializable {
     DataSchema scheme;
     int capacity;
     public transient List<DataTuple> tuples;
-    private List<byte[]> byteArrays;
+    private byte[] bytes;
 
     public DataTupleBlock(DataSchema scheme, int capacity) {
         this.scheme = scheme;
@@ -28,12 +31,26 @@ public class DataTupleBlock implements Serializable {
     }
 
     public void serialize() {
-        byteArrays = new ArrayList<>();
-        tuples.forEach(t -> byteArrays.add(scheme.serializeTuple(t)));
+        Output output = new Output(8000, 2000000);
+
+        tuples.forEach(t -> {
+            byte[] bytes = scheme.serializeTuple(t);
+            output.writeShort(bytes.length);
+            output.writeBytes(bytes);
+        });
+
+        bytes = output.toBytes();
+
     }
 
     public void deserialize() {
         tuples = new ArrayList<>();
-        byteArrays.forEach(e -> tuples.add(scheme.deserializeToDataTuple(e)));
+
+        Input input = new Input(bytes);
+        while(!input.eof()) {
+            int length = input.readShort();
+            byte[] serializedTuple = input.readBytes(length);
+            tuples.add(scheme.deserializeToDataTuple(serializedTuple));
+        }
     }
 }

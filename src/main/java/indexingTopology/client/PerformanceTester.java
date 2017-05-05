@@ -90,7 +90,7 @@ public class PerformanceTester {
         schema.addDoubleField("value");
         schema.addVarcharField("payload", payload);
 
-        IngestionClientBatch client = new IngestionClientBatch(host, 1024, schema,4096);
+        IngestionClientBatch client = new IngestionClientBatch(host, 1024, schema,1024);
         client.connect();
         char[] charArray = new char[payload];
         Arrays.fill(charArray, ' ');
@@ -120,7 +120,7 @@ public class PerformanceTester {
         if(option.equals("both")) {
             System.out.println("both!");
             launchServerDaemon(1024);
-            double throughput = testAppendBatchModeThroughput(1000000,64);
+            double throughput = testAppendBatchModeThroughput(1000000,8);
             System.out.println("Throughput: " + throughput);
         } else if (option.equals("server")) {
             System.out.println("Server!");
@@ -132,7 +132,7 @@ public class PerformanceTester {
                 serverHost = args[1];
             }
             System.out.println("host: " + serverHost);
-            double throughput = testAppendBatchModeThroughput(serverHost, 1000000, 64);
+            double throughput = testAppendBatchModeThroughput(serverHost, 1000000, 8);
             System.out.println("Throughput: " + throughput);
         }
     }
