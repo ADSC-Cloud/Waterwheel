@@ -24,7 +24,8 @@ public class TopologyConfig {
 
     public static String dataDir = "/home/lzj";
 
-    public static String dataFileDir = "/home/lzj/taxi-trajectory";
+    public static String dataFileDir = "/home/wangli/kingbase-topology";
+//    public static String dataFileDir = "/home/lzj/taxi-trajectory";
 //    public static String dataFileDir = "/home/lzj/dataset/20150430_processed.txt";
 //    public static String dataFileDir = "/home/acelzj/Downloads/taxi-trajectory";
 //    public static String dataFileDir = "/home/acelzj/Downloads/dataset/20150430.txt";
@@ -45,7 +46,7 @@ public class TopologyConfig {
 
     public static final int EMIT_NUM = 5000;
 
-    public static final String ZOOKEEPER_HOST = "192.168.0.116";
+    public static final String ZOOKEEPER_HOST = "192.168.0.207";
 
     public static final String HBASE_CONF_DIR = "/home/hduser/hbase-1.2.4/conf";
 

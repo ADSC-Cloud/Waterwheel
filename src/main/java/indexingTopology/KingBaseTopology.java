@@ -2,15 +2,20 @@ package indexingTopology;
 
 import indexingTopology.bolt.*;
 import indexingTopology.data.DataSchema;
+import indexingTopology.data.DataTuple;
 import indexingTopology.util.DataTupleMapper;
 import indexingTopology.util.TopologyGenerator;
 import indexingTopology.util.texi.City;
 import indexingTopology.util.texi.TrajectoryGenerator;
 import indexingTopology.util.texi.TrajectoryUniformGenerator;
 import org.apache.storm.Config;
+import org.apache.storm.LocalCluster;
 import org.apache.storm.StormSubmitter;
 import org.apache.storm.generated.StormTopology;
 import org.apache.storm.topology.TopologyBuilder;
+
+import java.io.Serializable;
+import java.util.function.Function;
 
 /**
  * Created by acelzj on 11/15/16.
@@ -52,24 +57,29 @@ public class KingBaseTopology {
         final double x2 = 1000;
         final double y1 = 0;
         final double y2 = 500;
-        final int partitions = 100;
+        final int partitions = 128;
 
         TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
         City city = new City(x1, x2, y1, y2, partitions);
 
-        Double sigma = 100000.0;
-        Double mean = 5000.0;
-        Double lowerBound = 0.0;
-        Double upperBound = 2 * mean;
+        Integer lowerBound = 0;
+        Integer upperBound = 128 * 128;
 
         final boolean enableLoadBalance = false;
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, 10000);
-        QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryGenerator<>(lowerBound, upperBound);
+        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000);
+        QueryCoordinator<Integer> queryCoordinator = new QueryCoordinatorWithQueryGenerator<>(lowerBound, upperBound);
 
-        TopologyGenerator<Double> topologyGenerator = new TopologyGenerator<>();
+        TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        DataTupleMapper dataTupleMapper = new DataTupleMapper(schema, t -> t);
+        DataTupleMapper dataTupleMapper = new DataTupleMapper(rawSchema, (Serializable & Function<DataTuple, DataTuple>) t -> {
+            double lon = (double)schema.getValue("lon", t);
+            double lat = (double)schema.getValue("lat", t);
+            int zcode = city.getZCodeForALocation(lon, lat);
+            t.add(zcode);
+            t.add(System.currentTimeMillis());
+            return t;
+        });
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound, enableLoadBalance, dataSource, queryCoordinator, dataTupleMapper);
 
@@ -80,7 +90,15 @@ public class KingBaseTopology {
         conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
         conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
-        StormSubmitter.submitTopologyWithProgressBar(args[0], conf, topology);
+
+        LocalCluster cluster = new LocalCluster();
+        cluster.submitTopology("T0", conf, topology);
+
+        new Thread(()->{
+
+        }).start();
+
+//        StormSubmitter.submitTopologyWithProgressBar(args[0], conf, topology);
     }
 
 

@@ -22,6 +22,7 @@ import static org.junit.Assert.*;
 
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
