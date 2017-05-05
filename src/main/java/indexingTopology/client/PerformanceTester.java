@@ -37,6 +37,7 @@ public class PerformanceTester {
         @Override
         public void handle(DataTupleBlock tuple) throws IOException {
             tuple.deserialize();
+            System.out.println(String.format("Received %d tuples.", tuple.tuples.size()));
         }
     }
 
@@ -89,7 +90,7 @@ public class PerformanceTester {
         schema.addDoubleField("value");
         schema.addVarcharField("payload", payload);
 
-        IngestionClientBatch client = new IngestionClientBatch(host, 1024, schema,40960);
+        IngestionClientBatch client = new IngestionClientBatch(host, 1024, schema,4096);
         client.connect();
         char[] charArray = new char[payload];
         Arrays.fill(charArray, ' ');

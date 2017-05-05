@@ -42,8 +42,10 @@ public class Client {
                 connect();
                 break;
             } catch (IOException e) {
-                if (System.currentTimeMillis() - startTime >= timeoutInMilliseconds)
+                if (System.currentTimeMillis() - startTime >= timeoutInMilliseconds) {
+                    System.err.println(String.format("Connect to %s:%d fails.", serverHost, port));
                     throw e;
+                }
             }
         }
     }
