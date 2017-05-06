@@ -25,7 +25,7 @@ public class IngestionClientBatchMode extends ClientSkeleton implements IIngesti
 
     public IResponse append(DataTuple dataTuple) throws IOException, ClassNotFoundException {
 
-        objectOutputStream.writeObject(dataTuple);
+        objectOutputStream.writeUnshared(dataTuple);
 
 //        return (Response) objectInputStream.readObject();
         return null;
@@ -41,7 +41,9 @@ public class IngestionClientBatchMode extends ClientSkeleton implements IIngesti
     @Override
     public void flush() throws IOException, ClassNotFoundException {
         dataTupleBlock.serialize();
-        objectOutputStream.writeObject(new AppendRequestBatchMode(dataTupleBlock));
+        objectOutputStream.writeUnshared(new AppendRequestBatchMode(dataTupleBlock));
+        objectOutputStream.reset();
         dataTupleBlock = new DataTupleBlock(schema, batchSize);
+//        objectInputStream.readUnshared();
     }
 }

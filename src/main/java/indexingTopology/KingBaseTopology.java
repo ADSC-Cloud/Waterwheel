@@ -1,10 +1,12 @@
 package indexingTopology;
 
 import indexingTopology.bolt.*;
+import indexingTopology.client.IngestionClientBatchMode;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import indexingTopology.util.DataTupleMapper;
 import indexingTopology.util.TopologyGenerator;
+import indexingTopology.util.texi.Car;
 import indexingTopology.util.texi.City;
 import indexingTopology.util.texi.TrajectoryGenerator;
 import indexingTopology.util.texi.TrajectoryUniformGenerator;
@@ -14,7 +16,9 @@ import org.apache.storm.StormSubmitter;
 import org.apache.storm.generated.StormTopology;
 import org.apache.storm.topology.TopologyBuilder;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.util.Random;
 import java.util.function.Function;
 
 /**
@@ -63,7 +67,7 @@ public class KingBaseTopology {
         City city = new City(x1, x2, y1, y2, partitions);
 
         Integer lowerBound = 0;
-        Integer upperBound = 128 * 128;
+        Integer upperBound = partitions * partitions;
 
         final boolean enableLoadBalance = false;
 
@@ -95,7 +99,40 @@ public class KingBaseTopology {
         cluster.submitTopology("T0", conf, topology);
 
         new Thread(()->{
+            Random random = new Random();
+            IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode("localhost", 10000,
+                    rawSchema, 1024);
+            try {
+                clientBatchMode.connectWithTimeout(10000);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            while(true) {
+                Car car = generator.generate();
+                DataTuple tuple = new DataTuple();
+                tuple.add(Integer.toString(random.nextInt()));
+                tuple.add(Integer.toString(random.nextInt()));
+                tuple.add(car.x);
+                tuple.add(car.y);
+                tuple.add(1);
+                tuple.add(55.3);
+                tuple.add("position 1");
+                tuple.add("2015-10-10, 11:12:34");
+                try {
+                    clientBatchMode.appendInBatch(tuple);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
 
+//                try {
+////                    Thread.sleep(1);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+
+            }
         }).start();
 
 //        StormSubmitter.submitTopologyWithProgressBar(args[0], conf, topology);

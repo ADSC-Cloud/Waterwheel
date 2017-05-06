@@ -199,6 +199,7 @@ public class DataSchema implements Serializable {
             }
         }
         byte[] bytes = output.toBytes();
+        output.close();
 //        return output.toBytes();
         return bytes;
     }
@@ -219,6 +220,7 @@ public class DataSchema implements Serializable {
                 throw new IOException("Only classes supported till now are string and double");
             }
         }
+        output.close();
         return output.toBytes();
     }
 
@@ -239,7 +241,6 @@ public class DataSchema implements Serializable {
                 throw new IOException("Only classes supported till now are string and double");
             }
         }
-
         return values;
     }
 

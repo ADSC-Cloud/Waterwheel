@@ -40,6 +40,7 @@ public class DataTupleBlock implements Serializable {
         });
 
         bytes = output.toBytes();
+        output.close();
 
     }
 

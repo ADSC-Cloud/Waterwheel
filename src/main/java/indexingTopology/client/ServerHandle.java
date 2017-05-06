@@ -34,7 +34,7 @@ public abstract class ServerHandle implements Runnable{
                 objectOutputStream = new ObjectOutputStream(client.getOutputStream());
                 while (true) {
                     try {
-                        final Object newObject = objectInputStream.readObject();
+                        final Object newObject = objectInputStream.readUnshared();
 //                        System.out.println("Received: " + newObject);
                         handleInputObject(newObject);
 //                        System.out.println("Handled: " + newObject);

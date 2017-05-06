@@ -55,7 +55,8 @@ public class InputStreamReceiverServer extends InputStreamReceiver {
                 inputQueue.put(dataTuple);
             } catch (InterruptedException e) {
                 e.printStackTrace();
-                objectOutputStream.writeObject(new MessageResponse("Timeout!"));
+                objectOutputStream.writeUnshared(new MessageResponse("Timeout!"));
+                objectOutputStream.reset();
             }
         }
 
@@ -69,6 +70,8 @@ public class InputStreamReceiverServer extends InputStreamReceiver {
                     e.printStackTrace();
                 }
             });
+//            objectOutputStream.writeUnshared("handled the block!");
+//            objectOutputStream.reset();
         }
     }
 }

@@ -569,7 +569,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
     private void writeTreeIntoChunk() {
 
-        Output output = new Output(60000000, 500000000);
+        Output output = new Output(6000000, 500000000);
 
         byte[] leafBytesToWrite = bTree.serializeLeaves();
 
@@ -587,5 +587,6 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
         chunk.write(templateLengthBytesToWrite);
         chunk.write(templateBytesToWrite);
         chunk.write(leafBytesToWrite);
+        output.close();
     }
 }

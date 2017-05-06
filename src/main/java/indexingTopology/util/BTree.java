@@ -356,6 +356,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
             kryo.writeObject(leafOutput, leaf);
 
 			byte[] bytesToWrite = leafOutput.toBytes();
+			leafOutput.close();
 			output.writeInt(bytesToWrite.length);
 			output.write(bytesToWrite);
 
@@ -363,7 +364,9 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 
 			leaf = (BTreeLeafNode) leaf.rightSibling;
 		}
-		return output.toBytes();
+
+		byte[] returnBytes = output.toBytes();
+		return returnBytes;
 	}
 
 	private BTreeNode<TKey> findParentOfLeafNodeShouldContainKey(TKey key) {

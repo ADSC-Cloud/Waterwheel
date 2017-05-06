@@ -37,14 +37,14 @@ public class TopologyConfig {
 //    public static final int PENDING_QUEUE_CAPACITY = 1024;
     public static final int PENDING_QUEUE_CAPACITY = 600001 * 2;
 
-    public static final int MAX_PENDING = 10000;
+    public static final int MAX_PENDING = 1000;
+    public static final int EMIT_NUM = 50;
 
     public static final int OFFSET_LENGTH = 4;
 
-    public static final int CHUNK_SIZE = 58000000 / 4;
+    public static final int CHUNK_SIZE = 58000000 / 8;
 //    public static final int CHUNK_SIZE = 6 * 1024 * 1024;
 
-    public static final int EMIT_NUM = 5000;
 
     public static final String ZOOKEEPER_HOST = "192.168.0.207";
 
