@@ -211,7 +211,7 @@ public class ResultMerger extends BaseRichBolt {
         List<PartialQueryResult> results = queryIdToPartialQueryResults.get(queryId);
         if (results != null && !results.isEmpty()) {
             PartialQueryResult result = results.get(0);
-            if (results.size() == 1) {
+            if (results.size() == 0) {
                 result.setEOFflag();
             }
             System.out.println("A partial query result is sent to coordinator from merger.");

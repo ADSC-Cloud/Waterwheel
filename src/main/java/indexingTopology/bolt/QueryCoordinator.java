@@ -274,6 +274,8 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             collector.emit(Streams.FileSystemQueryInformationStream, new Values(query, 0));
         } else {
 
+            System.out.println(String.format("%d subqueries on chunks are generated!", fileNames.size()));
+
             for (String fileName : fileNames) {
                 SubQuery subQuery = new SubQueryOnFile(queryId, leftKey, rightKey, fileName, startTimestamp, endTimestamp, query.predicate, query.aggregator);
 

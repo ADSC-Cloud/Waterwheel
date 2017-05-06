@@ -165,7 +165,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         Long timestampUpperBound = subQuery.getEndTimestamp();
 
 
-        System.out.println(fileName);
+//        System.out.println(fileName);
 
 
 //        System.out.println(fileName);
@@ -216,6 +216,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 //        long totalTupleGet = 0L;
 //        long totalLeafRead = 0L;
         Input input = new Input(bytesToRead);
+
         for (Integer offset : offsets) {
             BlockId blockId = new BlockId(fileName, offset + length + 4);
 
@@ -231,7 +232,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
             long tupleGetStart = System.currentTimeMillis();
             ArrayList<byte[]> tuplesInKeyRange = leaf.getTuplesWithinKeyRange(leftKey, rightKey);
-
             //deserialize
             ArrayList<DataTuple> dataTuples = new ArrayList<>();
             tuplesInKeyRange.stream().forEach(e -> dataTuples.add(schema.deserializeToDataTuple(e)));
@@ -284,8 +284,10 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         metrics.setTotalTime(System.currentTimeMillis() - start);
 
 
-        tuples.clear();
+//        tuples.clear();
+        System.out.println(String.format("%d tuples are found on file %s", tuples.size(), fileName));
         collector.emit(Streams.FileSystemQueryStream, new Values(subQuery, tuples, metrics));
+
 
         if (!TopologyConfig.SHUFFLE_GROUPING_FLAG) {
             collector.emit(Streams.FileSubQueryFinishStream, new Values("finished"));

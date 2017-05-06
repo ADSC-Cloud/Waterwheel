@@ -89,11 +89,19 @@ public class QueryCoordinatorWithQueryReceiverServer<T extends Number & Comparab
                 LinkedBlockingQueue<PartialQueryResult> results =
                         queryresults.computeIfAbsent(queryid, k -> new LinkedBlockingQueue<>());
 
-                LOG.info(String.format("A new Query[%d] ({0}, {1}, {2}, {3}) is added to the pending queue.", queryid),
+                LOG.info("A new Query{} ({}, {}, {}, {}) is added to the pending queue.", queryid,
                         request.low, request.high, request.startTime, request.endTime);
                 pendingQueryQueue.put(new Query<>(queryid, request.low, request.high, request.startTime,
                         request.endTime, request.predicate, request.aggregator));
-                objectOutputStream.writeObject(new QueryResponse(results.take(), queryid));
+
+                boolean eof = false;
+                while(!eof) {
+                    PartialQueryResult partialQueryResult = results.take();
+                    eof = partialQueryResult.getEOFFlag();
+                    objectOutputStream.writeUnshared(new QueryResponse(partialQueryResult, queryid));
+                    objectOutputStream.reset();
+                }
+
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

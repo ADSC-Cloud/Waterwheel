@@ -22,7 +22,6 @@ import static org.junit.Assert.*;
 
 import java.io.Serializable;
 import java.util.Collections;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -83,7 +82,7 @@ public class TopologyOverallTest {
 
             Thread.sleep(1000);
 
-            QueryClientSkeleton queryClient = new QueryClientSkeleton("localhost", queryPort);
+            QueryClient queryClient = new QueryClient("localhost", queryPort);
             queryClient.connectWithTimeout(10000);
             QueryResponse response = queryClient.temporalRangeQuery(0.0, 10000.0, 0, Long.MAX_VALUE);
 
@@ -152,7 +151,7 @@ public class TopologyOverallTest {
 
             Thread.sleep(1000);
 
-            QueryClientSkeleton queryClient = new QueryClientSkeleton("localhost", queryPort);
+            QueryClient queryClient = new QueryClient("localhost", queryPort);
             queryClient.connectWithTimeout(10000);
             QueryResponse response = queryClient.temporalRangeQuery(0, 40, 0, Long.MAX_VALUE);
 
@@ -223,7 +222,7 @@ public class TopologyOverallTest {
 
             Thread.sleep(1000);
 
-            QueryClientSkeleton queryClient = new QueryClientSkeleton("localhost", queryPort);
+            QueryClient queryClient = new QueryClient("localhost", queryPort);
             queryClient.connectWithTimeout(10000);
             QueryResponse response = queryClient.temporalRangeQuery(0.0, 9.5, 0, Long.MAX_VALUE);
 
@@ -292,7 +291,7 @@ public class TopologyOverallTest {
 
             Thread.sleep(1000);
 
-            QueryClientSkeleton queryClient = new QueryClientSkeleton("localhost", queryPort);
+            QueryClient queryClient = new QueryClient("localhost", queryPort);
             queryClient.connectWithTimeout(10000);
 //            QueryResponse response = queryClient.temporalRangeQuery(0.0, 9.5, 0, Long.MAX_VALUE);
             QueryResponse response = queryClient.query(new QueryRequest<>(0.0, 9.5, 0, Long.MAX_VALUE, t -> (Double)schema.getValue("f1", t) > 5, null));
@@ -364,7 +363,7 @@ public class TopologyOverallTest {
 
             Thread.sleep(1000);
 
-            QueryClientSkeleton queryClient = new QueryClientSkeleton("localhost", queryPort);
+            QueryClient queryClient = new QueryClient("localhost", queryPort);
             queryClient.connectWithTimeout(10000);
 
             Aggregator<Integer> aggregator = new Aggregator<>(schema, "f2", new AggregateField[]{
@@ -453,7 +452,7 @@ public class TopologyOverallTest {
 
             Thread.sleep(1000);
 
-            QueryClientSkeleton queryClient = new QueryClientSkeleton("localhost", queryPort);
+            QueryClient queryClient = new QueryClient("localhost", queryPort);
             queryClient.connectWithTimeout(10000);
             QueryResponse response = queryClient.temporalRangeQuery(0, 40, 0, Long.MAX_VALUE);
 

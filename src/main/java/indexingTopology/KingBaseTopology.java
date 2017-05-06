@@ -2,6 +2,9 @@ package indexingTopology;
 
 import indexingTopology.bolt.*;
 import indexingTopology.client.IngestionClientBatchMode;
+import indexingTopology.client.QueryClient;
+import indexingTopology.client.QueryRequest;
+import indexingTopology.client.QueryResponse;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import indexingTopology.util.DataTupleMapper;
@@ -67,12 +70,12 @@ public class KingBaseTopology {
         City city = new City(x1, x2, y1, y2, partitions);
 
         Integer lowerBound = 0;
-        Integer upperBound = partitions * partitions;
+        Integer upperBound = city.getMaxZCode();
 
         final boolean enableLoadBalance = false;
 
         InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000);
-        QueryCoordinator<Integer> queryCoordinator = new QueryCoordinatorWithQueryGenerator<>(lowerBound, upperBound);
+        QueryCoordinator<Integer> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound, upperBound, 10001);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
@@ -131,6 +134,35 @@ public class KingBaseTopology {
 //                } catch (InterruptedException e) {
 //                    e.printStackTrace();
 //                }
+
+            }
+        }).start();
+
+        new Thread(() -> {
+            QueryClient queryClient = new QueryClient("localhost", 10001);
+            try {
+                queryClient.connectWithTimeout(10000);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            while (true) {
+                QueryRequest queryRequest  = new QueryRequest(10,15, System.currentTimeMillis()-5000, System.currentTimeMillis());
+                QueryResponse response;
+                try {
+                    while(true) {
+                        response = queryClient.query(queryRequest);
+                        if (response.getEOFFlag()) {
+                            System.out.println("EOF.");
+                            break;
+                        }
+                        System.out.println(response);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
 
             }
         }).start();

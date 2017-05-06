@@ -54,7 +54,7 @@ public class ClientSkeleton {
     }
 
     public static void main(String[] args) throws Exception {
-        QueryClientSkeleton queryClient = new QueryClientSkeleton("localhost", 10001);
+        QueryClient queryClient = new QueryClient("localhost", 10001);
         queryClient.connect();
         IResponse queryResponse = queryClient.temporalRangeQuery(0.0, 10000.0, 0, Long.MAX_VALUE );
         System.out.println("Query one is submitted!");
