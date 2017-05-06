@@ -92,7 +92,7 @@ public class ResultMerger extends BaseRichBolt {
                 tuple.getSourceStreamId().equals(Streams.FileSystemQueryStream)) {
             SubQuery subQuery = (SubQuery)tuple.getValue(0);
             long queryId = subQuery.getQueryId();
-//            System.out.println(String.format("A subquery for Query[%d] is completed!", queryId));
+            System.out.println(String.format("A subquery for Query[%d] is completed!", queryId));
 
             Integer counter = queryIdToCounter.getOrDefault(queryId, 0);
             counter++;
@@ -184,6 +184,10 @@ public class ResultMerger extends BaseRichBolt {
     }
 
     private boolean isQueryFinished(Long queryId) {
+
+        System.out.println(String.format("query: %d, numberOfFilesToScan: %s, B+ tree to scan: %s", queryId,
+                queryIdToNumberOfFilesToScan.get(queryId),
+                queryIdToNumberOfTasksToSearch.get(queryId)));
         if (queryIdToNumberOfFilesToScan.get(queryId) != null &&
                 queryIdToNumberOfTasksToSearch.get(queryId) != null) {
             int numberOfFilesToScan = queryIdToNumberOfFilesToScan.get(queryId);

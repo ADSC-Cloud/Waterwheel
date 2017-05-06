@@ -72,6 +72,8 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
     @Override
     public void cleanup() {
         super.cleanup();
+        System.out.println("You should kill all the thread you created in this function, so that the local cluster can" +
+                "be shutdown.");
     }
 
     public void execute(Tuple tuple) {
@@ -113,6 +115,7 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
         } else if (tuple.getSourceStreamId().equals(Streams.BPlusTreeQueryStream)){
             SubQuery subQuery = (SubQuery) tuple.getValueByField("subquery");
             try {
+                System.out.println("Insertion Server: Received a subquery!");
                 queryPendingQueue.put(subQuery);
             } catch (InterruptedException e) {
                 e.printStackTrace();

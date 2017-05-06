@@ -9,8 +9,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -70,13 +72,13 @@ public class QueryCoordinatorWithQueryReceiverServer<T extends Number & Comparab
 //        semaphore.release();
     }
 
-    static public class QueryServerHandle extends ServerHandle implements QueryHandle {
+    static public class QueryServerHandle<T extends Number & Comparable<T>> extends ServerHandle implements QueryHandle {
 
-        LinkedBlockingQueue<Query> pendingQueryQueue;
+        LinkedBlockingQueue<List<Query<T>>> pendingQueryQueue;
         AtomicLong queryIdGenerator;
         AtomicLong superQueryIdGenerator;
         Map<Long, LinkedBlockingQueue<PartialQueryResult>> queryresults;
-        public QueryServerHandle(LinkedBlockingQueue<Query> pendingQueryQueue, AtomicLong queryIdGenerator, Map<Long, LinkedBlockingQueue<PartialQueryResult>> queryresults) {
+        public QueryServerHandle(LinkedBlockingQueue<List<Query<T>>> pendingQueryQueue, AtomicLong queryIdGenerator, Map<Long, LinkedBlockingQueue<PartialQueryResult>> queryresults) {
             this.pendingQueryQueue = pendingQueryQueue;
             this.queryresults = queryresults;
             this.queryIdGenerator = queryIdGenerator;
@@ -92,8 +94,10 @@ public class QueryCoordinatorWithQueryReceiverServer<T extends Number & Comparab
 
                 LOG.info("A new Query{} ({}, {}, {}, {}) is added to the pending queue.", queryid,
                         request.low, request.high, request.startTime, request.endTime);
-                pendingQueryQueue.put(new Query<>(queryid, request.low, request.high, request.startTime,
+                final List<Query<T>> queryList = new ArrayList<>();
+                queryList.add(new Query(queryid, request.low, request.high, request.startTime,
                         request.endTime, request.predicate, request.aggregator));
+                pendingQueryQueue.put(queryList);
 
                 boolean eof = false;
                 while(!eof) {

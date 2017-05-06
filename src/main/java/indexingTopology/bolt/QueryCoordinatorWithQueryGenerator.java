@@ -126,7 +126,9 @@ public class QueryCoordinatorWithQueryGenerator<T extends Number & Comparable<T>
 //                    Long startTimestamp = 0L;
 //                    Long endTimestamp = Long.MAX_VALUE;
 
-                    pendingQueue.put(new Query(queryId, leftKey, rightKey, startTimestamp, endTimestamp));
+                    final List<Query<T>> queryList = new ArrayList<>();
+                    queryList.add(new Query(queryId, leftKey, rightKey, startTimestamp, endTimestamp));
+                    pendingQueue.put(queryList);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

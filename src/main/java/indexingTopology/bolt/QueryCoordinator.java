@@ -38,7 +38,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private static final int MAX_NUMBER_OF_CONCURRENT_QUERIES = 1;
 
-    private long queryId;
+//    private long queryId;
 
     private transient List<Integer> queryServers;
 
@@ -62,7 +62,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
     private AtomicDouble minIndexValue;
     private AtomicDouble maxIndexValue;
 
-    protected LinkedBlockingQueue<Query> pendingQueue;
+    protected LinkedBlockingQueue<List<Query<T>>> pendingQueue;
 
     private Map<Long, Pair> queryIdToStartTime;
 
@@ -80,7 +80,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
         collector = outputCollector;
 
         concurrentQueriesSemaphore = new Semaphore(MAX_NUMBER_OF_CONCURRENT_QUERIES);
-        queryId = 0;
+//        queryId = 0;
         filePartitionSchemaManager = new FilePartitionSchemaManager();
 
         taskQueue = new ArrayBlockingQueue<>(TopologyConfig.TASK_QUEUE_CAPACITY);
@@ -166,10 +166,12 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             }
 
         } else if (tuple.getSourceStreamId().equals(Streams.QueryGenerateStream)) {
-            Query query = (Query) tuple.getValueByField("query");
+            Query<T> query = (Query<T>) tuple.getValueByField("query");
 
             try {
-                pendingQueue.put(query);
+                final List<Query<T>> queryList = new ArrayList();
+                queryList.add(query);
+                pendingQueue.put(queryList);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -254,30 +256,36 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
         outputFieldsDeclarer.declareStream(Streams.PartialQueryResultReceivedStream, new Fields("queryId"));
     }
 
-    private void handleQuery(Query<T> query) {
-        generateSubQueriesOnTheInsertionServer(query);
-        generateSubqueriesOnTheFileScanner(query);
+    private void handleQuery(List<Query<T>> querylist) {
+        generateSubQueriesOnTheInsertionServer(querylist);
+        generateSubqueriesOnTheFileScanner(querylist);
     }
 
-    private void generateSubqueriesOnTheFileScanner(Query<T> query) {
-        Long queryId = query.getQueryId();
-        T leftKey = query.leftKey;
-        T rightKey = query.rightKey;
-        Long startTimestamp = query.startTimestamp;
-        Long endTimestamp = query.endTimestamp;
+    private void generateSubqueriesOnTheFileScanner(List<Query<T>> queryList) {
+        Query<T> firstQuery = queryList.get(0);
+        List<SubQuery<T>> subQueries = new ArrayList<>();
+        for (Query<T> query: queryList) {
+            Long queryId = query.getQueryId();
+            T leftKey = query.leftKey;
+            T rightKey = query.rightKey;
+            Long startTimestamp = query.startTimestamp;
+            Long endTimestamp = query.endTimestamp;
 
-        List<String> fileNames = filePartitionSchemaManager.search(leftKey.doubleValue(), rightKey.doubleValue(), startTimestamp, endTimestamp);
+            final List<String> chunkNames = filePartitionSchemaManager.search(leftKey.doubleValue(), rightKey.doubleValue(), startTimestamp, endTimestamp);
+            for (String chunkName: chunkNames) {
+                subQueries.add(new SubQueryOnFile<>(queryId, leftKey, rightKey, chunkName, startTimestamp, endTimestamp,
+                        query.predicate, query.aggregator));
+            }
+        }
 
-
-        if (fileNames.size() <= 0) {
-
-            collector.emit(Streams.FileSystemQueryInformationStream, new Values(query, 0));
+        if (subQueries.size() <= 0) {
+            System.out.println(String.format("%d subqueries on chunks.", subQueries.size()));
+            collector.emit(Streams.FileSystemQueryInformationStream, new Values(firstQuery, 0));
         } else {
 
-            System.out.println(String.format("%d subqueries on chunks are generated!", fileNames.size()));
+            System.out.println(String.format("%d subqueries on chunks are generated!", subQueries.size()));
 
-            for (String fileName : fileNames) {
-                SubQuery subQuery = new SubQueryOnFile(queryId, leftKey, rightKey, fileName, startTimestamp, endTimestamp, query.predicate, query.aggregator);
+            for (SubQuery subQuery: subQueries) {
 
                 if (TopologyConfig.SHUFFLE_GROUPING_FLAG) {
                     sendSubqueriesByshuffleGrouping(subQuery);
@@ -307,10 +315,10 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 //                sendSubqueriesFromTaskQueues();
 //            */
 
-            collector.emit(Streams.FileSystemQueryInformationStream, new Values(query, fileNames.size()));
+            collector.emit(Streams.FileSystemQueryInformationStream, new Values(firstQuery, subQueries.size()));
         }
-        System.out.println(queryId + " " + fileNames.size());
-        queryIdToStartTime.put(queryId, new Pair(System.currentTimeMillis(), fileNames.size()));
+        System.out.println(firstQuery.queryId + " " + subQueries.size());
+        queryIdToStartTime.put(firstQuery.queryId, new Pair<>(System.currentTimeMillis(), subQueries.size()));
     }
 
     private void createQueryHandlingThread() {
@@ -319,9 +327,10 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             public void run() {
                 while (true) {
                     try {
-                        Query query = pendingQueue.take();
+                        List<Query<T>> queryList = pendingQueue.take();
+//                        Query query = pendingQueue.take();
                         concurrentQueriesSemaphore.acquire();
-                        handleQuery(query);
+                        handleQuery(queryList);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -339,43 +348,47 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
     }
 
 
-    private void generateSubQueriesOnTheInsertionServer(Query<T> query) {
+    private void generateSubQueriesOnTheInsertionServer(List<Query<T>> queryList) {
         int numberOfTasksToSearch = 0;
+        Query firstQuery = queryList.get(0);
+        System.out.println("Decompose subquery for " + queryList.get(0).queryId + "(on insertion servers)");
+        for(Query<T> query: queryList) {
 
-        Long queryId = query.queryId;
+            Long queryId = query.queryId;
 
-        T leftKey = query.leftKey;
-        T rightKey = query.rightKey;
-        Long startTimestamp = query.startTimestamp;
-        Long endTimestamp = query.endTimestamp;
-
-
-        List<Integer> partitionIdsInBalancedPartition = getPartitionIds(balancedPartition, leftKey, rightKey);
-        List<Integer> partitionIdsInStalePartition = null;
+            T leftKey = query.leftKey;
+            T rightKey = query.rightKey;
+            Long startTimestamp = query.startTimestamp;
+            Long endTimestamp = query.endTimestamp;
 
 
-        if (balancedPartitionToBeDeleted != null) {
-            partitionIdsInStalePartition = getPartitionIds(balancedPartitionToBeDeleted, leftKey, rightKey);
-        }
+            List<Integer> partitionIdsInBalancedPartition = getPartitionIds(balancedPartition, leftKey, rightKey);
+            List<Integer> partitionIdsInStalePartition = null;
 
-        List<Integer> partitionIds = (partitionIdsInStalePartition == null
-                ? partitionIdsInBalancedPartition
-                : mergePartitionIds(partitionIdsInBalancedPartition, partitionIdsInStalePartition));
 
-        for (Integer partitionId : partitionIds) {
-            Integer taskId = indexServers.get(partitionId);
-            Long timestamp = indexTaskToTimestampMapping.get(taskId);
-            if ((timestamp <= endTimestamp && timestamp >= startTimestamp) || (timestamp <= startTimestamp)) {
-                SubQuery subQuery = new SubQuery(query.getQueryId(), query.leftKey, query.rightKey, query.startTimestamp,
-                        query.endTimestamp, query.predicate, query.aggregator);
-                collector.emitDirect(taskId, Streams.BPlusTreeQueryStream, new Values(subQuery));
-                ++numberOfTasksToSearch;
+            if (balancedPartitionToBeDeleted != null) {
+                partitionIdsInStalePartition = getPartitionIds(balancedPartitionToBeDeleted, leftKey, rightKey);
+            }
+
+            List<Integer> partitionIds = (partitionIdsInStalePartition == null
+                    ? partitionIdsInBalancedPartition
+                    : mergePartitionIds(partitionIdsInBalancedPartition, partitionIdsInStalePartition));
+
+            for (Integer partitionId : partitionIds) {
+                Integer taskId = indexServers.get(partitionId);
+                Long timestamp = indexTaskToTimestampMapping.get(taskId);
+                if ((timestamp <= endTimestamp && timestamp >= startTimestamp) || (timestamp <= startTimestamp)) {
+                    SubQuery subQuery = new SubQuery(query.getQueryId(), query.leftKey, query.rightKey, query.startTimestamp,
+                            query.endTimestamp, query.predicate, query.aggregator);
+                    collector.emitDirect(taskId, Streams.BPlusTreeQueryStream, new Values(subQuery));
+                    ++numberOfTasksToSearch;
+                }
             }
         }
 
-        System.out.println(queryId + " " + numberOfTasksToSearch);
+        System.out.println( firstQuery.queryId+ "-->" + numberOfTasksToSearch + "sub-queries on insertion servers");
 
-        collector.emit(Streams.BPlusTreeQueryInformationStream, new Values(queryId, numberOfTasksToSearch));
+        collector.emit(Streams.BPlusTreeQueryInformationStream, new Values(firstQuery.queryId, numberOfTasksToSearch));
     }
 
     private List<Integer> mergePartitionIds(List<Integer> partitionIdsInBalancedPartition, List<Integer> partitionIdsInStalePartition) {
