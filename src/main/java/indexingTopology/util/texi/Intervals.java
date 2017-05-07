@@ -7,7 +7,7 @@ import java.util.List;
  * Created by Robert on 12/11/16.
  */
 public class Intervals {
-    List<Interval> intervals = new ArrayList<Interval>();
+    public List<Interval> intervals = new ArrayList<Interval>();
 
 
     public void addInterval(Interval interval) {

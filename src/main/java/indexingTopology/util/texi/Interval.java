@@ -4,8 +4,8 @@ package indexingTopology.util.texi;
  * Created by Robert on 12/11/16.
  */
 public class Interval implements Comparable<Interval>{
-    int low;
-    int high;
+    public int low;
+    public int high;
     public Interval(int low, int high) {
         if(low > high)
             throw new IllegalArgumentException("Low should be no larger than high!");

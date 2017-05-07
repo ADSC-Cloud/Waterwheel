@@ -504,6 +504,9 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                     DataTuple dataTuple = schema.deserializeToDataTuple(serializedTuples.get(i));
                     Long timestamp = (Long) schema.getValue("timestamp", dataTuple);
                     if (timestamp >= startTimestamp && timestamp <= endTimestamp) {
+                        if (subQuery.getPredicate()!=null) {
+                            System.out.println("Predicate is applied in indexer!!!!!!!!!!.");
+                        }
                         if (subQuery.getPredicate() == null || subQuery.getPredicate().test(dataTuple)) {
                             dataTuples.add(dataTuple);
                         }

@@ -64,4 +64,8 @@ public class City implements Serializable {
         }
         return cars;
     }
+
+    public ZOrderCoding getzOrderCoding() {
+        return zOrderCoding;
+    }
 }

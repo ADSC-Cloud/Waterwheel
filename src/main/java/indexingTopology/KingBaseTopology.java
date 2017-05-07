@@ -8,11 +8,9 @@ import indexingTopology.client.QueryResponse;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import indexingTopology.util.DataTupleMapper;
+import indexingTopology.util.DataTuplePredicate;
 import indexingTopology.util.TopologyGenerator;
-import indexingTopology.util.texi.Car;
-import indexingTopology.util.texi.City;
-import indexingTopology.util.texi.TrajectoryGenerator;
-import indexingTopology.util.texi.TrajectoryUniformGenerator;
+import indexingTopology.util.texi.*;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
 import org.apache.storm.StormSubmitter;
@@ -75,6 +73,8 @@ public class KingBaseTopology {
         final boolean enableLoadBalance = false;
 
         InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000);
+
+        ZOrderCoding zOrderCoding = city.getzOrderCoding();
         QueryCoordinator<Integer> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound, upperBound, 10001);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
@@ -147,22 +147,59 @@ public class KingBaseTopology {
             }
 
             while (true) {
-                QueryRequest queryRequest  = new QueryRequest(10,15, System.currentTimeMillis()-5000, System.currentTimeMillis());
-                QueryResponse response;
-                try {
-                    while(true) {
-                        response = queryClient.query(queryRequest);
-                        if (response.getEOFFlag()) {
-                            System.out.println("EOF.");
-                            break;
-                        }
-                        System.out.println(response);
+
+                final Double xLow = 10.0;
+                final Double xHigh = 15.0;
+                final Double yLow = 40.0;
+                final Double yHigh = 50.0;
+                Intervals intervals = city.getZCodeIntervalsInARectagle(xLow, xHigh, yLow, yHigh);
+
+                DataTuplePredicate predicate = new DataTuplePredicate() {
+                    @Override
+                    public boolean test(DataTuple objects) {
+                        return (double)rawSchema.getValue("lon", objects) >= xLow &&
+                                (double)rawSchema.getValue("lon", objects) <= xHigh &&
+                                (double)rawSchema.getValue("lat", objects) >= yLow &&
+                                (double)rawSchema.getValue("lat", objects) <= yHigh;
                     }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
+                };
+
+
+                for (Interval interval: intervals.intervals) {
+                    QueryRequest queryRequest = new QueryRequest(interval.low, interval.high, System.currentTimeMillis()-5000, System.currentTimeMillis(), predicate);
+                    try {
+                        while(true) {
+                            QueryResponse response = queryClient.query(queryRequest);
+                            if (response.getEOFFlag()) {
+                                System.out.println("EOF.");
+                                break;
+                            }
+                            System.out.println(response);
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
                 }
+                System.out.println("A query is fully executed!");
+
+//                QueryRequest queryRequest  = new QueryRequest(10,15, System.currentTimeMillis()-5000, System.currentTimeMillis());
+//                QueryResponse response;
+//                try {
+//                    while(true) {
+//                        response = queryClient.query(queryRequest);
+//                        if (response.getEOFFlag()) {
+//                            System.out.println("EOF.");
+//                            break;
+//                        }
+//                        System.out.println(response);
+//                    }
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                } catch (ClassNotFoundException e) {
+//                    e.printStackTrace();
+//                }
 
             }
         }).start();

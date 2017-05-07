@@ -74,6 +74,7 @@ public class QueryCoordinatorWithQueryReceiverServer<T extends Number & Comparab
 
         LinkedBlockingQueue<Query> pendingQueryQueue;
         AtomicLong queryIdGenerator;
+        AtomicLong superQueryIdGenerator;
         Map<Long, LinkedBlockingQueue<PartialQueryResult>> queryresults;
         public QueryServerHandle(LinkedBlockingQueue<Query> pendingQueryQueue, AtomicLong queryIdGenerator, Map<Long, LinkedBlockingQueue<PartialQueryResult>> queryresults) {
             this.pendingQueryQueue = pendingQueryQueue;

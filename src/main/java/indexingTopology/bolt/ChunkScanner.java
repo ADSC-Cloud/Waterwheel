@@ -320,8 +320,10 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
     }
 
     private void filterByPredicate(List<DataTuple> tuples, Predicate<DataTuple> predicate) {
-        if (predicate != null)
+        if (predicate != null) {
             tuples.stream().filter(predicate);
+            System.out.println("Predicated is applied");
+        }
     }
 
     private BTreeLeafNode getLeafFromExternalStorage(String fileName, int offset)
