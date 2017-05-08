@@ -289,8 +289,27 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
             final List<String> chunkNames = filePartitionSchemaManager.search(leftKey.doubleValue(), rightKey.doubleValue(), startTimestamp, endTimestamp);
             for (String chunkName: chunkNames) {
-                subQueries.add(new SubQueryOnFile<>(queryId, leftKey, rightKey, chunkName, startTimestamp, endTimestamp,
-                        query.predicate, query.aggregator, query.sorter));
+                boolean prunedByBloomFilter = false;
+
+                if (query.equivalentPredicate != null) {
+                    System.out.println("equivalentPredicate is passed.");
+                } else {
+                    System.out.println("equivalentPredicate is null.");
+                }
+
+                if (query.equivalentPredicate != null && columnToChunkToBloomFilter.containsKey(query.equivalentPredicate.column)) {
+                    BloomFilter bloomFilter = columnToChunkToBloomFilter.get(query.equivalentPredicate.column).get(chunkName);
+                    if (bloomFilter != null && !bloomFilter.mightContain(query.equivalentPredicate.value)) {
+                        prunedByBloomFilter = true;
+                    }
+                }
+
+                if (!prunedByBloomFilter) {
+                    subQueries.add(new SubQueryOnFile<>(queryId, leftKey, rightKey, chunkName, startTimestamp, endTimestamp,
+                            query.predicate, query.aggregator, query.sorter));
+                } else {
+                    System.out.println(String.format("query on %s is pruned (value = %s)", chunkName, query.equivalentPredicate.value));
+                }
             }
         }
 

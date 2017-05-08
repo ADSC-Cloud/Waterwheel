@@ -1,6 +1,7 @@
 package indexingTopology.client;
 
 import indexingTopology.aggregator.Aggregator;
+import indexingTopology.util.DataTupleEquivalentPredicate;
 import indexingTopology.util.DataTuplePredicate;
 import indexingTopology.util.DataTupleSorter;
 
@@ -15,8 +16,9 @@ public class QueryRequest<T extends Number>  extends IClientRequest {
     final public DataTuplePredicate predicate;
     final public Aggregator aggregator;
     final public DataTupleSorter sorter;
+    final public DataTupleEquivalentPredicate equivalentPredicate;
     public QueryRequest(T low, T high, long startTime, long endTime, DataTuplePredicate predicate,
-                        Aggregator aggregator, DataTupleSorter sorter) {
+                        Aggregator aggregator, DataTupleSorter sorter, DataTupleEquivalentPredicate equivalentPredicate) {
         this.low = low;
         this.high = high;
         this.startTime = startTime;
@@ -24,6 +26,12 @@ public class QueryRequest<T extends Number>  extends IClientRequest {
         this.predicate = predicate;
         this.aggregator = aggregator;
         this.sorter = sorter;
+        this.equivalentPredicate = equivalentPredicate;
+    }
+
+    public QueryRequest(T low, T high, long startTime, long endTime, DataTuplePredicate predicate, Aggregator aggregator,
+                        DataTupleSorter sorter) {
+        this(low, high, startTime, endTime, predicate, aggregator, sorter, null);
     }
 
     public QueryRequest(T low, T high, long startTime, long endTime, DataTuplePredicate predicate, Aggregator aggregator) {

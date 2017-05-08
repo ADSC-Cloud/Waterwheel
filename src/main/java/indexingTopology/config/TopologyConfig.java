@@ -20,9 +20,9 @@ public class TopologyConfig {
 
     public static final double LOAD_BALANCE_THRESHOLD = 0.2;
 
-    public static boolean HDFSFlag = true;
+    public static boolean HDFSFlag = false;
 
-    public static String dataDir = "/home/wangli";
+    public static String dataDir = "/Users/Robert/Documents/data";
 
     public static String dataFileDir = "/home/wangli/kingbase-topology";
 //    public static String dataFileDir = "/home/lzj/taxi-trajectory";
@@ -42,7 +42,7 @@ public class TopologyConfig {
 
     public static final int OFFSET_LENGTH = 4;
 
-    public static final int CHUNK_SIZE = 58000000 / 8;
+    public static final int CHUNK_SIZE = 58000000 / 80;
 //    public static final int CHUNK_SIZE = 6 * 1024 * 1024;
 
 

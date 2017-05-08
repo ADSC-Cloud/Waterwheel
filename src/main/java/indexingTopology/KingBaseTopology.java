@@ -8,10 +8,7 @@ import indexingTopology.bolt.*;
 import indexingTopology.client.*;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
-import indexingTopology.util.DataTupleMapper;
-import indexingTopology.util.DataTuplePredicate;
-import indexingTopology.util.DataTupleSorter;
-import indexingTopology.util.TopologyGenerator;
+import indexingTopology.util.*;
 import indexingTopology.util.texi.*;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
@@ -80,7 +77,8 @@ public class KingBaseTopology {
         InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000);
 
         ZOrderCoding zOrderCoding = city.getzOrderCoding();
-        QueryCoordinator<Integer> queryCoordinator = new KingBaseQueryCoordinatorWithQueryReceiverServer<>(lowerBound, upperBound, 10001, city);
+        QueryCoordinator<Integer> queryCoordinator = new KingBaseQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
+                upperBound, 10001, city);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
@@ -158,9 +156,9 @@ public class KingBaseTopology {
 
             while (true) {
                 final Double xLow = 10.0;
-                final Double xHigh = 15.0;
+                final Double xHigh = 100.0;
                 final Double yLow = 40.0;
-                final Double yHigh = 50.0;
+                final Double yHigh = 80.0;
 
                 DataTuplePredicate predicate = new DataTuplePredicate() {
                     @Override
@@ -183,11 +181,15 @@ public class KingBaseTopology {
                     }
                 };
 
+                DataTupleEquivalentPredicate equivalentPredicate = new DataTupleEquivalentPredicate("id", "abc");
+
                 GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
-                        System.currentTimeMillis() - 5000, System.currentTimeMillis(), predicate, aggregator, sorter);
+                        System.currentTimeMillis() - 50000, System.currentTimeMillis(), predicate, aggregator, sorter,
+                        equivalentPredicate);
                 long start = System.currentTimeMillis();
                 try {
                         while(true) {
+                            Utils.sleep(1000);
                             QueryResponse response = queryClient.query(queryRequest);
                             if (response.getEOFFlag()) {
                                 System.out.println("EOF.");

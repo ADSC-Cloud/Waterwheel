@@ -4,6 +4,7 @@ import indexingTopology.aggregator.Aggregator;
 import indexingTopology.client.*;
 import indexingTopology.data.DataTuple;
 import indexingTopology.data.PartialQueryResult;
+import indexingTopology.util.DataTupleEquivalentPredicate;
 import indexingTopology.util.DataTuplePredicate;
 import indexingTopology.util.DataTupleSorter;
 import indexingTopology.util.Query;
@@ -108,7 +109,7 @@ public class KingBaseQueryCoordinatorWithQueryReceiverServer<T extends Number & 
                         request.low, request.high, request.startTime, request.endTime);
                 final List<Query<T>> queryList = new ArrayList<>();
                 queryList.add(new Query(queryid, request.low, request.high, request.startTime,
-                        request.endTime, request.predicate, request.aggregator, request.sorter));
+                        request.endTime, request.predicate, request.aggregator, request.sorter, request.equivalentPredicate));
                 pendingQueryQueue.put(queryList);
 
                 System.out.println("Admitted a query.  waiting for query results");
@@ -141,6 +142,7 @@ public class KingBaseQueryCoordinatorWithQueryReceiverServer<T extends Number & 
                 final DataTuplePredicate predicate = clientQueryRequest.predicate;
                 final Aggregator aggregator = clientQueryRequest.aggregator;
                 final DataTupleSorter sorter = clientQueryRequest.sorter;
+                final DataTupleEquivalentPredicate equivalentPredicate = clientQueryRequest.equivalentPredicate;
 
                 Intervals intervals = city.getZCodeIntervalsInARectagle(clientQueryRequest.x1.doubleValue(),
                         clientQueryRequest.x2.doubleValue(),
@@ -149,7 +151,7 @@ public class KingBaseQueryCoordinatorWithQueryReceiverServer<T extends Number & 
 
                 for (Interval interval: intervals.intervals) {
                     queryList.add(new Query(queryid, interval.low, interval.high, startTimeStamp, endTimeStamp,
-                            predicate, aggregator, sorter));
+                            predicate, aggregator, sorter, equivalentPredicate));
                     LOG.info("A new Query{} ({}, {}, {}, {}) is added to the pending queue.", queryid,
                             interval.low, interval.high, startTimeStamp, endTimeStamp);
                 }

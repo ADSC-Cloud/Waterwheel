@@ -26,6 +26,11 @@ public class Query <T extends Number> extends SubQuery<T> {
         super(id, leftKey, rightKey, startTimestamp, endTimestamp, predicate, aggregator, sorter);
     }
 
+    public Query(long id, T leftKey, T rightKey, Long startTimestamp, Long endTimestamp, DataTuplePredicate predicate,
+                 Aggregator aggregator, DataTupleSorter sorter, DataTupleEquivalentPredicate equivalentPredicate) {
+        super(id, leftKey, rightKey, startTimestamp, endTimestamp, predicate, aggregator, sorter, equivalentPredicate);
+    }
+
     public String toString() {
         String str = "Query: ";
         str += String.format("key: [%s, %s], time: [%d, %d], predicate: %s, aggregator: %s", leftKey, rightKey,
