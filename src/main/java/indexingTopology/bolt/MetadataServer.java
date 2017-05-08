@@ -259,11 +259,13 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
             }
             */
 
+            System.out.println("File information is received on metedata servers");
+
             DataChunkBloomFilters bloomFilters = (DataChunkBloomFilters) tuple.getValueByField("bloomFilters");
 
             // omit the logic of storing bloomFilter externally, simply forwarding to the query coordinator.
 
-
+            System.out.println("File information is sent from metedata servers");
             collector.emit(Streams.FileInformationUpdateStream,
                     new Values(fileName, keyDomain, timeDomain, bloomFilters));
         } else if (tuple.getSourceStreamId().equals(Streams.TimestampUpdateStream)) {
