@@ -23,7 +23,7 @@ public class TopologyConfig {
     public static boolean HDFSFlag = true;
 
 //    public static String dataDir = "/Users/Robert/Documents/data";
-    public static String dataDir = "/home/robert/data";
+    public static String dataDir = "/home/wangli/data";
 
     public static String dataFileDir = "/home/wangli/kingbase-topology";
 //    public static String dataFileDir = "/home/lzj/taxi-trajectory";
