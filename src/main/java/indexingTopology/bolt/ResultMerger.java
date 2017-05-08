@@ -239,7 +239,9 @@ public class ResultMerger extends BaseRichBolt {
         final long queryId = subQuery.getQueryId();
 
         final int unitSize = 4 * 1024;
-        List<PartialQueryResult> queryResults = queryIdToPartialQueryResults.get(queryId);
+
+        //we should initialize the PartialQueryResult in case that there is no valid subquery.
+        List<PartialQueryResult> queryResults = queryIdToPartialQueryResults.computeIfAbsent(queryId, t -> new ArrayList<>());
 
         PartialQueryResult allResults = new PartialQueryResult(Integer.MAX_VALUE);
 
