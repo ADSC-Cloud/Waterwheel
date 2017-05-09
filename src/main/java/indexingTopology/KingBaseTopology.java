@@ -6,6 +6,7 @@ import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import indexingTopology.util.DataTupleMapper;
 import indexingTopology.util.DataTuplePredicate;
+import indexingTopology.util.DataTupleSorter;
 import indexingTopology.util.TopologyGenerator;
 import indexingTopology.util.texi.*;
 import org.apache.storm.Config;
@@ -161,8 +162,16 @@ public class KingBaseTopology {
                     }
                 };
 
+                DataTupleSorter sorter = new DataTupleSorter() {
+                    @Override
+                    public int compare(DataTuple o1, DataTuple o2) {
+                        return Double.compare((double)schema.getValue("lon", o1),
+                                (double)schema.getValue("lon", o2));
+                    }
+                };
+
                 GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
-                        System.currentTimeMillis() - 5000, System.currentTimeMillis(), predicate);
+                        System.currentTimeMillis() - 5000, System.currentTimeMillis(), predicate, null, sorter);
                 long start = System.currentTimeMillis();
                 try {
                         while(true) {

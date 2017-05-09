@@ -2,6 +2,7 @@ package indexingTopology.client;
 
 import indexingTopology.aggregator.Aggregator;
 import indexingTopology.util.DataTuplePredicate;
+import indexingTopology.util.DataTupleSorter;
 
 /**
  * Created by robert on 3/3/17.
@@ -15,7 +16,8 @@ public class GeoTemporalQueryRequest<T extends Number>  extends IClientRequest {
     final public long endTime;
     final public DataTuplePredicate predicate;
     final public Aggregator aggregator;
-    public GeoTemporalQueryRequest(T x1, T x2, T y1, T y2, long startTime, long endTime, DataTuplePredicate predicate, Aggregator aggregator) {
+    final public DataTupleSorter sorter;
+    public GeoTemporalQueryRequest(T x1, T x2, T y1, T y2, long startTime, long endTime, DataTuplePredicate predicate, Aggregator aggregator, DataTupleSorter sorter) {
         this.x1 = x1;
         this.x2 = x2;
         this.y1 = y1;
@@ -24,6 +26,11 @@ public class GeoTemporalQueryRequest<T extends Number>  extends IClientRequest {
         this.endTime = endTime;
         this.predicate = predicate;
         this.aggregator = aggregator;
+        this.sorter = sorter;
+    }
+
+    public GeoTemporalQueryRequest(T x1, T x2, T y1, T y2, long startTime, long endTime, DataTuplePredicate predicate, Aggregator aggregator) {
+        this(x1, x2, y1, y2, startTime, endTime, predicate, aggregator, null);
     }
 
     public GeoTemporalQueryRequest(T x1, T x2, T y1, T y2, long startTime, long endTime, DataTuplePredicate predicate) {

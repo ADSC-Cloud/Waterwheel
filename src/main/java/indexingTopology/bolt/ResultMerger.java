@@ -241,14 +241,27 @@ public class ResultMerger extends BaseRichBolt {
         final int unitSize = 4 * 1024;
         List<PartialQueryResult> queryResults = queryIdToPartialQueryResults.get(queryId);
 
+        PartialQueryResult allResults = new PartialQueryResult(Integer.MAX_VALUE);
+
         List<PartialQueryResult> compactedResults = null;
+
+        // perform aggregation if applicable.
         if (subQuery.getAggregator() != null) {
             Aggregator globalAggregator = subQuery.getAggregator().generateGlobalAggregator();
             queryResults.forEach(r -> globalAggregator.aggregate(r.dataTuples));
-            compactedResults = PartialQueryResult.Compact(globalAggregator.getResults(), unitSize);
+            allResults.dataTuples.addAll(globalAggregator.getResults().dataTuples);
         } else {
-            compactedResults = PartialQueryResult.Compact(queryResults, unitSize);
+            queryResults.stream().forEach(t -> allResults.dataTuples.addAll(t.dataTuples));
         }
+
+        // sort if applicable.
+        if (subQuery.sorter != null) {
+            allResults.dataTuples.sort(subQuery.sorter);
+            System.out.println("Sort is applied!! ##########");
+        }
+
+        // compact results into groups with bounded size.
+        compactedResults = PartialQueryResult.Compact(allResults, unitSize);
         queryIdToPartialQueryResults.put(queryId, compactedResults);
 
     }

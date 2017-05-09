@@ -18,7 +18,12 @@ public class Query <T extends Number> extends SubQuery<T> {
 
     public Query(long id, T leftKey, T rightKey, Long startTimestamp, Long endTimestamp, DataTuplePredicate predicate,
                  Aggregator aggregator) {
-        super(id, leftKey, rightKey, startTimestamp, endTimestamp, predicate, aggregator);
+        super(id, leftKey, rightKey, startTimestamp, endTimestamp, predicate, aggregator, null);
+    }
+
+    public Query(long id, T leftKey, T rightKey, Long startTimestamp, Long endTimestamp, DataTuplePredicate predicate,
+                 Aggregator aggregator, DataTupleSorter sorter) {
+        super(id, leftKey, rightKey, startTimestamp, endTimestamp, predicate, aggregator, sorter);
     }
 
     public String toString() {

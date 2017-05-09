@@ -274,7 +274,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             final List<String> chunkNames = filePartitionSchemaManager.search(leftKey.doubleValue(), rightKey.doubleValue(), startTimestamp, endTimestamp);
             for (String chunkName: chunkNames) {
                 subQueries.add(new SubQueryOnFile<>(queryId, leftKey, rightKey, chunkName, startTimestamp, endTimestamp,
-                        query.predicate, query.aggregator));
+                        query.predicate, query.aggregator, query.sorter));
             }
         }
 
@@ -378,8 +378,8 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
                 Integer taskId = indexServers.get(partitionId);
                 Long timestamp = indexTaskToTimestampMapping.get(taskId);
                 if ((timestamp <= endTimestamp && timestamp >= startTimestamp) || (timestamp <= startTimestamp)) {
-                    SubQuery subQuery = new SubQuery(query.getQueryId(), query.leftKey, query.rightKey, query.startTimestamp,
-                            query.endTimestamp, query.predicate, query.aggregator);
+                    SubQuery subQuery = new SubQuery<>(query.getQueryId(), query.leftKey, query.rightKey, query.startTimestamp,
+                            query.endTimestamp, query.predicate, query.aggregator, query.sorter);
                     collector.emitDirect(taskId, Streams.BPlusTreeQueryStream, new Values(subQuery));
                     ++numberOfTasksToSearch;
                 }

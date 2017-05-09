@@ -20,17 +20,10 @@ public class SubQuery <T extends Number> implements Serializable {
 
     public Aggregator aggregator;
 
+    public DataTupleSorter sorter;
 
-    public SubQuery(long queryId, T leftKey, T rightKey, Long startTimestamp, Long endTimestamp, DataTuplePredicate predicate) {
-        this.queryId = queryId;
-        this.leftKey = leftKey;
-        this.rightKey = rightKey;
-        this.startTimestamp = startTimestamp;
-        this.endTimestamp = endTimestamp;
-        this.predicate = predicate;
-    }
-
-    public SubQuery(long queryId, T leftKey, T rightKey, Long startTimestamp, Long endTimestamp, DataTuplePredicate predicate, Aggregator aggregator) {
+    public SubQuery(long queryId, T leftKey, T rightKey, Long startTimestamp, Long endTimestamp,
+                    DataTuplePredicate predicate, Aggregator aggregator, DataTupleSorter sorter) {
         this.queryId = queryId;
         this.leftKey = leftKey;
         this.rightKey = rightKey;
@@ -38,13 +31,23 @@ public class SubQuery <T extends Number> implements Serializable {
         this.endTimestamp = endTimestamp;
         this.predicate = predicate;
         this.aggregator = aggregator;
+        this.sorter = sorter;
     }
 
+    public SubQuery(long queryId, T leftKey, T rightKey, Long startTimestamp, Long endTimestamp,
+                    DataTuplePredicate predicate, Aggregator aggregator) {
+        this(queryId, leftKey, rightKey, startTimestamp, endTimestamp, predicate, aggregator, null);
+    }
+
+    public SubQuery(long queryId, T leftKey, T rightKey, Long startTimestamp, Long endTimestamp,
+                    DataTuplePredicate predicate) {
+        this(queryId, leftKey, rightKey, startTimestamp, endTimestamp, predicate, null, null);
+    }
 
 
     public SubQuery(long queryId, T leftKey, T rightKey
             ,Long startTimestamp, Long endTimestamp) {
-        this(queryId, leftKey, rightKey, startTimestamp, endTimestamp, null);
+        this(queryId, leftKey, rightKey, startTimestamp, endTimestamp, null, null);
     }
 
     public long getQueryId() {

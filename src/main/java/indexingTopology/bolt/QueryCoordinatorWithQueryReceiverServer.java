@@ -96,7 +96,7 @@ public class QueryCoordinatorWithQueryReceiverServer<T extends Number & Comparab
                         request.low, request.high, request.startTime, request.endTime);
                 final List<Query<T>> queryList = new ArrayList<>();
                 queryList.add(new Query(queryid, request.low, request.high, request.startTime,
-                        request.endTime, request.predicate, request.aggregator));
+                        request.endTime, request.predicate, request.aggregator, request.sorter));
                 pendingQueryQueue.put(queryList);
 
                 boolean eof = false;

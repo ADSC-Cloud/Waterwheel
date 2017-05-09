@@ -2,6 +2,7 @@ package indexingTopology.client;
 
 import indexingTopology.aggregator.Aggregator;
 import indexingTopology.util.DataTuplePredicate;
+import indexingTopology.util.DataTupleSorter;
 
 /**
  * Created by robert on 3/3/17.
@@ -13,13 +14,20 @@ public class QueryRequest<T extends Number>  extends IClientRequest {
     final public long endTime;
     final public DataTuplePredicate predicate;
     final public Aggregator aggregator;
-    public QueryRequest(T low, T high, long startTime, long endTime, DataTuplePredicate predicate, Aggregator aggregator) {
+    final public DataTupleSorter sorter;
+    public QueryRequest(T low, T high, long startTime, long endTime, DataTuplePredicate predicate,
+                        Aggregator aggregator, DataTupleSorter sorter) {
         this.low = low;
         this.high = high;
         this.startTime = startTime;
         this.endTime = endTime;
         this.predicate = predicate;
         this.aggregator = aggregator;
+        this.sorter = sorter;
+    }
+
+    public QueryRequest(T low, T high, long startTime, long endTime, DataTuplePredicate predicate, Aggregator aggregator) {
+        this(low, high, startTime, endTime, predicate, aggregator, null);
     }
 
     public QueryRequest(T low, T high, long startTime, long endTime, DataTuplePredicate predicate) {
