@@ -30,20 +30,21 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
         this.aggregateFields = fields;
         this.aggregateColumnIndexes = new int[fields.length];
         for (int i = 0; i < fields.length; i++) {
-            aggregateColumnIndexes[i] = inputSchema.getFieldIndex(fields[i].fieldName);
+            if (fields[i].function instanceof Count) {
+                aggregateColumnIndexes[i] = 0;
+            } else {
+                aggregateColumnIndexes[i] = inputSchema.getFieldIndex(fields[i].fieldName);
+            }
         }
         this.groupByIndex = inputSchema.getFieldIndex(groupByField);
         this.inputSchema = inputSchema;
         this.isGlobal = isGlobal;
     }
 
-
     public void aggregate(DataTuple dataTuple) {
         //TODO: performance optimization by computing the group-by column index before aggregate.
 
-        if (aggregationResults == null) {
-            aggregationResults = new HashMap<>();
-        }
+
 
         Key group = (Key) dataTuple.get(groupByIndex);
         aggregationResults.computeIfAbsent(group, p -> {
@@ -94,6 +95,9 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
 
 
     public void aggregate(List<DataTuple> dataTupleList) {
+        if (aggregationResults == null) {
+            aggregationResults = new HashMap<>();
+        }
         for (DataTuple dataTuple: dataTupleList) {
             aggregate(dataTuple);
         }
@@ -101,15 +105,18 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
 
     public PartialQueryResult getResults() {
         PartialQueryResult partialQueryResult = new PartialQueryResult(Integer.MAX_VALUE);
-        for(Key group: aggregationResults.keySet()) {
-            final DataTuple dataTuple = new DataTuple();
-            dataTuple.add(group);
-            Object[] aggregationValues = aggregationResults.get(group);
-            for(Object object: aggregationValues) {
-                dataTuple.add(object);
+        // aggregationResults may be null if no valid tuples are found before aggregation
+//        if (aggregationResults != null) {
+            for (Key group : aggregationResults.keySet()) {
+                final DataTuple dataTuple = new DataTuple();
+                dataTuple.add(group);
+                Object[] aggregationValues = aggregationResults.get(group);
+                for (Object object : aggregationValues) {
+                    dataTuple.add(object);
+                }
+                partialQueryResult.add(dataTuple);
             }
-            partialQueryResult.add(dataTuple);
-        }
+//        }
         return partialQueryResult;
     }
 

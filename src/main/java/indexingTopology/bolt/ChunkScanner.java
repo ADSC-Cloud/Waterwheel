@@ -242,6 +242,12 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
             //filter by predicate
             filterByPredicate(dataTuples, subQuery.getPredicate());
 
+            if (subQuery.getAggregator() != null) {
+                subQuery.getAggregator().aggregate(dataTuples);
+                dataTuples.clear();
+                dataTuples.addAll(subQuery.getAggregator().getResults().dataTuples);
+            }
+
 //            totalTupleGet += (System.currentTimeMillis() - tupleGetStart);
 
             //serialize

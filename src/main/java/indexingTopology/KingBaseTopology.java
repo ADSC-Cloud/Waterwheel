@@ -1,5 +1,9 @@
 package indexingTopology;
 
+import indexingTopology.aggregator.AggregateField;
+import indexingTopology.aggregator.Aggregator;
+import indexingTopology.aggregator.Count;
+import indexingTopology.aggregator.Sum;
 import indexingTopology.bolt.*;
 import indexingTopology.client.*;
 import indexingTopology.data.DataSchema;
@@ -162,16 +166,20 @@ public class KingBaseTopology {
                     }
                 };
 
-                DataTupleSorter sorter = new DataTupleSorter() {
-                    @Override
-                    public int compare(DataTuple o1, DataTuple o2) {
-                        return Double.compare((double)schema.getValue("lon", o1),
-                                (double)schema.getValue("lon", o2));
-                    }
-                };
+                Aggregator<Integer> aggregator = new Aggregator<>(schema, "zcode", new AggregateField(new Count(), "*"));
+                DataSchema schemaAfterAggregation = aggregator.getOutputDataSchema();
+
+//                DataTupleSorter sorter = new DataTupleSorter() {
+//                    @Override
+//                    public int compare(DataTuple o1, DataTuple o2) {
+//                        return Double.compare((double)schemaAfterAggregation.getValue("count(*)", o1),
+//                                (double)schemaAfterAggregation.getValue("count(*)", o2));
+//                    }
+//                };
+                DataTupleSorter sorter = null;
 
                 GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
-                        System.currentTimeMillis() - 5000, System.currentTimeMillis(), predicate, null, sorter);
+                        System.currentTimeMillis() - 5000, System.currentTimeMillis(), predicate, aggregator, sorter);
                 long start = System.currentTimeMillis();
                 try {
                         while(true) {

@@ -14,7 +14,7 @@ public class AggregateField implements Serializable {
     }
     public String aggregateFieldName() {
         if (function instanceof Count) {
-            return String.format("count(%s)", fieldName);
+            return String.format("count(*)");
         } else if (function instanceof Sum) {
             return String.format("sum(%s)", fieldName);
         } else if (function instanceof Min) {
