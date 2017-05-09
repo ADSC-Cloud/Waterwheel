@@ -169,14 +169,13 @@ public class KingBaseTopology {
                 Aggregator<Integer> aggregator = new Aggregator<>(schema, "zcode", new AggregateField(new Count(), "*"));
                 DataSchema schemaAfterAggregation = aggregator.getOutputDataSchema();
 
-//                DataTupleSorter sorter = new DataTupleSorter() {
-//                    @Override
-//                    public int compare(DataTuple o1, DataTuple o2) {
-//                        return Double.compare((double)schemaAfterAggregation.getValue("count(*)", o1),
-//                                (double)schemaAfterAggregation.getValue("count(*)", o2));
-//                    }
-//                };
-                DataTupleSorter sorter = null;
+                DataTupleSorter sorter = new DataTupleSorter() {
+                    @Override
+                    public int compare(DataTuple o1, DataTuple o2) {
+                        return Double.compare((double)schemaAfterAggregation.getValue("count(*)", o1),
+                                (double)schemaAfterAggregation.getValue("count(*)", o2));
+                    }
+                };
 
                 GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
                         System.currentTimeMillis() - 5000, System.currentTimeMillis(), predicate, aggregator, sorter);
