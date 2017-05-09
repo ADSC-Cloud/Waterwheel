@@ -113,9 +113,17 @@ public class Server<T extends ServerHandle> {
 //            }).start();
     }
 
+    public void endDaemon() {
+        executorService.shutdown();
+    }
+
 
     public static void main(String[] args) throws Exception {
         final Server server = new Server(10000, FakeServerHandle.class, new Class[]{int.class}, new Integer(1));
+        System.out.println("start");
         server.startDaemon();
+        System.out.println("started");
+        server.endDaemon();
+        System.out.println("end");
     }
 }

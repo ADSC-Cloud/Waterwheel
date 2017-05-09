@@ -59,6 +59,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 //    Long timeCostOfDeserializationATree;
 
 //    Long timeCostOfDeserializationALeaf;
+    private Thread subQueryHandlingThread;
 
 
     public ChunkScanner(DataSchema schema) {
@@ -89,6 +90,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         return new Pair(template, templateLength);
     }
 
+    @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
 
@@ -105,6 +107,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
     }
 
+    @Override
     public void execute(Tuple tuple) {
 
         if (tuple.getSourceStreamId().equals(Streams.FileSystemQueryStream)) {
@@ -125,10 +128,11 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
     }
 
     private void createSubQueryHandlingThread() {
-        new Thread(new Runnable() {
+        subQueryHandlingThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                while (true) {
+//                while (true) {
+                while (!Thread.currentThread().isInterrupted()) {
                     try {
                         subQueryHandlingSemaphore.acquire();
                         SubQueryOnFile subQuery = (SubQueryOnFile) pendingQueue.take();
@@ -137,21 +141,30 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
                         handleSubQuery(subQuery);
 //                        System.out.println("sub query " + subQuery.getQueryId() + " has been processed");
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+//                        e.printStackTrace();
+                        Thread.currentThread().interrupt();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 }
             }
-        }).start();
+        });
+        subQueryHandlingThread.start();
     }
 
+    @Override
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
         outputFieldsDeclarer.declareStream(Streams.FileSystemQueryStream,
                 new Fields("queryId", "serializedTuples", "metrics"));
 
         outputFieldsDeclarer.declareStream(Streams.FileSubQueryFinishStream,
                 new Fields("finished"));
+    }
+
+    @Override
+    public void cleanup() {
+        super.cleanup();
+        subQueryHandlingThread.interrupt();
     }
 
     @SuppressWarnings("unchecked")
@@ -164,11 +177,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         Long timestampLowerBound = subQuery.getStartTimestamp();
         Long timestampUpperBound = subQuery.getEndTimestamp();
 
-
-        System.out.println(fileName);
-
-
-//        System.out.println(fileName);
 
         FileScanMetrics metrics = new FileScanMetrics();
 

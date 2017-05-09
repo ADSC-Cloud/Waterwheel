@@ -101,4 +101,7 @@ public class HdfsFileSystemHandler implements FileSystemHandler {
         }
     }
 
+    public FileSystem getFileSystem() {
+        return fileSystem;
+    }
 }

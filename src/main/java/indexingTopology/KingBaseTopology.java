@@ -8,9 +8,11 @@ import indexingTopology.util.texi.City;
 import indexingTopology.util.texi.TrajectoryGenerator;
 import indexingTopology.util.texi.TrajectoryUniformGenerator;
 import org.apache.storm.Config;
+import org.apache.storm.LocalCluster;
 import org.apache.storm.StormSubmitter;
 import org.apache.storm.generated.StormTopology;
 import org.apache.storm.topology.TopologyBuilder;
+import org.apache.storm.utils.Utils;
 
 /**
  * Created by acelzj on 11/15/16.
@@ -83,7 +85,13 @@ public class KingBaseTopology {
         conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
         conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
-        StormSubmitter.submitTopologyWithProgressBar(args[0], conf, topology);
+        LocalCluster cluster = new LocalCluster();
+        cluster.submitTopology("T1", conf, topology);
+
+//        StormSubmitter.submitTopologyWithProgressBar(args[0], conf, topology);
+        Utils.sleep(30000);
+        cluster.shutdown();
+
     }
 
 

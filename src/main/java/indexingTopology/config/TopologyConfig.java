@@ -7,6 +7,7 @@ public class TopologyConfig {
     public static final double REBUILD_TEMPLATE_THRESHOLD = 10.0;
 
     public static final String HDFS_HOST = "hdfs://192.168.0.237:54310/";
+//    public static final String HDFS_HOST = "hdfs://10.21.25.13:54310/";
 
     public static final int NUMBER_TUPLES_OF_A_CHUNK = 600000 * 2;
 //    public static final int NUMBER_TUPLES_OF_A_CHUNK = 200000;
@@ -24,10 +25,10 @@ public class TopologyConfig {
 
     public static String dataDir = "/home/lzj";
 
-    public static String dataFileDir = "/home/lzj/taxi-trajectory";
+    public static String dataFileDir = "/home/acelzj/Downloads/taxi-trajectory";
 //    public static String dataFileDir = "/home/lzj/dataset/20150430_processed.txt";
-//    public static String dataFileDir = "/home/acelzj/Downloads/taxi-trajectory";
-//    public static String dataFileDir = "/home/acelzj/Downloads/dataset/20150430.txt";
+//    public static String dataFileDir = "/home/acelzj/Downloads/DPI/20150430_processed.txt";
+//    public static String dataFileDir = "/home/acelzj/Downloads/DPI/20150430.txt";
 
     public static String logDir = "/logs";
 
@@ -41,11 +42,16 @@ public class TopologyConfig {
     public static final int OFFSET_LENGTH = 4;
 
     public static final int CHUNK_SIZE = 58000000 / 4;
+//    public static final int CHUNK_SIZE = 58000000 / 16;
+//    public static final int CHUNK_SIZE = 58000000 / 8;
+//    public static final int CHUNK_SIZE = 58000000 / 2;
+//    public static final int CHUNK_SIZE = 58000000;
 //    public static final int CHUNK_SIZE = 6 * 1024 * 1024;
 
     public static final int EMIT_NUM = 5000;
 
-    public static final String ZOOKEEPER_HOST = "192.168.0.116";
+    public static final String ZOOKEEPER_HOST = "192.168.0.237";
+//    public static final String ZOOKEEPER_HOST = "10.21.25.14";
 
     public static final String HBASE_CONF_DIR = "/home/hduser/hbase-1.2.4/conf";
 

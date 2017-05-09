@@ -72,6 +72,7 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
     @Override
     public void cleanup() {
         super.cleanup();
+        indexer.close();
     }
 
     public void execute(Tuple tuple) {

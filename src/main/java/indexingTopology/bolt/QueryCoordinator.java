@@ -66,7 +66,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private Map<Long, Pair> queryIdToStartTime;
 
-    private int totalQueries;
+    private Thread queryHandlingThread;
 
 
     private static final Logger LOG = LoggerFactory.getLogger(QueryCoordinator.class);
@@ -76,6 +76,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
         this.upperBound = upperBound;
     }
 
+    @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
 
@@ -122,6 +123,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
         createQueryHandlingThread();
     }
 
+    @Override
     public void execute(Tuple tuple) {
         if (tuple.getSourceStreamId().equals(Streams.FileInformationUpdateStream)) {
             String fileName = tuple.getString(0);
@@ -143,11 +145,11 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             if (pair != null) {
                 Long start = (Long) pair.getKey();
                 int fileSize = (Integer) pair.getValue();
-                LOG.info("query id " + queryId);
+//                LOG.info("query id " + queryId);
 //                LOG.info("Query start time " + start);
 //                LOG.info("Query end time " + System.currentTimeMillis());
-                LOG.info("Query time " + (System.currentTimeMillis() - start));
-                LOG.info("file size " + fileSize);
+//                LOG.info("Query time " + (System.currentTimeMillis() - start));
+//                LOG.info("file size " + fileSize);
                 queryIdToStartTime.remove(queryId);
             }
 
@@ -234,6 +236,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
         }
     }
 
+    @Override
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
         outputFieldsDeclarer.declareStream(Streams.FileSystemQueryStream, new Fields("subquery"));
 
@@ -252,6 +255,12 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
         outputFieldsDeclarer.declareStream(Streams.EnableRepartitionStream, new Fields("Repartition"));
 
         outputFieldsDeclarer.declareStream(Streams.PartialQueryResultReceivedStream, new Fields("queryId"));
+    }
+
+    @Override
+    public void cleanup() {
+        super.cleanup();
+        queryHandlingThread.interrupt();
     }
 
     private void handleQuery(Query<T> query) {
@@ -273,7 +282,6 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
             collector.emit(Streams.FileSystemQueryInformationStream, new Values(query, 0));
         } else {
-
             for (String fileName : fileNames) {
                 SubQuery subQuery = new SubQueryOnFile(queryId, leftKey, rightKey, fileName, startTimestamp, endTimestamp, query.predicate, query.aggregator);
 
@@ -307,25 +315,28 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
             collector.emit(Streams.FileSystemQueryInformationStream, new Values(query, fileNames.size()));
         }
-        System.out.println(queryId + " " + fileNames.size());
         queryIdToStartTime.put(queryId, new Pair(System.currentTimeMillis(), fileNames.size()));
     }
 
     private void createQueryHandlingThread() {
-        new Thread(new Runnable() {
+        queryHandlingThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                while (true) {
+//                while (true) {
+                while (!Thread.currentThread().isInterrupted()) {
                     try {
                         Query query = pendingQueue.take();
                         concurrentQueriesSemaphore.acquire();
                         handleQuery(query);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
             }
-        }).start();
+        });
+        queryHandlingThread.start();
     }
 
 
@@ -371,8 +382,6 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             }
         }
 
-        System.out.println(queryId + " " + numberOfTasksToSearch);
-
         collector.emit(Streams.BPlusTreeQueryInformationStream, new Values(queryId, numberOfTasksToSearch));
     }
 
@@ -417,14 +426,10 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
 
     private void sendSubqueriesFromTaskQueue() {
-//        System.out.println(queryServers);
         for (Integer taskId : queryServers) {
-//            System.out.println(taskId);
             SubQuery subQuery = taskQueue.poll();
             if (subQuery != null) {
-//                System.out.println(taskId);
                 collector.emitDirect(taskId, Streams.FileSystemQueryStream, new Values(subQuery));
-//                System.out.println("query " + subQuery.getQueryId() + " has been sent to task " + taskId);
             }
         }
     }
@@ -438,7 +443,6 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
                 collector.emitDirect(taskId, Streams.FileSystemQueryStream
                         , new Values(subQuery));
 
-                System.out.println("task Id " + taskId);
             }
         }
     }

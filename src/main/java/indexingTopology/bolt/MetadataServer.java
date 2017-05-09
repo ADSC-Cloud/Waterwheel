@@ -65,7 +65,7 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
 
     private Long minTimestamp;
 
-    private int targetFileNums = 300;
+    private int targetFileNums = 30;
 
     private Long numTuples;
 
@@ -113,11 +113,11 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
 
         taskIdToFileNumMapping = new HashMap<>();
 
-        try {
-            zookeeperHandler = new ZookeeperHandler();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+//        try {
+//            zookeeperHandler = new ZookeeperHandler();
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
 
         staticsRequestSendingThread = new Thread(new StatisticsRequestSendingRunnable());
         staticsRequestSendingThread.start();
@@ -211,7 +211,7 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
 
             int taskId = tuple.getSourceTask();
 
-            /*
+
 
             if (taskIdToFileNumMapping.get(taskId) == null) {
                 taskIdToFileNumMapping.put(taskId, 1);
@@ -256,7 +256,7 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
                     e.printStackTrace();
                 }
             }
-            */
+
 
             collector.emit(Streams.FileInformationUpdateStream,
                     new Values(fileName, keyDomain, timeDomain));
@@ -299,6 +299,12 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
 
 
         outputFieldsDeclarer.declareStream(Streams.LoadBalanceStream, new Fields("loadBalance"));
+    }
+
+    @Override
+    public void cleanup() {
+        super.cleanup();
+        staticsRequestSendingThread.interrupt();
     }
 
 
@@ -404,11 +410,13 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
         @Override
         public void run() {
             final int sleepTimeInSecond = 10;
-            while (true) {
+//            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
                 try {
                     Thread.sleep(sleepTimeInSecond * 1000);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+//                    e.printStackTrace();
+                    Thread.currentThread().interrupt();
                 }
 
                 List<Long> counts = histogram.histogramToList();

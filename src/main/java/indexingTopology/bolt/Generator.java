@@ -49,6 +49,8 @@ public class Generator extends InputStreamReceiver {
 
     private FrequencyRestrictor frequencyRestrictor;
 
+    private Thread generationThread;
+
     public Generator(DataSchema schema, TrajectoryGenerator generator, int payloadSize, City city) {
         super(schema);
         this.generator = generator;
@@ -91,16 +93,17 @@ public class Generator extends InputStreamReceiver {
         mean = 500000.0;
         sigma = 5000.0;
         distribution = new NormalDistribution(mean, sigma);
-        frequencyRestrictor = new FrequencyRestrictor(1500000, 50);
+//        frequencyRestrictor = new FrequencyRestrictor(1500000, 50);
 //        permutation = new Permutation(200048);
 //        distribution = new ZipfDistribution(200048, 0.5);
 //        permutation = new Permutation(200048);
         super.prepare(map, topologyContext, outputCollector);
 
-        Thread generationThread = new Thread(new Runnable() {
+        generationThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                while (true) {
+//                while (true) {
+                while (!Thread.currentThread().isInterrupted()) {
                     try {
                         Car car = generator.generate();
 //                        Integer key = distribution.sample() - 1;
@@ -119,7 +122,8 @@ public class Generator extends InputStreamReceiver {
                         inputQueue.put(dataTuple);
                         ++timestamp;
                     } catch (Exception e) {
-                        e.printStackTrace();
+//                        e.printStackTrace();
+                        Thread.currentThread().interrupt();
                     }
                 }
             }
@@ -129,4 +133,9 @@ public class Generator extends InputStreamReceiver {
 //        createDistributionChangingThread();
     }
 
+    @Override
+    public void cleanup() {
+        super.cleanup();
+        generationThread.interrupt();
+    }
 }

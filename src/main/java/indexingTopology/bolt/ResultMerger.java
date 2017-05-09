@@ -70,7 +70,7 @@ public class ResultMerger extends BaseRichBolt {
             if (isQueryFinished(queryId)) {
 //                printTimeInformation(queryId);
                 sendNewQueryPermit(queryId);
-                printTimeInformation(queryId);
+//                printTimeInformation(queryId);
                 removeQueryIdFromMappings(queryId);
             }
 
@@ -84,7 +84,7 @@ public class ResultMerger extends BaseRichBolt {
 
             // It is possible in a rare case where the query information arrives later than the query result.
             if (isQueryFinished(queryId)) {
-                printTimeInformation(queryId);
+//                printTimeInformation(queryId);
                 finalizeQuery(query);
             }
 
@@ -143,7 +143,7 @@ public class ResultMerger extends BaseRichBolt {
 
             if (isQueryFinished(queryId)) {
 //                System.out.println(tuple.getSourceStreamId());
-                printTimeInformation(queryId);
+//                printTimeInformation(queryId);
                 finalizeQuery(subQuery);
             }
 
