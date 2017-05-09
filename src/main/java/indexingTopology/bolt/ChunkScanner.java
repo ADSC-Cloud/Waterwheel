@@ -233,7 +233,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
             long tupleGetStart = System.currentTimeMillis();
             ArrayList<byte[]> tuplesInKeyRange = leaf.getTuplesWithinKeyRange(leftKey, rightKey);
             //deserialize
-            ArrayList<DataTuple> dataTuples = new ArrayList<>();
+            List<DataTuple> dataTuples = new ArrayList<>();
             tuplesInKeyRange.stream().forEach(e -> dataTuples.add(schema.deserializeToDataTuple(e)));
 
             //filter by timestamp range
@@ -312,17 +312,21 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
     private void filterByTimestamp(List<DataTuple> tuples, Long timestampLowerBound, Long timestampUpperBound)
             throws IOException {
 
+        List<DataTuple> result =
         tuples.stream().filter(p -> {
             Long timestamp = (Long) schema.getValue("timestamp", p);
             return timestampLowerBound <= timestamp && timestampUpperBound >= timestamp;
         }).collect(Collectors.toList());
+        tuples.clear();
+        tuples.addAll(result);
 
     }
 
     private void filterByPredicate(List<DataTuple> tuples, Predicate<DataTuple> predicate) {
         if (predicate != null) {
-            tuples.stream().filter(predicate);
-            System.out.println("Predicated is applied");
+            List<DataTuple> result = tuples.stream().filter(predicate).collect(Collectors.toList());
+            tuples.clear();
+            tuples.addAll(result);
         }
     }
 

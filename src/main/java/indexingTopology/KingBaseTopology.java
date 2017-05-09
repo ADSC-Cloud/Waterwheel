@@ -151,8 +151,18 @@ public class KingBaseTopology {
                 final Double yLow = 40.0;
                 final Double yHigh = 50.0;
 
+                DataTuplePredicate predicate = new DataTuplePredicate() {
+                    @Override
+                    public boolean test(DataTuple objects) {
+                        return (double)rawSchema.getValue("lon", objects) >= xLow &&
+                                (double)rawSchema.getValue("lon", objects) <= xHigh &&
+                                (double)rawSchema.getValue("lat", objects) >= yLow &&
+                                (double)rawSchema.getValue("lat", objects) <= yHigh;
+                    }
+                };
+
                 GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
-                        System.currentTimeMillis() - 5000, System.currentTimeMillis());
+                        System.currentTimeMillis() - 5000, System.currentTimeMillis(), predicate);
                 long start = System.currentTimeMillis();
                 try {
                         while(true) {
@@ -214,7 +224,7 @@ public class KingBaseTopology {
         });
         queryThread.start();
 
-        Utils.sleep(15000);
+        Utils.sleep(150000);
         cluster.shutdown();
         System.out.println("Local cluster is shut down!");
         ingestionThread.interrupt();

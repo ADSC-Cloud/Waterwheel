@@ -20,9 +20,9 @@ public class TopologyConfig {
 
     public static final double LOAD_BALANCE_THRESHOLD = 0.2;
 
-    public static boolean HDFSFlag = false;
+    public static boolean HDFSFlag = true;
 
-    public static String dataDir = "/Users/Robert/Documents/code/data";
+    public static String dataDir = "/home/wangli";
 
     public static String dataFileDir = "/home/wangli/kingbase-topology";
 //    public static String dataFileDir = "/home/lzj/taxi-trajectory";

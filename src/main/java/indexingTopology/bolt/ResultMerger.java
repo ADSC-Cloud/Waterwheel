@@ -185,9 +185,9 @@ public class ResultMerger extends BaseRichBolt {
 
     private boolean isQueryFinished(Long queryId) {
 
-        System.out.println(String.format("query: %d, numberOfFilesToScan: %s, B+ tree to scan: %s", queryId,
-                queryIdToNumberOfFilesToScan.get(queryId),
-                queryIdToNumberOfTasksToSearch.get(queryId)));
+//        System.out.println(String.format("query: %d, numberOfFilesToScan: %s, B+ tree to scan: %s", queryId,
+//                queryIdToNumberOfFilesToScan.get(queryId),
+//                queryIdToNumberOfTasksToSearch.get(queryId)));
         if (queryIdToNumberOfFilesToScan.get(queryId) != null &&
                 queryIdToNumberOfTasksToSearch.get(queryId) != null) {
             int numberOfFilesToScan = queryIdToNumberOfFilesToScan.get(queryId);

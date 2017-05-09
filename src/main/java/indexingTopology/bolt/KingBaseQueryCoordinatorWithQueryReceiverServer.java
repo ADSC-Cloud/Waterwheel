@@ -2,6 +2,7 @@ package indexingTopology.bolt;
 
 import indexingTopology.aggregator.Aggregator;
 import indexingTopology.client.*;
+import indexingTopology.data.DataTuple;
 import indexingTopology.data.PartialQueryResult;
 import indexingTopology.util.DataTuplePredicate;
 import indexingTopology.util.Query;
