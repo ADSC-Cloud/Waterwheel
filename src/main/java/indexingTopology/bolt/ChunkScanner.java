@@ -514,13 +514,17 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         return bytesToRead;
     }
 
-    private byte[] readLeafBytesFromFile(FileSystemHandler fileSystemHandler, List<Integer> offsets, int length, FileScanMetrics fileScanMetrics) {
+    private byte[] readLeafBytesFromFile(FileSystemHandler fileSystemHandler, List<Integer> offsets, int length, FileScanMetrics fileScanMetrics) throws IOException {
         Integer endOffset = offsets.get(offsets.size() - 1);
         Integer startOffset = offsets.get(0);
 
         byte[] bytesToRead = new byte[4];
 
         Long startTime = System.currentTimeMillis();
+
+        //code below used to change the position of file pointer in local file system
+        fileSystemHandler.seek(endOffset + length + 4);
+
         fileSystemHandler.readBytesFromFile(endOffset + length + 4, bytesToRead);
 
         Input input = new Input(bytesToRead);
@@ -532,6 +536,10 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
         bytesToRead = new byte[totalLength];
         startTime = System.currentTimeMillis();
+
+        ////code below used to change the position of file pointer in local file system
+        fileSystemHandler.seek(startOffset + length + 4);
+
         fileSystemHandler.readBytesFromFile(startOffset + length + 4, bytesToRead);
         fileScanMetrics.setTotalBytesReadTime(System.currentTimeMillis() - startTime);
 

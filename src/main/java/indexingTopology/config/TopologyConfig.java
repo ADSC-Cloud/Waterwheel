@@ -24,7 +24,7 @@ public class TopologyConfig {
     public static boolean HDFSFlag = false;
 
 //    public static String dataDir = "/Users/Robert/Documents/data";
-    public static String dataDir = "/home/wangli/data";
+    public static String dataDir = "/home/acelzj/data";
 
     public static String dataFileDir = "/home/acelzj/Downloads/taxi-trajectory";
 //    public static String dataFileDir = "/home/lzj/dataset/20150430_processed.txt";

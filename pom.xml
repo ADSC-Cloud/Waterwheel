@@ -60,11 +60,7 @@
             <groupId>org.apache.storm</groupId>
             <artifactId>storm-core</artifactId>
             <version>1.0.2</version>
-<<<<<<< HEAD
             <!--<scope>provided</scope>-->
-=======
-            <!--scope>provided</scope-->
->>>>>>> lzj/master
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
