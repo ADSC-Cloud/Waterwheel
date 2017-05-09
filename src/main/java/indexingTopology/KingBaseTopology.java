@@ -22,6 +22,8 @@ import org.apache.storm.utils.Utils;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.function.Function;
 
@@ -91,7 +93,11 @@ public class KingBaseTopology {
             return t;
         });
 
-        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound, enableLoadBalance, dataSource, queryCoordinator, dataTupleMapper);
+        List<String> bloomFilterColumns = new ArrayList<>();
+        bloomFilterColumns.add("id");
+
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
+                enableLoadBalance, dataSource, queryCoordinator, dataTupleMapper, bloomFilterColumns);
 
         Config conf = new Config();
         conf.setDebug(false);

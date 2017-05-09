@@ -14,6 +14,8 @@ import org.apache.storm.generated.StormTopology;
 import org.apache.storm.topology.IRichBolt;
 import org.apache.storm.topology.TopologyBuilder;
 
+import java.util.List;
+
 /**
  * Created by robert on 10/3/17.
  */
@@ -31,7 +33,7 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
 
     public StormTopology generateIndexingTopology(DataSchema dataSchema, Key lowerBound, Key upperBound, boolean enableLoadBalance,
                                                   InputStreamReceiver dataSource, QueryCoordinator<Key> queryCoordinator,
-                                                  DataTupleMapper dataTupleMapper) {
+                                                  DataTupleMapper dataTupleMapper, List<String> bloomFilterColumns) {
         TopologyBuilder builder = new TopologyBuilder();
 
         builder.setBolt(TupleGenerator, dataSource, 1)
@@ -44,7 +46,7 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 //                .allGrouping(LogWriter, Streams.ThroughputRequestStream);
 
-        builder.setBolt(IndexerBolt, new IngestionBolt(dataSchema), 2)
+        builder.setBolt(IndexerBolt, new IngestionBolt(dataSchema, bloomFilterColumns), 2)
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream) // direct grouping should be used.
                 .directGrouping(RangeQueryDecompositionBolt, Streams.TreeCleanStream)
@@ -95,6 +97,11 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
 
     public StormTopology generateIndexingTopology(DataSchema dataSchema, Key lowerBound, Key upperBound, boolean enableLoadBalance,
                                                   InputStreamReceiver dataSource, QueryCoordinator<Key> queryCoordinator) {
-        return generateIndexingTopology(dataSchema, lowerBound, upperBound, enableLoadBalance, dataSource, queryCoordinator, null);
+        return generateIndexingTopology(dataSchema, lowerBound, upperBound, enableLoadBalance, dataSource, queryCoordinator, null, null);
+    }
+
+    public StormTopology generateIndexingTopology(DataSchema dataSchema, Key lowerBound, Key upperBound, boolean enableLoadBalance,
+                                                  InputStreamReceiver dataSource, QueryCoordinator<Key> queryCoordinator, DataTupleMapper mapper) {
+        return generateIndexingTopology(dataSchema, lowerBound, upperBound, enableLoadBalance, dataSource, queryCoordinator, mapper, null);
     }
 }

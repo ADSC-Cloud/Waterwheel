@@ -2,6 +2,7 @@ package indexingTopology.bolt;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import indexingTopology.bloom.DataChunkBloomFilters;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.util.*;
 import org.apache.storm.task.OutputCollector;
@@ -258,8 +259,13 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
             }
             */
 
+            DataChunkBloomFilters bloomFilters = (DataChunkBloomFilters) tuple.getValueByField("bloomFilters");
+
+            // omit the logic of storing bloomFilter externally, simply forwarding to the query coordinator.
+
+
             collector.emit(Streams.FileInformationUpdateStream,
-                    new Values(fileName, keyDomain, timeDomain));
+                    new Values(fileName, keyDomain, timeDomain, bloomFilters));
         } else if (tuple.getSourceStreamId().equals(Streams.TimestampUpdateStream)) {
             int taskId = tuple.getSourceTask();
             TimeDomain timeDomain = (TimeDomain) tuple.getValueByField("timeDomain");
@@ -289,7 +295,7 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
                 new Fields("newIntervalPartition"));
 
         outputFieldsDeclarer.declareStream(Streams.FileInformationUpdateStream,
-                new Fields("fileName", "keyDomain", "timeDomain"));
+                new Fields("fileName", "keyDomain", "timeDomain", "bloomFilters"));
 
         outputFieldsDeclarer.declareStream(Streams.TimestampUpdateStream,
                 new Fields("taskId", "keyDomain", "timeDomain"));

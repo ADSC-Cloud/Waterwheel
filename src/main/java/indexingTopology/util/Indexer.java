@@ -2,6 +2,10 @@ package indexingTopology.util;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Output;
+import com.google.common.base.Charsets;
+import com.google.common.hash.BloomFilter;
+import com.google.common.hash.Funnels;
+import indexingTopology.bloom.DataChunkBloomFilters;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import indexingTopology.config.TopologyConfig;
@@ -15,7 +19,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -96,6 +99,10 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
     private Long start;
 
+    private List<String> bloomFilterIndexedColumns;
+
+    private Map<String, BloomFilter> columnToFilter;
+
     public Indexer(int taskId, ArrayBlockingQueue<DataTuple> inputQueue, DataSchema schema, ArrayBlockingQueue<SubQuery<DataType>> queryPendingQueue) {
         pendingQueue = new ArrayBlockingQueue<>(1024);
 
@@ -149,6 +156,10 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
         minTimestamp = Long.MAX_VALUE;
         maxTimestamp = Long.MIN_VALUE;
 
+        bloomFilterIndexedColumns = new ArrayList<>();
+
+        columnToFilter = new HashMap<>();
+
         inputProcessingThread = new Thread(new InputProcessingRunnable());
 
         inputProcessingThread.start();
@@ -161,6 +172,30 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
         createIndexingThread();
 
         createQueryThread();
+    }
+
+    public void setBloomFilterIndexedColumns(List<String> columns) {
+        this.bloomFilterIndexedColumns = columns;
+        inializeBloomFilters();
+    }
+
+    private void inializeBloomFilters() {
+        for (String column: bloomFilterIndexedColumns) {
+            BloomFilter filter;
+            if (schema.getDataType(column).type == Integer.class) {
+                filter = BloomFilter.create(Funnels.integerFunnel(), 30000);
+            } else if (schema.getDataType(column).type == Long.class) {
+                filter = BloomFilter.create(Funnels.longFunnel(), 30000);
+            } else if (schema.getDataType(column).type == Double.class) {
+                filter = BloomFilter.create(Funnels.longFunnel(), 30000);
+                throw new RuntimeException("double is not supported by bloom filter currently.");
+            } else if (schema.getDataType(column).type == String.class) {
+                filter = BloomFilter.create(Funnels.stringFunnel(Charsets.UTF_8), 30000);
+            } else {
+                throw new RuntimeException("Invalid data type: " + schema.getDataType(column).type);
+            }
+            columnToFilter.put(column, filter);
+        }
     }
 
     private void createQueryThread() {
@@ -264,6 +299,12 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                         e.printStackTrace();
                     }
 
+                    DataChunkBloomFilters bloomFilters = new DataChunkBloomFilters(fileName);
+                    for (String column: bloomFilterIndexedColumns) {
+                        bloomFilters.addBloomFilter(column, columnToFilter.get(column));
+                    }
+
+
 //                    KeyDomain keyDomain = new KeyDomain(minIndexValue, maxIndexValue);
                     keyDomain = new KeyDomain(minIndexValue, maxIndexValue);
 //                    TimeDomain timeDomain = new TimeDomain(minTimestamp, maxTimestamp);
@@ -276,7 +317,8 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                     lock.unlock();
 
                     try {
-                        informationToUpdatePendingQueue.put(new FileInformation(fileName, new Domain(keyDomain, timeDomain), numTuples));
+                        informationToUpdatePendingQueue.put(new FileInformation(fileName, new Domain(keyDomain, timeDomain),
+                                numTuples, bloomFilters));
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -287,6 +329,8 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 //                    filledBPlusTree.clearPayload();
 //                    bTree.clearPayload();
                     executed.set(0L);
+
+                    inializeBloomFilters();
 
                     minIndexValue = Double.MAX_VALUE;
                     maxIndexValue = Double.MIN_VALUE;
@@ -408,6 +452,12 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                         final DataType indexValue = (DataType) schema.getIndexValue(tuple);
                         final byte[] serializedTuple = schema.serializeTuple(tuple);
                         bTree.insert((Comparable) indexValue, serializedTuple);
+
+                        // update the bloom filter upon the arrival of a new tuple.
+                        for(String column: bloomFilterIndexedColumns) {
+                            columnToFilter.get(column).put(schema.getValue(column, tuple));
+                        }
+
                     }
 
                     executed.addAndGet(drainer.size());

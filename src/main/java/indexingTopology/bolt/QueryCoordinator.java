@@ -2,6 +2,8 @@ package indexingTopology.bolt;
 
 import com.github.davidmoten.rtree.RTree;
 import com.github.davidmoten.rtree.Visualizer;
+import com.google.common.hash.BloomFilter;
+import indexingTopology.bloom.DataChunkBloomFilters;
 import indexingTopology.data.PartialQueryResult;
 import indexingTopology.util.*;
 import javafx.util.Pair;
@@ -68,6 +70,8 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private int totalQueries;
 
+    private Map<String, Map<String, BloomFilter>> columnToChunkToBloomFilter;
+
 
     private static final Logger LOG = LoggerFactory.getLogger(QueryCoordinator.class);
 
@@ -119,6 +123,8 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
         pendingQueue = new LinkedBlockingQueue<>();
 
+        columnToChunkToBloomFilter = new HashMap<>();
+
         createQueryHandlingThread();
     }
 
@@ -133,6 +139,16 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
             filePartitionSchemaManager.add(new FileMetaData(fileName, ((T) keyDomain.getLowerBound()).doubleValue(),
                     ((T) keyDomain.getUpperBound()).doubleValue(), timeDomain.getStartTimestamp(), timeDomain.getEndTimestamp()));
+
+            DataChunkBloomFilters bloomFilters = (DataChunkBloomFilters)tuple.getValueByField("bloomFilters");
+
+            for(String column: bloomFilters.columnToBloomFilter.keySet()) {
+                Map<String, BloomFilter> chunkNameToFilter = columnToChunkToBloomFilter.computeIfAbsent(column, t->
+                    new HashMap<>());
+                chunkNameToFilter.put(fileName, bloomFilters.columnToBloomFilter.get(column));
+                System.out.println(String.format("A bloom filter is added for chunk: %s, column: %s", fileName, column));
+            }
+
         } else if (tuple.getSourceStreamId().equals(Streams.QueryFinishedStream)) {
             Long queryId = tuple.getLong(0);
 
