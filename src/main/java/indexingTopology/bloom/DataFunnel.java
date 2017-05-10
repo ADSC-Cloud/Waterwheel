@@ -1,13 +1,11 @@
 package indexingTopology.bloom;
 
 import com.google.common.hash.Funnel;
-import com.google.common.hash.Funnels;
 import com.google.common.hash.PrimitiveSink;
-import indexingTopology.util.texi.Car;
-import indexingTopology.util.texi.City;
-import indexingTopology.util.texi.Interval;
-
 import java.nio.charset.Charset;
+
+import indexingTopology.util.texi.Car;
+import indexingTopology.util.texi.Interval;
 
 
 /**
@@ -18,12 +16,28 @@ public class DataFunnel {
 
     private DataFunnel(){}
 
+    public static Funnel<Boolean> getBooleanFunnel() {
+        return BooleanFunnel.INSTANCE;
+    }
+
+    public static Funnel<Character> getCharFunnel() {
+        return CharacterFunnel.INSTANCE;
+    }
+
+    public static Funnel<Byte> getByteFunnel() {
+        return ByteFunnel.INSTANCE;
+    }
+
+    public static Funnel<Short> getShortFunnel() {
+        return ShortFunnel.INSTANCE;
+    }
+
     public static Funnel<Integer> getIntegerFunnel() {
-        return Funnels.integerFunnel();
+        return IntegerFunnel.INSTANCE;
     }
 
     public static Funnel<Long> getLongFunnel() {
-        return Funnels.longFunnel();
+        return LongFunnel.INSTANCE;
     }
 
     public static Funnel<Float> getFloatFunnel() {
@@ -42,12 +56,62 @@ public class DataFunnel {
         return CarFunnel.INSTANCE;
     }
 
-    public static CityFunnel getCityFunnel() {
-        return CityFunnel.INSTANCE;
-    }
-
     public static IntervalFunnel getIntervalFunnel() {
         return IntervalFunnel.INSTANCE;
+    }
+}
+
+enum BooleanFunnel implements Funnel<Boolean> {
+    INSTANCE;
+
+    @Override
+    public void funnel(Boolean aBoolean, PrimitiveSink primitiveSink) {
+        primitiveSink.putBoolean(aBoolean.booleanValue());
+    }
+}
+
+enum CharacterFunnel implements Funnel<Character> {
+    INSTANCE;
+
+    @Override
+    public void funnel(Character aChar, PrimitiveSink primitiveSink) {
+        primitiveSink.putChar(aChar.charValue());
+    }
+}
+
+enum ByteFunnel implements Funnel<Byte> {
+    INSTANCE;
+
+    @Override
+    public void funnel(Byte aByte, PrimitiveSink primitiveSink) {
+        primitiveSink.putByte(aByte.byteValue());
+    }
+}
+
+enum ShortFunnel implements Funnel<Short> {
+    INSTANCE;
+
+    @Override
+    public void funnel(Short aShort, PrimitiveSink primitiveSink) {
+        primitiveSink.putShort(aShort.shortValue());
+    }
+}
+
+enum IntegerFunnel implements Funnel<Integer> {
+    INSTANCE;
+
+    @Override
+    public void funnel(Integer aInteger, PrimitiveSink primitiveSink) {
+        primitiveSink.putInt(aInteger.intValue());
+    }
+}
+
+enum LongFunnel implements Funnel<Long> {
+    INSTANCE;
+
+    @Override
+    public void funnel(Long aLong, PrimitiveSink primitiveSink) {
+        primitiveSink.putLong(aLong.longValue());
     }
 }
 
@@ -56,7 +120,7 @@ enum FloatFunnel implements Funnel<Float> {
 
     @Override
     public void funnel(Float aFloat, PrimitiveSink primitiveSink) {
-        primitiveSink.putFloat(aFloat);
+        primitiveSink.putFloat(aFloat.floatValue());
     }
 }
 
@@ -65,7 +129,7 @@ enum DoubleFunnel implements Funnel<Double> {
 
     @Override
     public void funnel(Double aDouble, PrimitiveSink primitiveSink) {
-        primitiveSink.putDouble(aDouble);
+        primitiveSink.putDouble(aDouble.doubleValue());
     }
 }
 
@@ -80,20 +144,12 @@ enum StringFunnel implements Funnel<String> {
 
 enum CarFunnel implements Funnel<Car> {
     INSTANCE;
+
     @Override
     public void funnel(Car car, PrimitiveSink primitiveSink) {
         primitiveSink.putLong(car.id);
         primitiveSink.putDouble(car.x);
         primitiveSink.putDouble(car.y);
-    }
-}
-
-enum CityFunnel implements Funnel<City> {
-    INSTANCE;
-
-    @Override
-    public void funnel(City city, PrimitiveSink primitiveSink) {
-
     }
 }
 
