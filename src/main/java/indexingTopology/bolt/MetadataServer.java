@@ -245,10 +245,12 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
                 metaDataOutput.writeInt(numberOfFiles);
                 metaDataOutput.write(output.toBytes());
                 try {
-                    zookeeperHandler.create(path, metaDataOutput.toBytes());
-                    System.out.println("Metadata has been written to zookeeper!!!");
-                    System.out.println("timestamp lower bound " + minTimestamp);
-                    System.out.println("timestamp upper bound " + maxTimestamp);
+                    if (zookeeperHandler != null) {
+                        zookeeperHandler.create(path, metaDataOutput.toBytes());
+                        System.out.println("Metadata has been written to zookeeper!!!");
+                        System.out.println("timestamp lower bound " + minTimestamp);
+                        System.out.println("timestamp upper bound " + maxTimestamp);
+                    }
 //                    System.out.println(taskIdToFileNumMapping);
 //                    System.out.println("tuple count" + numTuples);
                 } catch (KeeperException e) {
@@ -259,13 +261,13 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
             }
 
 
-            System.out.println("File information is received on metedata servers");
+//            System.out.println("File information is received on metedata servers");
 
             DataChunkBloomFilters bloomFilters = (DataChunkBloomFilters) tuple.getValueByField("bloomFilters");
 
             // omit the logic of storing bloomFilter externally, simply forwarding to the query coordinator.
 
-            System.out.println("File information is sent from metedata servers");
+//            System.out.println("File information is sent from metedata servers");
             collector.emit(Streams.FileInformationUpdateStream,
                     new Values(fileName, keyDomain, timeDomain, bloomFilters));
         } else if (tuple.getSourceStreamId().equals(Streams.TimestampUpdateStream)) {

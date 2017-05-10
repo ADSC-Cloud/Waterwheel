@@ -92,7 +92,7 @@ public class ResultMerger extends BaseRichBolt {
                 tuple.getSourceStreamId().equals(Streams.FileSystemQueryStream)) {
             SubQuery subQuery = (SubQuery)tuple.getValue(0);
             long queryId = subQuery.getQueryId();
-            System.out.println(String.format("A subquery for Query[%d] is completed!", queryId));
+//            System.out.println(String.format("A subquery for Query[%d] is completed!", queryId));
 
             Integer counter = queryIdToCounter.getOrDefault(queryId, 0);
             counter++;

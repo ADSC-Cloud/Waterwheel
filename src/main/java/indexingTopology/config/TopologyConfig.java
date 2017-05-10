@@ -21,7 +21,7 @@ public class TopologyConfig {
 
     public static final double LOAD_BALANCE_THRESHOLD = 0.2;
 
-    public static boolean HDFSFlag = true;
+    public static boolean HDFSFlag = false;
 
 //    public static String dataDir = "/Users/Robert/Documents/data";
     public static String dataDir = "/home/wangli/data";
@@ -51,7 +51,7 @@ public class TopologyConfig {
 //    public static final int CHUNK_SIZE = 6 * 1024 * 1024;
 
 
-    public static final String ZOOKEEPER_HOST = "192.168.0.237";
+    public static final String ZOOKEEPER_HOST = "192.168.0.207";
 //    public static final String ZOOKEEPER_HOST = "10.21.25.14";
 
     public static final String HBASE_CONF_DIR = "/home/hduser/hbase-1.2.4/conf";

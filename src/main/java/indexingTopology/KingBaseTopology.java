@@ -57,13 +57,16 @@ public class KingBaseTopology {
 
 
 
-        final double x1 = 0;
-        final double x2 = 1000;
-        final double y1 = 0;
-        final double y2 = 1000;
+        final double x1 = 40.012928;
+        final double x2 = 40.023983;
+        final double y1 = 116.292677;
+        final double y2 = 116.614865;
         final int partitions = 128;
 
-        TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
+        double selectivity = Math.sqrt(0.1);
+
+//        TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
+        TrajectoryGenerator generator = new TrajectoryMovingGenerator(x1, x2, y1, y2, 100000, 45.0);
         City city = new City(x1, x2, y1, y2, partitions);
 
         Integer lowerBound = 0;
@@ -117,7 +120,7 @@ public class KingBaseTopology {
             while(true) {
                 Car car = generator.generate();
                 DataTuple tuple = new DataTuple();
-                tuple.add(Integer.toString(random.nextInt()));
+                tuple.add(Integer.toString((int)car.id));
                 tuple.add(Integer.toString(random.nextInt()));
                 tuple.add(car.x);
                 tuple.add(car.y);
@@ -150,12 +153,17 @@ public class KingBaseTopology {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            Random random = new Random();
 
             while (true) {
-                final Double xLow = 80.0;
-                final Double xHigh = 100.0;
-                final Double yLow = 140.0;
-                final Double yHigh = 160.0;
+
+                double x = x1 + (x2 - x1) * random.nextDouble();
+                double y = y1 + (y2 - y1) * random.nextDouble();
+
+                final Double xLow = x;
+                final Double xHigh = x + selectivity * (x2 - x1);
+                final Double yLow = y;
+                final Double yHigh = y + selectivity * (y2 - y1);
 
                 DataTuplePredicate predicate = new DataTuplePredicate() {
                     @Override
@@ -164,7 +172,7 @@ public class KingBaseTopology {
                                 (double)schema.getValue("lon", objects) <= xHigh &&
                                 (double)schema.getValue("lat", objects) >= yLow &&
                                 (double)schema.getValue("lat", objects) <= yHigh &&
-                                schema.getValue("id", objects).equals("abc");
+                                schema.getValue("id", objects).equals("100");
                     }
                 };
 
@@ -179,7 +187,7 @@ public class KingBaseTopology {
                     }
                 };
 
-                DataTupleEquivalentPredicateHint equivalentPredicate = new DataTupleEquivalentPredicateHint("id", "abc");
+                DataTupleEquivalentPredicateHint equivalentPredicate = new DataTupleEquivalentPredicateHint("id", "100");
 
                 GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
                         System.currentTimeMillis() - 5000, System.currentTimeMillis(), predicate, aggregator, sorter,
@@ -246,7 +254,7 @@ public class KingBaseTopology {
         });
         queryThread.start();
 
-        Utils.sleep(15000);
+        Utils.sleep(150000);
         cluster.shutdown();
         System.out.println("Local cluster is shut down!");
         ingestionThread.interrupt();

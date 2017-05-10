@@ -300,11 +300,11 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             for (String chunkName: chunkNames) {
                 boolean prunedByBloomFilter = false;
 
-                if (query.equivalentPredicate != null) {
-                    System.out.println("equivalentPredicate is passed.");
-                } else {
-                    System.out.println("equivalentPredicate is null.");
-                }
+//                if (query.equivalentPredicate != null) {
+//                    System.out.println("equivalentPredicate is passed.");
+//                } else {
+//                    System.out.println("equivalentPredicate is null.");
+//                }
 
                 if (query.equivalentPredicate != null && columnToChunkToBloomFilter.containsKey(query.equivalentPredicate.column)) {
                     BloomFilter bloomFilter = columnToChunkToBloomFilter.get(query.equivalentPredicate.column).get(chunkName);

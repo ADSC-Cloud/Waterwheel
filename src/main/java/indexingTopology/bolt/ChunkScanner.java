@@ -301,7 +301,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
 
 //        tuples.clear();
-        System.out.println(String.format("%d tuples are found on file %s", tuples.size(), fileName));
+//        System.out.println(String.format("%d tuples are found on file %s", tuples.size(), fileName));
         collector.emit(Streams.FileSystemQueryStream, new Values(subQuery, tuples, metrics));
 
 

@@ -170,7 +170,7 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
                 Long numTuples = fileInformation.getNumberOfRecords();
                 DataChunkBloomFilters bloomFilters = fileInformation.getBloomFilters();
 
-                System.out.println("File information is sent from insertion servers");
+//                System.out.println("File information is sent from insertion servers");
                 collector.emit(Streams.FileInformationUpdateStream, new Values(fileName, keyDomain, timeDomain,
                         numTuples, bloomFilters));
 
