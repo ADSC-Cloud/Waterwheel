@@ -35,10 +35,11 @@ public class AggregationTest {
                 new AggregateField(new Min<>(), "height")
 
         });
-        aggregator.aggregate(partialQueryResult.dataTuples);
+        Aggregator.IntermediateResult intermediateResult = aggregator.createIntermediateResult();
+        aggregator.aggregate(partialQueryResult.dataTuples, intermediateResult);
 
 
-        PartialQueryResult result = aggregator.getResults();
+        PartialQueryResult result = aggregator.getResults(intermediateResult);
         System.out.println(result);
         assertEquals(result.dataTuples.get(0), new DataTuple(1, 1L, 180.0, 180, 180));
         assertEquals(result.dataTuples.get(1), new DataTuple(2, 2L, 348.0, 176, 172));
@@ -70,10 +71,11 @@ public class AggregationTest {
                 new AggregateField(new Sum<>(), "c3")
 
         });
-        aggregator.aggregate(partialQueryResult.dataTuples);
+        Aggregator.IntermediateResult intermediateResult = aggregator.createIntermediateResult();
+        aggregator.aggregate(partialQueryResult.dataTuples, intermediateResult);
 
 
-        PartialQueryResult result = aggregator.getResults();
+        PartialQueryResult result = aggregator.getResults(intermediateResult);
         System.out.println(result);
         assertEquals(result.dataTuples.get(0), new DataTuple(1, 1L, 1.0, 1.0, 1L, 1L, 1.0));
         assertEquals(result.dataTuples.get(1), new DataTuple(2, 2L, 3.0, 2.0, 2L, 2L, 4.0));
@@ -105,10 +107,11 @@ public class AggregationTest {
                 new AggregateField(new Sum<>(), "c3")
 
         });
-        aggregator.aggregate(partialQueryResult.dataTuples);
+        Aggregator.IntermediateResult intermediateResult = aggregator.createIntermediateResult();
+        aggregator.aggregate(partialQueryResult.dataTuples, intermediateResult);
 
 
-        PartialQueryResult result = aggregator.getResults();
+        PartialQueryResult result = aggregator.getResults(intermediateResult);
         System.out.println(result);
         Collections.sort(result.dataTuples, (DataTuple t1, DataTuple t2) -> ((Comparable)t1.get(0)).compareTo(t2.get(0)) );
         assertEquals(result.dataTuples.get(0), new DataTuple(1.0, 1L, 1.0, 1.0, 1L, 1L, 1.0));
@@ -217,15 +220,18 @@ public class AggregationTest {
 
         });
 
-        localAggregator1.aggregate(partialQueryResult1.dataTuples);
-        localAggregator2.aggregate(partialQueryResult2.dataTuples);
+        Aggregator.IntermediateResult intermediateResult1 = localAggregator1.createIntermediateResult();
+        Aggregator.IntermediateResult intermediateResult2= localAggregator2.createIntermediateResult();
+        localAggregator1.aggregate(partialQueryResult1.dataTuples, intermediateResult1);
+        localAggregator2.aggregate(partialQueryResult2.dataTuples, intermediateResult2);
 
         Aggregator<Integer> globalAggregator = localAggregator1.generateGlobalAggregator();
+        Aggregator.IntermediateResult globalIntermediateResult = globalAggregator.createIntermediateResult();
 
-        globalAggregator.aggregate(localAggregator1.getResults().dataTuples);
-        globalAggregator.aggregate(localAggregator2.getResults().dataTuples);
+        globalAggregator.aggregate(localAggregator1.getResults(intermediateResult1).dataTuples, globalIntermediateResult);
+        globalAggregator.aggregate(localAggregator2.getResults(intermediateResult2).dataTuples, globalIntermediateResult);
 
-        PartialQueryResult result = globalAggregator.getResults();
+        PartialQueryResult result = globalAggregator.getResults(globalIntermediateResult);
         Collections.sort(result.dataTuples, (DataTuple t1, DataTuple t2) -> ((Comparable)t1.get(0)).compareTo(t2.get(0)) );
         assertEquals(result.dataTuples.get(0), new DataTuple(1.0, 1.0, 1.0, 1.0, 1L, 1L, 1.0));
         assertEquals(result.dataTuples.get(1), new DataTuple(2.0, 2.0, 3.0, 2.0, 2L, 2L, 4.0));

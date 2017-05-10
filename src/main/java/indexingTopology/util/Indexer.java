@@ -5,6 +5,7 @@ import com.esotericsoftware.kryo.io.Output;
 import com.google.common.base.Charsets;
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
+import indexingTopology.aggregator.Aggregator;
 import indexingTopology.bloom.DataChunkBloomFilters;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
@@ -561,8 +562,9 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                 }
 
                 if (subQuery.getAggregator() != null) {
-                    subQuery.getAggregator().aggregate(dataTuples);
-                    dataTuples = subQuery.getAggregator().getResults().dataTuples;
+                    Aggregator.IntermediateResult intermediateResult = subQuery.getAggregator().createIntermediateResult();
+                    subQuery.getAggregator().aggregate(dataTuples, intermediateResult);
+                    dataTuples = subQuery.getAggregator().getResults(intermediateResult).dataTuples;
                 }
 
                 List<byte[]> serializedQueryResults = new ArrayList<>();

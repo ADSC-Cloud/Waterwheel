@@ -15,7 +15,17 @@ import java.util.Map;
  */
 public class Aggregator<Key extends Number & Comparable<Key>> implements Serializable{
 
-    transient private Map<Key, Object[]> aggregationResults = new HashMap<>();
+    // this is the computation state
+    static public class IntermediateResult<Key extends Number & Comparable<Key>> {
+
+        transient private Map<Key, Object[]> aggregationResults = new HashMap<>();
+    }
+
+    public IntermediateResult<Key> createIntermediateResult() {
+        return new IntermediateResult<>();
+    }
+
+    // the following are the data structures representing the aggregation logic.
     private AggregateField[] aggregateFields;
     final private int[] aggregateColumnIndexes;
     final private int groupByIndex;
@@ -41,13 +51,13 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
         this.isGlobal = isGlobal;
     }
 
-    public void aggregate(DataTuple dataTuple) {
+    public void aggregate(DataTuple dataTuple, IntermediateResult intermediateResult) {
         //TODO: performance optimization by computing the group-by column index before aggregate.
 
 
 
         Key group = (Key) dataTuple.get(groupByIndex);
-        aggregationResults.computeIfAbsent(group, p -> {
+        intermediateResult.aggregationResults.computeIfAbsent(group, p -> {
             Object[] aggregationValues = new Object[aggregateFields.length];
             for (int i = 0; i < aggregateFields.length; i++) {
                 aggregationValues[i] = aggregateFields[i].function.init();
@@ -55,8 +65,8 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
             return aggregationValues;
         });
 
-        aggregationResults.compute(group, (k, v) -> {
-            Object[] aggregationValues = v;
+        intermediateResult.aggregationResults.compute(group, (k, v) -> {
+            Object[] aggregationValues = (Object[]) v;
             for (int i = 0; i < aggregateFields.length; i++) {
                 aggregationValues[i] = aggregateFields[i].function.aggregateFunction(dataTuple.get(aggregateColumnIndexes[i]), aggregationValues[i]);
             }
@@ -94,23 +104,23 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
 
 
 
-    public void aggregate(List<DataTuple> dataTupleList) {
-        if (aggregationResults == null) {
-            aggregationResults = new HashMap<>();
+    public void aggregate(List<DataTuple> dataTupleList, IntermediateResult intermediateResult) {
+        if (intermediateResult.aggregationResults == null) {
+            intermediateResult.aggregationResults = new HashMap<>();
         }
         for (DataTuple dataTuple: dataTupleList) {
-            aggregate(dataTuple);
+            aggregate(dataTuple, intermediateResult);
         }
     }
 
-    public PartialQueryResult getResults() {
+    public PartialQueryResult getResults(IntermediateResult<Key> intermediateResult) {
         PartialQueryResult partialQueryResult = new PartialQueryResult(Integer.MAX_VALUE);
         // aggregationResults may be null if no valid tuples are found before aggregation
 //        if (aggregationResults != null) {
-            for (Key group : aggregationResults.keySet()) {
+            for (Key group : intermediateResult.aggregationResults.keySet()) {
                 final DataTuple dataTuple = new DataTuple();
                 dataTuple.add(group);
-                Object[] aggregationValues = aggregationResults.get(group);
+                Object[] aggregationValues = intermediateResult.aggregationResults.get(group);
                 for (Object object : aggregationValues) {
                     dataTuple.add(object);
                 }

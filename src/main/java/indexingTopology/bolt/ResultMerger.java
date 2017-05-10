@@ -250,8 +250,9 @@ public class ResultMerger extends BaseRichBolt {
         // perform aggregation if applicable.
         if (subQuery.getAggregator() != null) {
             Aggregator globalAggregator = subQuery.getAggregator().generateGlobalAggregator();
-            queryResults.forEach(r -> globalAggregator.aggregate(r.dataTuples));
-            allResults.dataTuples.addAll(globalAggregator.getResults().dataTuples);
+            Aggregator.IntermediateResult intermediateResult = globalAggregator.createIntermediateResult();
+            queryResults.forEach(r -> globalAggregator.aggregate(r.dataTuples, intermediateResult));
+            allResults.dataTuples.addAll(globalAggregator.getResults(intermediateResult).dataTuples);
         } else {
             queryResults.stream().forEach(t -> allResults.dataTuples.addAll(t.dataTuples));
         }

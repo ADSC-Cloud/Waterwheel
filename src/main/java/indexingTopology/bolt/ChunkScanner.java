@@ -2,6 +2,7 @@ package indexingTopology.bolt;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
+import indexingTopology.aggregator.Aggregator;
 import indexingTopology.cache.*;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
@@ -243,9 +244,10 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
             filterByPredicate(dataTuples, subQuery.getPredicate());
 
             if (subQuery.getAggregator() != null) {
-                subQuery.getAggregator().aggregate(dataTuples);
+                Aggregator.IntermediateResult intermediateResult = subQuery.getAggregator().createIntermediateResult();
+                subQuery.getAggregator().aggregate(dataTuples, intermediateResult);
                 dataTuples.clear();
-                dataTuples.addAll(subQuery.getAggregator().getResults().dataTuples);
+                dataTuples.addAll(subQuery.getAggregator().getResults(intermediateResult).dataTuples);
             }
 
 //            totalTupleGet += (System.currentTimeMillis() - tupleGetStart);
