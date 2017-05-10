@@ -22,8 +22,9 @@ public class NetworkDataReader {
 
         File file = new File(TopologyConfig.dataFileDir);
 
+
         bufferedReader = new BufferedReader(new FileReader(file));
-        BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(new File("/home/acelzj/Downloads/dataset/20150430_processed.txt")));
+//        BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(new File("/home/acelzj/Downloads/DPI/20150430_processed.txt")));
 
         String text = null;
 
@@ -127,14 +128,14 @@ public class NetworkDataReader {
                         s = s.substring(0, TopologyConfig.AVERAGE_STRING_LENGTH);
                     }
 
-                    String textToWrite = "";
-                    textToWrite = textToWrite + sourceIP + " ";
-                    textToWrite = textToWrite + destIP + " ";
-                    textToWrite = textToWrite + s;
-
-                    bufferedWriter.write(textToWrite);
-                    bufferedWriter.newLine();
-                    bufferedWriter.flush();
+//                    String textToWrite = "";
+//                    textToWrite = textToWrite + sourceIP + " ";
+//                    textToWrite = textToWrite + destIP + " ";
+//                    textToWrite = textToWrite + s;
+//
+//                    bufferedWriter.write(textToWrite);
+//                    bufferedWriter.newLine();
+//                    bufferedWriter.flush();
 //                    totalLength += m.group(6).length();
 
 //                    System.out.println("Found value: " + m.group(6));
@@ -171,17 +172,17 @@ public class NetworkDataReader {
 
 //        for (double selectivity = 0.001; selectivity <= 0.1; selectivity *= 10) {
             int frequency = 0;
-        double selectivity = 0.75;
+        double selectivity = 0.001;
             for (int i = 0; i < keys.length; ++i) {
                 frequency += IpToFrequencyMapping.get(keys[i]);
-//                System.out.println(" " + ((Integer) keys[i]) * 10000 + " " + IpToFrequencyMapping.get(keys[i]));
+                System.out.println(" " + ((Integer) keys[i]) * 10000 + " " + IpToFrequencyMapping.get(keys[i]));
                 if (frequency >= numberOfRecords * selectivity) {
                     System.out.println("key " + (Integer) keys[0] * 10000);
                     System.out.println("frequency " + frequency);
                     System.out.println("key " + (Integer) keys[i] * 10000);
                     break;
                 }
-//            }
-        }
+            }
+//        }
     }
 }

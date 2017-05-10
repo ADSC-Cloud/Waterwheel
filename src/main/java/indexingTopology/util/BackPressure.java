@@ -71,15 +71,15 @@ public class BackPressure {
     public Long acquireNextTupleId() throws InterruptedException {
         int count = 0;
         while (tupleId.get() >= currentCount.get() + maxPending) {
-            try {
+//            try {
                 Thread.sleep(1);
 //                if(count++ % 100 == 0) {
 //                    System.out.println(String.format("TupleId: %d, currentCount: %d, maxPending: %d", tupleId.get(),
 //                            currentCount.get(), maxPending));
 //                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
         }
         final Long id = tupleId.getAndIncrement();
         return id;

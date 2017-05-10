@@ -246,7 +246,7 @@ public class KingBaseTopology {
         });
         queryThread.start();
 
-        Utils.sleep(150000);
+        Utils.sleep(15000);
         cluster.shutdown();
         System.out.println("Local cluster is shut down!");
         ingestionThread.interrupt();

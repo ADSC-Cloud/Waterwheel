@@ -247,6 +247,18 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
         }
     }
 
+    public void close() {
+        inputProcessingThread.interrupt();
+
+        for (Thread indexingThread : indexingThreads) {
+            indexingThread.interrupt();
+        }
+
+        for (Thread queryThread : queryThreads) {
+            queryThread.interrupt();
+        }
+    }
+
 
     class InputProcessingRunnable implements Runnable {
 
@@ -255,7 +267,8 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
             ArrayList<DataTuple> drainer = new ArrayList<>();
 
-            while (true) {
+//            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
 
 //                if (chunkId > 0 && estimatedDataSize >= TopologyConfig.SKEWNESS_DETECTION_THRESHOLD * TopologyConfig.CHUNK_SIZE) {
 //                    if (bTree.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_THRESHOLD) {
@@ -321,7 +334,8 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                         informationToUpdatePendingQueue.put(new FileInformation(fileName, new Domain(keyDomain, timeDomain),
                                 numTuples, bloomFilters));
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        Thread.currentThread().interrupt();
+//                        e.printStackTrace();
                     }
 
                     setChanged();
@@ -355,7 +369,8 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                 try {
                     firstDataTuple = inputQueue.poll(10, TimeUnit.MILLISECONDS);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    Thread.currentThread().interrupt();
+//                    e.printStackTrace();
                 }
 
                 if (firstDataTuple == null) {
@@ -386,7 +401,8 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
                         pendingQueue.put(dataTuple);
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+//                        e.printStackTrace();
+                        Thread.currentThread().interrupt();
                     }
                 }
 
@@ -426,14 +442,16 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
             }
             long localCount = 0;
             ArrayList<DataTuple> drainer = new ArrayList<>();
-            while (true) {
+//            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
                 try {
 
                     DataTuple firstDataTuple = null;
                     try {
                         firstDataTuple = pendingQueue.poll(10, TimeUnit.MILLISECONDS);
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+//                        e.printStackTrace();
+                        Thread.currentThread().interrupt();
                     }
 
                     if (firstDataTuple == null) {
@@ -514,7 +532,8 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
     class QueryRunnable implements Runnable {
         @Override
         public void run() {
-            while (true) {
+//            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
 
 //                try {
 //                    processQuerySemaphore.acquire();
@@ -527,7 +546,9 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                 try {
                     subQuery = queryPendingQueue.take();
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    Thread.currentThread().interrupt();
+                    continue;
+//                    e.printStackTrace();
                 }
 
 
@@ -582,12 +603,14 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                 try {
                     queryResultQueue.put(new Pair(subQuery, serializedQueryResults));
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    Thread.currentThread().interrupt();
+//                    e.printStackTrace();
                 }
 
                 setChanged();
                 notifyObservers("query result");
             }
+
         }
     }
 

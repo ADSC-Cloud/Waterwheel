@@ -40,6 +40,12 @@ public class InputStreamReceiverServer extends InputStreamReceiver {
 
     }
 
+    @Override
+    public void cleanup() {
+        super.cleanup();
+        server.endDaemon();
+    }
+
     public static class AppendServerHandle extends ServerHandle implements AppendRequestHandle, IAppendRequestBatchModeHandle {
 
         BlockingQueue<DataTuple> inputQueue;
@@ -54,6 +60,7 @@ public class InputStreamReceiverServer extends InputStreamReceiver {
             try {
                 inputQueue.put(dataTuple);
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 e.printStackTrace();
                 objectOutputStream.writeUnshared(new MessageResponse("Timeout!"));
                 objectOutputStream.reset();

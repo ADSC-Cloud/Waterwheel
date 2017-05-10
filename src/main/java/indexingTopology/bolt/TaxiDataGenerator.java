@@ -42,6 +42,8 @@ public class TaxiDataGenerator extends InputStreamReceiver {
 
     private FrequencyRestrictor frequencyRestrictor;
 
+    private Thread generationThread;
+
     public TaxiDataGenerator(DataSchema schema, City city) {
         super(schema);
         this.city = city;
@@ -113,10 +115,11 @@ public class TaxiDataGenerator extends InputStreamReceiver {
             }
         }
 
-        Thread generationThread = new Thread(new Runnable() {
+        generationThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                while (true) {
+//                while (true) {
+                while (!Thread.currentThread().isInterrupted()) {
                     /*
                     try {
                         int index = generatorIds.indexOf(taskId) + step * size;
@@ -171,7 +174,8 @@ public class TaxiDataGenerator extends InputStreamReceiver {
                     }
                     */
                     int index = 0;
-                    while (true) {
+//                    while (true) {
+                    while (!Thread.currentThread().isInterrupted()) {
                         Integer taxiId = taxiIds.get(index);
                         Integer zcode = zcodes.get(index);
                         Double longitude = longitudes.get(index);
@@ -188,7 +192,8 @@ public class TaxiDataGenerator extends InputStreamReceiver {
                         try {
                             inputQueue.put(dataTuple);
                         } catch (InterruptedException e) {
-                            e.printStackTrace();
+                            Thread.currentThread().interrupt();
+//                            e.printStackTrace();
                         }
                         ++index;
                         if (index >= taxiIds.size()) {
@@ -199,5 +204,11 @@ public class TaxiDataGenerator extends InputStreamReceiver {
             }
         });
         generationThread.start();
+    }
+
+    @Override
+    public void cleanup() {
+        super.cleanup();
+        generationThread.interrupt();
     }
 }

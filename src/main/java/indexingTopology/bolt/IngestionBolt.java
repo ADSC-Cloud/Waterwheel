@@ -82,8 +82,7 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
     @Override
     public void cleanup() {
         super.cleanup();
-        System.out.println("You should kill all the thread you created in this function, so that the local cluster can" +
-                "be shutdown.");
+        indexer.close();
     }
 
     public void execute(Tuple tuple) {

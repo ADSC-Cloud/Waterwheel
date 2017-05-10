@@ -8,6 +8,8 @@ import org.apache.storm.Config;
 import org.apache.storm.StormSubmitter;
 import org.apache.storm.generated.StormTopology;
 import org.apache.storm.topology.TopologyBuilder;
+import org.apache.storm.utils.Utils;
+import org.apache.storm.LocalCluster;
 
 /**
  * Created by acelzj on 16/3/17.
@@ -74,15 +76,18 @@ public class TaxiTopology {
 
         Config conf = new Config();
         conf.setDebug(false);
-        conf.setNumWorkers(12);
+        conf.setNumWorkers(1);
 
         conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
 //        conf.put(Config.SUPERVISOR_CHILDOPTS, "-Xmx2048m");
         conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
-//        LocalCluster cluster = new LocalCluster();
-//        cluster.submitTopology("T1", conf, topology);
+        LocalCluster cluster = new LocalCluster();
+        cluster.submitTopology("T1", conf, topology);
 
-        StormSubmitter.submitTopologyWithProgressBar(args[0], conf, topology);
+//        StormSubmitter.submitTopologyWithProgressBar(args[0], conf, topology);
+        Utils.sleep(30000);
+        cluster.shutdown();
+
     }
 }

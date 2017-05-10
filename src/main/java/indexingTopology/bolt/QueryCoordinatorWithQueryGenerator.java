@@ -30,7 +30,7 @@ public class QueryCoordinatorWithQueryGenerator<T extends Number & Comparable<T>
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         super.prepare(map, topologyContext, outputCollector);
         queryId = 0;
-//        queryGenerationThread = new Thread(new QueryRunnable());
+        queryGenerationThread = new Thread(new QueryRunnable());
 //        queryGenerationThread.start();
 
     }
@@ -43,15 +43,19 @@ public class QueryCoordinatorWithQueryGenerator<T extends Number & Comparable<T>
     class QueryRunnable implements Runnable {
 
         public void run() {
-            Long startTimestamp = System.currentTimeMillis();
-            try {
-                Thread.sleep(sleepTimeInSeconds * 1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            while (queryId < 30) {
+//            Long startTimestamp = System.currentTimeMillis();
+//            try {
+//                Thread.sleep(sleepTimeInSeconds * 1000);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+            while (!Thread.currentThread().isInterrupted() && queryId < 30) {
                 try {
-                    Thread.sleep(10 * 1000);
+                    Thread.sleep(1 * 1000);
+
+//                    network 0.001
+//                    Integer leftKey = -2147340000;
+//                    Integer rightKey = -1952500000;
 
 //                    network 0.01
 //                    Integer leftKey = 236120000;
@@ -82,6 +86,10 @@ public class QueryCoordinatorWithQueryGenerator<T extends Number & Comparable<T>
 //                    Integer leftKey = -2147341772;
 //                    Integer rightKey = 2118413319;
 
+
+//                    taxi 0.001
+//                    Integer leftKey = 3000;
+//                    Integer rightKey = 6000;
 
 //                    taxi 0.01
 //                    Integer leftKey = 3000;
@@ -120,15 +128,17 @@ public class QueryCoordinatorWithQueryGenerator<T extends Number & Comparable<T>
 //                    Long endTimestamp =  ((int) ((end - startTimestamp) * Math.sqrt(selectivity))) + startTimestamp;
 //                    Long endTimestamp = System.currentTimeMillis();
 //                    Long startTimestamp = endTimestamp - sleepTimeInSeconds * 1000;
-                    startTimestamp += 10 * 1000;
-                    Long endTimestamp = startTimestamp + sleepTimeInSeconds * 1000;
+//                    startTimestamp += 10 * 1000;
+//                    Long endTimestamp = startTimestamp + sleepTimeInSeconds * 1000;
 
-//                    Long startTimestamp = 0L;
-//                    Long endTimestamp = Long.MAX_VALUE;
+                    Long startTimestamp = 0L;
+                    Long endTimestamp = Long.MAX_VALUE;
 
                     final List<Query<T>> queryList = new ArrayList<>();
                     queryList.add(new Query(queryId, leftKey, rightKey, startTimestamp, endTimestamp));
                     pendingQueue.put(queryList);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -139,4 +149,9 @@ public class QueryCoordinatorWithQueryGenerator<T extends Number & Comparable<T>
         }
     }
 
+    @Override
+    public void cleanup() {
+        super.cleanup();
+        queryGenerationThread.interrupt();
+    }
 }

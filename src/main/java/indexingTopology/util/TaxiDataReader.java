@@ -231,7 +231,7 @@ public class TaxiDataReader {
 
 //        for (double selectivity = 0.001; selectivity <= 0.1; selectivity *= 10) {
             int frequency = 0;
-            double selectivity = 0.75;
+            double selectivity = 0.001;
 
             int startIndex = 3;
 

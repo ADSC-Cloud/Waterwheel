@@ -60,7 +60,11 @@
             <groupId>org.apache.storm</groupId>
             <artifactId>storm-core</artifactId>
             <version>1.0.2</version>
+<<<<<<< HEAD
             <!--<scope>provided</scope>-->
+=======
+            <!--scope>provided</scope-->
+>>>>>>> lzj/master
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
@@ -85,7 +89,7 @@
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-hdfs</artifactId>
-            <version>2.6.0</version>
+            <version>2.6.1</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
