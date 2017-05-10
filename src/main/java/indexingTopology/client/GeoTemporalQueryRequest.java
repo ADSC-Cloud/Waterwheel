@@ -1,7 +1,7 @@
 package indexingTopology.client;
 
 import indexingTopology.aggregator.Aggregator;
-import indexingTopology.util.DataTupleEquivalentPredicate;
+import indexingTopology.util.DataTupleEquivalentPredicateHint;
 import indexingTopology.util.DataTuplePredicate;
 import indexingTopology.util.DataTupleSorter;
 
@@ -18,9 +18,9 @@ public class GeoTemporalQueryRequest<T extends Number>  extends IClientRequest {
     final public DataTuplePredicate predicate;
     final public Aggregator aggregator;
     final public DataTupleSorter sorter;
-    final public DataTupleEquivalentPredicate equivalentPredicate;
+    final public DataTupleEquivalentPredicateHint equivalentPredicate;
     public GeoTemporalQueryRequest(T x1, T x2, T y1, T y2, long startTime, long endTime, DataTuplePredicate predicate,
-                                   Aggregator aggregator, DataTupleSorter sorter, DataTupleEquivalentPredicate equivalentPredicate) {
+                                   Aggregator aggregator, DataTupleSorter sorter, DataTupleEquivalentPredicateHint equivalentPredicate) {
         this.x1 = x1;
         this.x2 = x2;
         this.y1 = y1;

@@ -9,12 +9,12 @@ import java.util.function.Predicate;
 /**
  * Created by Robert on 5/8/17.
  */
-public class DataTupleEquivalentPredicate implements Predicate<DataTuple>, Serializable{
+public class DataTupleEquivalentPredicateHint implements Predicate<DataTuple>, Serializable{
     public String column;
     public Object value;
     DataSchema schema;
 
-    public DataTupleEquivalentPredicate(String column, Object value) {
+    public DataTupleEquivalentPredicateHint(String column, Object value) {
         this.column = column;
         this.value = value;
     }

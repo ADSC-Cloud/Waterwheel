@@ -4,7 +4,7 @@ import com.esotericsoftware.kryo.io.Output;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.util.*;
-import indexingTopology.util.texi.City;
+import indexingTopology.util.taxi.City;
 import javafx.util.Pair;
 
 import java.io.*;

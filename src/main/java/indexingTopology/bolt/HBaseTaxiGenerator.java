@@ -1,16 +1,14 @@
 package indexingTopology.bolt;
 
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.data.DataSchema;
 import indexingTopology.streams.Streams;
 import indexingTopology.util.FrequencyRestrictor;
 import indexingTopology.util.HBaseHandler;
-import indexingTopology.util.texi.City;
+import indexingTopology.util.taxi.City;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.BufferedMutator;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.storm.metric.internal.RateTracker;
 import org.apache.storm.task.OutputCollector;

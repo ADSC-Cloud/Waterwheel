@@ -22,11 +22,11 @@ public class SubQuery <T extends Number> implements Serializable {
 
     public DataTupleSorter sorter;
 
-    public DataTupleEquivalentPredicate equivalentPredicate;
+    public DataTupleEquivalentPredicateHint equivalentPredicate;
 
     public SubQuery(long queryId, T leftKey, T rightKey, Long startTimestamp, Long endTimestamp,
                     DataTuplePredicate predicate, Aggregator aggregator, DataTupleSorter sorter,
-                    DataTupleEquivalentPredicate equivalentPredicate) {
+                    DataTupleEquivalentPredicateHint equivalentPredicate) {
         this.queryId = queryId;
         this.leftKey = leftKey;
         this.rightKey = rightKey;

@@ -7,9 +7,9 @@ import org.apache.storm.StormSubmitter;
 import org.apache.storm.generated.StormTopology;
 import org.apache.storm.topology.TopologyBuilder;
 import indexingTopology.bolt.*;
-import indexingTopology.util.texi.City;
-import indexingTopology.util.texi.TrajectoryGenerator;
-import indexingTopology.util.texi.TrajectoryUniformGenerator;
+import indexingTopology.util.taxi.City;
+import indexingTopology.util.taxi.TrajectoryGenerator;
+import indexingTopology.util.taxi.TrajectoryUniformGenerator;
 
 /**
  * Created by acelzj on 11/15/16.

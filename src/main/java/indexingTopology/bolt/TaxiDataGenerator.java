@@ -4,20 +4,14 @@ import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import indexingTopology.util.FrequencyRestrictor;
-import indexingTopology.util.texi.Car;
-import indexingTopology.util.texi.City;
-import indexingTopology.util.texi.TrajectoryGenerator;
+import indexingTopology.util.taxi.City;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 
 import java.io.*;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Created by acelzj on 15/3/17.

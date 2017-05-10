@@ -1,7 +1,7 @@
 package indexingTopology.util;
 
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.util.texi.City;
+import indexingTopology.util.taxi.City;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;

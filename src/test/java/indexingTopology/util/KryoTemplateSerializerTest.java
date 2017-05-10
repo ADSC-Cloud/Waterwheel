@@ -8,10 +8,10 @@ import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.filesystem.FileSystemHandler;
 import indexingTopology.filesystem.HdfsFileSystemHandler;
 import indexingTopology.filesystem.LocalFileSystemHandler;
-import indexingTopology.util.texi.Car;
-import indexingTopology.util.texi.City;
-import indexingTopology.util.texi.TrajectoryGenerator;
-import indexingTopology.util.texi.TrajectoryUniformGenerator;
+import indexingTopology.util.taxi.Car;
+import indexingTopology.util.taxi.City;
+import indexingTopology.util.taxi.TrajectoryGenerator;
+import indexingTopology.util.taxi.TrajectoryUniformGenerator;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
 

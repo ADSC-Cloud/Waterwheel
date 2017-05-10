@@ -4,14 +4,7 @@ import indexingTopology.bolt.*;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.streams.Streams;
-import indexingTopology.util.texi.City;
-import indexingTopology.util.texi.TrajectoryGenerator;
-import indexingTopology.util.texi.TrajectoryUniformGenerator;
-import org.apache.storm.Config;
-import org.apache.storm.LocalCluster;
-import org.apache.storm.StormSubmitter;
 import org.apache.storm.generated.StormTopology;
-import org.apache.storm.topology.IRichBolt;
 import org.apache.storm.topology.TopologyBuilder;
 
 import java.util.List;
@@ -46,7 +39,7 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 //                .allGrouping(LogWriter, Streams.ThroughputRequestStream);
 
-        builder.setBolt(IndexerBolt, new IngestionBolt(dataSchema, bloomFilterColumns), 2)
+        builder.setBolt(IndexerBolt, new IngestionBolt(dataSchema, bloomFilterColumns), 4)
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream) // direct grouping should be used.
                 .directGrouping(RangeQueryDecompositionBolt, Streams.TreeCleanStream)
@@ -64,12 +57,12 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
 
 
         if (TopologyConfig.SHUFFLE_GROUPING_FLAG) {
-            builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner<Key>(dataSchema), 2)
+            builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner<Key>(dataSchema), 4)
 //                .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream)
                     .directGrouping(ResultMergeBolt, Streams.SubQueryReceivedStream)
                     .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream); //make comparision with our method.
         } else {
-            builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner<Key>(dataSchema), 2)
+            builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner<Key>(dataSchema), 4)
                     .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream)
                     .directGrouping(ResultMergeBolt, Streams.SubQueryReceivedStream);
         }

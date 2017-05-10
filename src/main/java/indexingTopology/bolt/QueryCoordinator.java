@@ -279,7 +279,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private void generateSubqueriesOnTheFileScanner(List<Query<T>> queryList) {
         Query<T> firstQuery = queryList.get(0);
-        List<SubQuery<T>> subQueries = new ArrayList<>();
+        List<SubQueryOnFile<T>> subQueries = new ArrayList<>();
         for (Query<T> query: queryList) {
             Long queryId = query.getQueryId();
             T leftKey = query.leftKey;
@@ -312,6 +312,8 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
                 }
             }
         }
+
+
 
         if (subQueries.size() <= 0) {
             System.out.println(String.format("%d subqueries on chunks.", subQueries.size()));

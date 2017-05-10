@@ -2,15 +2,14 @@ package indexingTopology.bolt;
 
 import indexingTopology.aggregator.Aggregator;
 import indexingTopology.client.*;
-import indexingTopology.data.DataTuple;
 import indexingTopology.data.PartialQueryResult;
-import indexingTopology.util.DataTupleEquivalentPredicate;
+import indexingTopology.util.DataTupleEquivalentPredicateHint;
 import indexingTopology.util.DataTuplePredicate;
 import indexingTopology.util.DataTupleSorter;
 import indexingTopology.util.Query;
-import indexingTopology.util.texi.City;
-import indexingTopology.util.texi.Interval;
-import indexingTopology.util.texi.Intervals;
+import indexingTopology.util.taxi.City;
+import indexingTopology.util.taxi.Interval;
+import indexingTopology.util.taxi.Intervals;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
@@ -142,7 +141,7 @@ public class KingBaseQueryCoordinatorWithQueryReceiverServer<T extends Number & 
                 final DataTuplePredicate predicate = clientQueryRequest.predicate;
                 final Aggregator aggregator = clientQueryRequest.aggregator;
                 final DataTupleSorter sorter = clientQueryRequest.sorter;
-                final DataTupleEquivalentPredicate equivalentPredicate = clientQueryRequest.equivalentPredicate;
+                final DataTupleEquivalentPredicateHint equivalentPredicate = clientQueryRequest.equivalentPredicate;
 
                 Intervals intervals = city.getZCodeIntervalsInARectagle(clientQueryRequest.x1.doubleValue(),
                         clientQueryRequest.x2.doubleValue(),

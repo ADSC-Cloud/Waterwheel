@@ -3,18 +3,15 @@ package indexingTopology;
 import indexingTopology.aggregator.AggregateField;
 import indexingTopology.aggregator.Aggregator;
 import indexingTopology.aggregator.Count;
-import indexingTopology.aggregator.Sum;
 import indexingTopology.bolt.*;
 import indexingTopology.client.*;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import indexingTopology.util.*;
-import indexingTopology.util.texi.*;
+import indexingTopology.util.taxi.*;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
-import org.apache.storm.StormSubmitter;
 import org.apache.storm.generated.StormTopology;
-import org.apache.storm.topology.TopologyBuilder;
 import org.apache.storm.utils.Utils;
 
 import java.io.IOException;
@@ -63,7 +60,7 @@ public class KingBaseTopology {
         final double x1 = 0;
         final double x2 = 1000;
         final double y1 = 0;
-        final double y2 = 500;
+        final double y2 = 1000;
         final int partitions = 128;
 
         TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
@@ -155,18 +152,19 @@ public class KingBaseTopology {
             }
 
             while (true) {
-                final Double xLow = 10.0;
+                final Double xLow = 80.0;
                 final Double xHigh = 100.0;
-                final Double yLow = 40.0;
-                final Double yHigh = 80.0;
+                final Double yLow = 140.0;
+                final Double yHigh = 160.0;
 
                 DataTuplePredicate predicate = new DataTuplePredicate() {
                     @Override
                     public boolean test(DataTuple objects) {
-                        return (double)rawSchema.getValue("lon", objects) >= xLow &&
-                                (double)rawSchema.getValue("lon", objects) <= xHigh &&
-                                (double)rawSchema.getValue("lat", objects) >= yLow &&
-                                (double)rawSchema.getValue("lat", objects) <= yHigh;
+                        return (double)schema.getValue("lon", objects) >= xLow &&
+                                (double)schema.getValue("lon", objects) <= xHigh &&
+                                (double)schema.getValue("lat", objects) >= yLow &&
+                                (double)schema.getValue("lat", objects) <= yHigh &&
+                                schema.getValue("id", objects).equals("abc");
                     }
                 };
 
@@ -181,10 +179,10 @@ public class KingBaseTopology {
                     }
                 };
 
-                DataTupleEquivalentPredicate equivalentPredicate = new DataTupleEquivalentPredicate("id", "abc");
+                DataTupleEquivalentPredicateHint equivalentPredicate = new DataTupleEquivalentPredicateHint("id", "abc");
 
                 GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
-                        System.currentTimeMillis() - 50000, System.currentTimeMillis(), predicate, aggregator, sorter,
+                        System.currentTimeMillis() - 5000, System.currentTimeMillis(), predicate, aggregator, sorter,
                         equivalentPredicate);
                 long start = System.currentTimeMillis();
                 try {

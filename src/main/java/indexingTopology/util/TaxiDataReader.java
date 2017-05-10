@@ -1,7 +1,7 @@
 package indexingTopology.util;
 
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.util.texi.City;
+import indexingTopology.util.taxi.City;
 
 import java.io.*;
 import java.text.DecimalFormat;

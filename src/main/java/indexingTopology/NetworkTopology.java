@@ -4,7 +4,6 @@ import indexingTopology.bolt.*;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.util.TopologyGenerator;
-import indexingTopology.util.texi.City;
 import org.apache.storm.Config;
 import org.apache.storm.StormSubmitter;
 import org.apache.storm.generated.StormTopology;
