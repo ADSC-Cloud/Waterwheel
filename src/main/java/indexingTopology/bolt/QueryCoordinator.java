@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 
@@ -146,7 +147,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
             for(String column: bloomFilters.columnToBloomFilter.keySet()) {
                 Map<String, BloomFilter> chunkNameToFilter = columnToChunkToBloomFilter.computeIfAbsent(column, t->
-                    new HashMap<>());
+                    new ConcurrentHashMap<>());
                 chunkNameToFilter.put(fileName, bloomFilters.columnToBloomFilter.get(column));
                 System.out.println(String.format("A bloom filter is added for chunk: %s, column: %s", fileName, column));
             }
@@ -289,6 +290,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
     private void generateSubqueriesOnTheFileScanner(List<Query<T>> queryList) {
         Query<T> firstQuery = queryList.get(0);
         List<SubQueryOnFile<T>> subQueries = new ArrayList<>();
+        int prunedCount = 0;
         for (Query<T> query: queryList) {
             Long queryId = query.getQueryId();
             T leftKey = query.leftKey;
@@ -317,10 +319,13 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
                     subQueries.add(new SubQueryOnFile<>(queryId, leftKey, rightKey, chunkName, startTimestamp, endTimestamp,
                             query.predicate, query.aggregator, query.sorter));
                 } else {
-                    System.out.println(String.format("query on %s is pruned (value = %s)", chunkName, query.equivalentPredicate.value));
+                    prunedCount ++;
                 }
             }
         }
+
+        System.out.println(String.format("%s out of %s queries have been pruned by bloom filter.", prunedCount,
+                prunedCount + subQueries.size()));
 
 
 

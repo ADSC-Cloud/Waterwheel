@@ -16,6 +16,7 @@ import org.apache.storm.utils.Utils;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -63,7 +64,7 @@ public class KingBaseTopology {
         final double y2 = 116.614865;
         final int partitions = 128;
 
-        double selectivity = Math.sqrt(0.1);
+        double selectivity = Math.sqrt(1);
 
 //        TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
         TrajectoryGenerator generator = new TrajectoryMovingGenerator(x1, x2, y1, y2, 100000, 45.0);
@@ -108,10 +109,11 @@ public class KingBaseTopology {
         LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("T0", conf, topology);
 
+        IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode("localhost", 10000,
+                rawSchema, 1024);;
         Thread ingestionThread = new Thread(()->{
             Random random = new Random();
-            IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode("localhost", 10000,
-                    rawSchema, 1024);
+
             try {
                 clientBatchMode.connectWithTimeout(10000);
             } catch (IOException e) {
@@ -130,7 +132,12 @@ public class KingBaseTopology {
                 tuple.add("2015-10-10, 11:12:34");
                 try {
                     clientBatchMode.appendInBatch(tuple);
+                    if(Thread.interrupted()) {
+                        break;
+                    }
                 } catch (IOException e) {
+                    if (clientBatchMode.isClosed())
+                        break;
                     e.printStackTrace();
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
@@ -146,8 +153,8 @@ public class KingBaseTopology {
         });
         ingestionThread.start();
 
+        GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient("localhost", 10001);
         Thread queryThread = new Thread(() -> {
-            GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient("localhost", 10001);
             try {
                 queryClient.connectWithTimeout(10000);
             } catch (IOException e) {
@@ -205,8 +212,12 @@ public class KingBaseTopology {
                             }
                             System.out.println(response);
                         }
+                    } catch (SocketTimeoutException e) {
+                        Thread.interrupted();
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        if (Thread.currentThread().interrupted()) {
+                            Thread.interrupted();
+                        }
                     } catch (ClassNotFoundException e) {
                         e.printStackTrace();
                     }
@@ -254,11 +265,14 @@ public class KingBaseTopology {
         });
         queryThread.start();
 
-        Utils.sleep(150000);
+        Utils.sleep(5000);
         cluster.shutdown();
         System.out.println("Local cluster is shut down!");
         ingestionThread.interrupt();
+        clientBatchMode.close();
+        queryClient.close();
         queryThread.interrupt();
+        System.out.println("Waiting to interrupt!");
 //        StormSubmitter.submitTopologyWithProgressBar(args[0], conf, topology);
     }
 

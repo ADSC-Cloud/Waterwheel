@@ -20,6 +20,8 @@ public class ClientSkeleton {
 
     int port;
 
+    private boolean closed = false;
+
     public ClientSkeleton(String serverHost, int port) {
         this.serverHost = serverHost;
         this.port = port;
@@ -27,6 +29,7 @@ public class ClientSkeleton {
 
     public void connect() throws IOException{
         client = new Socket(serverHost, port);
+        client.setSoTimeout(1000);
         objectOutputStream = new ObjectOutputStream((client.getOutputStream()));
         objectInputStream = new ObjectInputStream(client.getInputStream());
         System.out.println("Connected with " + serverHost);
@@ -48,9 +51,14 @@ public class ClientSkeleton {
     }
 
     public void close() throws IOException {
-        objectInputStream.close();
+        closed = true;
         objectOutputStream.close();
+        objectInputStream.close();
         client.close();
+    }
+
+    public boolean isClosed() {
+        return closed;
     }
 
     public static void main(String[] args) throws Exception {

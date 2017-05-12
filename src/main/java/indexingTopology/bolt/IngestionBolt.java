@@ -124,7 +124,7 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
         } else if (tuple.getSourceStreamId().equals(Streams.BPlusTreeQueryStream)){
             SubQuery subQuery = (SubQuery) tuple.getValueByField("subquery");
             try {
-                System.out.println("Insertion Server: Received a subquery!");
+//                System.out.println("Insertion Server: Received a subquery!");
                 queryPendingQueue.put(subQuery);
             } catch (InterruptedException e) {
                 e.printStackTrace();

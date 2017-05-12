@@ -5,6 +5,7 @@ import indexingTopology.data.DataTuple;
 import indexingTopology.data.DataTupleBlock;
 
 import java.io.IOException;
+import java.net.SocketException;
 
 /**
  * Created by robert on 9/3/17.

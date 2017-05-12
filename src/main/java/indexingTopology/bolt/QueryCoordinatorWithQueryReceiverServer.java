@@ -45,17 +45,14 @@ public class QueryCoordinatorWithQueryReceiverServer<T extends Number & Comparab
 
 
         server = new Server(port, QueryServerHandle.class, new Class[]{LinkedBlockingQueue.class, AtomicLong.class, Map.class}, pendingQueue, queryId, queryIdToPartialQueryResults);
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    server.startDaemon();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
+        server.startDaemon();
 //        queryIdToPartialQueryResultSemphore = new HashMap<>();
+    }
+
+    @Override
+    public void cleanup() {
+        server.endDaemon();
+        super.cleanup();
     }
 
     @Override

@@ -27,17 +27,7 @@ public class InputStreamReceiverServer extends InputStreamReceiver {
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         super.prepare(map, topologyContext, outputCollector);
         server = new Server(port, AppendServerHandle.class, new Class[]{BlockingQueue.class}, inputQueue);
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    server.startDaemon();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
-
+        server.startDaemon();
     }
 
     @Override
@@ -74,7 +64,9 @@ public class InputStreamReceiverServer extends InputStreamReceiver {
                 try {
                     inputQueue.put(t);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    Thread.currentThread().interrupt();
+//                    e.printStackTrace();
+//                    return;
                 }
             });
 //            objectOutputStream.writeUnshared("handled the block!");

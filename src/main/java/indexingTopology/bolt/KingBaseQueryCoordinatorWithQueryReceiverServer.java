@@ -55,17 +55,14 @@ public class KingBaseQueryCoordinatorWithQueryReceiverServer<T extends Number & 
 
 
         server = new Server(port, QueryServerHandle.class, new Class[]{LinkedBlockingQueue.class, AtomicLong.class, Map.class, City.class}, pendingQueue, queryId, queryIdToPartialQueryResults, city);
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    server.startDaemon();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
+        server.startDaemon();
 //        queryIdToPartialQueryResultSemphore = new HashMap<>();
+    }
+
+    @Override
+    public void cleanup() {
+        server.endDaemon();
+        super.cleanup();
     }
 
     @Override
@@ -124,6 +121,7 @@ public class KingBaseQueryCoordinatorWithQueryReceiverServer<T extends Number & 
 
             } catch (InterruptedException e) {
                 e.printStackTrace();
+                Thread.interrupted();
             }
         }
 

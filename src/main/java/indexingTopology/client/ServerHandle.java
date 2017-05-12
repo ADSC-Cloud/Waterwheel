@@ -1,5 +1,6 @@
 package indexingTopology.client;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -42,9 +43,12 @@ public abstract class ServerHandle implements Runnable{
                         e.printStackTrace();
                     }
                 }
+            } catch (EOFException e) {
+                System.out.println("Client is closed.");
             } catch (IOException io) {
-                io.printStackTrace();
-
+                System.out.println("IOException occurs.");
+//                if (!client.isClosed())
+//                    io.printStackTrace();
             }
     }
 

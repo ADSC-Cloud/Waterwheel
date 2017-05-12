@@ -27,6 +27,11 @@ public class FakeServerHandle extends ServerHandle implements QueryHandle, Appen
         PartialQueryResult particalQueryResult = new PartialQueryResult();
         particalQueryResult.add(dataTuple);
         particalQueryResult.add(dataTuple1);
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         objectOutputStream.writeObject(new QueryResponse(particalQueryResult, 1L));
 
     }
