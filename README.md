@@ -1,6 +1,6 @@
 ## Distributed Append-Only Store
 
-This project is an append-only store designed for high-throughput data ingestion and real-time key range and temporal queries. It is implemented as an application-level topology and runs on top of Apache Storm. 
+This project is a distributed append-only store designed for high-throughput data ingestion and real-time key range and temporal queries. It is implemented as an application-level topology and runs on top of Apache Storm. 
 
 ### Data & Query Model
 Data tuples continuouly arrive at the system. Each tuple consists of a key, a timestamp and a payload. A payload is a collection of primitives and/or user-defined objects. We assume the timestamps of the tuples are roughly in increasing order. A user query contains a key range constraint and a temporal range constraint. 
