@@ -176,7 +176,11 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
     }
 
     public void setBloomFilterIndexedColumns(List<String> columns) {
-        this.bloomFilterIndexedColumns = columns;
+        if (columns == null) {
+            this.bloomFilterIndexedColumns = new ArrayList<>();
+        } else {
+            this.bloomFilterIndexedColumns = columns;
+        }
         inializeBloomFilters();
     }
 
