@@ -17,9 +17,14 @@ public class QueryClient extends ClientSkeleton {
         return (QueryResponse) objectInputStream.readUnshared();
     }
 
-    public QueryResponse query(QueryRequest query) throws IOException, ClassNotFoundException  {
+    public QueryResponse query(QueryRequest query) throws IOException  {
         objectOutputStream.writeUnshared(query);
         objectOutputStream.reset();
-        return (QueryResponse) objectInputStream.readUnshared();
+        try {
+            return (QueryResponse) objectInputStream.readUnshared();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }

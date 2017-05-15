@@ -12,19 +12,19 @@ public class IngestionClient extends ClientSkeleton implements IIngestionClient 
         super(serverHost, port);
     }
 
-    public IResponse append(DataTuple dataTuple) throws IOException, ClassNotFoundException {
+    public IResponse append(DataTuple dataTuple) throws IOException {
         objectOutputStream.writeObject(new AppendRequest(dataTuple));
 //        return (Response) objectInputStream.readObject();
         return null;
     }
 
     @Override
-    public void appendInBatch(DataTuple tuple) throws IOException, ClassNotFoundException {
+    public void appendInBatch(DataTuple tuple) throws IOException {
 
     }
 
     @Override
-    public void flush() throws IOException, ClassNotFoundException {
+    public void flush() throws IOException {
 
     }
 }

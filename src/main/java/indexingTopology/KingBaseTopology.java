@@ -139,8 +139,6 @@ public class KingBaseTopology {
                     if (clientBatchMode.isClosed())
                         break;
                     e.printStackTrace();
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
                 }
 
 //                try {
@@ -265,7 +263,7 @@ public class KingBaseTopology {
         });
         queryThread.start();
 
-        Utils.sleep(5000);
+        Utils.sleep(50000);
         cluster.shutdown();
         System.out.println("Local cluster is shut down!");
         ingestionThread.interrupt();
