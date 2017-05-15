@@ -3,6 +3,7 @@ package indexingTopology.aggregator;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import indexingTopology.data.PartialQueryResult;
+import org.apache.commons.lang.SerializationUtils;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -236,6 +237,25 @@ public class AggregationTest {
         assertEquals(result.dataTuples.get(0), new DataTuple(1.0, 1.0, 1.0, 1.0, 1L, 1L, 1.0));
         assertEquals(result.dataTuples.get(1), new DataTuple(2.0, 2.0, 3.0, 2.0, 2L, 2L, 4.0));
         assertEquals(result.dataTuples.get(2), new DataTuple(3.0, 2.0, 4.0, 3.0, 3L, 2L, 5.0));
+    }
+
+    @Test
+    public void testSerialization() {
+        DataSchema schema = new DataSchema();
+        schema.addIntField("c1");
+        schema.addDoubleField("c2");
+        schema.addLongField("c3");
+        Aggregator<Integer> localAggregator1 = new Aggregator<>(schema, "c1", new AggregateField[]{
+                new AggregateField(new Count<>(), "c2"),
+                new AggregateField(new Sum<>(), "c2"),
+                new AggregateField(new Max<>(), "c2"),
+                new AggregateField(new Max<>(), "c3"),
+                new AggregateField(new Min<>(), "c3"),
+                new AggregateField(new Sum<>(), "c3")
+
+        });
+        byte[] bytes = SerializationUtils.serialize(localAggregator1);
+        assertTrue(bytes.length > 0);
     }
 
 

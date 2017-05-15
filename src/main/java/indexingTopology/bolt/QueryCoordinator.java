@@ -301,7 +301,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             final List<String> chunkNames = filePartitionSchemaManager.search(leftKey.doubleValue(), rightKey.doubleValue(), startTimestamp, endTimestamp);
             for (String chunkName: chunkNames) {
                 boolean prunedByBloomFilter = false;
-
+//
 //                if (query.equivalentPredicate != null) {
 //                    System.out.println("equivalentPredicate is passed.");
 //                } else {
@@ -313,6 +313,9 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
                     if (bloomFilter != null && !bloomFilter.mightContain(query.equivalentPredicate.value)) {
                         prunedByBloomFilter = true;
                     }
+//                    else {
+//                        System.out.println("Failed to prune by bloom filter.");
+//                    }
                 }
 
                 if (!prunedByBloomFilter) {

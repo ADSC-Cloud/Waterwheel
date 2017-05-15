@@ -100,8 +100,8 @@ public class Server<T extends ServerHandle> {
                 e.printStackTrace();
             } catch (SocketTimeoutException e) {
                 if (Thread.interrupted() || closed)
-                    break;
-//                    throw new InterruptedException();
+//                    break;
+                    throw new InterruptedException();
             } catch (RejectedExecutionException e) {
                 throw e;
             } catch (SocketException e) {

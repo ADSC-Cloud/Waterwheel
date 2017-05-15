@@ -26,7 +26,7 @@ public class IngestionClientBatchMode extends ClientSkeleton implements IIngesti
 
     public IResponse append(DataTuple dataTuple) throws IOException {
 
-        objectOutputStream.writeUnshared(dataTuple);
+        appendInBatch(dataTuple);
 
 //        return (Response) objectInputStream.readObject();
         return null;

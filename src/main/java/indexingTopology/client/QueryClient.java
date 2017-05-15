@@ -1,6 +1,9 @@
 package indexingTopology.client;
 
 import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
+import java.net.SocketTimeoutException;
 
 /**
  * Created by robert on 9/3/17.
@@ -20,8 +23,30 @@ public class QueryClient extends ClientSkeleton {
     public QueryResponse query(QueryRequest query) throws IOException  {
         objectOutputStream.writeUnshared(query);
         objectOutputStream.reset();
+
         try {
-            return (QueryResponse) objectInputStream.readUnshared();
+            boolean eof = false;
+            QueryResponse response = null;
+// = (QueryResponse) objectInputStream.readUnshared();
+//            eof = response.getEOFFlag();
+
+            while (!eof) {
+
+                try {
+                    QueryResponse remainingQueryResponse = (QueryResponse) objectInputStream.readUnshared();
+                    if (response == null) {
+                        response = remainingQueryResponse;
+                    } else {
+                        response.dataTuples.addAll(remainingQueryResponse.dataTuples);
+                    }
+                    eof = remainingQueryResponse.getEOFFlag();
+                } catch (SocketTimeoutException e) {
+
+                }
+
+            }
+
+            return response;
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
             return null;

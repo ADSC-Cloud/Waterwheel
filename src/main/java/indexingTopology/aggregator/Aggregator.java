@@ -18,7 +18,19 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
     // this is the computation state
     static public class IntermediateResult<Key extends Number & Comparable<Key>> {
 
-        transient private Map<Key, Object[]> aggregationResults = new HashMap<>();
+        transient Map<Key, Object[]> aggregationResults = new HashMap<>();
+
+        public String toString() {
+            String str = "";
+            for (Key key: aggregationResults.keySet()) {
+                str += String.format("%d: ", key);
+                for (Object object: aggregationResults.get(key)) {
+                    str += String.format("%s\t", object);
+                }
+                str +="\n";
+            }
+            return str;
+        }
     }
 
     public IntermediateResult<Key> createIntermediateResult() {
