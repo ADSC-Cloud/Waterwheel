@@ -7,10 +7,7 @@ import indexingTopology.bolt.QueryCoordinatorWithQueryReceiverServer;
 import indexingTopology.client.*;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
-import indexingTopology.util.DataTupleEquivalentPredicateHint;
-import indexingTopology.util.DataTuplePredicate;
-import indexingTopology.util.DataTupleSorter;
-import indexingTopology.util.TopologyGenerator;
+import indexingTopology.util.*;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
 import org.apache.storm.generated.StormTopology;
@@ -22,6 +19,7 @@ import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.function.Function;
 
 import static org.junit.Assert.*;
 
@@ -487,6 +485,138 @@ public class TopologyTest {
                 assertEquals((double)tuples/100, (double)tuple.get(1), 0.0001);
                 assertEquals(0.0, (double)tuple.get(2), 0.0001);
                 assertEquals(999.0, (double)tuple.get(3), 0.0001);
+            }
+
+
+            fullyExecuted = true;
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            ingestionClient.close();
+            queryClient.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        assertTrue(fullyExecuted);
+        cluster.shutdown();
+
+    }
+
+    @Test
+    public void testSimpleTopologyMapperAggregation() throws InterruptedException {
+        DataSchema rawSchema = new DataSchema();
+        rawSchema.addIntField("a1");
+        rawSchema.addDoubleField("a2");
+        rawSchema.addLongField("timestamp");
+        rawSchema.addVarcharField("a4", 100);
+        rawSchema.setPrimaryIndexField("a1");
+
+        DataSchema schema = rawSchema.duplicate();
+        schema.addDoubleField("a3");
+
+        DataTupleMapper mapper = new DataTupleMapper(rawSchema, (Serializable & Function<DataTuple, DataTuple>) (DataTuple t) -> {
+            t.add((double)t.get(1) * 2);
+            return t;});
+
+        final int minIndex = 0;
+        final int maxIndex = 100;
+
+        TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
+
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(rawSchema, 10000);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001);
+
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
+                coordinator, mapper);
+
+        Config conf = new Config();
+        conf.setDebug(false);
+        conf.setNumWorkers(1);
+
+        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+
+
+        LocalCluster cluster = new LocalCluster();
+        cluster.submitTopology("T0", conf, topology);
+
+        final int tuples = 100000;
+
+
+        final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", 10000, rawSchema, 1024);
+        try {
+            ingestionClient.connectWithTimeout(5000);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        final QueryClient queryClient = new QueryClient("localhost", 10001);
+        try {
+            queryClient.connectWithTimeout(5000);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        ExecutorService executorService = Executors.newCachedThreadPool();
+
+
+        boolean fullyExecuted = false;
+
+        for (int i = 0; i < tuples; i++) {
+            DataTuple tuple = new DataTuple();
+            tuple.add(i / (tuples / 100));
+            tuple.add((double)(i % 1000));
+            tuple.add(100L);
+            tuple.add("payload");
+            try {
+                ingestionClient.appendInBatch(tuple);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        try {
+            ingestionClient.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // wait for the tuples to be appended.
+        Thread.sleep(2000);
+
+        try {
+
+            Aggregator<Integer> aggregator = new Aggregator<>(schema, "a1", new AggregateField(new Count(), "*")
+                    , new AggregateField(new Min<>(), "a3"), new AggregateField(new Max<>(), "a3"));
+
+            // full key range query
+            QueryResponse response = queryClient.query(new QueryRequest<>(minIndex, maxIndex, Long.MIN_VALUE,
+                    Long.MAX_VALUE, aggregator));
+            assertEquals(100, response.dataTuples.size());
+            for (DataTuple tuple: response.dataTuples) {
+                assertEquals((double)tuples/100, (double)tuple.get(1), 0.0001);
+                assertEquals(0.0, (double)tuple.get(2), 0.0001);
+                assertEquals(999.0 * 2, (double)tuple.get(3), 0.0001);
+            }
+
+            //half key range query
+            response = queryClient.query(new QueryRequest<>(0, 49, Long.MIN_VALUE, Long.MAX_VALUE, aggregator));
+            assertEquals(50, response.dataTuples.size());
+            for (DataTuple tuple: response.dataTuples) {
+                assertEquals((double)tuples/100, (double)tuple.get(1), 0.0001);
+                assertEquals(0.0, (double)tuple.get(2), 0.0001);
+                assertEquals(999.0 * 2, (double)tuple.get(3), 0.0001);
+            }
+
+            //a key range query
+            response =  queryClient.query(new QueryRequest<>(0,0, Long.MIN_VALUE, Long.MAX_VALUE, aggregator));
+            assertEquals(1, response.dataTuples.size());
+            for (DataTuple tuple: response.dataTuples) {
+                assertEquals((double)tuples/100, (double)tuple.get(1), 0.0001);
+                assertEquals(0.0, (double)tuple.get(2), 0.0001);
+                assertEquals(999.0 * 2, (double)tuple.get(3), 0.0001);
             }
 
 
