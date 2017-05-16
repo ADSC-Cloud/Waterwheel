@@ -218,7 +218,7 @@ public class ResultMerger extends BaseRichBolt {
             if (results.size() == 0) {
                 result.setEOFflag();
             }
-            System.out.println("A partial query result is sent to coordinator from merger.");
+//            System.out.println("A partial query result is sent to coordinator from merger.");
             collector.emit(Streams.PartialQueryResultDeliveryStream, new Values(queryId, result));
             results.remove(0);
             if (results.size() == 0) {
@@ -227,7 +227,7 @@ public class ResultMerger extends BaseRichBolt {
         } else {
             PartialQueryResult result = new PartialQueryResult();
             result.setEOFflag();
-            System.out.println("A empty partial query result is sent to coordinator from merger.");
+//            System.out.println("A empty partial query result is sent to coordinator from merger.");
             collector.emit(Streams.PartialQueryResultDeliveryStream, new Values(queryId, result));
         }
 
@@ -260,7 +260,7 @@ public class ResultMerger extends BaseRichBolt {
         // sort if applicable.
         if (subQuery.sorter != null) {
             allResults.dataTuples.sort(subQuery.sorter);
-            System.out.println("Sort is applied!! ##########");
+//            System.out.println("Sort is applied!! ##########");
         }
 
         // compact results into groups with bounded size.

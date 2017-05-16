@@ -408,7 +408,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
     private void generateSubQueriesOnTheInsertionServer(List<Query<T>> queryList) {
         int numberOfTasksToSearch = 0;
         Query firstQuery = queryList.get(0);
-        System.out.println("Decompose subquery for " + queryList.get(0).queryId + "(on insertion servers)");
+//        System.out.println("Decompose subquery for " + queryList.get(0).queryId + "(on insertion servers)");
         for(Query<T> query: queryList) {
 
             Long queryId = query.queryId;
@@ -443,7 +443,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             }
         }
 
-        System.out.println( firstQuery.queryId+ "-->" + numberOfTasksToSearch + "sub-queries on insertion servers");
+        System.out.println( firstQuery.queryId+ ": " + numberOfTasksToSearch + "sub-queries on insertion servers");
 
         collector.emit(Streams.BPlusTreeQueryInformationStream, new Values(firstQuery.queryId, numberOfTasksToSearch));
     }
