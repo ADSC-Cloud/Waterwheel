@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Created by acelzj on 11/15/16.
  */
-public class KingBaseQueryCoordinatorWithQueryReceiverServer<T extends Number & Comparable<T>> extends QueryCoordinator<T> {
+public class GeoTemporalQueryCoordinatorWithQueryReceiverServer<T extends Number & Comparable<T>> extends QueryCoordinator<T> {
 
     private final int port;
 
@@ -40,9 +40,9 @@ public class KingBaseQueryCoordinatorWithQueryReceiverServer<T extends Number & 
 
 //    Map<Long, Semaphore> queryIdToPartialQueryResultSemphore;
 
-    private static final Logger LOG = LoggerFactory.getLogger(KingBaseQueryCoordinatorWithQueryReceiverServer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GeoTemporalQueryCoordinatorWithQueryReceiverServer.class);
 
-    public KingBaseQueryCoordinatorWithQueryReceiverServer(T lowerBound, T upperBound, int port, City city) {
+    public GeoTemporalQueryCoordinatorWithQueryReceiverServer(T lowerBound, T upperBound, int port, City city) {
         super(lowerBound, upperBound);
         this.port = port;
         this.city = city;
@@ -111,9 +111,9 @@ public class KingBaseQueryCoordinatorWithQueryReceiverServer<T extends Number & 
                 System.out.println("Admitted a query.  waiting for query results");
                 boolean eof = false;
                 while(!eof) {
-                    System.out.println("Before take!");
+//                    System.out.println("Before take!");
                     PartialQueryResult partialQueryResult = results.take();
-                    System.out.println("Received PartialQueryResult!");
+//                    System.out.println("Received PartialQueryResult!");
                     eof = partialQueryResult.getEOFFlag();
                     objectOutputStream.writeUnshared(new QueryResponse(partialQueryResult, queryid));
                     objectOutputStream.reset();
@@ -155,12 +155,12 @@ public class KingBaseQueryCoordinatorWithQueryReceiverServer<T extends Number & 
 
                 pendingQueryQueue.put(queryList);
 
-                System.out.println("Admitted a query.  waiting for query results");
+//                System.out.println("Admitted a query.  waiting for query results");
                 boolean eof = false;
                 while(!eof) {
-                    System.out.println("Before take!");
+//                    System.out.println("Before take!");
                     PartialQueryResult partialQueryResult = results.take();
-                    System.out.println("Received PartialQueryResult!");
+//                    System.out.println("Received PartialQueryResult!");
                     eof = partialQueryResult.getEOFFlag();
                     objectOutputStream.writeUnshared(new QueryResponse(partialQueryResult, queryid));
                     objectOutputStream.reset();

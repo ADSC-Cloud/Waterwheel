@@ -27,11 +27,7 @@ public class QueryClient extends ClientSkeleton {
         try {
             boolean eof = false;
             QueryResponse response = null;
-// = (QueryResponse) objectInputStream.readUnshared();
-//            eof = response.getEOFFlag();
-
             while (!eof) {
-
                 try {
                     QueryResponse remainingQueryResponse = (QueryResponse) objectInputStream.readUnshared();
                     if (response == null) {
@@ -41,11 +37,8 @@ public class QueryClient extends ClientSkeleton {
                     }
                     eof = remainingQueryResponse.getEOFFlag();
                 } catch (SocketTimeoutException e) {
-
                 }
-
             }
-
             return response;
         } catch (ClassNotFoundException e) {
             e.printStackTrace();

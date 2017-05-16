@@ -11,7 +11,6 @@ import indexingTopology.util.*;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
 import org.apache.storm.generated.StormTopology;
-import org.junit.Test;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -21,6 +20,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Function;
 
+import org.junit.Test;
 import static org.junit.Assert.*;
 
 

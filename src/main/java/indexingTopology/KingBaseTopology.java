@@ -78,7 +78,7 @@ public class KingBaseTopology {
         InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000);
 
         ZOrderCoding zOrderCoding = city.getzOrderCoding();
-        QueryCoordinator<Integer> queryCoordinator = new KingBaseQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
+        QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
                 upperBound, 10001, city);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
