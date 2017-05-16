@@ -44,8 +44,6 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
 
     private DataTupleMapper tupleMapper;
 
-    private RateTracker rateTracker;
-
     public IngestionDispatcher(DataSchema dataSchema, IndexType lowerBound, IndexType upperBound, boolean enableLoadBalance,
                                boolean generateTimeStamp, DataTupleMapper tupleMapper) {
         this.tupleMapper = tupleMapper;
@@ -78,10 +76,6 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
             targetTasks.addAll(topologyContext.getComponentTasks(componentId));
         }
 
-//        System.out.println(targetTasks);
-
-        rateTracker = new RateTracker(5 * 1000, 5);
-
         numberOfPartitions = targetTasks.size();
 
         balancedPartition = new BalancedPartition<>(numberOfPartitions, lowerBound, upperBound, enableLoadBalance);
@@ -108,35 +102,14 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
 
             int partitionId = balancedPartition.getPartitionId(indexValue);
 
-//            System.out.println("partitionId " + partitionId);
-
-//            System.out.println("partition id " + partitionId);
-
             int taskId = targetTasks.get(partitionId);
-
-
-//            System.out.println("Task id " + taskId);
-
-            rateTracker.notify(1);
-
-//            collector.emitDirect(taskId, Streams.IndexStream, tuple, new Values(dataTuple));
-//            collector.emitDirect(taskId, Streams.IndexStream, tuple, new Values(schema.serializeTuple(dataTuple)));
-//            collector.emitDirect(taskId, Streams.IndexStream, tuple, new Values(schema.serializeTuple(dataTuple), tupleId));
             collector.emitDirect(taskId, Streams.IndexStream, new Values(outputSchema.serializeTuple(dataTuple), tupleId, sourceTaskId));
-//            collector.ack(tuple);
         } else if (tuple.getSourceStreamId().equals(Streams.IntervalPartitionUpdateStream)){
-//            System.out.println("partition has been updated!!!");
-//            Map<Integer, Integer> intervalToPartitionMapping = (Map) tuple.getValueByField("newIntervalPartition");
-//            balancedPartition = (BalancedPartition) tuple.getValueByField("newIntervalPartition");
             balancedPartition.setIntervalToPartitionMapping(((BalancedPartition) tuple.getValueByField("newIntervalPartition")).getIntervalToPartitionMapping());
-//            System.out.println(intervalToPartitionMapping);
-//            balancedPartition.setIntervalToPartitionMapping(intervalToPartitionMapping);
         } else if (tuple.getSourceStreamId().equals(Streams.StaticsRequestStream)){
             collector.emit(Streams.StatisticsReportStream,
                     new Values(new Histogram(balancedPartition.getIntervalDistribution().getHistogram())));
             balancedPartition.clearHistogram();
-        } else if (tuple.getSourceStreamId().equals(Streams.ThroughputRequestStream)) {
-            collector.emit(Streams.ThroughputReportStream, new Values(rateTracker.reportRate()));
         }
     }
 

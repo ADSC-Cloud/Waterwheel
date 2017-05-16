@@ -41,18 +41,11 @@ public class PerformanceTester {
         }
     }
 
-    static Thread launchServerDaemon(int port) {
-        Thread thread =
-        new Thread(() -> {
-            final Server server = new Server(1024, PerformanceTesterServerHandle.class, new Class[]{}, null);
-            try {
+    static Server launchServerDaemon(int port) {
+
+        final Server server = new Server(1024, PerformanceTesterServerHandle.class, new Class[]{}, null);
                 server.startDaemon();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
-        thread.start();
-        return thread;
+        return server;
     }
 
     static double testAppendThroughput(String host, int tuples, int payload) throws IOException, ClassNotFoundException,
@@ -118,14 +111,15 @@ public class PerformanceTester {
     static public void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
         String option = args[0];
         System.out.println("args: " + option);
+        Server server = null;
         if(option.equals("both")) {
             System.out.println("both!");
-            launchServerDaemon(1024);
+            server = launchServerDaemon(1024);
             double throughput = testAppendBatchModeThroughput(1000000,64);
             System.out.println("Throughput: " + throughput);
         } else if (option.equals("server")) {
             System.out.println("Server!");
-            launchServerDaemon(1024);
+            server = launchServerDaemon(1024);
         } else if (option.equals("client")) {
             System.out.println("ClientSkeleton!");
             String serverHost = "localhost";

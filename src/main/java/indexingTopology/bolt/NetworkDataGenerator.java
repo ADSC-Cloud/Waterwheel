@@ -28,6 +28,8 @@ public class NetworkDataGenerator extends InputStreamReceiver {
 
     FrequencyRestrictor frequencyRestrictor;
 
+    private Thread generationThread;
+
     public NetworkDataGenerator(DataSchema schema) {
         super(schema);
     }
@@ -36,7 +38,7 @@ public class NetworkDataGenerator extends InputStreamReceiver {
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         super.prepare(map, topologyContext, outputCollector);
 
-        frequencyRestrictor = new FrequencyRestrictor(50000 / 24, 50);
+//        frequencyRestrictor = new FrequencyRestrictor(50000 / 24, 50);
 
         try {
             bufferedReader = new BufferedReader(new FileReader(new File(TopologyConfig.dataFileDir)));
@@ -44,10 +46,11 @@ public class NetworkDataGenerator extends InputStreamReceiver {
             e.printStackTrace();
         }
 
-        Thread generationThread = new Thread(new Runnable() {
+        generationThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                while (true) {
+//                while (true) {
+                while (!Thread.currentThread().isInterrupted()) {
                     String text = null;
                     try {
                         text = bufferedReader.readLine();
@@ -75,23 +78,30 @@ public class NetworkDataGenerator extends InputStreamReceiver {
                         String url = data[2];
                         Long timestamp = System.currentTimeMillis();
 
-                        try {
-                            frequencyRestrictor.getPermission(1);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
+//                        try {
+//                            frequencyRestrictor.getPermission(1);
+//                        } catch (InterruptedException e) {
+//                            e.printStackTrace();
+//                        }
 
                         final DataTuple dataTuple = new DataTuple(sourceIp, destIp, url, timestamp);
                         try {
                             inputQueue.put(dataTuple);
                         } catch (InterruptedException e) {
-                            e.printStackTrace();
+                            Thread.currentThread().interrupt();
+//                            e.printStackTrace();
                         }
                     }
 
                 }
             }
         });
-        generationThread.start();
+//        generationThread.start();
+    }
+
+    @Override
+    public void cleanup() {
+        super.cleanup();
+        generationThread.interrupt();
     }
 }

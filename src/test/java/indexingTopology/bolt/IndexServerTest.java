@@ -4,7 +4,7 @@ import com.esotericsoftware.kryo.io.Output;
 import indexingTopology.data.DataSchema;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.util.*;
-import indexingTopology.util.texi.*;
+import indexingTopology.util.taxi.*;
 import javafx.util.Pair;
 import org.apache.storm.tuple.Values;
 import org.apache.log4j.Logger;

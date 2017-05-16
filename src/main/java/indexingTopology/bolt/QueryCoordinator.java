@@ -2,6 +2,8 @@ package indexingTopology.bolt;
 
 import com.github.davidmoten.rtree.RTree;
 import com.github.davidmoten.rtree.Visualizer;
+import com.google.common.hash.BloomFilter;
+import indexingTopology.bloom.DataChunkBloomFilters;
 import indexingTopology.data.PartialQueryResult;
 import indexingTopology.util.*;
 import javafx.util.Pair;
@@ -22,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 
@@ -66,7 +69,9 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private Map<Long, Pair> queryIdToStartTime;
 
-    private int totalQueries;
+    private Thread queryHandlingThread;
+
+    private Map<String, Map<String, BloomFilter>> columnToChunkToBloomFilter;
 
 
     private static final Logger LOG = LoggerFactory.getLogger(QueryCoordinator.class);
@@ -76,6 +81,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
         this.upperBound = upperBound;
     }
 
+    @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
 
@@ -119,9 +125,12 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
         pendingQueue = new LinkedBlockingQueue<>();
 
+        columnToChunkToBloomFilter = new HashMap<>();
+
         createQueryHandlingThread();
     }
 
+    @Override
     public void execute(Tuple tuple) {
         if (tuple.getSourceStreamId().equals(Streams.FileInformationUpdateStream)) {
             String fileName = tuple.getString(0);
@@ -133,6 +142,16 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
             filePartitionSchemaManager.add(new FileMetaData(fileName, ((T) keyDomain.getLowerBound()).doubleValue(),
                     ((T) keyDomain.getUpperBound()).doubleValue(), timeDomain.getStartTimestamp(), timeDomain.getEndTimestamp()));
+
+            DataChunkBloomFilters bloomFilters = (DataChunkBloomFilters)tuple.getValueByField("bloomFilters");
+
+            for(String column: bloomFilters.columnToBloomFilter.keySet()) {
+                Map<String, BloomFilter> chunkNameToFilter = columnToChunkToBloomFilter.computeIfAbsent(column, t->
+                    new ConcurrentHashMap<>());
+                chunkNameToFilter.put(fileName, bloomFilters.columnToBloomFilter.get(column));
+                System.out.println(String.format("A bloom filter is added for chunk: %s, column: %s", fileName, column));
+            }
+
         } else if (tuple.getSourceStreamId().equals(Streams.QueryFinishedStream)) {
             Long queryId = tuple.getLong(0);
 
@@ -143,11 +162,11 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             if (pair != null) {
                 Long start = (Long) pair.getKey();
                 int fileSize = (Integer) pair.getValue();
-                LOG.info("query id " + queryId);
+//                LOG.info("query id " + queryId);
 //                LOG.info("Query start time " + start);
 //                LOG.info("Query end time " + System.currentTimeMillis());
-                LOG.info("Query time " + (System.currentTimeMillis() - start));
-                LOG.info("file size " + fileSize);
+//                LOG.info("Query time " + (System.currentTimeMillis() - start));
+//                LOG.info("file size " + fileSize);
                 queryIdToStartTime.remove(queryId);
             }
 
@@ -236,6 +255,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
         }
     }
 
+    @Override
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
         outputFieldsDeclarer.declareStream(Streams.FileSystemQueryStream, new Fields("subquery"));
 
@@ -256,6 +276,12 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
         outputFieldsDeclarer.declareStream(Streams.PartialQueryResultReceivedStream, new Fields("queryId"));
     }
 
+    @Override
+    public void cleanup() {
+        super.cleanup();
+        queryHandlingThread.interrupt();
+    }
+
     private void handleQuery(List<Query<T>> querylist) {
         generateSubQueriesOnTheInsertionServer(querylist);
         generateSubqueriesOnTheFileScanner(querylist);
@@ -263,7 +289,8 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private void generateSubqueriesOnTheFileScanner(List<Query<T>> queryList) {
         Query<T> firstQuery = queryList.get(0);
-        List<SubQuery<T>> subQueries = new ArrayList<>();
+        List<SubQueryOnFile<T>> subQueries = new ArrayList<>();
+        int prunedCount = 0;
         for (Query<T> query: queryList) {
             Long queryId = query.getQueryId();
             T leftKey = query.leftKey;
@@ -273,10 +300,37 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
             final List<String> chunkNames = filePartitionSchemaManager.search(leftKey.doubleValue(), rightKey.doubleValue(), startTimestamp, endTimestamp);
             for (String chunkName: chunkNames) {
-                subQueries.add(new SubQueryOnFile<>(queryId, leftKey, rightKey, chunkName, startTimestamp, endTimestamp,
-                        query.predicate, query.aggregator, query.sorter));
+                boolean prunedByBloomFilter = false;
+//
+//                if (query.equivalentPredicate != null) {
+//                    System.out.println("equivalentPredicate is passed.");
+//                } else {
+//                    System.out.println("equivalentPredicate is null.");
+//                }
+
+                if (query.equivalentPredicate != null && columnToChunkToBloomFilter.containsKey(query.equivalentPredicate.column)) {
+                    BloomFilter bloomFilter = columnToChunkToBloomFilter.get(query.equivalentPredicate.column).get(chunkName);
+                    if (bloomFilter != null && !bloomFilter.mightContain(query.equivalentPredicate.value)) {
+                        prunedByBloomFilter = true;
+                    }
+//                    else {
+//                        System.out.println("Failed to prune by bloom filter.");
+//                    }
+                }
+
+                if (!prunedByBloomFilter) {
+                    subQueries.add(new SubQueryOnFile<>(queryId, leftKey, rightKey, chunkName, startTimestamp, endTimestamp,
+                            query.predicate, query.aggregator, query.sorter));
+                } else {
+                    prunedCount ++;
+                }
             }
         }
+
+        System.out.println(String.format("%s out of %s queries have been pruned by bloom filter.", prunedCount,
+                prunedCount + subQueries.size()));
+
+
 
         if (subQueries.size() <= 0) {
             System.out.println(String.format("%d subqueries on chunks.", subQueries.size()));
@@ -286,7 +340,6 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             System.out.println(String.format("%d subqueries on chunks are generated!", subQueries.size()));
 
             for (SubQuery subQuery: subQueries) {
-
                 if (TopologyConfig.SHUFFLE_GROUPING_FLAG) {
                     sendSubqueriesByshuffleGrouping(subQuery);
                 } else if (TopologyConfig.TASK_QUEUE_MODEL) {
@@ -322,21 +375,25 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
     }
 
     private void createQueryHandlingThread() {
-        new Thread(new Runnable() {
+        queryHandlingThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                while (true) {
+//                while (true) {
+                while (!Thread.currentThread().isInterrupted()) {
                     try {
                         List<Query<T>> queryList = pendingQueue.take();
 //                        Query query = pendingQueue.take();
                         concurrentQueriesSemaphore.acquire();
                         handleQuery(queryList);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
             }
-        }).start();
+        });
+        queryHandlingThread.start();
     }
 
 
@@ -351,7 +408,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
     private void generateSubQueriesOnTheInsertionServer(List<Query<T>> queryList) {
         int numberOfTasksToSearch = 0;
         Query firstQuery = queryList.get(0);
-        System.out.println("Decompose subquery for " + queryList.get(0).queryId + "(on insertion servers)");
+//        System.out.println("Decompose subquery for " + queryList.get(0).queryId + "(on insertion servers)");
         for(Query<T> query: queryList) {
 
             Long queryId = query.queryId;
@@ -386,7 +443,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             }
         }
 
-        System.out.println( firstQuery.queryId+ "-->" + numberOfTasksToSearch + "sub-queries on insertion servers");
+        System.out.println( firstQuery.queryId+ ": " + numberOfTasksToSearch + "sub-queries on insertion servers");
 
         collector.emit(Streams.BPlusTreeQueryInformationStream, new Values(firstQuery.queryId, numberOfTasksToSearch));
     }
@@ -432,14 +489,10 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
 
     private void sendSubqueriesFromTaskQueue() {
-//        System.out.println(queryServers);
         for (Integer taskId : queryServers) {
-//            System.out.println(taskId);
             SubQuery subQuery = taskQueue.poll();
             if (subQuery != null) {
-//                System.out.println(taskId);
                 collector.emitDirect(taskId, Streams.FileSystemQueryStream, new Values(subQuery));
-//                System.out.println("query " + subQuery.getQueryId() + " has been sent to task " + taskId);
             }
         }
     }
@@ -453,7 +506,6 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
                 collector.emitDirect(taskId, Streams.FileSystemQueryStream
                         , new Values(subQuery));
 
-                System.out.println("task Id " + taskId);
             }
         }
     }

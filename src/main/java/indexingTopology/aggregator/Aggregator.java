@@ -13,14 +13,38 @@ import java.util.Map;
 /**
  * Created by robert on 10/3/17.
  */
-public class Aggregator<Key extends Number & Comparable<Key>> implements Serializable{
+public class Aggregator<Key extends Comparable<Key>> implements Serializable{
 
-    transient private Map<Key, Object[]> aggregationResults = new HashMap<>();
+    // this is the computation state
+    static public class IntermediateResult<Key extends Comparable<Key>> {
+
+        transient Map<Key, Object[]> aggregationResults = new HashMap<>();
+
+        public String toString() {
+            String str = "";
+            for (Key key: aggregationResults.keySet()) {
+                str += String.format("%d: ", key);
+                for (Object object: aggregationResults.get(key)) {
+                    str += String.format("%s\t", object);
+                }
+                str +="\n";
+            }
+            return str;
+        }
+    }
+
+    public IntermediateResult<Key> createIntermediateResult() {
+        return new IntermediateResult<>();
+    }
+
+    // the following are the data structures representing the aggregation logic.
     private AggregateField[] aggregateFields;
     final private int[] aggregateColumnIndexes;
     final private int groupByIndex;
     final DataSchema inputSchema;
     final boolean isGlobal;
+    // aggregation without group-by field, i.e., all tuples are in the same group.
+    final boolean scalar;
 
     public Aggregator(DataSchema inputSchema, String groupByField, AggregateField... fields) {
         this(inputSchema, groupByField, false, fields);
@@ -36,18 +60,28 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
                 aggregateColumnIndexes[i] = inputSchema.getFieldIndex(fields[i].fieldName);
             }
         }
-        this.groupByIndex = inputSchema.getFieldIndex(groupByField);
+        if (groupByField == null) {
+            this.scalar = true;
+            this.groupByIndex = -1;
+        } else {
+            this.scalar = false;
+            this.groupByIndex = inputSchema.getFieldIndex(groupByField);
+        }
         this.inputSchema = inputSchema;
         this.isGlobal = isGlobal;
     }
 
-    public void aggregate(DataTuple dataTuple) {
+    public void aggregate(DataTuple dataTuple, IntermediateResult intermediateResult) {
         //TODO: performance optimization by computing the group-by column index before aggregate.
 
 
 
-        Key group = (Key) dataTuple.get(groupByIndex);
-        aggregationResults.computeIfAbsent(group, p -> {
+        Object group = null;
+        if (!scalar)
+            group = dataTuple.get(groupByIndex);
+        else
+            group = "scalar";
+        intermediateResult.aggregationResults.computeIfAbsent(group, p -> {
             Object[] aggregationValues = new Object[aggregateFields.length];
             for (int i = 0; i < aggregateFields.length; i++) {
                 aggregationValues[i] = aggregateFields[i].function.init();
@@ -55,8 +89,8 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
             return aggregationValues;
         });
 
-        aggregationResults.compute(group, (k, v) -> {
-            Object[] aggregationValues = v;
+        intermediateResult.aggregationResults.compute(group, (k, v) -> {
+            Object[] aggregationValues = (Object[]) v;
             for (int i = 0; i < aggregateFields.length; i++) {
                 aggregationValues[i] = aggregateFields[i].function.aggregateFunction(dataTuple.get(aggregateColumnIndexes[i]), aggregationValues[i]);
             }
@@ -70,7 +104,8 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
 
     public DataSchema getOutputDataSchema() {
         DataSchema dataSchema = new DataSchema();
-        dataSchema.addField(inputSchema.getDataType(groupByIndex), inputSchema.getFieldName(groupByIndex));
+        if (!scalar)
+            dataSchema.addField(inputSchema.getDataType(groupByIndex), inputSchema.getFieldName(groupByIndex));
         for (AggregateField aggregateField: aggregateFields) {
             String fieldName;
 
@@ -94,23 +129,25 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
 
 
 
-    public void aggregate(List<DataTuple> dataTupleList) {
-        if (aggregationResults == null) {
-            aggregationResults = new HashMap<>();
+    public void aggregate(List<DataTuple> dataTupleList, IntermediateResult intermediateResult) {
+        if (intermediateResult.aggregationResults == null) {
+            intermediateResult.aggregationResults = new HashMap<>();
         }
         for (DataTuple dataTuple: dataTupleList) {
-            aggregate(dataTuple);
+            aggregate(dataTuple, intermediateResult);
         }
     }
 
-    public PartialQueryResult getResults() {
+    public PartialQueryResult getResults(IntermediateResult<Key> intermediateResult) {
         PartialQueryResult partialQueryResult = new PartialQueryResult(Integer.MAX_VALUE);
         // aggregationResults may be null if no valid tuples are found before aggregation
 //        if (aggregationResults != null) {
-            for (Key group : aggregationResults.keySet()) {
+            for (Key group : intermediateResult.aggregationResults.keySet()) {
                 final DataTuple dataTuple = new DataTuple();
-                dataTuple.add(group);
-                Object[] aggregationValues = aggregationResults.get(group);
+                if (!scalar) {
+                    dataTuple.add(group);
+                }
+                Object[] aggregationValues = intermediateResult.aggregationResults.get(group);
                 for (Object object : aggregationValues) {
                     dataTuple.add(object);
                 }
@@ -129,7 +166,11 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
             else
                 newAggregateFields[i] = new AggregateField(aggregateFields[i].function, aggregateFields[i].aggregateFieldName());
         }
-        return new Aggregator<>(globalInputSchema, inputSchema.getFieldName(groupByIndex), true, newAggregateFields);
+        if (scalar)
+            return new Aggregator<>(globalInputSchema, null, true, newAggregateFields);
+        else
+            return new Aggregator<>(globalInputSchema, inputSchema.getFieldName(groupByIndex),
+                    true, newAggregateFields);
     }
 
 }

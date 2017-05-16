@@ -2,9 +2,8 @@ package indexingTopology;
 
 import indexingTopology.bolt.*;
 import indexingTopology.streams.Streams;
-import indexingTopology.util.texi.City;
+import indexingTopology.util.taxi.City;
 import org.apache.storm.Config;
-import org.apache.storm.LocalCluster;
 import org.apache.storm.StormSubmitter;
 import org.apache.storm.generated.StormTopology;
 import org.apache.storm.topology.TopologyBuilder;

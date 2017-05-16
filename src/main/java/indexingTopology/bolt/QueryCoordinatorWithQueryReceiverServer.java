@@ -45,17 +45,14 @@ public class QueryCoordinatorWithQueryReceiverServer<T extends Number & Comparab
 
 
         server = new Server(port, QueryServerHandle.class, new Class[]{LinkedBlockingQueue.class, AtomicLong.class, Map.class}, pendingQueue, queryId, queryIdToPartialQueryResults);
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    server.startDaemon();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
+        server.startDaemon();
 //        queryIdToPartialQueryResultSemphore = new HashMap<>();
+    }
+
+    @Override
+    public void cleanup() {
+        server.endDaemon();
+        super.cleanup();
     }
 
     @Override
@@ -96,7 +93,7 @@ public class QueryCoordinatorWithQueryReceiverServer<T extends Number & Comparab
                         request.low, request.high, request.startTime, request.endTime);
                 final List<Query<T>> queryList = new ArrayList<>();
                 queryList.add(new Query(queryid, request.low, request.high, request.startTime,
-                        request.endTime, request.predicate, request.aggregator, request.sorter));
+                        request.endTime, request.predicate, request.aggregator, request.sorter, request.equivalentPredicate));
                 pendingQueryQueue.put(queryList);
 
                 boolean eof = false;

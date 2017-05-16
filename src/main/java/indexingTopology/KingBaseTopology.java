@@ -3,25 +3,22 @@ package indexingTopology;
 import indexingTopology.aggregator.AggregateField;
 import indexingTopology.aggregator.Aggregator;
 import indexingTopology.aggregator.Count;
-import indexingTopology.aggregator.Sum;
 import indexingTopology.bolt.*;
 import indexingTopology.client.*;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
-import indexingTopology.util.DataTupleMapper;
-import indexingTopology.util.DataTuplePredicate;
-import indexingTopology.util.DataTupleSorter;
-import indexingTopology.util.TopologyGenerator;
-import indexingTopology.util.texi.*;
+import indexingTopology.util.*;
+import indexingTopology.util.taxi.*;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
-import org.apache.storm.StormSubmitter;
 import org.apache.storm.generated.StormTopology;
-import org.apache.storm.topology.TopologyBuilder;
 import org.apache.storm.utils.Utils;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.SocketTimeoutException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.function.Function;
 
@@ -61,13 +58,16 @@ public class KingBaseTopology {
 
 
 
-        final double x1 = 0;
-        final double x2 = 1000;
-        final double y1 = 0;
-        final double y2 = 500;
+        final double x1 = 40.012928;
+        final double x2 = 40.023983;
+        final double y1 = 116.292677;
+        final double y2 = 116.614865;
         final int partitions = 128;
 
-        TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
+        double selectivity = Math.sqrt(1);
+
+//        TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
+        TrajectoryGenerator generator = new TrajectoryMovingGenerator(x1, x2, y1, y2, 100000, 45.0);
         City city = new City(x1, x2, y1, y2, partitions);
 
         Integer lowerBound = 0;
@@ -78,7 +78,8 @@ public class KingBaseTopology {
         InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000);
 
         ZOrderCoding zOrderCoding = city.getzOrderCoding();
-        QueryCoordinator<Integer> queryCoordinator = new KingBaseQueryCoordinatorWithQueryReceiverServer<>(lowerBound, upperBound, 10001, city);
+        QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
+                upperBound, 10001, city);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
@@ -91,7 +92,11 @@ public class KingBaseTopology {
             return t;
         });
 
-        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound, enableLoadBalance, dataSource, queryCoordinator, dataTupleMapper);
+        List<String> bloomFilterColumns = new ArrayList<>();
+        bloomFilterColumns.add("id");
+
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
+                enableLoadBalance, dataSource, queryCoordinator, dataTupleMapper, bloomFilterColumns);
 
         Config conf = new Config();
         conf.setDebug(false);
@@ -104,10 +109,11 @@ public class KingBaseTopology {
         LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("T0", conf, topology);
 
+        IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode("localhost", 10000,
+                rawSchema, 1024);;
         Thread ingestionThread = new Thread(()->{
             Random random = new Random();
-            IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode("localhost", 10000,
-                    rawSchema, 1024);
+
             try {
                 clientBatchMode.connectWithTimeout(10000);
             } catch (IOException e) {
@@ -116,7 +122,7 @@ public class KingBaseTopology {
             while(true) {
                 Car car = generator.generate();
                 DataTuple tuple = new DataTuple();
-                tuple.add(Integer.toString(random.nextInt()));
+                tuple.add(Integer.toString((int)car.id));
                 tuple.add(Integer.toString(random.nextInt()));
                 tuple.add(car.x);
                 tuple.add(car.y);
@@ -126,9 +132,12 @@ public class KingBaseTopology {
                 tuple.add("2015-10-10, 11:12:34");
                 try {
                     clientBatchMode.appendInBatch(tuple);
+                    if(Thread.interrupted()) {
+                        break;
+                    }
                 } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (ClassNotFoundException e) {
+                    if (clientBatchMode.isClosed())
+                        break;
                     e.printStackTrace();
                 }
 
@@ -142,47 +151,56 @@ public class KingBaseTopology {
         });
         ingestionThread.start();
 
+        GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient("localhost", 10001);
         Thread queryThread = new Thread(() -> {
-            GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient("localhost", 10001);
             try {
                 queryClient.connectWithTimeout(10000);
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            Random random = new Random();
 
             while (true) {
-                final Double xLow = 10.0;
-                final Double xHigh = 15.0;
-                final Double yLow = 40.0;
-                final Double yHigh = 50.0;
+
+                double x = x1 + (x2 - x1) * random.nextDouble();
+                double y = y1 + (y2 - y1) * random.nextDouble();
+
+                final Double xLow = x;
+                final Double xHigh = x + selectivity * (x2 - x1);
+                final Double yLow = y;
+                final Double yHigh = y + selectivity * (y2 - y1);
 
                 DataTuplePredicate predicate = new DataTuplePredicate() {
                     @Override
                     public boolean test(DataTuple objects) {
-                        return (double)rawSchema.getValue("lon", objects) >= xLow &&
-                                (double)rawSchema.getValue("lon", objects) <= xHigh &&
-                                (double)rawSchema.getValue("lat", objects) >= yLow &&
-                                (double)rawSchema.getValue("lat", objects) <= yHigh;
+                        return (double)schema.getValue("lon", objects) >= xLow &&
+                                (double)schema.getValue("lon", objects) <= xHigh &&
+                                (double)schema.getValue("lat", objects) >= yLow &&
+                                (double)schema.getValue("lat", objects) <= yHigh &&
+                                schema.getValue("id", objects).equals("100");
                     }
                 };
 
                 Aggregator<Integer> aggregator = new Aggregator<>(schema, "zcode", new AggregateField(new Count(), "*"));
                 DataSchema schemaAfterAggregation = aggregator.getOutputDataSchema();
 
-//                DataTupleSorter sorter = new DataTupleSorter() {
-//                    @Override
-//                    public int compare(DataTuple o1, DataTuple o2) {
-//                        return Double.compare((double)schemaAfterAggregation.getValue("count(*)", o1),
-//                                (double)schemaAfterAggregation.getValue("count(*)", o2));
-//                    }
-//                };
-                DataTupleSorter sorter = null;
+                DataTupleSorter sorter = new DataTupleSorter() {
+                    @Override
+                    public int compare(DataTuple o1, DataTuple o2) {
+                        return Double.compare((double)schemaAfterAggregation.getValue("count(*)", o1),
+                                (double)schemaAfterAggregation.getValue("count(*)", o2));
+                    }
+                };
+
+                DataTupleEquivalentPredicateHint equivalentPredicate = new DataTupleEquivalentPredicateHint("id", "100");
 
                 GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
-                        System.currentTimeMillis() - 5000, System.currentTimeMillis(), predicate, aggregator, sorter);
+                        System.currentTimeMillis() - 5000, System.currentTimeMillis(), predicate, aggregator, sorter,
+                        equivalentPredicate);
                 long start = System.currentTimeMillis();
                 try {
                         while(true) {
+                            Utils.sleep(1000);
                             QueryResponse response = queryClient.query(queryRequest);
                             if (response.getEOFFlag()) {
                                 System.out.println("EOF.");
@@ -192,8 +210,12 @@ public class KingBaseTopology {
                             }
                             System.out.println(response);
                         }
+                    } catch (SocketTimeoutException e) {
+                        Thread.interrupted();
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        if (Thread.currentThread().interrupted()) {
+                            Thread.interrupted();
+                        }
                     } catch (ClassNotFoundException e) {
                         e.printStackTrace();
                     }
@@ -241,11 +263,14 @@ public class KingBaseTopology {
         });
         queryThread.start();
 
-        Utils.sleep(150000);
+        Utils.sleep(50000);
         cluster.shutdown();
         System.out.println("Local cluster is shut down!");
         ingestionThread.interrupt();
+        clientBatchMode.close();
+        queryClient.close();
         queryThread.interrupt();
+        System.out.println("Waiting to interrupt!");
 //        StormSubmitter.submitTopologyWithProgressBar(args[0], conf, topology);
     }
 

@@ -70,7 +70,7 @@ public class ResultMerger extends BaseRichBolt {
             if (isQueryFinished(queryId)) {
 //                printTimeInformation(queryId);
                 sendNewQueryPermit(queryId);
-                printTimeInformation(queryId);
+//                printTimeInformation(queryId);
                 removeQueryIdFromMappings(queryId);
             }
 
@@ -84,7 +84,7 @@ public class ResultMerger extends BaseRichBolt {
 
             // It is possible in a rare case where the query information arrives later than the query result.
             if (isQueryFinished(queryId)) {
-                printTimeInformation(queryId);
+//                printTimeInformation(queryId);
                 finalizeQuery(query);
             }
 
@@ -92,7 +92,7 @@ public class ResultMerger extends BaseRichBolt {
                 tuple.getSourceStreamId().equals(Streams.FileSystemQueryStream)) {
             SubQuery subQuery = (SubQuery)tuple.getValue(0);
             long queryId = subQuery.getQueryId();
-            System.out.println(String.format("A subquery for Query[%d] is completed!", queryId));
+//            System.out.println(String.format("A subquery for Query[%d] is completed!", queryId));
 
             Integer counter = queryIdToCounter.getOrDefault(queryId, 0);
             counter++;
@@ -143,7 +143,7 @@ public class ResultMerger extends BaseRichBolt {
 
             if (isQueryFinished(queryId)) {
 //                System.out.println(tuple.getSourceStreamId());
-                printTimeInformation(queryId);
+//                printTimeInformation(queryId);
                 finalizeQuery(subQuery);
             }
 
@@ -218,7 +218,7 @@ public class ResultMerger extends BaseRichBolt {
             if (results.size() == 0) {
                 result.setEOFflag();
             }
-            System.out.println("A partial query result is sent to coordinator from merger.");
+//            System.out.println("A partial query result is sent to coordinator from merger.");
             collector.emit(Streams.PartialQueryResultDeliveryStream, new Values(queryId, result));
             results.remove(0);
             if (results.size() == 0) {
@@ -227,7 +227,7 @@ public class ResultMerger extends BaseRichBolt {
         } else {
             PartialQueryResult result = new PartialQueryResult();
             result.setEOFflag();
-            System.out.println("A empty partial query result is sent to coordinator from merger.");
+//            System.out.println("A empty partial query result is sent to coordinator from merger.");
             collector.emit(Streams.PartialQueryResultDeliveryStream, new Values(queryId, result));
         }
 
@@ -239,7 +239,9 @@ public class ResultMerger extends BaseRichBolt {
         final long queryId = subQuery.getQueryId();
 
         final int unitSize = 4 * 1024;
-        List<PartialQueryResult> queryResults = queryIdToPartialQueryResults.get(queryId);
+
+        //we should initialize the PartialQueryResult in case that there is no valid subquery.
+        List<PartialQueryResult> queryResults = queryIdToPartialQueryResults.computeIfAbsent(queryId, t -> new ArrayList<>());
 
         PartialQueryResult allResults = new PartialQueryResult(Integer.MAX_VALUE);
 
@@ -248,8 +250,9 @@ public class ResultMerger extends BaseRichBolt {
         // perform aggregation if applicable.
         if (subQuery.getAggregator() != null) {
             Aggregator globalAggregator = subQuery.getAggregator().generateGlobalAggregator();
-            queryResults.forEach(r -> globalAggregator.aggregate(r.dataTuples));
-            allResults.dataTuples.addAll(globalAggregator.getResults().dataTuples);
+            Aggregator.IntermediateResult intermediateResult = globalAggregator.createIntermediateResult();
+            queryResults.forEach(r -> globalAggregator.aggregate(r.dataTuples, intermediateResult));
+            allResults.dataTuples.addAll(globalAggregator.getResults(intermediateResult).dataTuples);
         } else {
             queryResults.stream().forEach(t -> allResults.dataTuples.addAll(t.dataTuples));
         }
@@ -257,7 +260,7 @@ public class ResultMerger extends BaseRichBolt {
         // sort if applicable.
         if (subQuery.sorter != null) {
             allResults.dataTuples.sort(subQuery.sorter);
-            System.out.println("Sort is applied!! ##########");
+//            System.out.println("Sort is applied!! ##########");
         }
 
         // compact results into groups with bounded size.

@@ -1,4 +1,4 @@
-package indexingTopology.util.texi;
+package indexingTopology.util.taxi;
 
 /**
  * Created by Robert on 12/11/16.
@@ -7,7 +7,7 @@ public class Car {
     public long id;
     public double x;
     public double y;
-    public Car(int id, double x, double y) {
+    public Car(long id, double x, double y) {
         this.id = id;
         this.x = x;
         this.y = y;

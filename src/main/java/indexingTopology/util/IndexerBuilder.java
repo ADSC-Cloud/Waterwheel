@@ -3,6 +3,7 @@ package indexingTopology.util;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /**
@@ -16,7 +17,9 @@ public class IndexerBuilder {
 
     private DataSchema schema;
 
-    int taskId;
+    private int taskId;
+
+    private List<String> bloomFilterIndexedColumns;
 
     public IndexerBuilder setTaskId(int taskId) {
         this.taskId = taskId;
@@ -38,7 +41,14 @@ public class IndexerBuilder {
         return this;
     }
 
+    public IndexerBuilder setBloomFilterIndexedColumns(List<String> columns) {
+        this.bloomFilterIndexedColumns = columns;
+        return this;
+    }
+
     public Indexer getIndexer() {
-        return new Indexer(taskId, inputQueue, schema, queryPendingQueue);
+        Indexer indexer = new Indexer(taskId, inputQueue, schema, queryPendingQueue);
+        indexer.setBloomFilterIndexedColumns(bloomFilterIndexedColumns);
+        return indexer;
     }
 }

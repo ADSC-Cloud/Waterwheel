@@ -34,6 +34,8 @@ public class InputStreamReceiver extends BaseRichBolt {
 
     public LinkedBlockingQueue<DataTuple> inputQueue;
 
+    private Thread emittingThread;
+
     public InputStreamReceiver(DataSchema schema) {
         this.schema = schema;
     }
@@ -44,15 +46,18 @@ public class InputStreamReceiver extends BaseRichBolt {
         inputQueue = new LinkedBlockingQueue<>(10000);
         backPressure = new BackPressure(TopologyConfig.EMIT_NUM, TopologyConfig.MAX_PENDING);
         taskId = topologyContext.getThisTaskId();
-        Thread emittingThread = new Thread(new Runnable() {
+        emittingThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                while (true) {
+//                while (true) {
+                while (!Thread.currentThread().isInterrupted()) {
                         try {
                             //TODO: dequeue can be optimized by using drainer.
                             final long tupleId = backPressure.acquireNextTupleId();
                             final DataTuple dataTuple = inputQueue.take();
                             collector.emit(Streams.IndexStream, new Values(schema.serializeTuple(dataTuple), tupleId, taskId));
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -89,5 +94,11 @@ public class InputStreamReceiver extends BaseRichBolt {
     @Override
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
         outputFieldsDeclarer.declareStream(Streams.IndexStream, new Fields("tuple", "tupleId", "taskId"));
+    }
+
+    @Override
+    public void cleanup() {
+        super.cleanup();
+        emittingThread.interrupt();
     }
 }

@@ -7,9 +7,14 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 
 /**
  * Created by robert on 2/3/17.
@@ -28,20 +33,33 @@ public class Server<T extends ServerHandle> {
 
     private Class<?>[] classTypes;
 
+    private boolean closed = false;
+
+    private List<Future> futureList;
+
     public Server(int port, Class<ServerHandle> SomeServerHandle, Class<?>[] classTypes, Object... args) {
         this.port = port;
         this.SomeServerHandle = SomeServerHandle;
         this.serverHandleArgs = args;
         this.classTypes = classTypes;
+        this.futureList = new ArrayList<>();
     }
 
-    public void startDaemon() throws IOException{
-        serverSocket = new ServerSocket(port);
+    public void startDaemon(){
+        try {
+            serverSocket = new ServerSocket(port);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         executorService = Executors.newCachedThreadPool();
 
-        while (true) {
-            Socket client = serverSocket.accept();
+
+        futureList.add(executorService.submit(() ->{
+            Socket client = null;
+            while (true) {
             try {
+                serverSocket.setSoTimeout(1000);
+                client = serverSocket.accept();
                 ServerHandle handle;
 //                if (args.length == 0) {
 //                    handle = SomeServerHandle.getDeclaredConstructor(Socket.class).newInstance(client);
@@ -53,7 +71,7 @@ public class Server<T extends ServerHandle> {
 //                    handle = SomeServerHandle.getDeclaredConstructor(Socket.class, classTypes.toArray()).
 //                }
                 MethodHandle constructor = MethodHandles.publicLookup().findConstructor(SomeServerHandle, MethodType.methodType(void.class, classTypes));
-                System.out.println("serverHandleArgs: " + serverHandleArgs);
+//                System.out.println("serverHandleArgs: " + serverHandleArgs);
                 int servcerHandleArgsCount = 0;
                 if(serverHandleArgs != null) {
                     servcerHandleArgsCount = serverHandleArgs.length;
@@ -71,7 +89,7 @@ public class Server<T extends ServerHandle> {
                     default:                    throw new RuntimeException("ServerHandle parameters cannot exceed 4.");
                 }
                 handle.setClientSocket(client);
-                executorService.submit(handle);
+                futureList.add(executorService.submit(handle));
             } catch (NoSuchMethodException e) {
                 e.printStackTrace();
             } catch (InstantiationException e) {
@@ -80,45 +98,50 @@ public class Server<T extends ServerHandle> {
                 e.printStackTrace();
             } catch (InvocationTargetException e) {
                 e.printStackTrace();
-            } catch (Throwable throwable) {
+            } catch (SocketTimeoutException e) {
+                if (Thread.interrupted() || closed)
+//                    break;
+                    throw new InterruptedException();
+            } catch (RejectedExecutionException e) {
+                throw e;
+            } catch (SocketException e) {
+                if (closed)
+                    break;
+            }
+
+            catch (Throwable throwable) {
                 throwable.printStackTrace();
             }
         }
-//        while(true) {
-//            Socket client = serverSocket.accept();
-//            System.out.println("accepted new client: " + client.getInetAddress().toString());
-//            new Thread(new Runnable() {
-//                @Override
-//                public void run() {
-//                    try {
-//                        System.out.println("Try to create input and output streams!");
-//                        objectOutputStream = new ObjectOutputStream(client.getOutputStream());
-//                        System.out.println("object output stream is created!");
-//                        objectInputStream = new ObjectInputStream(client.getInputStream());
-//                        System.out.println("object input stream is created!");
-//                        while (true) {
-//                            try {
-//                                final Object newObject = objectInputStream.readObject();
-//                                System.out.println("Received: " + newObject);
-//                                final Response response = new Response();
-//                                response.message = "This is the result of your query!";
-//                                objectOutputStream.writeObject(response);
-//                            } catch (ClassNotFoundException e) {
-//                                e.printStackTrace();
-//                            }
-//                        }
-//                    } catch (IOException io) {
-//                        io.printStackTrace();
-//
-//                    }
-//                    System.out.println("client is closed!");
-//                }
-//            }).start();
+         return null;}
+        ));
+    }
+
+    public void endDaemon() {
+        System.out.println("EndDaemon is called!");
+        closed = true;
+        try {
+            serverSocket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        executorService.shutdownNow();
+        for(Future future: futureList) {
+            future.cancel(true);
+        }
     }
 
 
     public static void main(String[] args) throws Exception {
         final Server server = new Server(10000, FakeServerHandle.class, new Class[]{int.class}, new Integer(1));
+        final QueryClient clientSkeleton = new QueryClient("localhost", 10000);
+        System.out.println("start");
         server.startDaemon();
+        clientSkeleton.connect();
+        System.out.println("started");
+        clientSkeleton.temporalRangeQuery(0,0,0,0);
+        server.endDaemon();
+        clientSkeleton.close();
+        System.out.println("end");
     }
 }

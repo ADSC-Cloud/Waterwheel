@@ -2,14 +2,14 @@ package indexingTopology.bolt;
 
 import indexingTopology.aggregator.Aggregator;
 import indexingTopology.client.*;
-import indexingTopology.data.DataTuple;
 import indexingTopology.data.PartialQueryResult;
+import indexingTopology.util.DataTupleEquivalentPredicateHint;
 import indexingTopology.util.DataTuplePredicate;
 import indexingTopology.util.DataTupleSorter;
 import indexingTopology.util.Query;
-import indexingTopology.util.texi.City;
-import indexingTopology.util.texi.Interval;
-import indexingTopology.util.texi.Intervals;
+import indexingTopology.util.taxi.City;
+import indexingTopology.util.taxi.Interval;
+import indexingTopology.util.taxi.Intervals;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Created by acelzj on 11/15/16.
  */
-public class KingBaseQueryCoordinatorWithQueryReceiverServer<T extends Number & Comparable<T>> extends QueryCoordinator<T> {
+public class GeoTemporalQueryCoordinatorWithQueryReceiverServer<T extends Number & Comparable<T>> extends QueryCoordinator<T> {
 
     private final int port;
 
@@ -40,9 +40,9 @@ public class KingBaseQueryCoordinatorWithQueryReceiverServer<T extends Number & 
 
 //    Map<Long, Semaphore> queryIdToPartialQueryResultSemphore;
 
-    private static final Logger LOG = LoggerFactory.getLogger(KingBaseQueryCoordinatorWithQueryReceiverServer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GeoTemporalQueryCoordinatorWithQueryReceiverServer.class);
 
-    public KingBaseQueryCoordinatorWithQueryReceiverServer(T lowerBound, T upperBound, int port, City city) {
+    public GeoTemporalQueryCoordinatorWithQueryReceiverServer(T lowerBound, T upperBound, int port, City city) {
         super(lowerBound, upperBound);
         this.port = port;
         this.city = city;
@@ -55,17 +55,14 @@ public class KingBaseQueryCoordinatorWithQueryReceiverServer<T extends Number & 
 
 
         server = new Server(port, QueryServerHandle.class, new Class[]{LinkedBlockingQueue.class, AtomicLong.class, Map.class, City.class}, pendingQueue, queryId, queryIdToPartialQueryResults, city);
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    server.startDaemon();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
+        server.startDaemon();
 //        queryIdToPartialQueryResultSemphore = new HashMap<>();
+    }
+
+    @Override
+    public void cleanup() {
+        server.endDaemon();
+        super.cleanup();
     }
 
     @Override
@@ -108,15 +105,15 @@ public class KingBaseQueryCoordinatorWithQueryReceiverServer<T extends Number & 
                         request.low, request.high, request.startTime, request.endTime);
                 final List<Query<T>> queryList = new ArrayList<>();
                 queryList.add(new Query(queryid, request.low, request.high, request.startTime,
-                        request.endTime, request.predicate, request.aggregator, request.sorter));
+                        request.endTime, request.predicate, request.aggregator, request.sorter, request.equivalentPredicate));
                 pendingQueryQueue.put(queryList);
 
                 System.out.println("Admitted a query.  waiting for query results");
                 boolean eof = false;
                 while(!eof) {
-                    System.out.println("Before take!");
+//                    System.out.println("Before take!");
                     PartialQueryResult partialQueryResult = results.take();
-                    System.out.println("Received PartialQueryResult!");
+//                    System.out.println("Received PartialQueryResult!");
                     eof = partialQueryResult.getEOFFlag();
                     objectOutputStream.writeUnshared(new QueryResponse(partialQueryResult, queryid));
                     objectOutputStream.reset();
@@ -124,6 +121,7 @@ public class KingBaseQueryCoordinatorWithQueryReceiverServer<T extends Number & 
 
             } catch (InterruptedException e) {
                 e.printStackTrace();
+                Thread.interrupted();
             }
         }
 
@@ -141,6 +139,7 @@ public class KingBaseQueryCoordinatorWithQueryReceiverServer<T extends Number & 
                 final DataTuplePredicate predicate = clientQueryRequest.predicate;
                 final Aggregator aggregator = clientQueryRequest.aggregator;
                 final DataTupleSorter sorter = clientQueryRequest.sorter;
+                final DataTupleEquivalentPredicateHint equivalentPredicate = clientQueryRequest.equivalentPredicate;
 
                 Intervals intervals = city.getZCodeIntervalsInARectagle(clientQueryRequest.x1.doubleValue(),
                         clientQueryRequest.x2.doubleValue(),
@@ -149,19 +148,19 @@ public class KingBaseQueryCoordinatorWithQueryReceiverServer<T extends Number & 
 
                 for (Interval interval: intervals.intervals) {
                     queryList.add(new Query(queryid, interval.low, interval.high, startTimeStamp, endTimeStamp,
-                            predicate, aggregator, sorter));
+                            predicate, aggregator, sorter, equivalentPredicate));
                     LOG.info("A new Query{} ({}, {}, {}, {}) is added to the pending queue.", queryid,
                             interval.low, interval.high, startTimeStamp, endTimeStamp);
                 }
 
                 pendingQueryQueue.put(queryList);
 
-                System.out.println("Admitted a query.  waiting for query results");
+//                System.out.println("Admitted a query.  waiting for query results");
                 boolean eof = false;
                 while(!eof) {
-                    System.out.println("Before take!");
+//                    System.out.println("Before take!");
                     PartialQueryResult partialQueryResult = results.take();
-                    System.out.println("Received PartialQueryResult!");
+//                    System.out.println("Received PartialQueryResult!");
                     eof = partialQueryResult.getEOFFlag();
                     objectOutputStream.writeUnshared(new QueryResponse(partialQueryResult, queryid));
                     objectOutputStream.reset();

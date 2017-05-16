@@ -1,10 +1,8 @@
 package indexingTopology;
 
 import indexingTopology.bolt.HBaseNetworkGenerator;
-import indexingTopology.bolt.HBaseTaxiGenerator;
 import indexingTopology.bolt.LogWriter;
 import indexingTopology.streams.Streams;
-import indexingTopology.util.texi.City;
 import org.apache.storm.Config;
 import org.apache.storm.StormSubmitter;
 import org.apache.storm.generated.StormTopology;

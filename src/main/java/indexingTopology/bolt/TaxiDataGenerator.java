@@ -4,20 +4,14 @@ import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import indexingTopology.util.FrequencyRestrictor;
-import indexingTopology.util.texi.Car;
-import indexingTopology.util.texi.City;
-import indexingTopology.util.texi.TrajectoryGenerator;
+import indexingTopology.util.taxi.City;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 
 import java.io.*;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Created by acelzj on 15/3/17.
@@ -47,6 +41,8 @@ public class TaxiDataGenerator extends InputStreamReceiver {
     List<Integer> zcodes;
 
     private FrequencyRestrictor frequencyRestrictor;
+
+    private Thread generationThread;
 
     public TaxiDataGenerator(DataSchema schema, City city) {
         super(schema);
@@ -119,10 +115,11 @@ public class TaxiDataGenerator extends InputStreamReceiver {
             }
         }
 
-        Thread generationThread = new Thread(new Runnable() {
+        generationThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                while (true) {
+//                while (true) {
+                while (!Thread.currentThread().isInterrupted()) {
                     /*
                     try {
                         int index = generatorIds.indexOf(taskId) + step * size;
@@ -177,7 +174,8 @@ public class TaxiDataGenerator extends InputStreamReceiver {
                     }
                     */
                     int index = 0;
-                    while (true) {
+//                    while (true) {
+                    while (!Thread.currentThread().isInterrupted()) {
                         Integer taxiId = taxiIds.get(index);
                         Integer zcode = zcodes.get(index);
                         Double longitude = longitudes.get(index);
@@ -194,7 +192,8 @@ public class TaxiDataGenerator extends InputStreamReceiver {
                         try {
                             inputQueue.put(dataTuple);
                         } catch (InterruptedException e) {
-                            e.printStackTrace();
+                            Thread.currentThread().interrupt();
+//                            e.printStackTrace();
                         }
                         ++index;
                         if (index >= taxiIds.size()) {
@@ -205,5 +204,11 @@ public class TaxiDataGenerator extends InputStreamReceiver {
             }
         });
         generationThread.start();
+    }
+
+    @Override
+    public void cleanup() {
+        super.cleanup();
+        generationThread.interrupt();
     }
 }

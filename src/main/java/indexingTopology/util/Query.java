@@ -1,10 +1,6 @@
 package indexingTopology.util;
 
 import indexingTopology.aggregator.Aggregator;
-import indexingTopology.data.DataTuple;
-
-import java.io.Serializable;
-import java.util.function.Predicate;
 
 /**
  * Created by robert on 9/2/17.
@@ -24,6 +20,11 @@ public class Query <T extends Number> extends SubQuery<T> {
     public Query(long id, T leftKey, T rightKey, Long startTimestamp, Long endTimestamp, DataTuplePredicate predicate,
                  Aggregator aggregator, DataTupleSorter sorter) {
         super(id, leftKey, rightKey, startTimestamp, endTimestamp, predicate, aggregator, sorter);
+    }
+
+    public Query(long id, T leftKey, T rightKey, Long startTimestamp, Long endTimestamp, DataTuplePredicate predicate,
+                 Aggregator aggregator, DataTupleSorter sorter, DataTupleEquivalentPredicateHint equivalentPredicate) {
+        super(id, leftKey, rightKey, startTimestamp, endTimestamp, predicate, aggregator, sorter, equivalentPredicate);
     }
 
     public String toString() {

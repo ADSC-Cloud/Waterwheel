@@ -12,8 +12,9 @@ import java.io.*;
  */
 public class BloomFilterTest {
     public static void main(String[] arsg) throws IOException {
-        BloomFilter<Long> bloomFilter = BloomFilter.create(Funnels.longFunnel(), 10000, 0.003);
-        BloomFilter<CharSequence> charSequenceBloomFilter = BloomFilter.create(Funnels.stringFunnel(Charsets.UTF_8),1000);
+        BloomFilter<Long> bloomFilter = BloomFilter.create(Funnels.longFunnel(), 30000);
+        BloomFilter charSequenceBloomFilter = BloomFilter.create(Funnels.stringFunnel(Charsets.UTF_8),1000);
+        BloomFilter byteBloomFilter = BloomFilter.create(Funnels.longFunnel(), 30000);
 
 
         for (int i = 0; i < 500; i++) {
@@ -34,9 +35,15 @@ public class BloomFilterTest {
         }
 
         ByteArrayOutputStream os = new ByteArrayOutputStream(10000);
-//        bloomFilter.writeTo(os);
+        bloomFilter.writeTo(os);
         System.out.println(os.toByteArray().length + " bits");
 
+        for (int i = 0; i < 500; i++) {
+            byteBloomFilter.put(Double.doubleToRawLongBits((double)i));
+        }
+
+        System.out.println(byteBloomFilter.mightContain(Double.doubleToRawLongBits(1.1)));
+        System.out.println(byteBloomFilter.mightContain(Double.doubleToRawLongBits(1.0)));
 
     }
 }

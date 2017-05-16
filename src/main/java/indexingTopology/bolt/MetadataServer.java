@@ -2,6 +2,7 @@ package indexingTopology.bolt;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import indexingTopology.bloom.DataChunkBloomFilters;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.util.*;
 import org.apache.storm.task.OutputCollector;
@@ -65,7 +66,7 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
 
     private Long minTimestamp;
 
-    private int targetFileNums = 300;
+    private int targetFileNums = 30;
 
     private Long numTuples;
 
@@ -113,11 +114,11 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
 
         taskIdToFileNumMapping = new HashMap<>();
 
-        try {
-            zookeeperHandler = new ZookeeperHandler();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+//        try {
+//            zookeeperHandler = new ZookeeperHandler();
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
 
         staticsRequestSendingThread = new Thread(new StatisticsRequestSendingRunnable());
         staticsRequestSendingThread.start();
@@ -211,7 +212,7 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
 
             int taskId = tuple.getSourceTask();
 
-            /*
+
 
             if (taskIdToFileNumMapping.get(taskId) == null) {
                 taskIdToFileNumMapping.put(taskId, 1);
@@ -244,10 +245,12 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
                 metaDataOutput.writeInt(numberOfFiles);
                 metaDataOutput.write(output.toBytes());
                 try {
-                    zookeeperHandler.create(path, metaDataOutput.toBytes());
-                    System.out.println("Metadata has been written to zookeeper!!!");
-                    System.out.println("timestamp lower bound " + minTimestamp);
-                    System.out.println("timestamp upper bound " + maxTimestamp);
+                    if (zookeeperHandler != null) {
+                        zookeeperHandler.create(path, metaDataOutput.toBytes());
+                        System.out.println("Metadata has been written to zookeeper!!!");
+                        System.out.println("timestamp lower bound " + minTimestamp);
+                        System.out.println("timestamp upper bound " + maxTimestamp);
+                    }
 //                    System.out.println(taskIdToFileNumMapping);
 //                    System.out.println("tuple count" + numTuples);
                 } catch (KeeperException e) {
@@ -256,10 +259,17 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
                     e.printStackTrace();
                 }
             }
-            */
 
+
+//            System.out.println("File information is received on metedata servers");
+
+            DataChunkBloomFilters bloomFilters = (DataChunkBloomFilters) tuple.getValueByField("bloomFilters");
+
+            // omit the logic of storing bloomFilter externally, simply forwarding to the query coordinator.
+
+//            System.out.println("File information is sent from metedata servers");
             collector.emit(Streams.FileInformationUpdateStream,
-                    new Values(fileName, keyDomain, timeDomain));
+                    new Values(fileName, keyDomain, timeDomain, bloomFilters));
         } else if (tuple.getSourceStreamId().equals(Streams.TimestampUpdateStream)) {
             int taskId = tuple.getSourceTask();
             TimeDomain timeDomain = (TimeDomain) tuple.getValueByField("timeDomain");
@@ -289,7 +299,7 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
                 new Fields("newIntervalPartition"));
 
         outputFieldsDeclarer.declareStream(Streams.FileInformationUpdateStream,
-                new Fields("fileName", "keyDomain", "timeDomain"));
+                new Fields("fileName", "keyDomain", "timeDomain", "bloomFilters"));
 
         outputFieldsDeclarer.declareStream(Streams.TimestampUpdateStream,
                 new Fields("taskId", "keyDomain", "timeDomain"));
@@ -299,6 +309,12 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
 
 
         outputFieldsDeclarer.declareStream(Streams.LoadBalanceStream, new Fields("loadBalance"));
+    }
+
+    @Override
+    public void cleanup() {
+        super.cleanup();
+        staticsRequestSendingThread.interrupt();
     }
 
 
@@ -404,11 +420,13 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
         @Override
         public void run() {
             final int sleepTimeInSecond = 10;
-            while (true) {
+//            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
                 try {
                     Thread.sleep(sleepTimeInSecond * 1000);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+//                    e.printStackTrace();
+                    Thread.currentThread().interrupt();
                 }
 
                 List<Long> counts = histogram.histogramToList();

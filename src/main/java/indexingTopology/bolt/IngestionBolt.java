@@ -1,5 +1,6 @@
 package indexingTopology.bolt;
 
+import indexingTopology.bloom.DataChunkBloomFilters;
 import indexingTopology.data.DataTuple;
 import indexingTopology.config.TopologyConfig;
 import org.apache.storm.metric.internal.RateTracker;
@@ -42,9 +43,17 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
 
     private RateTracker rateTracker;
 
-    public IngestionBolt(DataSchema schema) {
+    private List<String> bloomFilterColumns;
+
+    public IngestionBolt(DataSchema schema, List<String> bloomFilterColumns) {
         this.schema = schema;
+        this.bloomFilterColumns = bloomFilterColumns;
     }
+
+    public IngestionBolt(DataSchema schema) {
+        this(schema, new ArrayList<>());
+    }
+
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
 
@@ -59,6 +68,7 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
                 .setDataSchema(schema)
                 .setInputQueue(inputQueue)
                 .setQueryPendingQueue(queryPendingQueue)
+                .setBloomFilterIndexedColumns(bloomFilterColumns)
                 .getIndexer();
 
         this.observable = indexer;
@@ -72,8 +82,7 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
     @Override
     public void cleanup() {
         super.cleanup();
-        System.out.println("You should kill all the thread you created in this function, so that the local cluster can" +
-                "be shutdown.");
+        indexer.close();
     }
 
     public void execute(Tuple tuple) {
@@ -115,7 +124,7 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
         } else if (tuple.getSourceStreamId().equals(Streams.BPlusTreeQueryStream)){
             SubQuery subQuery = (SubQuery) tuple.getValueByField("subquery");
             try {
-                System.out.println("Insertion Server: Received a subquery!");
+//                System.out.println("Insertion Server: Received a subquery!");
                 queryPendingQueue.put(subQuery);
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -134,7 +143,7 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
 //                new Fields("fileName", "keyDomain", "timeDomain"));
 
         outputFieldsDeclarer.declareStream(Streams.FileInformationUpdateStream,
-                new Fields("fileName", "keyDomain", "timeDomain", "tupleCount"));
+                new Fields("fileName", "keyDomain", "timeDomain", "tupleCount", "bloomFilters"));
 
         outputFieldsDeclarer.declareStream(Streams.BPlusTreeQueryStream,
                 new Fields("queryId", "serializedTuples"));
@@ -159,8 +168,11 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
                 KeyDomain keyDomain = new KeyDomain(domain.getLowerBound(), domain.getUpperBound());
                 TimeDomain timeDomain = new TimeDomain(domain.getStartTimestamp(), domain.getEndTimestamp());
                 Long numTuples = fileInformation.getNumberOfRecords();
+                DataChunkBloomFilters bloomFilters = fileInformation.getBloomFilters();
 
-                collector.emit(Streams.FileInformationUpdateStream, new Values(fileName, keyDomain, timeDomain, numTuples));
+//                System.out.println("File information is sent from insertion servers");
+                collector.emit(Streams.FileInformationUpdateStream, new Values(fileName, keyDomain, timeDomain,
+                        numTuples, bloomFilters));
 
                 collector.emit(Streams.TimestampUpdateStream, new Values(timeDomain, keyDomain));
 

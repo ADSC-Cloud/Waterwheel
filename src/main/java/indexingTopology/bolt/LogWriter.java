@@ -36,6 +36,8 @@ public class LogWriter extends BaseRichBolt {
 
     boolean throughputRequestEnable;
 
+    Thread throughputRequestThread;
+
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         this.collector = outputCollector;
@@ -50,7 +52,7 @@ public class LogWriter extends BaseRichBolt {
 
         throughputRequestEnable = true;
 
-        Thread throughputRequestThread = new Thread(new ThroughputRequestSendingRunnable());
+        throughputRequestThread = new Thread(new ThroughputRequestSendingRunnable());
         throughputRequestThread.start();
     }
 
@@ -80,6 +82,12 @@ public class LogWriter extends BaseRichBolt {
         outputFieldsDeclarer.declareStream(Streams.ThroughputRequestStream, new Fields("throughputRequest"));
     }
 
+    @Override
+    public void cleanup() {
+        super.cleanup();
+        throughputRequestThread.interrupt();
+    }
+
     class ThroughputRequestSendingRunnable implements Runnable {
 
         @Override
@@ -87,14 +95,17 @@ public class LogWriter extends BaseRichBolt {
             try {
                 Thread.sleep(waitTimeInSecond * 1000);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                Thread.currentThread().interrupt();
+//                e.printStackTrace();
             }
             final int sleepTimeInSecond = 10;
-            while (true) {
+//            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
                 try {
                     Thread.sleep(sleepTimeInSecond * 1000);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    Thread.currentThread().interrupt();
+//                    e.printStackTrace();
                 }
 
 

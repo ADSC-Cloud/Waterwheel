@@ -1,7 +1,7 @@
 package indexingTopology.util;
 
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.util.texi.City;
+import indexingTopology.util.taxi.City;
 
 import java.io.*;
 import java.text.DecimalFormat;
@@ -231,7 +231,7 @@ public class TaxiDataReader {
 
 //        for (double selectivity = 0.001; selectivity <= 0.1; selectivity *= 10) {
             int frequency = 0;
-            double selectivity = 0.75;
+            double selectivity = 0.001;
 
             int startIndex = 3;
 

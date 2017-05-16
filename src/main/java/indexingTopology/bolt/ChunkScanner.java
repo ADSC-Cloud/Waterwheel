@@ -2,6 +2,7 @@ package indexingTopology.bolt;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
+import indexingTopology.aggregator.Aggregator;
 import indexingTopology.cache.*;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
@@ -59,6 +60,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 //    Long timeCostOfDeserializationATree;
 
 //    Long timeCostOfDeserializationALeaf;
+    private Thread subQueryHandlingThread;
 
 
     public ChunkScanner(DataSchema schema) {
@@ -89,6 +91,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         return new Pair(template, templateLength);
     }
 
+    @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
 
@@ -105,6 +108,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
     }
 
+    @Override
     public void execute(Tuple tuple) {
 
         if (tuple.getSourceStreamId().equals(Streams.FileSystemQueryStream)) {
@@ -125,10 +129,11 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
     }
 
     private void createSubQueryHandlingThread() {
-        new Thread(new Runnable() {
+        subQueryHandlingThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                while (true) {
+//                while (true) {
+                while (!Thread.currentThread().isInterrupted()) {
                     try {
                         subQueryHandlingSemaphore.acquire();
                         SubQueryOnFile subQuery = (SubQueryOnFile) pendingQueue.take();
@@ -137,21 +142,30 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
                         handleSubQuery(subQuery);
 //                        System.out.println("sub query " + subQuery.getQueryId() + " has been processed");
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+//                        e.printStackTrace();
+                        Thread.currentThread().interrupt();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 }
             }
-        }).start();
+        });
+        subQueryHandlingThread.start();
     }
 
+    @Override
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
         outputFieldsDeclarer.declareStream(Streams.FileSystemQueryStream,
                 new Fields("queryId", "serializedTuples", "metrics"));
 
         outputFieldsDeclarer.declareStream(Streams.FileSubQueryFinishStream,
                 new Fields("finished"));
+    }
+
+    @Override
+    public void cleanup() {
+        super.cleanup();
+        subQueryHandlingThread.interrupt();
     }
 
     @SuppressWarnings("unchecked")
@@ -164,11 +178,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         Long timestampLowerBound = subQuery.getStartTimestamp();
         Long timestampUpperBound = subQuery.getEndTimestamp();
 
-
-//        System.out.println(fileName);
-
-
-//        System.out.println(fileName);
 
         FileScanMetrics metrics = new FileScanMetrics();
 
@@ -240,12 +249,15 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
             filterByTimestamp(dataTuples, timestampLowerBound, timestampUpperBound);
 
             //filter by predicate
+//            System.out.println("Before predicates: " + dataTuples.size());
             filterByPredicate(dataTuples, subQuery.getPredicate());
+//            System.out.println("After predicates: " + dataTuples.size());
 
             if (subQuery.getAggregator() != null) {
-                subQuery.getAggregator().aggregate(dataTuples);
+                Aggregator.IntermediateResult intermediateResult = subQuery.getAggregator().createIntermediateResult();
+                subQuery.getAggregator().aggregate(dataTuples, intermediateResult);
                 dataTuples.clear();
-                dataTuples.addAll(subQuery.getAggregator().getResults().dataTuples);
+                dataTuples.addAll(subQuery.getAggregator().getResults(intermediateResult).dataTuples);
             }
 
 //            totalTupleGet += (System.currentTimeMillis() - tupleGetStart);
@@ -291,7 +303,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
 
 //        tuples.clear();
-        System.out.println(String.format("%d tuples are found on file %s", tuples.size(), fileName));
+//        System.out.println(String.format("%d tuples are found on file %s", tuples.size(), fileName));
         collector.emit(Streams.FileSystemQueryStream, new Values(subQuery, tuples, metrics));
 
 
@@ -504,13 +516,17 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         return bytesToRead;
     }
 
-    private byte[] readLeafBytesFromFile(FileSystemHandler fileSystemHandler, List<Integer> offsets, int length, FileScanMetrics fileScanMetrics) {
+    private byte[] readLeafBytesFromFile(FileSystemHandler fileSystemHandler, List<Integer> offsets, int length, FileScanMetrics fileScanMetrics) throws IOException {
         Integer endOffset = offsets.get(offsets.size() - 1);
         Integer startOffset = offsets.get(0);
 
         byte[] bytesToRead = new byte[4];
 
         Long startTime = System.currentTimeMillis();
+
+        //code below used to change the position of file pointer in local file system
+        fileSystemHandler.seek(endOffset + length + 4);
+
         fileSystemHandler.readBytesFromFile(endOffset + length + 4, bytesToRead);
 
         Input input = new Input(bytesToRead);
@@ -522,6 +538,10 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
         bytesToRead = new byte[totalLength];
         startTime = System.currentTimeMillis();
+
+        ////code below used to change the position of file pointer in local file system
+        fileSystemHandler.seek(startOffset + length + 4);
+
         fileSystemHandler.readBytesFromFile(startOffset + length + 4, bytesToRead);
         fileScanMetrics.setTotalBytesReadTime(System.currentTimeMillis() - startTime);
 
