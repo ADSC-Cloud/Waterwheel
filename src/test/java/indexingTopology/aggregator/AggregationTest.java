@@ -239,6 +239,57 @@ public class AggregationTest {
         assertEquals(result.dataTuples.get(2), new DataTuple(3.0, 2.0, 4.0, 3.0, 3L, 2L, 5.0));
     }
 
+
+    @Test
+    public void testHybridScalarAggregation() {
+        DataSchema schema = new DataSchema();
+        schema.addIntField("c1");
+        schema.addDoubleField("c2");
+        schema.addLongField("c3");
+
+
+        PartialQueryResult partialQueryResult1 = new PartialQueryResult();
+        PartialQueryResult partialQueryResult2 = new PartialQueryResult();
+        partialQueryResult1.add(new DataTuple(1.0, 1.0, 1L));
+        partialQueryResult2.add(new DataTuple(2.0, 2.0, 2L));
+        partialQueryResult1.add(new DataTuple(2.0, 2.0, 2L));
+        partialQueryResult2.add(new DataTuple(3.0, 3.0, 2L));
+        partialQueryResult1.add(new DataTuple(3.0, 1.0, 3L));
+
+        Aggregator localAggregator1 = new Aggregator<>(schema, null,
+                new AggregateField(new Count<>(), "c2"),
+                new AggregateField(new Sum<>(), "c2"),
+                new AggregateField(new Max<>(), "c2"),
+                new AggregateField(new Max<>(), "c3"),
+                new AggregateField(new Min<>(), "c3"),
+                new AggregateField(new Sum<>(), "c3")
+        );
+
+        Aggregator localAggregator2 = new Aggregator<>(schema, null,
+                new AggregateField(new Count<>(), "c2"),
+                new AggregateField(new Sum<>(), "c2"),
+                new AggregateField(new Max<>(), "c2"),
+                new AggregateField(new Max<>(), "c3"),
+                new AggregateField(new Min<>(), "c3"),
+                new AggregateField(new Sum<>(), "c3")
+        );
+
+        Aggregator.IntermediateResult intermediateResult1 = localAggregator1.createIntermediateResult();
+        Aggregator.IntermediateResult intermediateResult2= localAggregator2.createIntermediateResult();
+        localAggregator1.aggregate(partialQueryResult1.dataTuples, intermediateResult1);
+        localAggregator2.aggregate(partialQueryResult2.dataTuples, intermediateResult2);
+
+        Aggregator globalAggregator = localAggregator1.generateGlobalAggregator();
+        Aggregator.IntermediateResult globalIntermediateResult = globalAggregator.createIntermediateResult();
+
+        globalAggregator.aggregate(localAggregator1.getResults(intermediateResult1).dataTuples, globalIntermediateResult);
+        globalAggregator.aggregate(localAggregator2.getResults(intermediateResult2).dataTuples, globalIntermediateResult);
+
+        PartialQueryResult result = globalAggregator.getResults(globalIntermediateResult);
+        assertEquals(new DataTuple( 5.0, 9.0, 3.0, 3L, 1L, 10.0), result.dataTuples.get(0));
+    }
+
+
     @Test
     public void testSerialization() {
         DataSchema schema = new DataSchema();

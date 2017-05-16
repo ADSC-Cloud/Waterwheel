@@ -13,10 +13,10 @@ import java.util.Map;
 /**
  * Created by robert on 10/3/17.
  */
-public class Aggregator<Key extends Number & Comparable<Key>> implements Serializable{
+public class Aggregator<Key extends Comparable<Key>> implements Serializable{
 
     // this is the computation state
-    static public class IntermediateResult<Key extends Number & Comparable<Key>> {
+    static public class IntermediateResult<Key extends Comparable<Key>> {
 
         transient Map<Key, Object[]> aggregationResults = new HashMap<>();
 
@@ -43,6 +43,8 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
     final private int groupByIndex;
     final DataSchema inputSchema;
     final boolean isGlobal;
+    // aggregation without group-by field, i.e., all tuples are in the same group.
+    final boolean scalar;
 
     public Aggregator(DataSchema inputSchema, String groupByField, AggregateField... fields) {
         this(inputSchema, groupByField, false, fields);
@@ -58,7 +60,13 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
                 aggregateColumnIndexes[i] = inputSchema.getFieldIndex(fields[i].fieldName);
             }
         }
-        this.groupByIndex = inputSchema.getFieldIndex(groupByField);
+        if (groupByField == null) {
+            this.scalar = true;
+            this.groupByIndex = -1;
+        } else {
+            this.scalar = false;
+            this.groupByIndex = inputSchema.getFieldIndex(groupByField);
+        }
         this.inputSchema = inputSchema;
         this.isGlobal = isGlobal;
     }
@@ -68,7 +76,11 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
 
 
 
-        Key group = (Key) dataTuple.get(groupByIndex);
+        Object group = null;
+        if (!scalar)
+            group = dataTuple.get(groupByIndex);
+        else
+            group = "scalar";
         intermediateResult.aggregationResults.computeIfAbsent(group, p -> {
             Object[] aggregationValues = new Object[aggregateFields.length];
             for (int i = 0; i < aggregateFields.length; i++) {
@@ -92,7 +104,8 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
 
     public DataSchema getOutputDataSchema() {
         DataSchema dataSchema = new DataSchema();
-        dataSchema.addField(inputSchema.getDataType(groupByIndex), inputSchema.getFieldName(groupByIndex));
+        if (!scalar)
+            dataSchema.addField(inputSchema.getDataType(groupByIndex), inputSchema.getFieldName(groupByIndex));
         for (AggregateField aggregateField: aggregateFields) {
             String fieldName;
 
@@ -131,7 +144,9 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
 //        if (aggregationResults != null) {
             for (Key group : intermediateResult.aggregationResults.keySet()) {
                 final DataTuple dataTuple = new DataTuple();
-                dataTuple.add(group);
+                if (!scalar) {
+                    dataTuple.add(group);
+                }
                 Object[] aggregationValues = intermediateResult.aggregationResults.get(group);
                 for (Object object : aggregationValues) {
                     dataTuple.add(object);
@@ -151,7 +166,11 @@ public class Aggregator<Key extends Number & Comparable<Key>> implements Seriali
             else
                 newAggregateFields[i] = new AggregateField(aggregateFields[i].function, aggregateFields[i].aggregateFieldName());
         }
-        return new Aggregator<>(globalInputSchema, inputSchema.getFieldName(groupByIndex), true, newAggregateFields);
+        if (scalar)
+            return new Aggregator<>(globalInputSchema, null, true, newAggregateFields);
+        else
+            return new Aggregator<>(globalInputSchema, inputSchema.getFieldName(groupByIndex),
+                    true, newAggregateFields);
     }
 
 }
