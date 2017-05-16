@@ -17,7 +17,7 @@
         <version>1.4</version>
         <configuration>
             <createDependencyReducedPom>true</createDependencyReducedPom>
-            <minimizeJar>true</minimizeJar>
+            <!--<minimizeJar>true</minimizeJar>-->
         </configuration>
         <executions>
             <execution>
