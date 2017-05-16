@@ -1,5 +1,6 @@
 language: java
 sudo: false
 
-script: mvn install -DskipTests
-	mvn -Dtest=Geo* test
+script:
+   - mvn install -DskipTests
+   - mvn -Dtest=Geo* test
