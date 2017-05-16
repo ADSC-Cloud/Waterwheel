@@ -9,6 +9,7 @@ import indexingTopology.client.GeoTemporalQueryClient;
 import indexingTopology.client.GeoTemporalQueryRequest;
 import indexingTopology.client.IngestionClientBatchMode;
 import indexingTopology.client.QueryResponse;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import indexingTopology.util.DataTupleMapper;
@@ -16,6 +17,7 @@ import indexingTopology.util.DataTuplePredicate;
 import indexingTopology.util.TopologyGenerator;
 import indexingTopology.util.taxi.City;
 import indexingTopology.util.taxi.ZOrderCoding;
+import junit.framework.TestCase;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
 import org.apache.storm.generated.StormTopology;
@@ -30,7 +32,24 @@ import java.util.function.Function;
 /**
  * Created by robert on 16/5/17.
  */
-public class GeoTemporalTopologyTest {
+public class GeoTemporalTopologyTest extends TestCase {
+
+    private String dataDir;
+
+    public void setUp() {
+        dataDir = TopologyConfig.dataDir;
+        try {
+            Runtime.getRuntime().exec("mkdir -p ./target/tmp");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        TopologyConfig.dataDir = "./target/tmp";
+        System.out.println("dataDir is set to " + TopologyConfig.dataDir);
+    }
+
+    public void tearDown() {
+        TopologyConfig.dataDir = dataDir;
+    }
 
     @Test
     public void testGeoRangeQuery() {
