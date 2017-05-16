@@ -249,9 +249,9 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
             filterByTimestamp(dataTuples, timestampLowerBound, timestampUpperBound);
 
             //filter by predicate
-            System.out.println("Before predicates: " + dataTuples.size());
+//            System.out.println("Before predicates: " + dataTuples.size());
             filterByPredicate(dataTuples, subQuery.getPredicate());
-            System.out.println("After predicates: " + dataTuples.size());
+//            System.out.println("After predicates: " + dataTuples.size());
 
             if (subQuery.getAggregator() != null) {
                 Aggregator.IntermediateResult intermediateResult = subQuery.getAggregator().createIntermediateResult();

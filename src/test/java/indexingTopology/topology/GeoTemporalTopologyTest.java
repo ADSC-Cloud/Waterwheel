@@ -93,85 +93,85 @@ public class GeoTemporalTopologyTest {
                 rawSchema, 1024);
         try {
             clientBatchMode.connectWithTimeout(5000);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
 
-        final int tuples = 1000 * 1000;
+            final int tuples = 1000 * 1000;
 
+            for (int i = 0; i < tuples; i++) {
+                int id = i % 100;
+                double x = (double) (i % 1000);
+                double y = (double) (i / 1000);
+                long t = (long)i;
+                DataTuple tuple = new DataTuple();
+                tuple.add(id);
+                tuple.add(x);
+                tuple.add(y);
+                tuple.add(t);
+                try {
+                    clientBatchMode.appendInBatch(tuple);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
 
-
-        for (int i = 0; i < tuples; i++) {
-            int id = i % 100;
-            double x = (double) (i % 1000);
-            double y = (double) (i / 1000);
-            long t = (long)i;
-            DataTuple tuple = new DataTuple();
-            tuple.add(id);
-            tuple.add(x);
-            tuple.add(y);
-            tuple.add(t);
             try {
-                clientBatchMode.appendInBatch(tuple);
+                clientBatchMode.flush();
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }
 
-        try {
-            clientBatchMode.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            // wait for the completion of insertion.
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient("localhost", 10001);
-        try {
-            queryClient.connectWithTimeout(5000);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        double qx1 = 10.0;
-        double qx2 = 19.9;
-        double qy1 = 10.0;
-        double qy2 = 19.9;
-
-
-        try {
-
-//            {// all ranges.
-//                GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(Double.MIN_VALUE, Double.MAX_VALUE, Double.MIN_VALUE, Double.MAX_VALUE, Long.MIN_VALUE, Long.MAX_VALUE);
-//
-//                QueryResponse response = queryClient.query(queryRequest);
-//                assertEquals(tuples, response.dataTuples.size());
-//            }
-
-            {
-                DataTuplePredicate predicate = t -> (double) schema.getValue("x", t) >= qx1 &&
-                        (double) schema.getValue("x", t) < qx2 &&
-                        (double) schema.getValue("y", t) >= qy1 &&
-                        (double) schema.getValue("y", t) < qy2;
-
-                GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(qx1, qx2, qy1, qy2, Long.MIN_VALUE, Long.MAX_VALUE, predicate);
-
-                QueryResponse response = queryClient.query(queryRequest);
-                assertEquals(tuples / 100, response.dataTuples.size());
+            try {
+                // wait for the completion of insertion.
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-            fullyExecuted = true;
+
+            GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient("localhost", 10001);
+            try {
+                queryClient.connectWithTimeout(5000);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
+
+
+            try {
+
+//                {// all ranges.
+//                    GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(Double.MIN_VALUE, Double.MAX_VALUE, Double.MIN_VALUE, Double.MAX_VALUE, Long.MIN_VALUE, Long.MAX_VALUE);
+//
+//                    QueryResponse response = queryClient.query(queryRequest);
+//                    assertEquals(tuples, response.dataTuples.size());
+//                }
+
+                {// geo query with 10% selectivity on both dimension.
+                    double qx1 = 10.0;
+                    double qx2 = 19.9;
+                    double qy1 = 10.0;
+                    double qy2 = 19.9;
+
+                    DataTuplePredicate predicate = t -> (double) schema.getValue("x", t) >= qx1 &&
+                            (double) schema.getValue("x", t) <= qx2 &&
+                            (double) schema.getValue("y", t) >= qy1 &&
+                            (double) schema.getValue("y", t) <= qy2;
+
+                    GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(qx1, qx2, qy1, qy2, Long.MIN_VALUE, Long.MAX_VALUE, predicate);
+
+                    QueryResponse response = queryClient.query(queryRequest);
+                    assertEquals(tuples / 100 / 100, response.dataTuples.size());
+                }
+                fullyExecuted = true;
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+
         } catch (IOException e) {
             e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
         }
-
         assertTrue(fullyExecuted);
 
     }
