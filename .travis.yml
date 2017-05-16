@@ -5,5 +5,5 @@ jdk:
   - oraclejdk8
 
 script:
-   - mvn install -DskipTests
+   - mvn install -DskipTests |grep -v "\[WARNING\] We have a duplicate"
    - mvn -Dtest=Geo* test
