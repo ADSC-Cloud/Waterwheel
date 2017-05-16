@@ -759,5 +759,114 @@ public class TopologyTest {
 
     }
 
-    //TODO: temporal query test.
+    @Test
+    public void testSimpleTopologyTemporalQuery() throws InterruptedException {
+        DataSchema schema = new DataSchema();
+        schema.addIntField("a1");
+        schema.addDoubleField("a2");
+        schema.addLongField("timestamp");
+        schema.addVarcharField("a4", 100);
+        schema.setPrimaryIndexField("a1");
+
+        final int minIndex = 0;
+        final int maxIndex = 100;
+
+        TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
+
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001);
+
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
+                coordinator);
+
+        Config conf = new Config();
+        conf.setDebug(false);
+        conf.setNumWorkers(1);
+
+        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+
+
+        LocalCluster cluster = new LocalCluster();
+        cluster.submitTopology("T0", conf, topology);
+
+        final int tuples = 1000000;
+
+
+        final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", 10000, schema, 1024);
+        try {
+            ingestionClient.connectWithTimeout(5000);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        final QueryClient queryClient = new QueryClient("localhost", 10001);
+        try {
+            queryClient.connectWithTimeout(5000);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        ExecutorService executorService = Executors.newCachedThreadPool();
+
+
+        boolean fullyExecuted = false;
+
+        for (int i = 0; i < tuples; i++) {
+            DataTuple tuple = new DataTuple();
+            tuple.add(i % 1000);
+            tuple.add((double)(i % 1000));
+            tuple.add((long)(i / (tuples / 1000)));
+            tuple.add("payload");
+            try {
+                ingestionClient.appendInBatch(tuple);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        try {
+            ingestionClient.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // wait for the tuples to be appended.
+        Thread.sleep(3000);
+
+        try {
+
+            Aggregator<Integer> aggregator = new Aggregator<>(schema, null,
+                    new AggregateField(new Count(), "*"));
+
+
+            // full temporal range query
+            QueryResponse response = queryClient.query(new QueryRequest<>(0, 1000, Long.MIN_VALUE,
+                    Long.MAX_VALUE, aggregator));
+            assertEquals(1000000.0, response.dataTuples.get(0).get(0));
+
+            //half temporal range query
+            response = queryClient.query(new QueryRequest<>(0, 1000, 0, 499, aggregator));
+            assertEquals(1000000.0 / 2, response.dataTuples.get(0).get(0));
+
+            //a temporal range query
+            response =  queryClient.query(new QueryRequest<>(0,1000, 0, 0, aggregator));
+            assertEquals(1000000.0 / 1000, response.dataTuples.get(0).get(0));
+
+
+            fullyExecuted = true;
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            ingestionClient.close();
+            queryClient.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        assertTrue(fullyExecuted);
+        cluster.shutdown();
+
+    }
 }
