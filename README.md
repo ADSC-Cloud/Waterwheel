@@ -15,15 +15,14 @@ Data tuples continuouly arrive at the system. Each tuple consists of a key, a ti
 #### 1. Local mode
 Running our system in local model is the easiest way to get a feeling of the system. Local model is typically used internally to debug the topology. We highly encourage the users to run our system in cluster model to fully exploit the performance.
 
-To run our systemin local mode, you should:
+To run our system in local mode, you should follow those steps:
 
-1. Make sure that ```<scope>provided</scope>``` is commented in pom.xml file.
-
-2. download the source codes
+1. Download the source codes
 
 ```
 $ git clone https://github.com/ADSC-Cloud/append-only-store
 ```
+2. Make sure that ```<scope>provided</scope>``` is commented in pom.xml file.
 
 3. Change the configures in config/TopologyConfig accordingly.
 
@@ -46,25 +45,32 @@ $ mvn exec:java -Dexec.mainClass=indexingTopology.KingBaseTopology
 
 #### 2. Cluster model
 
-1. Make sure that ```<scope>provided</scope>``` is uncommented in pom.xml file.
+1. Deploy Apache Storm and make sure that the nimbus and supervisors are running properly.
 
-2. Deploy Apache Storm and make sure that the nimbus and supervisors are running properly.
+2. Setup HDFS
 
-3. Setup HDFS
 
-4. Change the configures in config/TopologyConfig accordingly.
+3. Download the source codes
+
+```
+$ git clone https://github.com/ADSC-Cloud/append-only-store
+```
+
+4. Make sure that ```<scope>provided</scope>``` is uncommented in pom.xml file.
+
+5. Change the configures in config/TopologyConfig accordingly.
 
 set ```HDFSFlag = false``` to use HDFS as the storage system.
 
 Create a folder for the system in HDFS and set ```dataDir``` in the config file properly. Make sure that the folder is writable.
 
-5. Compile the source code
+6. Compile the source code
 
 ```base
 mvn clean install -DskipTests
 ```
 
-6. Submit the topology to Apache
+7. Submit the topology to Apache
 
 ```
 $ storm jar SOURCE_CODE_PATH/target/IndexingTopology-1.0-SNAPSHOT.jar indexingTopologyNormalDistributionTopology append-only-store
