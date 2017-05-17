@@ -1,5 +1,9 @@
 language: java
 sudo: false
 
-script: mvn install -DskipTests
-	mvn -Dtest=Geo* test
+jdk:
+  - oraclejdk8
+
+script:
+   - mvn install -DskipTests |grep -v "\[WARNING\] We have a duplicate"
+   - mvn -Dtest=Geo* test
