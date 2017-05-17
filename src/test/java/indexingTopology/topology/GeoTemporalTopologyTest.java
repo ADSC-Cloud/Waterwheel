@@ -49,6 +49,11 @@ public class GeoTemporalTopologyTest extends TestCase {
 
     public void tearDown() {
         TopologyConfig.dataDir = dataDir;
+        try {
+            Runtime.getRuntime().exec("rm ./target/tmp/*");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Test
@@ -188,10 +193,16 @@ public class GeoTemporalTopologyTest extends TestCase {
                 e.printStackTrace();
             }
 
+            queryClient.close();
+            clientBatchMode.close();
+
         } catch (IOException e) {
             e.printStackTrace();
         }
         assertTrue(fullyExecuted);
+
+        cluster.shutdown();
+
 
     }
 }
