@@ -9,6 +9,7 @@ import indexingTopology.bolt.InputStreamReceiverServer;
 import indexingTopology.bolt.QueryCoordinator;
 import indexingTopology.bolt.QueryCoordinatorWithQueryReceiverServer;
 import indexingTopology.client.*;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import indexingTopology.util.DataTupleMapper;
@@ -20,6 +21,7 @@ import org.apache.storm.generated.StormTopology;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.function.Function;
@@ -28,6 +30,29 @@ import java.util.function.Function;
  * Created by robert on 10/3/17.
  */
 public class TopologyOverallTest {
+
+
+    private String dataDir;
+
+    public void setUp() {
+        dataDir = TopologyConfig.dataDir;
+        try {
+            Runtime.getRuntime().exec("mkdir -p ./target/tmp");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        TopologyConfig.dataDir = "./target/tmp";
+        System.out.println("dataDir is set to " + TopologyConfig.dataDir);
+    }
+
+    public void tearDown() {
+        TopologyConfig.dataDir = dataDir;
+        try {
+            Runtime.getRuntime().exec("rm ./target/tmp/*");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     @Test
     public void testTopologyDouble() {
@@ -87,9 +112,9 @@ public class TopologyOverallTest {
             QueryResponse response = queryClient.temporalRangeQuery(0.0, 10000.0, 0, Long.MAX_VALUE);
 
             assertEquals(numberOfTuples, response.dataTuples.size());
-            KillOptions killOptions = new KillOptions();
-            killOptions.set_wait_secs(0);
-            cluster.killTopology(topologyName);
+            cluster.shutdown();
+            oneTuplePerTransferIngestionClient.close();
+            queryClient.close();
 //            Thread.sleep(5000);
 
         } catch (Exception e) {
@@ -156,10 +181,9 @@ public class TopologyOverallTest {
             QueryResponse response = queryClient.temporalRangeQuery(0, 40, 0, Long.MAX_VALUE);
 
             assertEquals(41, response.dataTuples.size());
-            KillOptions killOptions = new KillOptions();
-            killOptions.set_wait_secs(0);
-            cluster.killTopology(topologyName);
-            Thread.sleep(5000);
+            cluster.shutdown();
+            oneTuplePerTransferIngestionClient.close();
+            queryClient.close();
 
 
         } catch (Exception e) {
@@ -227,11 +251,9 @@ public class TopologyOverallTest {
             QueryResponse response = queryClient.temporalRangeQuery(0.0, 9.5, 0, Long.MAX_VALUE);
 
             assertEquals(5, response.dataTuples.size());
-            KillOptions killOptions = new KillOptions();
-            killOptions.set_wait_secs(0);
-            cluster.killTopology(topologyName);
-            Thread.sleep(5000);
-
+            cluster.shutdown();
+            oneTuplePerTransferIngestionClient.close();
+            queryClient.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -298,12 +320,9 @@ public class TopologyOverallTest {
 
             assertEquals(2, response.dataTuples.size());
 
-
-            KillOptions killOptions = new KillOptions();
-            killOptions.set_wait_secs(0);
-            cluster.killTopology(topologyName);
-            Thread.sleep(5000);
-
+            cluster.shutdown();
+            oneTuplePerTransferIngestionClient.close();
+            queryClient.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -384,12 +403,9 @@ public class TopologyOverallTest {
             assertEquals(new DataTuple(8, 20.0, 5.0), response.dataTuples.get(8));
             assertEquals(new DataTuple(9, 20.0, 5.0), response.dataTuples.get(9));
 
-
-            KillOptions killOptions = new KillOptions();
-            killOptions.set_wait_secs(0);
-            cluster.killTopology(topologyName);
-            Thread.sleep(5000);
-
+            cluster.shutdown();
+            oneTuplePerTransferIngestionClient.close();
+            queryClient.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -457,11 +473,9 @@ public class TopologyOverallTest {
             QueryResponse response = queryClient.temporalRangeQuery(0, 40, 0, Long.MAX_VALUE);
 
             assertEquals(41, response.dataTuples.size());
-            KillOptions killOptions = new KillOptions();
-            killOptions.set_wait_secs(0);
-            cluster.killTopology(topologyName);
-            Thread.sleep(5000);
-
+            cluster.shutdown();
+            oneTuplePerTransferIngestionClient.close();
+            queryClient.close();
 
         } catch (Exception e) {
             e.printStackTrace();

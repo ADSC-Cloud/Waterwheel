@@ -5,6 +5,7 @@ import indexingTopology.bolt.InputStreamReceiverServer;
 import indexingTopology.bolt.QueryCoordinator;
 import indexingTopology.bolt.QueryCoordinatorWithQueryReceiverServer;
 import indexingTopology.client.*;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import indexingTopology.util.*;
@@ -28,6 +29,28 @@ import static org.junit.Assert.*;
  * Created by Robert on 5/15/17.
  */
 public class TopologyTest {
+
+    private String dataDir;
+
+    public void setUp() {
+        dataDir = TopologyConfig.dataDir;
+        try {
+            Runtime.getRuntime().exec("mkdir -p ./target/tmp");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        TopologyConfig.dataDir = "./target/tmp";
+        System.out.println("dataDir is set to " + TopologyConfig.dataDir);
+    }
+
+    public void tearDown() {
+        TopologyConfig.dataDir = dataDir;
+        try {
+            Runtime.getRuntime().exec("rm ./target/tmp/*");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     @Test
     public void testSimpleTopologyKeyRangeQuery() throws InterruptedException {
