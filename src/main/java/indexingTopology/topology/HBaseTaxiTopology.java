@@ -1,8 +1,8 @@
-package indexingTopology;
+package indexingTopology.topology;
 
-import indexingTopology.bolt.HBaseNetworkGenerator;
-import indexingTopology.bolt.LogWriter;
+import indexingTopology.bolt.*;
 import indexingTopology.streams.Streams;
+import indexingTopology.util.taxi.City;
 import org.apache.storm.Config;
 import org.apache.storm.StormSubmitter;
 import org.apache.storm.generated.StormTopology;
@@ -11,7 +11,7 @@ import org.apache.storm.topology.TopologyBuilder;
 /**
  * Created by acelzj on 4/4/17.
  */
-public class HBaseNetworkTopology {
+public class HBaseTaxiTopology {
 
     private static final String Generator = "IndexerBolt";
     private static final String LogWriter = "LogWriter";
@@ -20,7 +20,15 @@ public class HBaseNetworkTopology {
 
         TopologyBuilder builder = new TopologyBuilder();
 
-        builder.setBolt(Generator, new HBaseNetworkGenerator(), 24)
+        final double x1 = 116.2;
+        final double x2 = 117.0;
+        final double y1 = 39.6;
+        final double y2 = 40.6;
+        final int partitions = 1024;
+
+        City city = new City(x1, x2, y1, y2, partitions);
+
+        builder.setBolt(Generator, new HBaseTaxiGenerator(city), 24)
 //                .shuffleGrouping(RangeQueryDispatcherBolt, Streams.ThroughputReportStream)
                 .allGrouping(LogWriter, Streams.ThroughputRequestStream);
 

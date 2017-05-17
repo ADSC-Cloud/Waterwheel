@@ -1,4 +1,4 @@
-package indexingTopology;
+package indexingTopology.topology;
 
 import indexingTopology.aggregator.AggregateField;
 import indexingTopology.aggregator.Aggregator;
