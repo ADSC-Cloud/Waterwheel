@@ -9,8 +9,17 @@ public class TopologyConfig {
     public static final String HDFS_HOST = "hdfs://192.168.0.237:54310/";
 //    public static final String HDFS_HOST = "hdfs://10.21.25.13:54310/";
 
-    public static final int NUMBER_TUPLES_OF_A_CHUNK = 600000 * 2;
-//    public static final int NUMBER_TUPLES_OF_A_CHUNK = 200000;
+    /**
+     * Used for maintaining persistent meta logs in HDFS. In case reconstruction
+     * is needed such as when the system crashed, meta data stored in {@link TopologyConfig#HDFS_META_LOG_PATH}
+     * is used for reconstruction.
+     */
+    public static boolean RECONSTRUCT_SCHEMA = true;
+    public static final String HDFS_META_LOG_PATH = "hdfs://localhost:9000/user/john/metaLog.txt";
+    public static final String HDFS_HOST_LOCAL = "hdfs://localhost:9000/";
+
+    public static final int NUMBER_TUPLES_OF_A_CHUNK = 600000;
+
     public static final int CACHE_SIZE = 10000;
 
     public static final int TASK_QUEUE_CAPACITY = 10000;

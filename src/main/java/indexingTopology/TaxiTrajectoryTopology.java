@@ -16,7 +16,7 @@ import org.apache.storm.utils.Utils;
 /**
  * Created by acelzj on 11/15/16.
  */
-public class TexiTrajectoryTopology {
+public class TaxiTrajectoryTopology {
 
     static final String TupleGenerator = "TupleGenerator";
     static final String RangeQueryDispatcherBolt = "DispatcherBolt";
