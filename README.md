@@ -15,7 +15,7 @@ Data tuples continuouly arrive at the system. Each tuple consists of a key, a ti
 #### 1. Local mode
 Running our system in local model is the easiest way to get a feeling of the system. Local model is typically used internally to debug the topology. We highly encourage the users to run our system in cluster model to fully exploit the performance.
 
-To run our systemin local mode, you should:
+To run our system in local mode, you should:
 
 1. Make sure that ```<scope>provided</scope>``` is commented in pom.xml file.
 
