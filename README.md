@@ -17,7 +17,7 @@ Running our system in local model is the easiest way to get a feeling of the sys
 
 To run our system in local mode, you should follow those steps:
 
-1. download the source codes
+1. Download the source codes
 
 ```
 $ git clone https://github.com/ADSC-Cloud/append-only-store
@@ -50,7 +50,7 @@ $ mvn exec:java -Dexec.mainClass=indexingTopology.KingBaseTopology
 2. Setup HDFS
 
 
-3. download the source codes
+3. Download the source codes
 
 ```
 $ git clone https://github.com/ADSC-Cloud/append-only-store
