@@ -5,7 +5,7 @@ jdk:
   - oraclejdk8
 
 before_script:
- - export JAVA_OPTS=-Xmx2048m
+ - export JAVA_OPTS=-Xmx1024m
 
 script:
    - mvn install -DskipTests |grep -v "\[WARNING\] We have a duplicate"
