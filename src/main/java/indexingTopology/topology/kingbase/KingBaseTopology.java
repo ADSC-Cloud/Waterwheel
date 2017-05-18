@@ -11,6 +11,7 @@ import indexingTopology.client.GeoTemporalQueryClient;
 import indexingTopology.client.GeoTemporalQueryRequest;
 import indexingTopology.client.IngestionClientBatchMode;
 import indexingTopology.client.QueryResponse;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import indexingTopology.util.*;
@@ -254,10 +255,12 @@ public class KingBaseTopology {
 
         final boolean enableLoadBalance = false;
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000);
+        TopologyConfig config = new TopologyConfig();
+
+        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000, config);
 
         QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, 10001, city);
+                upperBound, 10001, city, config);
 
         DataTupleMapper dataTupleMapper = new DataTupleMapper(rawSchema, (Serializable & Function<DataTuple, DataTuple>) t -> {
             double lon = (double)schema.getValue("lon", t);
@@ -275,7 +278,7 @@ public class KingBaseTopology {
         topologyGenerator.setNumberOfNodes(NumberOfNodes);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
-                enableLoadBalance, dataSource, queryCoordinator, dataTupleMapper, bloomFilterColumns);
+                enableLoadBalance, dataSource, queryCoordinator, dataTupleMapper, bloomFilterColumns, config);
 
         Config conf = new Config();
         conf.setDebug(false);
@@ -335,10 +338,12 @@ public class KingBaseTopology {
 
         final boolean enableLoadBalance = false;
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000);
+        TopologyConfig config = new TopologyConfig();
+
+        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000, config);
 
         QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, 10001, city);
+                upperBound, 10001, city, config);
 
 
         DataTupleMapper dataTupleMapper = new DataTupleMapper(rawSchema, (Serializable & Function<DataTuple, DataTuple>) t -> {
@@ -355,7 +360,7 @@ public class KingBaseTopology {
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
-                enableLoadBalance, dataSource, queryCoordinator, dataTupleMapper, bloomFilterColumns);
+                enableLoadBalance, dataSource, queryCoordinator, dataTupleMapper, bloomFilterColumns, config);
 
         Config conf = new Config();
         conf.setDebug(false);

@@ -2,6 +2,7 @@ package indexingTopology.bolt;
 
 import indexingTopology.aggregator.Aggregator;
 import indexingTopology.client.*;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.PartialQueryResult;
 import indexingTopology.util.DataTupleEquivalentPredicateHint;
 import indexingTopology.util.DataTuplePredicate;
@@ -42,8 +43,8 @@ public class GeoTemporalQueryCoordinatorWithQueryReceiverServer<T extends Number
 
     private static final Logger LOG = LoggerFactory.getLogger(GeoTemporalQueryCoordinatorWithQueryReceiverServer.class);
 
-    public GeoTemporalQueryCoordinatorWithQueryReceiverServer(T lowerBound, T upperBound, int port, City city) {
-        super(lowerBound, upperBound);
+    public GeoTemporalQueryCoordinatorWithQueryReceiverServer(T lowerBound, T upperBound, int port, City city, TopologyConfig config) {
+        super(lowerBound, upperBound, config);
         this.port = port;
         this.city = city;
     }

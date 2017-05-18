@@ -50,12 +50,18 @@ public class HBaseNetworkGenerator extends BaseRichBolt {
 
     Long offset = (long) Integer.MAX_VALUE + 1;
 
+    TopologyConfig config;
+
+    public HBaseNetworkGenerator(TopologyConfig config) {
+        this.config = config;
+    }
+
     @Override
     public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
         this.collector = collector;
 
         try {
-            bufferedReader = new BufferedReader(new FileReader(new File(TopologyConfig.dataFileDir)));
+            bufferedReader = new BufferedReader(new FileReader(new File(config.dataFileDir)));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -65,7 +71,7 @@ public class HBaseNetworkGenerator extends BaseRichBolt {
         rateTracker = new RateTracker(5 * 1000, 5);
 
         try {
-            hBaseHandler = new HBaseHandler();
+            hBaseHandler = new HBaseHandler(config);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -100,7 +106,7 @@ public class HBaseNetworkGenerator extends BaseRichBolt {
                         }
 
                         try {
-                            bufferedReader = new BufferedReader(new FileReader(new File(TopologyConfig.dataFileDir)));
+                            bufferedReader = new BufferedReader(new FileReader(new File(config.dataFileDir)));
                         } catch (FileNotFoundException e) {
                             e.printStackTrace();
                         }

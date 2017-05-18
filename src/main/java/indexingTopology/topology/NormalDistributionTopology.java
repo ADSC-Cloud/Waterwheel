@@ -26,6 +26,7 @@ public class NormalDistributionTopology {
     public static void main(String[] args) throws Exception {
 
         TopologyBuilder builder = new TopologyBuilder();
+        TopologyConfig config = new TopologyConfig();
      /*   List<String> fieldNames=new ArrayList<String>(Arrays.asList("user_id","id_1","id_2","ts_epoch",
                 "date","time","latitude","longitude","time_elapsed","distance","speed","angel",
                 "mrt_station","label_1","label_2","label_3","label_4"));
@@ -69,29 +70,30 @@ public class NormalDistributionTopology {
         boolean enableLoadBalance = false;
 
 
-        TopologyConfig.dataDir = "/home/acelzj";
-        TopologyConfig.HDFSFlag = false;
+        config.dataDir = "/home/acelzj";
+        config.HDFSFlag = false;
 
         builder.setSpout(TupleGenerator, new NormalDistributionGenerator(schema), 1);
 
-        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher(schemaWithTimestamp, lowerBound, upperBound, enableLoadBalance, false))
+        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher(schemaWithTimestamp, lowerBound, upperBound,
+                enableLoadBalance, false, config))
                 .shuffleGrouping(TupleGenerator, Streams.IndexStream)
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 
-        builder.setBolt(IndexerBolt, new IngestionBolt(schemaWithTimestamp),2)
+        builder.setBolt(IndexerBolt, new IngestionBolt(schemaWithTimestamp, config),2)
                 .setNumTasks(1)
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream);
 
-        builder.setBolt(RangeQueryDecompositionBolt, new QueryCoordinatorWithQueryGenerator<>(lowerBound, upperBound), 1)
+        builder.setBolt(RangeQueryDecompositionBolt, new QueryCoordinatorWithQueryGenerator<>(lowerBound, upperBound, config), 1)
                 .shuffleGrouping(ResultMergeBolt, Streams.QueryFinishedStream)
                 .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSubQueryFinishStream)
                 .shuffleGrouping(MetadataServer, Streams.FileInformationUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.TimestampUpdateStream);
 
-        builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner(schemaWithTimestamp), 4)
+        builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner(schemaWithTimestamp, config), 4)
 //                .fieldsGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream, new Fields("fileName"));
                 .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream);
 //                .shuffleGrouping(RangeQueryDecompositionBolt, FileSystemQueryStream);
@@ -102,7 +104,7 @@ public class NormalDistributionTopology {
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryInformationStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryInformationStream);
 
-        builder.setBolt(MetadataServer, new MetadataServer(lowerBound, upperBound))
+        builder.setBolt(MetadataServer, new MetadataServer(lowerBound, upperBound, config))
                 .shuffleGrouping(RangeQueryDispatcherBolt, Streams.StatisticsReportStream)
                 .shuffleGrouping(IndexerBolt, Streams.TimestampUpdateStream)
                 .shuffleGrouping(IndexerBolt, Streams.FileInformationUpdateStream);

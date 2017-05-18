@@ -1,5 +1,6 @@
 package indexingTopology.util;
 
+import indexingTopology.config.TopologyConfig;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicLong;
@@ -12,7 +13,7 @@ import static org.junit.Assert.*;
 public class AckerTest {
     @Test
     public void ackWithoutPendingIds() throws Exception {
-        BackPressure backPressure = new BackPressure();
+        BackPressure backPressure = new BackPressure(new TopologyConfig());
         backPressure.currentCount = new AtomicLong(5000);
 
         backPressure.ack(10000L);
@@ -34,7 +35,7 @@ public class AckerTest {
 
     @Test
     public void ackLeavingPendingIds() throws Exception {
-        BackPressure backPressure = new BackPressure();
+        BackPressure backPressure = new BackPressure(new TopologyConfig());
         backPressure.currentCount = new AtomicLong(5000);
 
         backPressure.ack(10000L);

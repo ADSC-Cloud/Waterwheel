@@ -40,18 +40,17 @@ public class NetworkHBaseTester {
     String tableName = "Network";
     String columnFamilyName = "network";
 
-
-
-
+    TopologyConfig config;
 //    private int batchSize;
 
-    public NetworkHBaseTester(int numberOfIndexingThreads) throws Exception {
+    public NetworkHBaseTester(int numberOfIndexingThreads, TopologyConfig config) throws Exception {
+        this.config = config;
         this.numberOfIndexingThreads = numberOfIndexingThreads;
         totalRecord = new AtomicInteger(0);
         indexingThreads = new ArrayList<>();
         hBaseHandler = null;
         try {
-            hBaseHandler = new HBaseHandler();
+            hBaseHandler = new HBaseHandler(config);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -120,7 +119,7 @@ public class NetworkHBaseTester {
 
             Connection connection = hBaseHandler.getConnection();
             try {
-                this.bufferedReader = new BufferedReader(new FileReader(new File(TopologyConfig.dataFileDir)));
+                this.bufferedReader = new BufferedReader(new FileReader(new File(config.dataFileDir)));
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
@@ -149,7 +148,7 @@ public class NetworkHBaseTester {
                     try {
                         bufferedReader.close();
                         try {
-                            bufferedReader = new BufferedReader(new FileReader(new File(TopologyConfig.dataFileDir)));
+                            bufferedReader = new BufferedReader(new FileReader(new File(config.dataFileDir)));
                         } catch (FileNotFoundException e) {
                             e.printStackTrace();
                         }
@@ -300,6 +299,6 @@ public class NetworkHBaseTester {
 
 
     public static void main(String[] args) throws Exception {
-        NetworkHBaseTester networkHBaseTester = new NetworkHBaseTester(24);
+        NetworkHBaseTester networkHBaseTester = new NetworkHBaseTester(24, new TopologyConfig());
     }
 }

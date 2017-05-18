@@ -1,6 +1,7 @@
 package indexingTopology.bolt;
 
 import indexingTopology.client.*;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.PartialQueryResult;
 import indexingTopology.util.Query;
 import org.apache.storm.task.OutputCollector;
@@ -33,8 +34,8 @@ public class QueryCoordinatorWithQueryReceiverServer<T extends Number & Comparab
 
     private static final Logger LOG = LoggerFactory.getLogger(QueryCoordinatorWithQueryReceiverServer.class);
 
-    public QueryCoordinatorWithQueryReceiverServer(T lowerBound, T upperBound, int port) {
-        super(lowerBound, upperBound);
+    public QueryCoordinatorWithQueryReceiverServer(T lowerBound, T upperBound, int port, TopologyConfig config) {
+        super(lowerBound, upperBound, config);
         this.port = port;
     }
 

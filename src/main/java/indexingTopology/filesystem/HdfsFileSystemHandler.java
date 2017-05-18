@@ -24,10 +24,13 @@ public class HdfsFileSystemHandler implements FileSystemHandler {
     String path;
     FSDataInputStream fsDataInputStream;
 
-    public HdfsFileSystemHandler(String path) throws IOException {
+    TopologyConfig config;
+
+    public HdfsFileSystemHandler(String path, TopologyConfig config) throws IOException {
         configuration = new Configuration();
         configuration.setBoolean("dfs.support.append", true);
-        uri = URI.create(TopologyConfig.HDFS_HOST + path);
+        this.config = config;
+        uri = URI.create(config.HDFS_HOST + path);
         fileSystem = FileSystem.get(uri, configuration);
         this.path = path;
     }

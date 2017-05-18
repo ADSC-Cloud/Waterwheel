@@ -33,22 +33,20 @@ public class TopologyTest {
     private String dataDir;
     private boolean hdfsFlag;
 
+    TopologyConfig config = new TopologyConfig();
+
     public void setUp() {
-        dataDir = TopologyConfig.dataDir;
-        hdfsFlag = TopologyConfig.HDFSFlag;
         try {
             Runtime.getRuntime().exec("mkdir -p ./target/tmp");
         } catch (IOException e) {
             e.printStackTrace();
         }
-        TopologyConfig.dataDir = "./target/tmp";
-        TopologyConfig.HDFSFlag = false;
-        System.out.println("dataDir is set to " + TopologyConfig.dataDir);
+        config.dataDir = "./target/tmp";
+        config.HDFSFlag = false;
+        System.out.println("dataDir is set to " + config.dataDir);
     }
 
     public void tearDown() {
-        TopologyConfig.dataDir = dataDir;
-        TopologyConfig.HDFSFlag = hdfsFlag;
         try {
             Runtime.getRuntime().exec("rm ./target/tmp/*");
         } catch (IOException e) {
@@ -69,11 +67,13 @@ public class TopologyTest {
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001);
+        assertTrue(config != null);
+
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001, config);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
-                coordinator);
+                coordinator, config);
 
         Config conf = new Config();
         conf.setDebug(false);
@@ -176,11 +176,11 @@ public class TopologyTest {
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001);
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001, config);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
-                coordinator);
+                coordinator, config);
 
         Config conf = new Config();
         conf.setDebug(false);
@@ -283,13 +283,13 @@ public class TopologyTest {
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001);
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001, config);
 
         ArrayList<String> bloomFilterColumns = new ArrayList<>();
         bloomFilterColumns.add("a4");
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
-                coordinator, null, bloomFilterColumns);
+                coordinator, null, bloomFilterColumns, config);
 
         Config conf = new Config();
         conf.setDebug(false);
@@ -422,13 +422,13 @@ public class TopologyTest {
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001);
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001, config);
 
         ArrayList<String> bloomFilterColumns = new ArrayList<>();
         bloomFilterColumns.add("a2");
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
-                coordinator, null, bloomFilterColumns);
+                coordinator, null, bloomFilterColumns, config);
 
         Config conf = new Config();
         conf.setDebug(false);
@@ -558,13 +558,15 @@ public class TopologyTest {
         final int minIndex = 0;
         final int maxIndex = 100;
 
+        assertTrue(config != null);
+
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001);
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001, config);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
-                coordinator);
+                coordinator, config);
 
         Config conf = new Config();
         conf.setDebug(false);
@@ -692,11 +694,11 @@ public class TopologyTest {
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(rawSchema, 10000);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001);
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(rawSchema, 10000, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001, config);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
-                coordinator, mapper);
+                coordinator, mapper, config);
 
         Config conf = new Config();
         conf.setDebug(false);
@@ -817,11 +819,11 @@ public class TopologyTest {
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001);
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001, config);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
-                coordinator);
+                coordinator, config);
 
         Config conf = new Config();
         conf.setDebug(false);
@@ -938,11 +940,11 @@ public class TopologyTest {
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001);
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001, config);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
-                coordinator);
+                coordinator, config);
 
         Config conf = new Config();
         conf.setDebug(false);

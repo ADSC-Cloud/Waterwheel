@@ -1,5 +1,6 @@
 package indexingTopology.util;
 
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 
@@ -20,6 +21,12 @@ public class IndexerBuilder {
     private int taskId;
 
     private List<String> bloomFilterIndexedColumns;
+
+    private TopologyConfig config;
+
+    public IndexerBuilder(TopologyConfig config){
+        this.config = config;
+    }
 
     public IndexerBuilder setTaskId(int taskId) {
         this.taskId = taskId;
@@ -47,7 +54,7 @@ public class IndexerBuilder {
     }
 
     public Indexer getIndexer() {
-        Indexer indexer = new Indexer(taskId, inputQueue, schema, queryPendingQueue);
+        Indexer indexer = new Indexer(taskId, inputQueue, schema, queryPendingQueue, config);
         indexer.setBloomFilterIndexedColumns(bloomFilterIndexedColumns);
         return indexer;
     }

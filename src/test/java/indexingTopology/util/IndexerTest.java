@@ -1,5 +1,6 @@
 package indexingTopology.util;
 
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import javafx.util.Pair;
@@ -21,7 +22,7 @@ public class IndexerTest implements Observer {
 
     @Test
     public void testIndexLogic() throws InterruptedException {
-        IndexerBuilder indexerBuilder = new IndexerBuilder();
+        IndexerBuilder indexerBuilder = new IndexerBuilder(new TopologyConfig());
 
         ArrayBlockingQueue<DataTuple> inputQueue = new ArrayBlockingQueue<DataTuple>(1024);
 

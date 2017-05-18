@@ -111,6 +111,9 @@ public class Server<T extends ServerHandle> {
 
             catch (Throwable throwable) {
                 throwable.printStackTrace();
+                if (Thread.interrupted() || closed)
+//                    break;
+                    throw new InterruptedException();
             }
         }
          return null;}

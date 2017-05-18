@@ -31,22 +31,19 @@ import java.util.function.Function;
  */
 public class TopologyOverallTest {
 
-
-    private String dataDir;
+    TopologyConfig config = new TopologyConfig();
 
     public void setUp() {
-        dataDir = TopologyConfig.dataDir;
         try {
             Runtime.getRuntime().exec("mkdir -p ./target/tmp");
         } catch (IOException e) {
             e.printStackTrace();
         }
-        TopologyConfig.dataDir = "./target/tmp";
-        System.out.println("dataDir is set to " + TopologyConfig.dataDir);
+        config.HDFSFlag = false;
+        config.dataDir = "./target/tmp";
     }
 
     public void tearDown() {
-        TopologyConfig.dataDir = dataDir;
         try {
             Runtime.getRuntime().exec("rm ./target/tmp/*");
         } catch (IOException e) {
@@ -56,6 +53,7 @@ public class TopologyOverallTest {
 
     @Test
     public void testTopologyDouble() {
+        boolean fullyTested = false;
         final int ingestionPort = 10000;
         final int queryPort = 10001;
         final String topologyName = "test_1";
@@ -74,12 +72,14 @@ public class TopologyOverallTest {
         final boolean enableLoadBalance = false;
 
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort);
-        QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound, upperBound, queryPort);
+        InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort, config);
+        QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound,
+                upperBound, queryPort, config);
 
         TopologyGenerator<Double> topologyGenerator = new TopologyGenerator<>();
 
-        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound, enableLoadBalance, dataSource, queryCoordinator);
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
+                enableLoadBalance, dataSource, queryCoordinator, config);
 
         Config conf = new Config();
         conf.setDebug(false);
@@ -115,17 +115,19 @@ public class TopologyOverallTest {
             cluster.shutdown();
             oneTuplePerTransferIngestionClient.close();
             queryClient.close();
+            fullyTested = true;
 //            Thread.sleep(5000);
 
         } catch (Exception e) {
             e.printStackTrace();
         }
-
+        assertTrue(fullyTested);
     }
 
     @Test
     public void testTopologyIntegerFilter() {
 
+        boolean fullyTested = false;
         final int ingestionPort = 10010;
         final int queryPort = 10011;
         final String topologyName = "test_2";
@@ -143,12 +145,14 @@ public class TopologyOverallTest {
 
         final boolean enableLoadBalance = false;
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort);
-        QueryCoordinator<Integer> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound, upperBound, queryPort);
+        InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort, config);
+        QueryCoordinator<Integer> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound,
+                upperBound, queryPort, config);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound, enableLoadBalance, dataSource, queryCoordinator);
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
+                enableLoadBalance, dataSource, queryCoordinator, config);
 
         Config conf = new Config();
         conf.setDebug(false);
@@ -184,17 +188,19 @@ public class TopologyOverallTest {
             cluster.shutdown();
             oneTuplePerTransferIngestionClient.close();
             queryClient.close();
-
+            fullyTested = true;
 
         } catch (Exception e) {
             e.printStackTrace();
         }
-
+        assertTrue(fullyTested);
     }
 
 
     @Test
     public void testTopologyDoubleFilter() {
+
+        boolean fullyTested = false;
 
         final int ingestionPort = 10020;
         final int queryPort = 10021;
@@ -213,12 +219,14 @@ public class TopologyOverallTest {
 
         final boolean enableLoadBalance = false;
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort);
-        QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound, upperBound, queryPort);
+        InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort, config);
+        QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound,
+                upperBound, queryPort, config);
 
         TopologyGenerator<Double> topologyGenerator = new TopologyGenerator<>();
 
-        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound, enableLoadBalance, dataSource, queryCoordinator);
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
+                enableLoadBalance, dataSource, queryCoordinator, config);
 
         Config conf = new Config();
         conf.setDebug(false);
@@ -254,14 +262,17 @@ public class TopologyOverallTest {
             cluster.shutdown();
             oneTuplePerTransferIngestionClient.close();
             queryClient.close();
+            fullyTested = true;
         } catch (Exception e) {
             e.printStackTrace();
         }
-
+        assertTrue(fullyTested);
     }
 
     @Test
     public void testTopologyDoubleFilterWithPredicate() {
+
+        boolean fullyTested = false;
 
         final int ingestionPort = 10030;
         final int queryPort = 10031;
@@ -280,12 +291,14 @@ public class TopologyOverallTest {
 
         final boolean enableLoadBalance = false;
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort);
-        QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound, upperBound, queryPort);
+        InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort, config);
+        QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound,
+                upperBound, queryPort, config);
 
         TopologyGenerator<Double> topologyGenerator = new TopologyGenerator<>();
 
-        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound, enableLoadBalance, dataSource, queryCoordinator);
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
+                enableLoadBalance, dataSource, queryCoordinator, config);
 
         Config conf = new Config();
         conf.setDebug(false);
@@ -323,17 +336,21 @@ public class TopologyOverallTest {
             cluster.shutdown();
             oneTuplePerTransferIngestionClient.close();
             queryClient.close();
+
+            fullyTested = true;
         } catch (Exception e) {
             e.printStackTrace();
         }
-
+        assertTrue(fullyTested);
     }
 
     @Test
     public void testTopologyAggregation() {
 
-        final int ingestionPort = 10040;
-        final int queryPort = 10041;
+        boolean fullyTested = false;
+
+        final int ingestionPort = 10000;
+        final int queryPort = 10001;
         final String topologyName = "test_4";
 
         DataSchema schema = new DataSchema();
@@ -349,12 +366,14 @@ public class TopologyOverallTest {
 
         final boolean enableLoadBalance = false;
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort);
-        QueryCoordinator<Integer> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound, upperBound, queryPort);
+        InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort, config);
+        QueryCoordinator<Integer> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound,
+                upperBound, queryPort, config);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound, enableLoadBalance, dataSource, queryCoordinator);
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
+                enableLoadBalance, dataSource, queryCoordinator, config);
 
         Config conf = new Config();
         conf.setDebug(false);
@@ -406,15 +425,18 @@ public class TopologyOverallTest {
             cluster.shutdown();
             oneTuplePerTransferIngestionClient.close();
             queryClient.close();
+            fullyTested = true;
         } catch (Exception e) {
             e.printStackTrace();
         }
 
+        assertTrue(fullyTested);
     }
 
     @Test
     public void testTopologyIntegerFilterWithTrivialMapper() {
 
+        boolean fullyTested = false;
         final int ingestionPort = 10050;
         final int queryPort = 10051;
         final String topologyName = "test_5";
@@ -432,15 +454,16 @@ public class TopologyOverallTest {
 
         final boolean enableLoadBalance = false;
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort);
-        QueryCoordinator<Integer> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound, upperBound, queryPort);
+        InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort, config);
+        QueryCoordinator<Integer> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound,
+                upperBound, queryPort, config);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
         DataTupleMapper dataTupleMapper = new DataTupleMapper(schema, (Serializable & Function<DataTuple, DataTuple>) t -> t);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
-                enableLoadBalance, dataSource, queryCoordinator, dataTupleMapper);
+                enableLoadBalance, dataSource, queryCoordinator, dataTupleMapper, config);
 
         Config conf = new Config();
         conf.setDebug(false);
@@ -476,10 +499,11 @@ public class TopologyOverallTest {
             cluster.shutdown();
             oneTuplePerTransferIngestionClient.close();
             queryClient.close();
+            fullyTested = true;
 
         } catch (Exception e) {
             e.printStackTrace();
         }
-
+        assertTrue(fullyTested);
     }
 }

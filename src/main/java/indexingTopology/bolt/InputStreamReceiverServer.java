@@ -1,6 +1,7 @@
 package indexingTopology.bolt;
 
 import indexingTopology.client.*;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import org.apache.storm.task.OutputCollector;
@@ -18,8 +19,8 @@ public class InputStreamReceiverServer extends InputStreamReceiver {
     Server server;
     int port;
 
-    public InputStreamReceiverServer(DataSchema schema, int port) {
-        super(schema);
+    public InputStreamReceiverServer(DataSchema schema, int port, TopologyConfig config) {
+        super(schema, config);
         this.port = port;
     }
 

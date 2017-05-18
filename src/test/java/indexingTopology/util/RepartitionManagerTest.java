@@ -1,5 +1,6 @@
 package indexingTopology.util;
 
+import indexingTopology.config.TopologyConfig;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -13,6 +14,9 @@ import static org.junit.Assert.*;
  * Created by acelzj on 12/22/16.
  */
 public class RepartitionManagerTest {
+
+    private TopologyConfig config = new TopologyConfig();
+
     @Test
     public void getSkewnessFactor() throws Exception {
         Map<Integer, Integer> ballToBinMapping = new HashMap<>();
@@ -40,9 +44,9 @@ public class RepartitionManagerTest {
         ballToWeightMapping.put(8, 200L);
         ballToWeightMapping.put(9, 100L);
 
-        Histogram histogram = new Histogram(ballToWeightMapping);
+        Histogram histogram = new Histogram(ballToWeightMapping, config);
 
-        RepartitionManager manager = new RepartitionManager(4,ballToBinMapping, histogram);
+        RepartitionManager manager = new RepartitionManager(4,ballToBinMapping, histogram, config);
 
         Double skewnessFactor = 2.2;
 
@@ -76,9 +80,9 @@ public class RepartitionManagerTest {
         ballToWeightMapping.put(8, 200L);
         ballToWeightMapping.put(9, 100L);
 
-        Histogram histogram = new Histogram(ballToWeightMapping);
+        Histogram histogram = new Histogram(ballToWeightMapping, config);
 
-        RepartitionManager manager = new RepartitionManager(4,ballToBinMapping, histogram);
+        RepartitionManager manager = new RepartitionManager(4,ballToBinMapping, histogram, config);
 
         List<Long> workloads = new ArrayList<>();
         workloads.add(1100L);
@@ -116,9 +120,9 @@ public class RepartitionManagerTest {
         ballToWeightMapping.put(8, 200L);
         ballToWeightMapping.put(9, 100L);
 
-        Histogram histogram = new Histogram(ballToWeightMapping);
+        Histogram histogram = new Histogram(ballToWeightMapping, config);
 
-        RepartitionManager manager = new RepartitionManager(4,ballToBinMapping, histogram);
+        RepartitionManager manager = new RepartitionManager(4,ballToBinMapping, histogram, config);
 
         Long totalWordload = 2000L;
         assertEquals(totalWordload, manager.getTotalWorkLoad(manager.getWorkLoads()));
@@ -151,9 +155,9 @@ public class RepartitionManagerTest {
         ballToWeightMapping.put(8, 200L);
         ballToWeightMapping.put(9, 100L);
 
-        Histogram histogram = new Histogram(ballToWeightMapping);
+        Histogram histogram = new Histogram(ballToWeightMapping, config);
 
-        RepartitionManager manager = new RepartitionManager(4,ballToBinMapping, histogram);
+        RepartitionManager manager = new RepartitionManager(4,ballToBinMapping, histogram, config);
 
         ballToBinMapping = manager.getRepartitionPlan();
 
@@ -182,9 +186,9 @@ public class RepartitionManagerTest {
             ballToWeightMapping.put(i, 4L);
         }
 
-        Histogram histogram = new Histogram(ballToWeightMapping);
+        Histogram histogram = new Histogram(ballToWeightMapping, config);
 
-        RepartitionManager manager = new RepartitionManager(10,ballToBinMapping, histogram);
+        RepartitionManager manager = new RepartitionManager(10,ballToBinMapping, histogram, config);
 
         ballToBinMapping = manager.getRepartitionPlan();
 

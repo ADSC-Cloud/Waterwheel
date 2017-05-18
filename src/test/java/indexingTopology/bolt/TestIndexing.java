@@ -93,6 +93,7 @@ public class TestIndexing {
 
     private Semaphore clearFinishingSemaphore;
 
+    private TopologyConfig config = new TopologyConfig();
 
     public TestIndexing(int btreeOrder, int numberOfIndexingThreads, int numberOfQueryThreads, boolean templateMode) {
 
@@ -100,7 +101,7 @@ public class TestIndexing {
         this.numberOfIndexingThreads = numberOfIndexingThreads;
         this.templateMode = templateMode;
 
-        inputQueue = new ArrayBlockingQueue<Pair>(TopologyConfig.PENDING_QUEUE_CAPACITY);
+        inputQueue = new ArrayBlockingQueue<Pair>(config.PENDING_QUEUE_CAPACITY);
 
         random = new Random(1000);
 
@@ -124,7 +125,7 @@ public class TestIndexing {
 
         totalRebuildTime = 0L;
 
-        indexedData = new BTree(btreeOrder);
+        indexedData = new BTree(btreeOrder, config);
 
         numberOfQueries = new AtomicInteger(0);
 
@@ -136,11 +137,11 @@ public class TestIndexing {
 //        fieldNames = new ArrayList<String>(Arrays.asList("id", "zcode", "payload", "timestamp"));
 //        valueTypes = new ArrayList<Class>(Arrays.asList(Long.class, Double.class, String.class, Long.class));
 
-        templateUpdater = new TemplateUpdater(btreeOrder);
+        templateUpdater = new TemplateUpdater(btreeOrder, config);
 
         executedInChekingThread = new AtomicLong(0);
 
-        folder = new File(TopologyConfig.dataFileDir);
+        folder = new File(config.dataFileDir);
 
         listOfFiles = folder.listFiles();
 
@@ -258,7 +259,7 @@ public class TestIndexing {
 //                        System.out.println(numTuples);
 //                        System.out.println(index);
 
-                            if (estimatedSize.get() >= TopologyConfig.CHUNK_SIZE) {
+                            if (estimatedSize.get() >= config.CHUNK_SIZE) {
                                 chuckFilled.release();
                                 long start = System.currentTimeMillis();
                                 while (!inputQueue.isEmpty()) {
@@ -454,7 +455,7 @@ public class TestIndexing {
 //                    System.out.println(chunkId);
 //                    System.out.println(executedInChekingThread.get());
 //                    System.out.println(indexedData.getSkewnessFactor());
-                if (chunkId.get() > 0 && estimatedDataSize.get() >= TopologyConfig.CHUNK_SIZE * TopologyConfig.SKEWNESS_DETECTION_THRESHOLD) {
+                if (chunkId.get() > 0 && estimatedDataSize.get() >= config.CHUNK_SIZE * config.SKEWNESS_DETECTION_THRESHOLD) {
 //                        System.out.println("Before rebuilt " + indexedData.getSkewnessFactor());
 //                    if (indexedData.getSkewnessFactor() >= TopologyConfig.REBUILD_TEMPLATE_THRESHOLD) {
                         indexingRunnable.setInputExhausted();
@@ -615,7 +616,7 @@ public class TestIndexing {
 
     private void createEmptyTree() {
         if(!templateMode || indexedData == null) {
-            indexedData = new BTree(btreeOrder);
+            indexedData = new BTree(btreeOrder, config);
         } else {
             indexedData.clearPayload();
         }

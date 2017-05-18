@@ -105,7 +105,13 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
     private Map<String, BloomFilter> columnToFilter;
 
-    public Indexer(int taskId, ArrayBlockingQueue<DataTuple> inputQueue, DataSchema schema, ArrayBlockingQueue<SubQuery<DataType>> queryPendingQueue) {
+    private TopologyConfig config;
+
+    public Indexer(int taskId, ArrayBlockingQueue<DataTuple> inputQueue, DataSchema schema,
+                   ArrayBlockingQueue<SubQuery<DataType>> queryPendingQueue, TopologyConfig config) {
+
+        this.config = config;
+
         pendingQueue = new ArrayBlockingQueue<>(1024);
 
         queryResultQueue = new ArrayBlockingQueue<Pair>(100);
@@ -114,7 +120,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
         this.inputQueue = inputQueue;
 
-        templateUpdater = new TemplateUpdater(TopologyConfig.BTREE_ORDER);
+        templateUpdater = new TemplateUpdater(config.BTREE_ORDER, config);
 
         start = System.currentTimeMillis();
 
@@ -134,11 +140,11 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 //        this.processQuerySemaphore = new Semaphore(1);
         this.lock = new ReentrantLock();
 
-        this.bTree = new BTree(TopologyConfig.BTREE_ORDER);
+        this.bTree = new BTree(config.BTREE_ORDER, config);
 
         kryo = new Kryo();
-        kryo.register(BTree.class, new KryoTemplateSerializer());
-        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
+        kryo.register(BTree.class, new KryoTemplateSerializer(config));
+        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer(config));
 
         tupleLength = schema.getTupleLength();
         keyLength = schema.getIndexType().length;
@@ -289,7 +295,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 //                }
 
 
-                if (estimatedSize >= TopologyConfig.CHUNK_SIZE) {
+                if (estimatedSize >= config.CHUNK_SIZE) {
                     while (!pendingQueue.isEmpty()) {
                         try {
                             Thread.sleep(1);
@@ -306,10 +312,10 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                     writeTreeIntoChunk();
 
                     try {
-                        if (TopologyConfig.HDFSFlag) {
-                            fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
+                        if (config.HDFSFlag) {
+                            fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
                         } else {
-                            fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
+                            fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
                         }
                         fileName = "taskId" + taskId + "chunk" + chunkId;
                         fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
@@ -412,8 +418,8 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
                 numTuples += drainer.size();
 
-                estimatedSize += (drainer.size() * (keyLength + tupleLength + TopologyConfig.OFFSET_LENGTH));
-                estimatedDataSize += (drainer.size() * (keyLength + tupleLength + TopologyConfig.OFFSET_LENGTH));
+                estimatedSize += (drainer.size() * (keyLength + tupleLength + config.OFFSET_LENGTH));
+                estimatedDataSize += (drainer.size() * (keyLength + tupleLength + config.OFFSET_LENGTH));
 
 
                 drainer.clear();
@@ -521,8 +527,8 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
 //                if (inputQueue.size() / (256 * 8 * 4)) {
 //                    System.out.println("Warning : the production is too slow!!!");
-                if (inputQueue.size() * 1.0 / TopologyConfig.PENDING_QUEUE_CAPACITY < 0.1) {
-                    System.out.println(inputQueue.size() * 1.0 / TopologyConfig.PENDING_QUEUE_CAPACITY);
+                if (inputQueue.size() * 1.0 / config.PENDING_QUEUE_CAPACITY < 0.1) {
+                    System.out.println(inputQueue.size() * 1.0 / config.PENDING_QUEUE_CAPACITY);
                     System.out.println("Warning : the production speed is too slow!!!");
                     System.out.println(++count);
                 }
