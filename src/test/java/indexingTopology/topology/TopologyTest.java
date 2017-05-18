@@ -77,8 +77,8 @@ public class TopologyTest extends TestCase {
         conf.setDebug(false);
         conf.setNumWorkers(1);
 
-        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
-        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+//        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+//        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
         LocalCluster cluster = new LocalCluster();
@@ -184,8 +184,8 @@ public class TopologyTest extends TestCase {
         conf.setDebug(false);
         conf.setNumWorkers(1);
 
-        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
-        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+//        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+//        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
         LocalCluster cluster = new LocalCluster();
@@ -293,8 +293,8 @@ public class TopologyTest extends TestCase {
         conf.setDebug(false);
         conf.setNumWorkers(1);
 
-        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
-        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+//        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+//        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
         LocalCluster cluster = new LocalCluster();
@@ -432,8 +432,8 @@ public class TopologyTest extends TestCase {
         conf.setDebug(false);
         conf.setNumWorkers(1);
 
-        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
-        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+//        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+//        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
         LocalCluster cluster = new LocalCluster();
@@ -570,8 +570,8 @@ public class TopologyTest extends TestCase {
         conf.setDebug(false);
         conf.setNumWorkers(1);
 
-        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
-        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+//        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+//        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
         LocalCluster cluster = new LocalCluster();
@@ -702,8 +702,8 @@ public class TopologyTest extends TestCase {
         conf.setDebug(false);
         conf.setNumWorkers(1);
 
-        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
-        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+//        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+//        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
         LocalCluster cluster = new LocalCluster();
@@ -827,8 +827,8 @@ public class TopologyTest extends TestCase {
         conf.setDebug(false);
         conf.setNumWorkers(1);
 
-        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
-        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+//        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+//        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
         LocalCluster cluster = new LocalCluster();
@@ -948,8 +948,8 @@ public class TopologyTest extends TestCase {
         conf.setDebug(false);
         conf.setNumWorkers(1);
 
-        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
-        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+//        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+//        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
         LocalCluster cluster = new LocalCluster();
