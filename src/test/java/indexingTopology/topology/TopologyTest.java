@@ -813,7 +813,7 @@ public class TopologyTest {
         schema.setPrimaryIndexField("a1");
 
         final int minIndex = 0;
-        final int maxIndex = 100;
+        final int maxIndex = 1000;
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
@@ -934,7 +934,7 @@ public class TopologyTest {
         schema.setPrimaryIndexField("a1");
 
         final int minIndex = 0;
-        final int maxIndex = 100;
+        final int maxIndex = 1000;
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 

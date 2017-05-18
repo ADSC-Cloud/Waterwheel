@@ -372,9 +372,9 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	private BTreeNode<TKey> findParentOfLeafNodeShouldContainKey(TKey key) {
 
 
-		if (root.getKeyCount() == 0 && ((BTreeInnerNode) root).children.size() == 0) {
-			return root;
-		}
+//		if (root.getKeyCount() == 0 && ((BTreeInnerNode) root).children.size() == 0) {
+//			return root;
+//		}
 
 
 		BTreeInnerNode<TKey> currentNode = (BTreeInnerNode) this.root;

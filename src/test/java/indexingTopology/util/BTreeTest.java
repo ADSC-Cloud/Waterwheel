@@ -70,7 +70,6 @@ public class BTreeTest {
             assertEquals(0, template.searchRange((double) key, (double) key).size());
         }
 
-        template.printBtree();
 
         leaf = template.getLeftMostLeaf();
 
