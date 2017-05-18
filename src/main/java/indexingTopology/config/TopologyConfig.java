@@ -30,7 +30,7 @@ public class TopologyConfig {
 
     public static final double LOAD_BALANCE_THRESHOLD = 0.2;
 
-    public static boolean HDFSFlag = false;
+    public static boolean HDFSFlag = true;
 
 //    public static String dataDir = "/Users/Robert/Documents/data";
     public static String dataDir = "/home/wangli/data";
@@ -48,12 +48,12 @@ public class TopologyConfig {
 //    public static final int PENDING_QUEUE_CAPACITY = 1024;
     public static final int PENDING_QUEUE_CAPACITY = 600001 * 2;
 
-    public static final int MAX_PENDING = 1000;
-    public static final int EMIT_NUM = 50;
+    public static final int MAX_PENDING = 100000;
+    public static final int EMIT_NUM = 500;
 
     public static final int OFFSET_LENGTH = 4;
 
-    public static final int CHUNK_SIZE = 58000000 / 64;
+    public static final int CHUNK_SIZE = 58000000 / 8;
 //    public static final int CHUNK_SIZE = 58000000 / 16;
 //    public static final int CHUNK_SIZE = 58000000 / 8;
 //    public static final int CHUNK_SIZE = 58000000 / 2;

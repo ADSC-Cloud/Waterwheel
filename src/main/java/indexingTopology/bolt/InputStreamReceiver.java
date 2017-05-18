@@ -12,7 +12,10 @@ import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
+import org.apache.storm.utils.Utils;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -50,12 +53,22 @@ public class InputStreamReceiver extends BaseRichBolt {
             @Override
             public void run() {
 //                while (true) {
+                List<DataTuple> drainer = new ArrayList<>();
                 while (!Thread.currentThread().isInterrupted()) {
                         try {
                             //TODO: dequeue can be optimized by using drainer.
-                            final long tupleId = backPressure.acquireNextTupleId();
-                            final DataTuple dataTuple = inputQueue.take();
-                            collector.emit(Streams.IndexStream, new Values(schema.serializeTuple(dataTuple), tupleId, taskId));
+                            final DataTuple firstTuple = inputQueue.take();
+
+                            drainer.add(firstTuple);
+
+                            inputQueue.drainTo(drainer, 1024);
+
+                            for (DataTuple tuple: drainer) {
+
+                                final long tupleId = backPressure.acquireNextTupleId();
+                                collector.emit(Streams.IndexStream, new Values(schema.serializeTuple(tuple), tupleId, taskId));
+                            }
+                            drainer.clear();
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
                         } catch (Exception e) {
@@ -66,20 +79,27 @@ public class InputStreamReceiver extends BaseRichBolt {
         });
         emittingThread.start();
 
-//        Thread capacityCheckingThread = new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                while (true) {
-//                    try {
-//                        Thread.sleep(1 * 1000);
-//                        System.out.println("Input queue size " + inputQueue.size());
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//            }
-//        });
-//        capacityCheckingThread.start();
+        new Thread(() -> {
+            while(true) {
+                Utils.sleep(5000);
+                System.out.println(backPressure);
+            }
+        }).start();
+
+        Thread capacityCheckingThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        Thread.sleep(1 * 1000);
+                        System.out.println("Input queue size " + inputQueue.size());
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+        capacityCheckingThread.start();
     }
 
 

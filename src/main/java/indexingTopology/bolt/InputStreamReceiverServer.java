@@ -60,6 +60,7 @@ public class InputStreamReceiverServer extends InputStreamReceiver {
         @Override
         public void handle(AppendRequestBatchMode tuple) throws IOException {
             tuple.dataTupleBlock.deserialize();
+            System.out.println("A new ingestion block is received.");
             tuple.dataTupleBlock.tuples.forEach(t -> {
                 try {
                     inputQueue.put(t);
@@ -69,6 +70,7 @@ public class InputStreamReceiverServer extends InputStreamReceiver {
 //                    return;
                 }
             });
+            System.out.println("A new ingestion block is appended to the pending queue.");
 //            objectOutputStream.writeUnshared("handled the block!");
 //            objectOutputStream.reset();
         }
