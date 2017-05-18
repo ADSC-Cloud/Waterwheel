@@ -9,6 +9,7 @@ import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import indexingTopology.util.*;
+import junit.framework.TestCase;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
 import org.apache.storm.generated.StormTopology;
@@ -28,10 +29,7 @@ import static org.junit.Assert.*;
 /**
  * Created by Robert on 5/15/17.
  */
-public class TopologyTest {
-
-    private String dataDir;
-    private boolean hdfsFlag;
+public class TopologyTest extends TestCase {
 
     TopologyConfig config = new TopologyConfig();
 
