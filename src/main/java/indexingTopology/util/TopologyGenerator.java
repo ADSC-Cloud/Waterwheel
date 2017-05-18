@@ -9,6 +9,8 @@ import org.apache.storm.topology.TopologyBuilder;
 
 import java.util.List;
 
+import static indexingTopology.config.TopologyConfig.CHUNK_SCANNER_PER_NODE;
+
 /**
  * Created by robert on 10/3/17.
  */
@@ -63,12 +65,12 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
 
 
         if (TopologyConfig.SHUFFLE_GROUPING_FLAG) {
-            builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner<Key>(dataSchema), 2 * numberOfNodes)
+            builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner<Key>(dataSchema), CHUNK_SCANNER_PER_NODE * numberOfNodes)
 //                .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream)
                     .directGrouping(ResultMergeBolt, Streams.SubQueryReceivedStream)
                     .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream); //make comparision with our method.
         } else {
-            builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner<Key>(dataSchema), 2 * numberOfNodes)
+            builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner<Key>(dataSchema), CHUNK_SCANNER_PER_NODE * numberOfNodes)
                     .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream)
                     .directGrouping(ResultMergeBolt, Streams.SubQueryReceivedStream);
         }

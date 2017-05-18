@@ -77,4 +77,7 @@ public class TopologyConfig {
     public static final int AVERAGE_STRING_LENGTH = 21;
 
     public static final boolean TASK_QUEUE_MODEL = false;
+
+    // parallelism configuration
+    public static int CHUNK_SCANNER_PER_NODE = 4;
 }

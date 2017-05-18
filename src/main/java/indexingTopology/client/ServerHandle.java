@@ -47,8 +47,8 @@ public abstract class ServerHandle implements Runnable{
                 System.out.println("Client is closed.");
             } catch (IOException io) {
                 System.out.println("IOException occurs.");
-//                if (!client.isClosed())
-//                    io.printStackTrace();
+                if (!client.isClosed())
+                    io.printStackTrace();
             }
     }
 

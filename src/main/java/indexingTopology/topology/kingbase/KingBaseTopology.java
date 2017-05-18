@@ -43,26 +43,48 @@ import org.kohsuke.args4j.Option;
  */
 public class KingBaseTopology {
 
-    @Option(name = "--topology-name", aliases = "-t", usage = "topology name")
-    private String TopologyName = "T0";
-
-    @Option(name = "--ingest-server-ip", usage = "the ingestion server ip")
-    private String IngestServerIp = "localhost";
-
-    @Option(name = "--query-server-ip", usage = "the query server ip")
-    private String QueryServerIp = "localhost";
-
+    /**
+     * general configuration
+     */
     @Option(name = "--help", aliases = {"-h"}, usage = "help")
     private boolean Help = false;
 
     @Option(name = "--mode", aliases = {"-m"}, usage = "submit|ingest|query")
     private String Mode = "Not Given";
 
+    /**
+     * topology configuration
+     */
+    @Option(name = "--topology-name", aliases = "-t", usage = "topology name")
+    private String TopologyName = "T0";
+
     @Option(name = "--node", aliases = {"-n"}, usage = "number of nodes used in the topology")
     private int NumberOfNodes = 1;
 
+    /**
+     * ingest client configuration
+     */
+    @Option(name = "--ingest-server-ip", usage = "the ingestion server ip")
+    private String IngestServerIp = "localhost";
+
     @Option(name = "--ingest-rate-limit", aliases = {"-r"}, usage = "max ingestion rate")
     private int MaxIngestRate = Integer.MAX_VALUE;
+
+    /**
+     * query client configuration
+     */
+    @Option(name = "--query-server-ip", usage = "the query server ip")
+    private String QueryServerIp = "localhost";
+
+    @Option(name = "--selectivity", usage = "the selectivity on the key domain")
+    private double Selectivity = 0.01;
+
+    @Option(name = "--temporal", usage = "recent time in seconds of interest")
+    private int RecentSecondsOfInterest = 5;
+
+    @Option(name = "--queries", usage = "number of queries to perform")
+    private int NumberOfQueries = Integer.MAX_VALUE;
+
 
     static final double x1 = 40.012928;
     static final double x2 = 40.023983;
@@ -72,7 +94,7 @@ public class KingBaseTopology {
 
     public void executeQuery() {
 
-        double selectivity = Math.sqrt(0.01);
+        double selectivityOnOneDimension = Math.sqrt(Selectivity);
         DataSchema schema = getDataSchema();
         GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient(QueryServerIp, 10001);
         Thread queryThread = new Thread(() -> {
@@ -83,44 +105,57 @@ public class KingBaseTopology {
             }
             Random random = new Random();
 
+            int executed = 0;
+            long totalQueryTime = 0;
+
             while (true) {
 
-                double x = x1 + (x2 - x1) * random.nextDouble();
-                double y = y1 + (y2 - y1) * random.nextDouble();
+                double x = x1 + (x2 - x1) * (1 - selectivityOnOneDimension) * random.nextDouble();
+                double y = y1 + (y2 - y1) * (1 - selectivityOnOneDimension) * random.nextDouble();
 
                 final Double xLow = x;
-                final Double xHigh = x + selectivity * (x2 - x1);
+                final Double xHigh = x + selectivityOnOneDimension * (x2 - x1);
                 final Double yLow = y;
-                final Double yHigh = y + selectivity * (y2 - y1);
+                final Double yHigh = y + selectivityOnOneDimension * (y2 - y1);
 
-                DataTuplePredicate predicate = t ->
-                                 (double) schema.getValue("lon", t) >= xLow &&
-                                (double) schema.getValue("lon", t) <= xHigh &&
-                                (double) schema.getValue("lat", t) >= yLow &&
-                                (double) schema.getValue("lat", t) <= yHigh &&
-                                schema.getValue("id", t).equals("100");
+//                DataTuplePredicate predicate = t ->
+//                                 (double) schema.getValue("lon", t) >= xLow &&
+//                                (double) schema.getValue("lon", t) <= xHigh &&
+//                                (double) schema.getValue("lat", t) >= yLow &&
+//                                (double) schema.getValue("lat", t) <= yHigh ;
+
+//                DataTuplePredicate predicate = t -> schema.getValue("id", t).equals(Integer.toString(new Random().nextInt(100000)));
+                DataTuplePredicate predicate = t -> schema.getValue("id", t).equals(Integer.toString(1000));
 
 
-                Aggregator<Integer> aggregator = new Aggregator<>(schema, "zcode", new AggregateField(new Count(), "*"));
-                DataSchema schemaAfterAggregation = aggregator.getOutputDataSchema();
+//                Aggregator<Integer> aggregator = new Aggregator<>(schema, null, new AggregateField(new Count(), "*"));
+                Aggregator<Integer> aggregator = null;
 
-                DataTupleSorter sorter = (DataTuple o1, DataTuple o2) -> Double.compare((double) schemaAfterAggregation.getValue("count(*)", o1),
-                        (double) schemaAfterAggregation.getValue("count(*)", o2));
+
+//                DataSchema schemaAfterAggregation = aggregator.getOutputDataSchema();
+//                DataTupleSorter sorter = (DataTuple o1, DataTuple o2) -> Double.compare((double) schemaAfterAggregation.getValue("count(*)", o1),
+//                        (double) schemaAfterAggregation.getValue("count(*)", o2));
 
 
                 DataTupleEquivalentPredicateHint equivalentPredicate = new DataTupleEquivalentPredicateHint("id", "100");
 
                 GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
-                        System.currentTimeMillis() - 5000, System.currentTimeMillis(), predicate, aggregator, sorter,
-                        equivalentPredicate);
+                        System.currentTimeMillis() - RecentSecondsOfInterest * 1000, System.currentTimeMillis(), predicate, aggregator, null, null);
                 long start = System.currentTimeMillis();
                 try {
                     System.out.println("A query will be issued.");
                     QueryResponse response = queryClient.query(queryRequest);
                     System.out.println("A query finished.");
                     long end = System.currentTimeMillis();
+                    totalQueryTime += end - start;
                     System.out.println(response);
                     System.out.println(String.format("Query time: %d ms", end - start));
+
+                    if (executed++ >= NumberOfQueries) {
+                        System.out.println("Average Query Latency: " + totalQueryTime / (double)executed);
+                        break;
+                    }
+
                 } catch (SocketTimeoutException e) {
                     Thread.interrupted();
                 } catch (IOException e) {
@@ -132,6 +167,11 @@ public class KingBaseTopology {
                     e.printStackTrace();
                 }
 
+            }
+            try {
+                queryClient.close();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         });
         queryThread.start();

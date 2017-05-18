@@ -38,6 +38,11 @@ public class GeoTemporalQueryRequest<T extends Number>  extends IClientRequest {
         this(x1, x2, y1, y2, startTime, endTime, predicate, aggregator, sorter, null);
     }
 
+    public GeoTemporalQueryRequest(T x1, T x2, T y1, T y2, long startTime, long endTime, DataTuplePredicate predicate,
+                                   Aggregator aggregator) {
+        this(x1, x2, y1, y2, startTime, endTime, predicate, aggregator, null);
+    }
+
     public GeoTemporalQueryRequest(T x1, T x2, T y1, T y2, long startTime, long endTime, DataTuplePredicate predicate) {
         this(x1, x2, y1, y2, startTime, endTime, predicate, null, null);
     }
