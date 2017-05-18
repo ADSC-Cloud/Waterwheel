@@ -115,7 +115,7 @@ public class GeoTemporalTopologyTest extends TestCase {
         IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode("localhost", 10000,
                 rawSchema, 1024);
         try {
-            clientBatchMode.connectWithTimeout(5000);
+            clientBatchMode.connectWithTimeout(10000);
 
 
             final int tuples = 1000 * 1000;
@@ -152,12 +152,10 @@ public class GeoTemporalTopologyTest extends TestCase {
 
             GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient("localhost", 10001);
             try {
-                queryClient.connectWithTimeout(5000);
+                queryClient.connectWithTimeout(10000);
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
-
 
 
             try {
@@ -255,15 +253,12 @@ public class GeoTemporalTopologyTest extends TestCase {
         conf.setDebug(false);
         conf.setNumWorkers(1);
 
-        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
-        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
-
         LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("T0", conf, topology);
         IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode("localhost", 10000,
                 rawSchema, 1024);
         try {
-            clientBatchMode.connectWithTimeout(5000);
+            clientBatchMode.connectWithTimeout(10000);
 
 
             final int tuples = 1000 * 1000;
@@ -304,7 +299,7 @@ public class GeoTemporalTopologyTest extends TestCase {
 
             GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient("localhost", 10001);
             try {
-                queryClient.connectWithTimeout(5000);
+                queryClient.connectWithTimeout(10000);
             } catch (IOException e) {
                 e.printStackTrace();
             }
