@@ -80,7 +80,8 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
 
         bytesToRead = new byte[templateLength];
-        fileSystemHandler.seek(4);
+        if (!config.HDFSFlag)
+            fileSystemHandler.seek(4);
         fileSystemHandler.readBytesFromFile(4, bytesToRead);
 
 
@@ -215,6 +216,9 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 //        long searchOffsetsStart = System.currentTimeMillis();
         List<Integer> offsets = template.getOffsetsOfLeafNodesShouldContainKeys(leftKey, rightKey);
 
+//        System.out.println("template");
+//        System.out.println(offsets);
+//        template.printBtree();
 //        metrics.setSearchTime(System.currentTimeMillis() - searchOffsetsStart);
 
 //        long readLeafBytesStart = System.currentTimeMillis();
@@ -227,6 +231,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 //        long totalTupleGet = 0L;
 //        long totalLeafRead = 0L;
         Input input = new Input(bytesToRead);
+
 
         for (Integer offset : offsets) {
             BlockId blockId = new BlockId(fileName, offset + length + 4);
@@ -350,102 +355,10 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         }
     }
 
-    private BTreeLeafNode getLeafFromExternalStorage(String fileName, int offset)
-            throws IOException {
-
-        FileSystemHandler fileSystemHandler = null;
-        if (config.HDFSFlag) {
-            fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
-        } else {
-            fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
-        }
-
-        byte[] bytesToRead = new byte[4];
-        fileSystemHandler.openFile("/", fileName);
-//        fileSystemHandler.seek(offset);
-        fileSystemHandler.readBytesFromFile(offset, bytesToRead);
-
-
-        Input input = new Input(bytesToRead);
-        int leaveNodeLength = input.readInt();
-
-        bytesToRead = new byte[leaveNodeLength];
-        fileSystemHandler.readBytesFromFile(offset + 4, bytesToRead);
-
-//        fileSystemHandler.seek(offset + 4);
-
-        input = new Input(bytesToRead);
-        BTreeLeafNode leaf = kryo.readObject(input, BTreeLeafNode.class);
-
-
-        fileSystemHandler.closeFile();
-
-        return leaf;
-    }
-
-
-    private BTreeLeafNode getLeafFromExternalStorage(FileSystemHandler fileSystemHandler, int offset)
-            throws IOException {
-
-//        FileSystemHandler fileSystemHandler = null;
-//        if (TopologyConfig.HDFSFlag) {
-//            fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
-//        } else {
-//            fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
-//        }
-
-        byte[] bytesToRead = new byte[4];
-//        fileSystemHandler.seek(offset);
-        fileSystemHandler.readBytesFromFile(offset, bytesToRead);
-
-
-        Input input = new Input(bytesToRead);
-        int leaveNodeLength = input.readInt();
-
-        bytesToRead = new byte[leaveNodeLength];
-//        fileSystemHandler.seek(offset + 4);
-        fileSystemHandler.readBytesFromFile(offset + 4, bytesToRead);
-
-
-        input = new Input(bytesToRead);
-        BTreeLeafNode leaf = kryo.readObject(input, BTreeLeafNode.class);
-
-
-//        fileSystemHandler.closeFile();
-
-        return leaf;
-    }
-
-
     private BTreeLeafNode getLeafFromExternalStorage(FileSystemHandler fileSystemHandler, Input input)
             throws IOException {
-
-//        FileSystemHandler fileSystemHandler = null;
-//        if (TopologyConfig.HDFSFlag) {
-//            fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
-//        } else {
-//            fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
-//        }
-
-//        byte[] bytesToRead = new byte[4];
-//        fileSystemHandler.seek(offset);
-//        fileSystemHandler.readBytesFromFile(offset, bytesToRead);
-
-
-//        Input input = new Input(bytesToRead);
-//        int leaveNodeLength = input.readInt();
-
-//        bytesToRead = new byte[leaveNodeLength];
-//        fileSystemHandler.seek(offset + 4);
-//        fileSystemHandler.readBytesFromFile(offset + 4, bytesToRead);
-
-
-//        input = new Input(bytesToRead);
         input.setPosition(input.position() + 4);
         BTreeLeafNode leaf = kryo.readObject(input, BTreeLeafNode.class);
-
-
-//        fileSystemHandler.closeFile();
 
         return leaf;
     }
@@ -478,13 +391,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
     private Pair getTemplateData(FileSystemHandler fileSystemHandler, String fileName) {
         Pair data = null;
         try {
-//            FileSystemHandler fileSystemHandler = null;
-//            if (TopologyConfig.HDFSFlag) {
-//                fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
-//            } else {
-//                fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
-//            }
-
             BlockId blockId = new BlockId(fileName, 0);
 
             data = (Pair) getFromCache(blockId);
@@ -500,24 +406,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
     }
 
 
-    private byte[] readLeafBytesFromFile(FileSystemHandler fileSystemHandler, List<Integer> offsets, int length) {
-        Integer endOffset = offsets.get(offsets.size() - 1);
-        Integer startOffset = offsets.get(0);
-
-        byte[] bytesToRead = new byte[4];
-        fileSystemHandler.readBytesFromFile(endOffset + length + 4, bytesToRead);
-
-        Input input = new Input(bytesToRead);
-        int lastLeafLength = input.readInt();
-
-        int totalLength = lastLeafLength + (endOffset - offsets.get(0)) + 4;
-
-        bytesToRead = new byte[totalLength];
-        fileSystemHandler.readBytesFromFile(startOffset + length + 4, bytesToRead);
-
-        return bytesToRead;
-    }
-
     private byte[] readLeafBytesFromFile(FileSystemHandler fileSystemHandler, List<Integer> offsets, int length, FileScanMetrics fileScanMetrics) throws IOException {
         Integer endOffset = offsets.get(offsets.size() - 1);
         Integer startOffset = offsets.get(0);
@@ -527,7 +415,8 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         Long startTime = System.currentTimeMillis();
 
         //code below used to change the position of file pointer in local file system
-        fileSystemHandler.seek(endOffset + length + 4);
+        if (!config.HDFSFlag)
+            fileSystemHandler.seek(endOffset + length + 4);
 
         fileSystemHandler.readBytesFromFile(endOffset + length + 4, bytesToRead);
 
@@ -542,7 +431,8 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         startTime = System.currentTimeMillis();
 
         ////code below used to change the position of file pointer in local file system
-        fileSystemHandler.seek(startOffset + length + 4);
+        if (!config.HDFSFlag)
+            fileSystemHandler.seek(startOffset + length + 4);
 
         fileSystemHandler.readBytesFromFile(startOffset + length + 4, bytesToRead);
         fileScanMetrics.setTotalBytesReadTime(System.currentTimeMillis() - startTime);

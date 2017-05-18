@@ -52,7 +52,7 @@ public class IndexerTest implements Observer{
 
         int numberOfTuples = 100000;
 
-        System.out.println("sed -i 's/${JAVA_HOME}/\\/usr\\/lib\\/jvm/\\/jdk1.8.0_112/g' hadoop-env.sh");
+//        System.out.println("sed -i 's/${JAVA_HOME}/\\/usr\\/lib\\/jvm/\\/jdk1.8.0_112/g' hadoop-env.sh");
 
         Long timestamp = 0L;
         for (int i = 0; i < numberOfTuples; ++i) {
@@ -66,19 +66,6 @@ public class IndexerTest implements Observer{
         Long queryId = 0L;
 
         for (int i = 0; i < numberOfTuples; ++i) {
-            SubQuery subQuery = new SubQuery(queryId, i, i, 0L, Long.MAX_VALUE, null);
-            queryPendingQueue.put(subQuery);
-            ++queryId;
-        }
-
-        for (int i = numberOfTuples; i < 2 * numberOfTuples; ++i) {
-            DataTuple dataTuple = new DataTuple((long) i, i, new String(new char[payloadSize]), timestamp);
-            inputQueue.put(dataTuple);
-        }
-
-        Thread.sleep(1000);
-
-        for (int i = numberOfTuples; i < 2 * numberOfTuples; ++i) {
             SubQuery subQuery = new SubQuery(queryId, i, i, 0L, Long.MAX_VALUE, null);
             queryPendingQueue.put(subQuery);
             ++queryId;

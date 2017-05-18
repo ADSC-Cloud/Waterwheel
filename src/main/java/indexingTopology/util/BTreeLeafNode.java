@@ -252,6 +252,7 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
                 tuples.addAll(getTuplesWithSpecificIndex(index));
             }
         }
+
         return tuples;
     }
 }
