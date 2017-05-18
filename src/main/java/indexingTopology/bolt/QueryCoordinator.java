@@ -153,7 +153,6 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
                 chunkNameToFilter.put(fileName, bloomFilters.columnToBloomFilter.get(column));
                 System.out.println(String.format("A bloom filter is added for chunk: %s, column: %s", fileName, column));
             }
-
         } else if (tuple.getSourceStreamId().equals(Streams.QueryFinishedStream)) {
             Long queryId = tuple.getLong(0);
 

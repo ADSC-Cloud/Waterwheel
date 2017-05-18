@@ -374,7 +374,6 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                     ++chunkId;
                 }
 
-
                 DataTuple firstDataTuple = null;
                 try {
                     firstDataTuple = inputQueue.poll(10, TimeUnit.MILLISECONDS);
@@ -395,17 +394,17 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                         Long timeStamp = (Long) schema.getValue("timestamp", dataTuple);
 
                         DataType indexValue = (DataType) schema.getIndexValue(dataTuple);
+
                         if (indexValue.doubleValue() < minIndexValue) {
                             minIndexValue = indexValue.doubleValue();
-                        }
-                        if (indexValue.doubleValue() > maxIndexValue) {
+                        } else if (indexValue.doubleValue() > maxIndexValue) {
                             maxIndexValue = indexValue.doubleValue();
                         }
+
 //
                         if (timeStamp < minTimestamp) {
                             minTimestamp = timeStamp;
-                        }
-                        if (timeStamp > maxTimestamp) {
+                        } else if (timeStamp > maxTimestamp) {
                             maxTimestamp = timeStamp;
                         }
 
@@ -415,6 +414,10 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                         Thread.currentThread().interrupt();
                     }
                 }
+
+
+
+
 
                 numTuples += drainer.size();
 
