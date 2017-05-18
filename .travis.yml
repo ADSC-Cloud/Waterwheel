@@ -4,6 +4,13 @@ sudo: false
 jdk:
   - oraclejdk8
 
+before_script:
+ - java -XX:+PrintFlagsFinal -version|grep MaxHeap
+ - echo $JAVA_OPTS
+ - export JAVA_OPTS=-Xmx512m
+ - echo $JAVA_OPTIONS
+ - export JAVA_OPTIONS=-Xmx16m
+
 script:
    - mvn install -DskipTests |grep -v "\[WARNING\] We have a duplicate"
    - mvn -Dtest=Geo* test
