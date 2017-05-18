@@ -79,27 +79,27 @@ public class InputStreamReceiver extends BaseRichBolt {
         });
         emittingThread.start();
 
-        new Thread(() -> {
-            while(true) {
-                Utils.sleep(5000);
-                System.out.println(backPressure);
-            }
-        }).start();
+//        new Thread(() -> {
+//            while(true) {
+//                Utils.sleep(5000);
+//                System.out.println(backPressure);
+//            }
+//        }).start();
 
-        Thread capacityCheckingThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (true) {
-                    try {
-                        Thread.sleep(1 * 1000);
-                        System.out.println("Input queue size " + inputQueue.size());
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        });
-        capacityCheckingThread.start();
+//        Thread capacityCheckingThread = new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                while (true) {
+//                    try {
+//                        Thread.sleep(1 * 1000);
+//                        System.out.println("Input queue size " + inputQueue.size());
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            }
+//        });
+//        capacityCheckingThread.start();
     }
 
 

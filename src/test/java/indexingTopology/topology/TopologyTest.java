@@ -31,27 +31,30 @@ import static org.junit.Assert.*;
 public class TopologyTest {
 
     private String dataDir;
+    private boolean hdfsFlag;
 
     public void setUp() {
         dataDir = TopologyConfig.dataDir;
+        hdfsFlag = TopologyConfig.HDFSFlag;
         try {
             Runtime.getRuntime().exec("mkdir -p ./target/tmp");
         } catch (IOException e) {
             e.printStackTrace();
         }
         TopologyConfig.dataDir = "./target/tmp";
+        TopologyConfig.HDFSFlag = false;
         System.out.println("dataDir is set to " + TopologyConfig.dataDir);
     }
 
     public void tearDown() {
         TopologyConfig.dataDir = dataDir;
+        TopologyConfig.HDFSFlag = hdfsFlag;
         try {
             Runtime.getRuntime().exec("rm ./target/tmp/*");
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
     @Test
     public void testSimpleTopologyKeyRangeQuery() throws InterruptedException {
         DataSchema schema = new DataSchema();
