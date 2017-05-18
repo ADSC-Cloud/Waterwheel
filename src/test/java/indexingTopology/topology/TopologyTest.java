@@ -300,7 +300,7 @@ public class TopologyTest extends TestCase {
         LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("T0", conf, topology);
 
-        final int tuples = 1000000;
+        final int tuples = 100000;
 
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", 10000, schema, 1024);
@@ -439,7 +439,7 @@ public class TopologyTest extends TestCase {
         LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("T0", conf, topology);
 
-        final int tuples = 1000000;
+        final int tuples = 100000;
 
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", 10000, schema, 1024);
@@ -834,7 +834,7 @@ public class TopologyTest extends TestCase {
         LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("T0", conf, topology);
 
-        final int tuples = 1000000;
+        final int tuples = 100000;
 
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", 10000, schema, 1024);
@@ -955,7 +955,7 @@ public class TopologyTest extends TestCase {
         LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("T0", conf, topology);
 
-        final int tuples = 1000000;
+        final int tuples = 100000;
 
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", 10000, schema, 1024);
@@ -978,9 +978,9 @@ public class TopologyTest extends TestCase {
 
         for (int i = 0; i < tuples; i++) {
             DataTuple tuple = new DataTuple();
-            tuple.add(i % 1000);
-            tuple.add((double)(i % 1000));
-            tuple.add((long)(i / (tuples / 1000)));
+            tuple.add(i % 100);
+            tuple.add((double)(i % 100));
+            tuple.add((long)(i / (tuples / 100)));
             tuple.add("payload");
             try {
                 ingestionClient.appendInBatch(tuple);
@@ -1006,15 +1006,15 @@ public class TopologyTest extends TestCase {
             // full temporal range query
             QueryResponse response = queryClient.query(new QueryRequest<>(0, 1000, Long.MIN_VALUE,
                     Long.MAX_VALUE, aggregator));
-            assertEquals(1000000.0, response.dataTuples.get(0).get(0));
+            assertEquals((double)tuples, response.dataTuples.get(0).get(0));
 
             //half temporal range query
-            response = queryClient.query(new QueryRequest<>(0, 1000, 0, 499, aggregator));
-            assertEquals(1000000.0 / 2, response.dataTuples.get(0).get(0));
+            response = queryClient.query(new QueryRequest<>(0, 100, 0, 49, aggregator));
+            assertEquals((double)tuples / 2, response.dataTuples.get(0).get(0));
 
             //a temporal range query
-            response =  queryClient.query(new QueryRequest<>(0,1000, 0, 0, aggregator));
-            assertEquals(1000000.0 / 1000, response.dataTuples.get(0).get(0));
+            response =  queryClient.query(new QueryRequest<>(0,100, 0, 0, aggregator));
+            assertEquals((double)tuples / 100, response.dataTuples.get(0).get(0));
 
 
             fullyExecuted = true;
