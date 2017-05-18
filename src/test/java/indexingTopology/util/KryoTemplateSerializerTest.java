@@ -44,6 +44,7 @@ public class KryoTemplateSerializerTest extends TestCase {
         }
         config.dataDir = "./target/tmp";
         config.HDFSFlag = false;
+        config.CHUNK_SIZE = 4 * 1000 * 1000;
         System.out.println("dataDir is set to " + config.dataDir);
     }
 
@@ -69,7 +70,7 @@ public class KryoTemplateSerializerTest extends TestCase {
         TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
         City city = new City(x1, x2, y1, y2, partitions);
 
-        int numTuples = config.NUMBER_TUPLES_OF_A_CHUNK;
+        int numTuples = (int)(config.CHUNK_SIZE / (8 * 3 + payloadSize) * 1.3);
         Long timestamp = 0L;
 
         int chunkId = 0;
@@ -132,7 +133,7 @@ public class KryoTemplateSerializerTest extends TestCase {
         TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
         City city = new City(x1, x2, y1, y2, partitions);
 
-        int numTuples = 1200000;
+        int numTuples = 120000;
         Long timestamp = 0L;
 
         int chunkId = 0;
@@ -407,7 +408,7 @@ public class KryoTemplateSerializerTest extends TestCase {
 
         byte[] leavesInBytes = indexedData.serializeLeaves();
 
-        Output output = new Output(5000000, 20000000);
+        Output output = new Output(500000, 20000000);
 
         Kryo kryo = new Kryo();
         kryo.register(BTree.class, new KryoTemplateSerializer(config));
@@ -421,12 +422,15 @@ public class KryoTemplateSerializerTest extends TestCase {
         int lengthOfTemplate = bytes.length;
 
 //            System.out.println(lengthOfTemplate);
+        output.close();
 
         output = new Output(4);
 
         output.writeInt(lengthOfTemplate);
 
         byte[] lengthInBytes = output.toBytes();
+
+        output.close();
 
         MemChunk chunk = MemChunk.createNew(4 + lengthOfTemplate + leavesInBytes.length);
 
