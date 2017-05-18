@@ -1,4 +1,4 @@
-package indexingTopology;
+package indexingTopology.topology;
 
 import indexingTopology.data.DataSchema;
 import indexingTopology.util.TopologyGenerator;

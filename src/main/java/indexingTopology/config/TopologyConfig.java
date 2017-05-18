@@ -48,12 +48,12 @@ public class TopologyConfig {
 //    public static final int PENDING_QUEUE_CAPACITY = 1024;
     public static final int PENDING_QUEUE_CAPACITY = 600001 * 2;
 
-    public static final int MAX_PENDING = 1000;
-    public static final int EMIT_NUM = 50;
+    public static final int MAX_PENDING = 100000;
+    public static final int EMIT_NUM = 500;
 
     public static final int OFFSET_LENGTH = 4;
 
-    public static final int CHUNK_SIZE = 58000000 / 64;
+    public static final int CHUNK_SIZE = 58000000 / 16;
 //    public static final int CHUNK_SIZE = 58000000 / 16;
 //    public static final int CHUNK_SIZE = 58000000 / 8;
 //    public static final int CHUNK_SIZE = 58000000 / 2;
@@ -77,4 +77,7 @@ public class TopologyConfig {
     public static final int AVERAGE_STRING_LENGTH = 21;
 
     public static final boolean TASK_QUEUE_MODEL = false;
+
+    // parallelism configuration
+    public static int CHUNK_SCANNER_PER_NODE = 4;
 }

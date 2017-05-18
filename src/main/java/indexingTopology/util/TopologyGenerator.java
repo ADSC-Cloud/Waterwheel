@@ -9,6 +9,8 @@ import org.apache.storm.topology.TopologyBuilder;
 
 import java.util.List;
 
+import static indexingTopology.config.TopologyConfig.CHUNK_SCANNER_PER_NODE;
+
 /**
  * Created by robert on 10/3/17.
  */
@@ -23,6 +25,12 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
     private static final String ResultMergeBolt = "ResultMergeBolt";
     private static final String MetadataServer = "MetadataServer";
     private static final String LogWriter = "LogWriter";
+
+    private int numberOfNodes = 1;
+
+    public void setNumberOfNodes(int numberOfNodes) {
+        this.numberOfNodes = numberOfNodes;
+    }
 
     public StormTopology generateIndexingTopology(DataSchema dataSchema, Key lowerBound, Key upperBound, boolean enableLoadBalance,
                                                   InputStreamReceiver dataSource, QueryCoordinator<Key> queryCoordinator,
@@ -39,7 +47,7 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 //                .allGrouping(LogWriter, Streams.ThroughputRequestStream);
 
-        builder.setBolt(IndexerBolt, new IngestionBolt(dataSchema, bloomFilterColumns), 2)
+        builder.setBolt(IndexerBolt, new IngestionBolt(dataSchema, bloomFilterColumns), 2 * numberOfNodes)
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream) // direct grouping should be used.
                 .directGrouping(RangeQueryDecompositionBolt, Streams.TreeCleanStream)
@@ -57,12 +65,12 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
 
 
         if (TopologyConfig.SHUFFLE_GROUPING_FLAG) {
-            builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner<Key>(dataSchema), 2)
+            builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner<Key>(dataSchema), CHUNK_SCANNER_PER_NODE * numberOfNodes)
 //                .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream)
                     .directGrouping(ResultMergeBolt, Streams.SubQueryReceivedStream)
                     .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream); //make comparision with our method.
         } else {
-            builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner<Key>(dataSchema), 2)
+            builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner<Key>(dataSchema), CHUNK_SCANNER_PER_NODE * numberOfNodes)
                     .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream)
                     .directGrouping(ResultMergeBolt, Streams.SubQueryReceivedStream);
         }

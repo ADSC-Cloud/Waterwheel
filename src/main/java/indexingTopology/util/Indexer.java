@@ -7,6 +7,7 @@ import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
 import indexingTopology.aggregator.Aggregator;
 import indexingTopology.bloom.DataChunkBloomFilters;
+import indexingTopology.bloom.DataFunnel;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import indexingTopology.config.TopologyConfig;
@@ -192,8 +193,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
             } else if (schema.getDataType(column).type == Long.class) {
                 filter = BloomFilter.create(Funnels.longFunnel(), 30000);
             } else if (schema.getDataType(column).type == Double.class) {
-                filter = BloomFilter.create(Funnels.longFunnel(), 30000);
-                throw new RuntimeException("double is not supported by bloom filter currently.");
+                filter = BloomFilter.create(DataFunnel.getDoubleFunnel(), 30000);
             } else if (schema.getDataType(column).type == String.class) {
                 filter = BloomFilter.create(Funnels.stringFunnel(Charsets.UTF_8), 30000);
             } else {

@@ -39,7 +39,7 @@ set ```HDFSFlag = false``` to use local file system.  <br />
 5. Launch the system
 
 ```
-$ mvn exec:java -Dexec.mainClass=indexingTopology.KingBaseTopology
+$ mvn exec:java -Dexec.mainClass=indexingTopology.topology.KingBaseTopology
 ```
 
 

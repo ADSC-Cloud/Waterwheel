@@ -1,8 +1,8 @@
-package indexingTopology;
+package indexingTopology.bolt.HDFSBolt;
 
-import indexingTopology.bolt.Bolt1;
-import indexingTopology.bolt.Bolt2;
-import indexingTopology.bolt.Bolt3;
+import indexingTopology.bolt.HDFSBolt.Bolt1;
+import indexingTopology.bolt.HDFSBolt.Bolt2;
+import indexingTopology.bolt.HDFSBolt.Bolt3;
 
 import com.github.davidmoten.rtree.RTree;
 import com.github.davidmoten.rtree.geometry.Rectangle;

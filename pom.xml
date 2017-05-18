@@ -17,7 +17,6 @@
         <version>1.4</version>
         <configuration>
             <createDependencyReducedPom>true</createDependencyReducedPom>
-            <!--<minimizeJar>true</minimizeJar>-->
         </configuration>
         <executions>
             <execution>
@@ -61,7 +60,7 @@
             <groupId>org.apache.storm</groupId>
             <artifactId>storm-core</artifactId>
             <version>1.0.2</version>
-            <!--<scope>provided</scope>-->
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
@@ -138,6 +137,11 @@
                     <artifactId>slf4j-log4j12</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>args4j</groupId>
+            <version>2.0.16</version>
+            <artifactId>args4j</artifactId>
         </dependency>
     </dependencies>
 

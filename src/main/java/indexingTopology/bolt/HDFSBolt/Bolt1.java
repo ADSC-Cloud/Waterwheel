@@ -1,4 +1,4 @@
-package indexingTopology.bolt;
+package indexingTopology.bolt.HDFSBolt;
 
 import indexingTopology.metadata.FileMetaData;
 import indexingTopology.metadata.HDFSHandler;

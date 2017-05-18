@@ -1,4 +1,4 @@
-package indexingTopology;
+package indexingTopology.topology;
 
 import indexingTopology.bolt.*;
 import indexingTopology.config.TopologyConfig;
