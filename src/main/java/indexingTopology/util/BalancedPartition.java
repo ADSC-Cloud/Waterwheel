@@ -23,16 +23,19 @@ public class BalancedPartition<T extends Number> implements Serializable{
 
     private Histogram histogram;
 
-    public BalancedPartition(int numberOfPartitions, T lowerBound, T upperBound) {
+    private TopologyConfig config;
+
+    public BalancedPartition(int numberOfPartitions, T lowerBound, T upperBound, TopologyConfig config) {
+        this.config = config;
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
         this.numberOfPartitions = numberOfPartitions;
         intervalToPartitionMapping = getBalancedPartitionPlan();
     }
 
-    public BalancedPartition(int numberOfPartitions, T lowerBound, T upperBound, boolean enableRecord) {
-        this(numberOfPartitions, lowerBound, upperBound);
-        histogram = new Histogram();
+    public BalancedPartition(int numberOfPartitions, T lowerBound, T upperBound, boolean enableRecord, TopologyConfig config) {
+        this(numberOfPartitions, lowerBound, upperBound, config);
+        histogram = new Histogram(config);
         if (enableRecord) {
             setEnableRecord();
         }
@@ -40,21 +43,21 @@ public class BalancedPartition<T extends Number> implements Serializable{
 
 
     public BalancedPartition(int numberOfPartitions, T lowerBound, T upperBound,
-                             Map<Integer, Integer> intervalToPartitionMapping) {
-        this(numberOfPartitions, lowerBound, upperBound, true);
+                             Map<Integer, Integer> intervalToPartitionMapping, TopologyConfig config) {
+        this(numberOfPartitions, lowerBound, upperBound, true, config);
         this.intervalToPartitionMapping.putAll(intervalToPartitionMapping);
     }
 
     public Map<Integer, Integer> getBalancedPartitionPlan() {
         Double distance = (upperBound.doubleValue() - lowerBound.doubleValue()) / numberOfPartitions;
-        Double miniDistance = (upperBound.doubleValue() - lowerBound.doubleValue()) / TopologyConfig.NUMBER_OF_INTERVALS;
+        Double miniDistance = (upperBound.doubleValue() - lowerBound.doubleValue()) / config.NUMBER_OF_INTERVALS;
         Double keyRangeUpperBound = lowerBound.doubleValue() + distance;
         Double bound = lowerBound.doubleValue() + miniDistance;
 
 
         Map<Integer, Integer> intervalToPartitionMapping = new HashMap<>();
         int bin = 0;
-        for (int i = 0; i < TopologyConfig.NUMBER_OF_INTERVALS; ++i) {
+        for (int i = 0; i < config.NUMBER_OF_INTERVALS; ++i) {
             intervalToPartitionMapping.put(i, bin);
             bound += miniDistance;
             if (bound > keyRangeUpperBound) {
@@ -72,7 +75,7 @@ public class BalancedPartition<T extends Number> implements Serializable{
     }
 
     public int getIntervalId(T key) {
-        Double distance = (upperBound.doubleValue() - lowerBound.doubleValue()) / TopologyConfig.NUMBER_OF_INTERVALS;
+        Double distance = (upperBound.doubleValue() - lowerBound.doubleValue()) / config.NUMBER_OF_INTERVALS;
 
         Double startLowerBound = lowerBound.doubleValue() + distance;
         Double endUpperBound = upperBound.doubleValue() - distance;
@@ -82,7 +85,7 @@ public class BalancedPartition<T extends Number> implements Serializable{
         }
 
         if (key.doubleValue() > endUpperBound) {
-            return TopologyConfig.NUMBER_OF_INTERVALS - 1;
+            return config.NUMBER_OF_INTERVALS - 1;
         }
 
         if ((key.doubleValue() - startLowerBound) % distance == 0) {
@@ -108,7 +111,7 @@ public class BalancedPartition<T extends Number> implements Serializable{
     }
 
     public Histogram getIntervalDistribution() {
-        histogram.setDefaultValueForAbsentKey(TopologyConfig.NUMBER_OF_INTERVALS);
+        histogram.setDefaultValueForAbsentKey(config.NUMBER_OF_INTERVALS);
         return histogram;
     }
 

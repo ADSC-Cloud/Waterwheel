@@ -1,6 +1,7 @@
 package indexingTopology.topology;
 
 import indexingTopology.bolt.*;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.streams.Streams;
 import indexingTopology.util.taxi.City;
 import org.apache.storm.Config;
@@ -20,6 +21,8 @@ public class HBaseTaxiTopology {
 
         TopologyBuilder builder = new TopologyBuilder();
 
+        TopologyConfig config = new TopologyConfig();
+
         final double x1 = 116.2;
         final double x2 = 117.0;
         final double y1 = 39.6;
@@ -28,7 +31,7 @@ public class HBaseTaxiTopology {
 
         City city = new City(x1, x2, y1, y2, partitions);
 
-        builder.setBolt(Generator, new HBaseTaxiGenerator(city), 24)
+        builder.setBolt(Generator, new HBaseTaxiGenerator(city, config), 24)
 //                .shuffleGrouping(RangeQueryDispatcherBolt, Streams.ThroughputReportStream)
                 .allGrouping(LogWriter, Streams.ThroughputRequestStream);
 

@@ -1,5 +1,6 @@
 package indexingTopology.bolt;
 
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataTuple;
 import indexingTopology.util.DataTupleMapper;
 import org.apache.storm.metric.internal.RateTracker;
@@ -44,8 +45,10 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
 
     private DataTupleMapper tupleMapper;
 
+    private TopologyConfig config;
+
     public IngestionDispatcher(DataSchema dataSchema, IndexType lowerBound, IndexType upperBound, boolean enableLoadBalance,
-                               boolean generateTimeStamp, DataTupleMapper tupleMapper) {
+                               boolean generateTimeStamp, DataTupleMapper tupleMapper, TopologyConfig config) {
         this.tupleMapper = tupleMapper;
         if (tupleMapper == null) {
             this.inputSchema = dataSchema;
@@ -59,11 +62,12 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
         this.upperBound = upperBound;
         this.enableLoadBalance = enableLoadBalance;
         this.generateTimeStamp = generateTimeStamp;
+        this.config = config;
     }
 
     public IngestionDispatcher(DataSchema outputSchema, IndexType lowerBound, IndexType upperBound, boolean enableLoadBalance,
-                                          boolean generateTimeStamp) {
-        this(outputSchema, lowerBound, upperBound, enableLoadBalance, generateTimeStamp, null);
+                                          boolean generateTimeStamp, TopologyConfig config) {
+        this(outputSchema, lowerBound, upperBound, enableLoadBalance, generateTimeStamp, null, config);
     }
 
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
@@ -78,7 +82,7 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
 
         numberOfPartitions = targetTasks.size();
 
-        balancedPartition = new BalancedPartition<>(numberOfPartitions, lowerBound, upperBound, enableLoadBalance);
+        balancedPartition = new BalancedPartition<>(numberOfPartitions, lowerBound, upperBound, enableLoadBalance, config);
     }
 
     public void execute(Tuple tuple) {
@@ -108,7 +112,7 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
             balancedPartition.setIntervalToPartitionMapping(((BalancedPartition) tuple.getValueByField("newIntervalPartition")).getIntervalToPartitionMapping());
         } else if (tuple.getSourceStreamId().equals(Streams.StaticsRequestStream)){
             collector.emit(Streams.StatisticsReportStream,
-                    new Values(new Histogram(balancedPartition.getIntervalDistribution().getHistogram())));
+                    new Values(new Histogram(balancedPartition.getIntervalDistribution().getHistogram(), config)));
             balancedPartition.clearHistogram();
         }
     }

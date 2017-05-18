@@ -5,6 +5,7 @@ import indexingTopology.aggregator.Aggregator;
 import indexingTopology.aggregator.Count;
 import indexingTopology.bolt.*;
 import indexingTopology.client.*;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import indexingTopology.util.*;
@@ -75,11 +76,13 @@ public class KingBaseTopology {
 
         final boolean enableLoadBalance = false;
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000);
+        TopologyConfig config = new TopologyConfig();
+
+        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000, config);
 
         ZOrderCoding zOrderCoding = city.getzOrderCoding();
         QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, 10001, city);
+                upperBound, 10001, city, config);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
@@ -96,7 +99,7 @@ public class KingBaseTopology {
         bloomFilterColumns.add("id");
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
-                enableLoadBalance, dataSource, queryCoordinator, dataTupleMapper, bloomFilterColumns);
+                enableLoadBalance, dataSource, queryCoordinator, dataTupleMapper, bloomFilterColumns, config);
 
         Config conf = new Config();
         conf.setDebug(false);

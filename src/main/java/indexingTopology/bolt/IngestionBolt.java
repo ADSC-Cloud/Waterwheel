@@ -45,13 +45,16 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
 
     private List<String> bloomFilterColumns;
 
-    public IngestionBolt(DataSchema schema, List<String> bloomFilterColumns) {
+    TopologyConfig config;
+
+    public IngestionBolt(DataSchema schema, List<String> bloomFilterColumns, TopologyConfig config) {
         this.schema = schema;
         this.bloomFilterColumns = bloomFilterColumns;
+        this.config = config;
     }
 
-    public IngestionBolt(DataSchema schema) {
-        this(schema, new ArrayList<>());
+    public IngestionBolt(DataSchema schema, TopologyConfig conf) {
+        this(schema, new ArrayList<>(), conf);
     }
 
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
@@ -61,7 +64,7 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
 
         this.queryPendingQueue = new ArrayBlockingQueue<>(1024);
 
-        indexerBuilder = new IndexerBuilder();
+        indexerBuilder = new IndexerBuilder(config);
 
         indexer = indexerBuilder
                 .setTaskId(topologyContext.getThisTaskId())
@@ -115,7 +118,7 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
 //                }
 //                collector.ack(tuple);
 //                System.out.println("tuple id " + tupleId);
-                if (tupleId % TopologyConfig.EMIT_NUM == 0) {
+                if (tupleId % config.EMIT_NUM == 0) {
 //                    System.out.println("tuple id " + tupleId + " has been acked!!!");
 //                    System.out.println(inputQueue.size());
                     collector.emitDirect(taskId, Streams.AckStream, new Values(tupleId));

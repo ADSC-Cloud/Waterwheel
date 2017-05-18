@@ -44,8 +44,9 @@ public class TaxiDataGenerator extends InputStreamReceiver {
 
     private Thread generationThread;
 
-    public TaxiDataGenerator(DataSchema schema, City city) {
-        super(schema);
+
+    public TaxiDataGenerator(DataSchema schema, City city, TopologyConfig config) {
+        super(schema, config);
         this.city = city;
     }
 
@@ -59,7 +60,7 @@ public class TaxiDataGenerator extends InputStreamReceiver {
 
         taskId = topologyContext.getThisTaskId();
 
-        folder = new File(TopologyConfig.dataFileDir);
+        folder = new File(config.dataFileDir);
 
         listOfFiles = folder.listFiles();
 

@@ -1,5 +1,6 @@
 package indexingTopology.util;
 
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import javafx.util.Pair;
@@ -15,13 +16,15 @@ import static org.junit.Assert.*;
 /**
  * Created by acelzj on 20/3/17.
  */
-public class IndexerTest implements Observer {
+public class IndexerTest implements Observer{
 
     private Observable observable;
 
     @Test
     public void testIndexLogic() throws InterruptedException {
-        IndexerBuilder indexerBuilder = new IndexerBuilder();
+        TopologyConfig config = new TopologyConfig();
+        config.dataDir = "./target/tmp";
+        IndexerBuilder indexerBuilder = new IndexerBuilder(config);
 
         ArrayBlockingQueue<DataTuple> inputQueue = new ArrayBlockingQueue<DataTuple>(1024);
 

@@ -120,14 +120,19 @@ public class IndexerCopy {
 
     Thread capacityCheckingThread;
 
-    public IndexerCopy(int taskId, ArrayBlockingQueue<Pair> inputQueue, BTree indexedData, String indexedField, DataSchema schema, BufferedWriter bufferedWriter, int order, boolean templateMode, int numberOfIndexingThreads) {
-        pendingQueue = new ArrayBlockingQueue<>(TopologyConfig.PENDING_QUEUE_CAPACITY);
+    private TopologyConfig config;
+
+    public IndexerCopy(int taskId, ArrayBlockingQueue<Pair> inputQueue, BTree indexedData, String indexedField,
+                       DataSchema schema, BufferedWriter bufferedWriter, int order, boolean templateMode,
+                       int numberOfIndexingThreads, TopologyConfig config) {
+        this.config = config;
+        pendingQueue = new ArrayBlockingQueue<>(config.PENDING_QUEUE_CAPACITY);
 
         this.inputQueue = inputQueue;
 
         this.indexedData = indexedData;
 
-        templateUpdater = new TemplateUpdater(TopologyConfig.BTREE_ORDER);
+        templateUpdater = new TemplateUpdater(config.BTREE_ORDER, config);
 
         start = System.currentTimeMillis();
 
@@ -157,8 +162,8 @@ public class IndexerCopy {
         this.processQuerySemaphore = new Semaphore(1);
 
         kryo = new Kryo();
-        kryo.register(BTree.class, new KryoTemplateSerializer());
-        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
+        kryo.register(BTree.class, new KryoTemplateSerializer(config));
+        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer(config));
 
         this.collector = collector;
 
@@ -410,7 +415,7 @@ public class IndexerCopy {
                 }
                 */
 
-                if (numTuples >= TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK) {
+                if (numTuples >= config.NUMBER_TUPLES_OF_A_CHUNK) {
                     while (!pendingQueue.isEmpty()) {
                         try {
                             Thread.sleep(1);
@@ -429,10 +434,10 @@ public class IndexerCopy {
                     writeTreeIntoChunk();
 //
                     try {
-                        if (TopologyConfig.HDFSFlag) {
-                            fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
+                        if (config.HDFSFlag) {
+                            fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
                         } else {
-                            fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
+                            fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
                         }
                         fileName =  "taskId" + taskId + "chunk" + chunkId;
                         fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
@@ -532,8 +537,8 @@ public class IndexerCopy {
 
 //                if (inputQueue.size() / (256 * 8 * 4)) {
 //                    System.out.println("Warning : the production is too slow!!!");
-                if (inputQueue.size() * 1.0 / TopologyConfig.PENDING_QUEUE_CAPACITY < 0.1) {
-                    System.out.println(inputQueue.size() * 1.0 / TopologyConfig.PENDING_QUEUE_CAPACITY);
+                if (inputQueue.size() * 1.0 / config.PENDING_QUEUE_CAPACITY < 0.1) {
+                    System.out.println(inputQueue.size() * 1.0 / config.PENDING_QUEUE_CAPACITY);
                     System.out.println("Warning : the production speed is too slow!!!");
                     System.out.println(++count);
                 }
@@ -543,7 +548,7 @@ public class IndexerCopy {
     }
 
     private void createNewTemplate() {
-        indexedData = new BTree(order);
+        indexedData = new BTree(order, config);
     }
 
     class IndexingRunnable implements Runnable {
@@ -696,10 +701,10 @@ public class IndexerCopy {
 //                        System.out.println(fileName);
 
                         FileSystemHandler fileSystemHandler = null;
-                        if (TopologyConfig.HDFSFlag) {
-                            fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
+                        if (config.HDFSFlag) {
+                            fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
                         } else {
-                            fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
+                            fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
                         }
 
                         fileSystemHandler.openFile("/", fileName);

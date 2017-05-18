@@ -71,15 +71,16 @@ public class IndexServerTest {
     static List<String> fieldNames = new ArrayList<String>(Arrays.asList("id", "zcode", "payload"));
     static List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, String.class));
 
-    public IndexServerTest(String indexField, DataSchema schema, int btreeOrder, int bytesLimit, boolean templateMode, int numberOfIndexThreads) throws InterruptedException {
+    public IndexServerTest(String indexField, DataSchema schema, int btreeOrder, int bytesLimit, boolean templateMode,
+                           int numberOfIndexThreads, TopologyConfig config) throws InterruptedException {
         this.indexField = indexField;
         this.schema = schema;
         this.btreeOrder = btreeOrder;
         this.bytesLimit = bytesLimit;
-        this.inputQueue = new ArrayBlockingQueue<>(TopologyConfig.PENDING_QUEUE_CAPACITY);
+        this.inputQueue = new ArrayBlockingQueue<>(config.PENDING_QUEUE_CAPACITY);
         this.chunk = MemChunk.createNew(bytesLimit);
-        this.templateUpdater = new TemplateUpdater(btreeOrder);
-        indexedData = new BTree(btreeOrder);
+        this.templateUpdater = new TemplateUpdater(btreeOrder, config);
+        indexedData = new BTree(btreeOrder, config);
 //        try {
 //            bufferedReader = new BufferedReader(new FileReader(new File(TopologyConfig.dataDir + TopologyConfig.dataFileDir)));
 //        } catch (FileNotFoundException e) {
@@ -110,7 +111,7 @@ public class IndexServerTest {
 //            e.printStackTrace();
 //        }
 
-        indexer = new IndexerCopy(0, inputQueue, indexedData, indexField, schema, bufferedWriter, btreeOrder, templateMode, numberOfIndexThreads);
+        indexer = new IndexerCopy(0, inputQueue, indexedData, indexField, schema, bufferedWriter, btreeOrder, templateMode, numberOfIndexThreads, config);
     }
 
     private static void createGenerateThread() {
@@ -131,6 +132,7 @@ public class IndexServerTest {
     public static void main(String[] args) throws InterruptedException {
 
         String indexField = "zcode";
+        TopologyConfig config = new TopologyConfig();
 
         DataSchema schema = new DataSchema();
         schema.addDoubleField("id");
@@ -140,7 +142,7 @@ public class IndexServerTest {
         schema.addVarcharField("payload", 10);
         schema.setPrimaryIndexField("zcode");
 
-        final int btreeOrder = TopologyConfig.BTREE_ORDER;
+        final int btreeOrder = config.BTREE_ORDER;
 
         final int bytesLimit = 65000000;
 
@@ -158,8 +160,8 @@ public class IndexServerTest {
 //                    for (int j = 0; j <= 1; ++j) {
 //                        boolean templateMode = (j != 0);
                         boolean templateMode = true;
-                        TopologyConfig.SKEWNESS_DETECTION_THRESHOLD = threshold;
-                        IndexServerTest indexServerTest = new IndexServerTest(indexField, schema, order, bytesLimit, false, i);
+                    config.SKEWNESS_DETECTION_THRESHOLD = threshold;
+                        IndexServerTest indexServerTest = new IndexServerTest(indexField, schema, order, bytesLimit, false, i, config);
 
                         createGenerateThread();
 

@@ -62,9 +62,11 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 //    Long timeCostOfDeserializationALeaf;
     private Thread subQueryHandlingThread;
 
+    TopologyConfig config;
 
-    public ChunkScanner(DataSchema schema) {
+    public ChunkScanner(DataSchema schema, TopologyConfig config) {
         this.schema = schema;
+        this.config = config;
     }
 
     private Pair getTemplateFromExternalStorage(FileSystemHandler fileSystemHandler, String fileName) throws IOException {
@@ -95,7 +97,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
 
-        blockIdToCacheUnit = new LRUCache<>(TopologyConfig.CACHE_SIZE);
+        blockIdToCacheUnit = new LRUCache<>(config.CACHE_SIZE);
 
         pendingQueue = new ArrayBlockingQueue<>(1024);
 
@@ -104,8 +106,8 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         createSubQueryHandlingThread();
 
         kryo = new Kryo();
-        kryo.register(BTree.class, new KryoTemplateSerializer());
-        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
+        kryo.register(BTree.class, new KryoTemplateSerializer(config));
+        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer(config));
     }
 
     @Override
@@ -190,10 +192,10 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 //        long fileTime = 0;
 //        long fileStart = System.currentTimeMillis();
         FileSystemHandler fileSystemHandler = null;
-        if (TopologyConfig.HDFSFlag) {
-            fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
+        if (config.HDFSFlag) {
+            fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
         } else {
-            fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
+            fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
         }
         fileSystemHandler.openFile("/", fileName);
 //        fileTime += (System.currentTimeMillis() - fileStart);
@@ -307,7 +309,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         collector.emit(Streams.FileSystemQueryStream, new Values(subQuery, tuples, metrics));
 
 
-        if (!TopologyConfig.SHUFFLE_GROUPING_FLAG) {
+        if (!config.SHUFFLE_GROUPING_FLAG) {
             collector.emit(Streams.FileSubQueryFinishStream, new Values("finished"));
         }
     }
@@ -352,10 +354,10 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
             throws IOException {
 
         FileSystemHandler fileSystemHandler = null;
-        if (TopologyConfig.HDFSFlag) {
-            fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
+        if (config.HDFSFlag) {
+            fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
         } else {
-            fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
+            fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
         }
 
         byte[] bytesToRead = new byte[4];
@@ -453,10 +455,10 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         Pair data = null;
         try {
             FileSystemHandler fileSystemHandler = null;
-            if (TopologyConfig.HDFSFlag) {
-                fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
+            if (config.HDFSFlag) {
+                fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
             } else {
-                fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
+                fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
             }
 
             BlockId blockId = new BlockId(fileName, 0);

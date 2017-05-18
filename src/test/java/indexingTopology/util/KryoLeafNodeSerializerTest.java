@@ -25,14 +25,15 @@ public class KryoLeafNodeSerializerTest {
     private ArrayList valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
             Double.class, Double.class, Double.class, Double.class, Double.class));
 
+    private TopologyConfig config = new TopologyConfig();
 
     @Test
     public void testSerializer() throws IOException, UnsupportedGenericException {
 
         Kryo kryo = new Kryo();
-        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
+        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer(config));
 
-        BTreeLeafNode leaf = new BTreeLeafNode(TopologyConfig.BTREE_ORDER);
+        BTreeLeafNode leaf = new BTreeLeafNode(config.BTREE_ORDER);
 
         for (int i = 0; i < 4; ++i) {
             List<Double> values = new ArrayList<>();

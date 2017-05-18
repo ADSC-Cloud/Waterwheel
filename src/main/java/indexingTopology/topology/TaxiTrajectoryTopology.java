@@ -1,5 +1,6 @@
 package indexingTopology.topology;
 
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.util.TopologyGenerator;
 import org.apache.storm.Config;
@@ -30,6 +31,7 @@ public class TaxiTrajectoryTopology {
     public static void main(String[] args) throws Exception {
 
         TopologyBuilder builder = new TopologyBuilder();
+        TopologyConfig config = new TopologyConfig();
         final int payloadSize = 1;
         DataSchema schema = new DataSchema();
 //        schema.addDoubleField("id");
@@ -71,11 +73,12 @@ public class TaxiTrajectoryTopology {
         InputStreamReceiver dataSource = new Generator(schemaWithTimestamp, generator, payloadSize, city);
 
 //        QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound, upperBound, 10001);
-        QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryGenerator<>(lowerBound, upperBound);
+        QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryGenerator<>(lowerBound, upperBound, config);
 
         TopologyGenerator<Double> topologyGenerator = new TopologyGenerator<>();
 
-        StormTopology topology = topologyGenerator.generateIndexingTopology(schemaWithTimestamp, lowerBound, upperBound, enableLoadBalance, dataSource, queryCoordinator);
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schemaWithTimestamp, lowerBound, upperBound,
+                enableLoadBalance, dataSource, queryCoordinator, config);
 
         Config conf = new Config();
         conf.setDebug(false);

@@ -1,5 +1,6 @@
 package indexingTopology.util;
 
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
 
 import java.util.*;
@@ -13,8 +14,11 @@ public class TemplateUpdater<TKey extends Comparable<TKey>> {
 
     private BTree<Double, Integer> template;
 
-    public TemplateUpdater(int btreeOrder) {
+    private TopologyConfig config;
+
+    public TemplateUpdater(int btreeOrder, TopologyConfig config) {
         order = btreeOrder;
+        this.config = config;
     }
 
     @SuppressWarnings("unchecked")
@@ -133,7 +137,7 @@ public class TemplateUpdater<TKey extends Comparable<TKey>> {
         }
 
         int count = 0;
-        template = new BTree(this.order);
+        template = new BTree(this.order, config);
         BTreeInnerNode root = new BTreeInnerNode(this.order);
         for (BTreeInnerNode node : innerNodes) {
             ++count;

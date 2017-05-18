@@ -9,6 +9,7 @@ import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import indexingTopology.util.*;
+import junit.framework.TestCase;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
 import org.apache.storm.generated.StormTopology;
@@ -28,27 +29,22 @@ import static org.junit.Assert.*;
 /**
  * Created by Robert on 5/15/17.
  */
-public class TopologyTest {
+public class TopologyTest extends TestCase {
 
-    private String dataDir;
-    private boolean hdfsFlag;
+    TopologyConfig config = new TopologyConfig();
 
     public void setUp() {
-        dataDir = TopologyConfig.dataDir;
-        hdfsFlag = TopologyConfig.HDFSFlag;
         try {
             Runtime.getRuntime().exec("mkdir -p ./target/tmp");
         } catch (IOException e) {
             e.printStackTrace();
         }
-        TopologyConfig.dataDir = "./target/tmp";
-        TopologyConfig.HDFSFlag = false;
-        System.out.println("dataDir is set to " + TopologyConfig.dataDir);
+        config.dataDir = "./target/tmp";
+        config.HDFSFlag = false;
+        System.out.println("dataDir is set to " + config.dataDir);
     }
 
     public void tearDown() {
-        TopologyConfig.dataDir = dataDir;
-        TopologyConfig.HDFSFlag = hdfsFlag;
         try {
             Runtime.getRuntime().exec("rm ./target/tmp/*");
         } catch (IOException e) {
@@ -69,18 +65,20 @@ public class TopologyTest {
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001);
+        assertTrue(config != null);
+
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001, config);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
-                coordinator);
+                coordinator, config);
 
         Config conf = new Config();
         conf.setDebug(false);
         conf.setNumWorkers(1);
 
-        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
-        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+//        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+//        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
         LocalCluster cluster = new LocalCluster();
@@ -91,13 +89,13 @@ public class TopologyTest {
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", 10000, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(5000);
+            ingestionClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
         final QueryClient queryClient = new QueryClient("localhost", 10001);
         try {
-            queryClient.connectWithTimeout(5000);
+            queryClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -176,18 +174,18 @@ public class TopologyTest {
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001);
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001, config);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
-                coordinator);
+                coordinator, config);
 
         Config conf = new Config();
         conf.setDebug(false);
         conf.setNumWorkers(1);
 
-        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
-        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+//        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+//        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
         LocalCluster cluster = new LocalCluster();
@@ -198,13 +196,13 @@ public class TopologyTest {
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", 10000, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(5000);
+            ingestionClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
         final QueryClient queryClient = new QueryClient("localhost", 10001);
         try {
-            queryClient.connectWithTimeout(5000);
+            queryClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -283,37 +281,37 @@ public class TopologyTest {
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001);
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001, config);
 
         ArrayList<String> bloomFilterColumns = new ArrayList<>();
         bloomFilterColumns.add("a4");
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
-                coordinator, null, bloomFilterColumns);
+                coordinator, null, bloomFilterColumns, config);
 
         Config conf = new Config();
         conf.setDebug(false);
         conf.setNumWorkers(1);
 
-        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
-        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+//        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+//        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
         LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("T0", conf, topology);
 
-        final int tuples = 1000000;
+        final int tuples = 100000;
 
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", 10000, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(5000);
+            ingestionClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
         final QueryClient queryClient = new QueryClient("localhost", 10001);
         try {
-            queryClient.connectWithTimeout(5000);
+            queryClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -422,37 +420,37 @@ public class TopologyTest {
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001);
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001, config);
 
         ArrayList<String> bloomFilterColumns = new ArrayList<>();
         bloomFilterColumns.add("a2");
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
-                coordinator, null, bloomFilterColumns);
+                coordinator, null, bloomFilterColumns, config);
 
         Config conf = new Config();
         conf.setDebug(false);
         conf.setNumWorkers(1);
 
-        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
-        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+//        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+//        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
         LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("T0", conf, topology);
 
-        final int tuples = 1000000;
+        final int tuples = 100000;
 
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", 10000, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(5000);
+            ingestionClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
         final QueryClient queryClient = new QueryClient("localhost", 10001);
         try {
-            queryClient.connectWithTimeout(5000);
+            queryClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -558,20 +556,22 @@ public class TopologyTest {
         final int minIndex = 0;
         final int maxIndex = 100;
 
+        assertTrue(config != null);
+
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001);
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001, config);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
-                coordinator);
+                coordinator, config);
 
         Config conf = new Config();
         conf.setDebug(false);
         conf.setNumWorkers(1);
 
-        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
-        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+//        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+//        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
         LocalCluster cluster = new LocalCluster();
@@ -582,13 +582,13 @@ public class TopologyTest {
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", 10000, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(5000);
+            ingestionClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
         final QueryClient queryClient = new QueryClient("localhost", 10001);
         try {
-            queryClient.connectWithTimeout(5000);
+            queryClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -692,18 +692,18 @@ public class TopologyTest {
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(rawSchema, 10000);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001);
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(rawSchema, 10000, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001, config);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
-                coordinator, mapper);
+                coordinator, mapper, config);
 
         Config conf = new Config();
         conf.setDebug(false);
         conf.setNumWorkers(1);
 
-        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
-        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+//        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+//        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
         LocalCluster cluster = new LocalCluster();
@@ -714,13 +714,13 @@ public class TopologyTest {
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", 10000, rawSchema, 1024);
         try {
-            ingestionClient.connectWithTimeout(5000);
+            ingestionClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
         final QueryClient queryClient = new QueryClient("localhost", 10001);
         try {
-            queryClient.connectWithTimeout(5000);
+            queryClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -817,35 +817,35 @@ public class TopologyTest {
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001);
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001, config);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
-                coordinator);
+                coordinator, config);
 
         Config conf = new Config();
         conf.setDebug(false);
         conf.setNumWorkers(1);
 
-        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
-        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+//        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+//        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
         LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("T0", conf, topology);
 
-        final int tuples = 1000000;
+        final int tuples = 100000;
 
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", 10000, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(5000);
+            ingestionClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
         final QueryClient queryClient = new QueryClient("localhost", 10001);
         try {
-            queryClient.connectWithTimeout(5000);
+            queryClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -938,35 +938,35 @@ public class TopologyTest {
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001);
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001, config);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
-                coordinator);
+                coordinator, config);
 
         Config conf = new Config();
         conf.setDebug(false);
         conf.setNumWorkers(1);
 
-        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
-        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+//        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+//        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
         LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("T0", conf, topology);
 
-        final int tuples = 1000000;
+        final int tuples = 100000;
 
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", 10000, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(5000);
+            ingestionClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
         final QueryClient queryClient = new QueryClient("localhost", 10001);
         try {
-            queryClient.connectWithTimeout(5000);
+            queryClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -978,9 +978,9 @@ public class TopologyTest {
 
         for (int i = 0; i < tuples; i++) {
             DataTuple tuple = new DataTuple();
-            tuple.add(i % 1000);
-            tuple.add((double)(i % 1000));
-            tuple.add((long)(i / (tuples / 1000)));
+            tuple.add(i % 100);
+            tuple.add((double)(i % 100));
+            tuple.add((long)(i / (tuples / 100)));
             tuple.add("payload");
             try {
                 ingestionClient.appendInBatch(tuple);
@@ -1006,15 +1006,15 @@ public class TopologyTest {
             // full temporal range query
             QueryResponse response = queryClient.query(new QueryRequest<>(0, 1000, Long.MIN_VALUE,
                     Long.MAX_VALUE, aggregator));
-            assertEquals(1000000.0, response.dataTuples.get(0).get(0));
+            assertEquals((double)tuples, response.dataTuples.get(0).get(0));
 
             //half temporal range query
-            response = queryClient.query(new QueryRequest<>(0, 1000, 0, 499, aggregator));
-            assertEquals(1000000.0 / 2, response.dataTuples.get(0).get(0));
+            response = queryClient.query(new QueryRequest<>(0, 100, 0, 49, aggregator));
+            assertEquals((double)tuples / 2, response.dataTuples.get(0).get(0));
 
             //a temporal range query
-            response =  queryClient.query(new QueryRequest<>(0,1000, 0, 0, aggregator));
-            assertEquals(1000000.0 / 1000, response.dataTuples.get(0).get(0));
+            response =  queryClient.query(new QueryRequest<>(0,100, 0, 0, aggregator));
+            assertEquals((double)tuples / 100, response.dataTuples.get(0).get(0));
 
 
             fullyExecuted = true;

@@ -1,6 +1,7 @@
 package indexingTopology.bolt;
 
 
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import indexingTopology.util.FrequencyRestrictor;
@@ -52,7 +53,7 @@ public class Generator extends InputStreamReceiver {
     private Thread generationThread;
 
     public Generator(DataSchema schema, TrajectoryGenerator generator, int payloadSize, City city) {
-        super(schema);
+        super(schema, new TopologyConfig());
         this.generator = generator;
         this.city = city;
         this.payloadSize = payloadSize;

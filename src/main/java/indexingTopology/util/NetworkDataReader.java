@@ -19,8 +19,9 @@ public class NetworkDataReader {
         int fileNumber = 1;
 
         BufferedReader bufferedReader = null;
+        TopologyConfig config = new TopologyConfig();
 
-        File file = new File(TopologyConfig.dataFileDir);
+        File file = new File(config.dataFileDir);
 
 
         bufferedReader = new BufferedReader(new FileReader(file));
@@ -124,8 +125,8 @@ public class NetworkDataReader {
 
                     String s = m.group(6);
 
-                    if (s.length() > TopologyConfig.AVERAGE_STRING_LENGTH) {
-                        s = s.substring(0, TopologyConfig.AVERAGE_STRING_LENGTH);
+                    if (s.length() > config.AVERAGE_STRING_LENGTH) {
+                        s = s.substring(0, config.AVERAGE_STRING_LENGTH);
                     }
 
 //                    String textToWrite = "";

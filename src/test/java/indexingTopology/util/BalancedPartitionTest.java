@@ -14,19 +14,17 @@ import static org.junit.Assert.*;
  */
 public class BalancedPartitionTest extends TestCase{
 
-    int numberOfInterval;
+    TopologyConfig config = new TopologyConfig();
 
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        numberOfInterval = TopologyConfig.NUMBER_OF_INTERVALS;
-        TopologyConfig.NUMBER_OF_INTERVALS = 10;
+        config.NUMBER_OF_INTERVALS = 10;
     }
 
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
-        TopologyConfig.NUMBER_OF_INTERVALS = numberOfInterval;
     }
 
     @Test
@@ -34,7 +32,7 @@ public class BalancedPartitionTest extends TestCase{
 
 
         //The test passes when the NUMBER_OF_INTERVALS in the TopologyConfig is set to 10
-        BalancedPartition partition = new BalancedPartition(4, -500.0, 500.0);
+        BalancedPartition partition = new BalancedPartition(4, -500.0, 500.0, config);
         assertEquals(0, partition.getIntervalId(Double.NEGATIVE_INFINITY));
         assertEquals(0, partition.getIntervalId(-400.0));
         assertEquals(1, partition.getIntervalId(-350.0));
@@ -61,7 +59,7 @@ public class BalancedPartitionTest extends TestCase{
     public void testGetIntervalIdNegativeBounds() {
 
         //The test passes when the NUMBER_OF_INTERVALS in the TopologyConfig is set to 10
-        BalancedPartition partition = new BalancedPartition(4, -2000.0, -1000.0);
+        BalancedPartition partition = new BalancedPartition(4, -2000.0, -1000.0, config);
         assertEquals(0, partition.getIntervalId(Double.NEGATIVE_INFINITY));
         assertEquals(0, partition.getIntervalId(-1900.0));
         assertEquals(1, partition.getIntervalId(-1850.0));
@@ -88,7 +86,7 @@ public class BalancedPartitionTest extends TestCase{
     public void testGetIntervalIdPositiveBounds() {
 
         //The test passes when the NUMBER_OF_INTERVALS in the TopologyConfig is set to 10
-        BalancedPartition partition = new BalancedPartition(4, 0.0, 1000.0);
+        BalancedPartition partition = new BalancedPartition(4, 0.0, 1000.0, config);
         assertEquals(0, partition.getIntervalId(Double.NEGATIVE_INFINITY));
         assertEquals(0, partition.getIntervalId(100.0));
         assertEquals(1, partition.getIntervalId(150.0));
@@ -116,7 +114,7 @@ public class BalancedPartitionTest extends TestCase{
 
         //The test passes when the NUMBER_OF_INTERVALS in the TopologyConfig is set to 10
 
-        BalancedPartition partition = new BalancedPartition(4, 0.0, 1000.0);
+        BalancedPartition partition = new BalancedPartition(4, 0.0, 1000.0, config);
         Map<Integer, Integer> intervalToTaskMapping = partition.getBalancedPartitionPlan();
         assertEquals(new Integer(0), intervalToTaskMapping.get(0));
         assertEquals(new Integer(0), intervalToTaskMapping.get(1));
@@ -136,7 +134,7 @@ public class BalancedPartitionTest extends TestCase{
 
         //The test passes when the NUMBER_OF_INTERVALS in the TopologyConfig is set to 10
 
-        BalancedPartition partition = new BalancedPartition(4, 0.0, 1000.0);
+        BalancedPartition partition = new BalancedPartition(4, 0.0, 1000.0, config);
         Map<Integer, Integer> intervalToTaskMapping = partition.getBalancedPartitionPlan();
 
         assertEquals(new Integer(0), intervalToTaskMapping.get(0));
@@ -156,7 +154,7 @@ public class BalancedPartitionTest extends TestCase{
 
         //The test passes when the NUMBER_OF_INTERVALS in the TopologyConfig is set to 10
 
-        BalancedPartition partition = new BalancedPartition(4, -500.0, 500.0);
+        BalancedPartition partition = new BalancedPartition(4, -500.0, 500.0, config);
         Map<Integer, Integer> intervalToTaskMapping = partition.getBalancedPartitionPlan();
 
         assertEquals(new Integer(0), intervalToTaskMapping.get(0));
@@ -176,7 +174,7 @@ public class BalancedPartitionTest extends TestCase{
 
         //The test passes when the NUMBER_OF_INTERVALS in the TopologyConfig is set to 10
 
-        BalancedPartition partition = new BalancedPartition(4, -500.0, 1000.0);
+        BalancedPartition partition = new BalancedPartition(4, -500.0, 1000.0, config);
         Map<Integer, Integer> intervalToTaskMapping = partition.getBalancedPartitionPlan();
 
         assertEquals(new Integer(0), intervalToTaskMapping.get(0));
@@ -197,7 +195,7 @@ public class BalancedPartitionTest extends TestCase{
 
         //The test passes when the NUMBER_OF_INTERVALS in the TopologyConfig is set to 10
 
-        BalancedPartition partition = new BalancedPartition(4, -2000.0, 1000.0);
+        BalancedPartition partition = new BalancedPartition(4, -2000.0, 1000.0, config);
         Map<Integer, Integer> intervalToTaskMapping = partition.getBalancedPartitionPlan();
 
         assertEquals(new Integer(0), intervalToTaskMapping.get(0));
@@ -218,7 +216,7 @@ public class BalancedPartitionTest extends TestCase{
 
         //The test passes when the NUMBER_OF_INTERVALS in the TopologyConfig is set to 10
 
-        BalancedPartition partition = new BalancedPartition(4, -2000.0, 1000.0);
+        BalancedPartition partition = new BalancedPartition(4, -2000.0, 1000.0, config);
         Map<Integer, Integer> intervalToTaskMapping = partition.getBalancedPartitionPlan();
 
         assertEquals(new Integer(0), intervalToTaskMapping.get(0));

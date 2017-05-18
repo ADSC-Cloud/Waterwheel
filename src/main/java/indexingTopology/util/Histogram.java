@@ -12,13 +12,17 @@ public class Histogram implements Serializable{
 
     private Map<Integer, Long> histogram;
 
-    public Histogram() {
+    private TopologyConfig config;
+
+    public Histogram(TopologyConfig config) {
         histogram = new HashMap<>();
+        this.config = config;
     }
 
-    public Histogram(Map<Integer, Long> histogram) {
+    public Histogram(Map<Integer, Long> histogram, TopologyConfig config) {
         this.histogram = new HashMap<>();
         this.histogram.putAll(histogram);
+        this.config = config;
     }
 
     public void record(int intervalId) {
@@ -36,7 +40,7 @@ public class Histogram implements Serializable{
 
     public List<Long> histogramToList() {
         List<Long> ret = new ArrayList<>();
-        setDefaultValueForAbsentKey(TopologyConfig.NUMBER_OF_INTERVALS);
+        setDefaultValueForAbsentKey(config.NUMBER_OF_INTERVALS);
         Object[] keys = histogram.keySet().toArray();
         Arrays.sort(keys);
         for (Object key : keys) {

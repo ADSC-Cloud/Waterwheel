@@ -1,5 +1,6 @@
 package indexingTopology.util;
 
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.util.taxi.Car;
 import indexingTopology.util.taxi.TrajectoryGenerator;
 import indexingTopology.util.taxi.TrajectoryUniformGenerator;
@@ -43,13 +44,13 @@ public class HBaseTester {
 
 //    private int batchSize;
 
-    public HBaseTester(int numberOfIndexingThreads) throws Exception {
+    public HBaseTester(int numberOfIndexingThreads, TopologyConfig config) throws Exception {
         this.numberOfIndexingThreads = numberOfIndexingThreads;
         totalRecord = new AtomicInteger(0);
         indexingThreads = new ArrayList<>();
         hBaseHandler = null;
         try {
-            hBaseHandler = new HBaseHandler();
+            hBaseHandler = new HBaseHandler(config);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -293,6 +294,7 @@ public class HBaseTester {
     }
 
     public static void main(String[] args) throws Exception {
-        HBaseTester hBaseTester = new HBaseTester(8);
+        TopologyConfig config = new TopologyConfig();
+        HBaseTester hBaseTester = new HBaseTester(8, config);
     }
 }
