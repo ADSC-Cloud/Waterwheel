@@ -5,7 +5,7 @@ jdk:
   - oraclejdk8
 
 before_script:
- - export JAVA_OPTS=-Xmx2048m
+ - export JAVA_OPTS=-Xmx2998m
 
 script:
-   - mvn install |grep -v "\[WARNING\] We have a duplicate"
+   - mvn install
