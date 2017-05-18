@@ -29,7 +29,7 @@ public class TemplateUpdaterTest {
     public void testCreateTreeWithBulkLoading() throws Exception, UnsupportedGenericException {
 
 //        int numberOfTuples = 64;
-        int numberOfTuples = config.NUMBER_TUPLES_OF_A_CHUNK;
+        int numberOfTuples = 40 * 1000;
 
 //        int order = 4;
         int order = config.BTREE_ORDER;
@@ -87,7 +87,7 @@ public class TemplateUpdaterTest {
     @Test
     public void testCreateTreeWithBulkLoadingWithDuplicatedTuples() throws Exception, UnsupportedGenericException {
 
-        int numberOfTuples = config.NUMBER_TUPLES_OF_A_CHUNK;
+        int numberOfTuples = 400 * 1000;
 //        int numberOfTuples = TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK;
 
         int order = 4;
