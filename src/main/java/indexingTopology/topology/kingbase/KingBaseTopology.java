@@ -132,8 +132,8 @@ public class KingBaseTopology {
                 DataTuplePredicate predicate = t -> schema.getValue("id", t).equals(Integer.toString(1000));
 
 
-//                Aggregator<Integer> aggregator = new Aggregator<>(schema, null, new AggregateField(new Count(), "*"));
-                Aggregator<Integer> aggregator = null;
+                Aggregator<Integer> aggregator = new Aggregator<>(schema, null, new AggregateField(new Count(), "*"));
+//                Aggregator<Integer> aggregator = null;
 
 
 //                DataSchema schemaAfterAggregation = aggregator.getOutputDataSchema();
@@ -141,10 +141,10 @@ public class KingBaseTopology {
 //                        (double) schemaAfterAggregation.getValue("count(*)", o2));
 
 
-                DataTupleEquivalentPredicateHint equivalentPredicate = new DataTupleEquivalentPredicateHint("id", "100");
+                DataTupleEquivalentPredicateHint equivalentPredicateHint = new DataTupleEquivalentPredicateHint("id", "1000");
 
                 GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
-                        System.currentTimeMillis() - RecentSecondsOfInterest * 1000, System.currentTimeMillis(), predicate, null, null, null);
+                        System.currentTimeMillis() - RecentSecondsOfInterest * 1000, System.currentTimeMillis(), predicate, aggregator, null, equivalentPredicateHint);
                 long start = System.currentTimeMillis();
                 try {
                     System.out.println("A query will be issued.");
