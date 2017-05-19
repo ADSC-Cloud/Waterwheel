@@ -62,6 +62,9 @@ public class KingBaseTopology {
     @Option(name = "--node", aliases = {"-n"}, usage = "number of nodes used in the topology")
     private int NumberOfNodes = 1;
 
+    @Option(name = "--local", usage = "run the topology in local cluster")
+    private boolean LocalMode = false;
+
     /**
      * ingest client configuration
      */
@@ -141,7 +144,7 @@ public class KingBaseTopology {
                 DataTupleEquivalentPredicateHint equivalentPredicate = new DataTupleEquivalentPredicateHint("id", "100");
 
                 GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
-                        System.currentTimeMillis() - RecentSecondsOfInterest * 1000, System.currentTimeMillis(), predicate, aggregator, null, null);
+                        System.currentTimeMillis() - RecentSecondsOfInterest * 1000, System.currentTimeMillis(), predicate, null, null, null);
                 long start = System.currentTimeMillis();
                 try {
                     System.out.println("A query will be issued.");
@@ -286,7 +289,13 @@ public class KingBaseTopology {
 
         conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
         conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
-        StormSubmitter.submitTopology(TopologyName, conf, topology);
+
+        if (LocalMode) {
+            LocalCluster localCluster = new LocalCluster();
+            localCluster.submitTopology(TopologyName, conf, topology);
+        } else {
+            StormSubmitter.submitTopology(TopologyName, conf, topology);
+        }
     }
 
     public static void main(String[] args) throws InvalidTopologyException, AuthorizationException, AlreadyAliveException {
