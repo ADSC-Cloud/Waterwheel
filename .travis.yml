@@ -5,7 +5,6 @@ jdk:
   - oraclejdk8
 
 before_script:
- - export JAVA_OPTS=-Xmx2998m
-
+ - export _JAVA_OPTIONS=-Xmx2048m
 script:
-   - mvn install
+   - mvn install -q
