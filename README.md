@@ -60,17 +60,19 @@ $ git clone https://github.com/ADSC-Cloud/append-only-store
 
 5. Change the configures in config/TopologyConfig accordingly.
 
-set ```HDFSFlag = false``` to use HDFS as the storage system.
+set ```HDFSFlag = true``` to use HDFS as the storage system.
 
 Create a folder for the system in HDFS and set ```dataDir``` in the config file properly. Make sure that the folder is writable.
 
 6. Compile the source code
 
-```base
-mvn clean install -DskipTests
+```bash
+$ mvn clean install -DskipTests
 ```
 
-7. Submit the topology to Apache
+8. Launch Apache Storm's nimbus and supervisors properly. 
+
+9. Submit the topology to Apache Storm
 
 ```
 $ storm jar SOURCE_CODE_PATH/target/IndexingTopology-1.0-SNAPSHOT.jar indexingTopologyNormalDistributionTopology append-only-store
