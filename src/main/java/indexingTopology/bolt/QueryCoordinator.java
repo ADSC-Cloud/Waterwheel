@@ -558,7 +558,8 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
         indexTaskToTimestampMapping = new HashMap<>();
 
         for (Integer taskId : indexServers) {
-            indexTaskToTimestampMapping.put(taskId, System.currentTimeMillis());
+//            indexTaskToTimestampMapping.put(taskId, System.currentTimeMillis());
+            indexTaskToTimestampMapping.put(taskId, 0L);
         }
     }
 

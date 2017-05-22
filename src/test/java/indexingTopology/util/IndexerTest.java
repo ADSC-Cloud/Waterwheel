@@ -24,6 +24,7 @@ public class IndexerTest implements Observer{
     public void testIndexLogic() throws InterruptedException {
         TopologyConfig config = new TopologyConfig();
         config.dataDir = "./target/tmp";
+        config.CHUNK_SIZE = 58000000 / 16;
         IndexerBuilder indexerBuilder = new IndexerBuilder(config);
 
         ArrayBlockingQueue<DataTuple> inputQueue = new ArrayBlockingQueue<DataTuple>(1024);

@@ -62,6 +62,7 @@ public class LocalFileSystemHandler implements FileSystemHandler {
 
     public void readBytesFromFile(int position, byte[] bytes) {
         try {
+            randomAccessFile.seek(position);
             randomAccessFile.read(bytes);
         } catch (IOException e) {
             e.printStackTrace();

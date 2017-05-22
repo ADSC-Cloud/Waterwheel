@@ -78,12 +78,8 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         int templateLength = input.readInt();
 
 
-
         bytesToRead = new byte[templateLength];
-        if (!config.HDFSFlag)
-            fileSystemHandler.seek(4);
         fileSystemHandler.readBytesFromFile(4, bytesToRead);
-
 
         input = new Input(bytesToRead);
         BTree template = kryo.readObject(input, BTree.class);
@@ -355,6 +351,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         }
     }
 
+
     private BTreeLeafNode getLeafFromExternalStorage(FileSystemHandler fileSystemHandler, Input input)
             throws IOException {
         input.setPosition(input.position() + 4);
@@ -363,30 +360,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         return leaf;
     }
 
-
-    private Pair getTemplateData(String fileName) {
-        Pair data = null;
-        try {
-            FileSystemHandler fileSystemHandler = null;
-            if (config.HDFSFlag) {
-                fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
-            } else {
-                fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
-            }
-
-            BlockId blockId = new BlockId(fileName, 0);
-
-//            data = (Pair) getFromCache(blockId);
-            if (data == null) {
-                data = getTemplateFromExternalStorage(fileSystemHandler, fileName);
-                CacheData cacheData = new TemplateCacheData(data);
-                putCacheData(blockId, cacheData);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return data;
-    }
 
     private Pair getTemplateData(FileSystemHandler fileSystemHandler, String fileName) {
         Pair data = null;
@@ -414,9 +387,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
         Long startTime = System.currentTimeMillis();
 
-        //code below used to change the position of file pointer in local file system
-        if (!config.HDFSFlag)
-            fileSystemHandler.seek(endOffset + length + 4);
 
         fileSystemHandler.readBytesFromFile(endOffset + length + 4, bytesToRead);
 
@@ -429,10 +399,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
         bytesToRead = new byte[totalLength];
         startTime = System.currentTimeMillis();
-
-        ////code below used to change the position of file pointer in local file system
-        if (!config.HDFSFlag)
-            fileSystemHandler.seek(startOffset + length + 4);
 
         fileSystemHandler.readBytesFromFile(startOffset + length + 4, bytesToRead);
         fileScanMetrics.setTotalBytesReadTime(System.currentTimeMillis() - startTime);
