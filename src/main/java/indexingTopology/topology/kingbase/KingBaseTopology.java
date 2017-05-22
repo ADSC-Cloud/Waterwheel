@@ -11,6 +11,7 @@ import indexingTopology.client.GeoTemporalQueryClient;
 import indexingTopology.client.GeoTemporalQueryRequest;
 import indexingTopology.client.IngestionClientBatchMode;
 import indexingTopology.client.QueryResponse;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import indexingTopology.util.*;
@@ -60,6 +61,9 @@ public class KingBaseTopology {
 
     @Option(name = "--node", aliases = {"-n"}, usage = "number of nodes used in the topology")
     private int NumberOfNodes = 1;
+
+    @Option(name = "--local", usage = "run the topology in local cluster")
+    private boolean LocalMode = false;
 
     /**
      * ingest client configuration
@@ -128,8 +132,8 @@ public class KingBaseTopology {
                 DataTuplePredicate predicate = t -> schema.getValue("id", t).equals(Integer.toString(1000));
 
 
-//                Aggregator<Integer> aggregator = new Aggregator<>(schema, null, new AggregateField(new Count(), "*"));
-                Aggregator<Integer> aggregator = null;
+                Aggregator<Integer> aggregator = new Aggregator<>(schema, null, new AggregateField(new Count(), "*"));
+//                Aggregator<Integer> aggregator = null;
 
 
 //                DataSchema schemaAfterAggregation = aggregator.getOutputDataSchema();
@@ -137,10 +141,10 @@ public class KingBaseTopology {
 //                        (double) schemaAfterAggregation.getValue("count(*)", o2));
 
 
-                DataTupleEquivalentPredicateHint equivalentPredicate = new DataTupleEquivalentPredicateHint("id", "100");
+                DataTupleEquivalentPredicateHint equivalentPredicateHint = new DataTupleEquivalentPredicateHint("id", "1000");
 
                 GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
-                        System.currentTimeMillis() - RecentSecondsOfInterest * 1000, System.currentTimeMillis(), predicate, aggregator, null, null);
+                        System.currentTimeMillis() - RecentSecondsOfInterest * 1000, System.currentTimeMillis(), predicate, aggregator, null, equivalentPredicateHint);
                 long start = System.currentTimeMillis();
                 try {
                     System.out.println("A query will be issued.");
@@ -254,10 +258,12 @@ public class KingBaseTopology {
 
         final boolean enableLoadBalance = false;
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000);
+        TopologyConfig config = new TopologyConfig();
+
+        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000, config);
 
         QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, 10001, city);
+                upperBound, 10001, city, config);
 
         DataTupleMapper dataTupleMapper = new DataTupleMapper(rawSchema, (Serializable & Function<DataTuple, DataTuple>) t -> {
             double lon = (double)schema.getValue("lon", t);
@@ -275,7 +281,7 @@ public class KingBaseTopology {
         topologyGenerator.setNumberOfNodes(NumberOfNodes);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
-                enableLoadBalance, dataSource, queryCoordinator, dataTupleMapper, bloomFilterColumns);
+                enableLoadBalance, dataSource, queryCoordinator, dataTupleMapper, bloomFilterColumns, config);
 
         Config conf = new Config();
         conf.setDebug(false);
@@ -283,7 +289,13 @@ public class KingBaseTopology {
 
         conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
         conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
-        StormSubmitter.submitTopology(TopologyName, conf, topology);
+
+        if (LocalMode) {
+            LocalCluster localCluster = new LocalCluster();
+            localCluster.submitTopology(TopologyName, conf, topology);
+        } else {
+            StormSubmitter.submitTopology(TopologyName, conf, topology);
+        }
     }
 
     public static void main(String[] args) throws InvalidTopologyException, AuthorizationException, AlreadyAliveException {
@@ -335,10 +347,12 @@ public class KingBaseTopology {
 
         final boolean enableLoadBalance = false;
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000);
+        TopologyConfig config = new TopologyConfig();
+
+        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000, config);
 
         QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, 10001, city);
+                upperBound, 10001, city, config);
 
 
         DataTupleMapper dataTupleMapper = new DataTupleMapper(rawSchema, (Serializable & Function<DataTuple, DataTuple>) t -> {
@@ -355,7 +369,7 @@ public class KingBaseTopology {
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
-                enableLoadBalance, dataSource, queryCoordinator, dataTupleMapper, bloomFilterColumns);
+                enableLoadBalance, dataSource, queryCoordinator, dataTupleMapper, bloomFilterColumns, config);
 
         Config conf = new Config();
         conf.setDebug(false);

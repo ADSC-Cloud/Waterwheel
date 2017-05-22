@@ -30,8 +30,10 @@ public class NetworkDataGenerator extends InputStreamReceiver {
 
     private Thread generationThread;
 
-    public NetworkDataGenerator(DataSchema schema) {
-        super(schema);
+    private TopologyConfig config;
+
+    public NetworkDataGenerator(DataSchema schema, TopologyConfig config) {
+        super(schema, config);
     }
 
     @Override
@@ -41,7 +43,7 @@ public class NetworkDataGenerator extends InputStreamReceiver {
 //        frequencyRestrictor = new FrequencyRestrictor(50000 / 24, 50);
 
         try {
-            bufferedReader = new BufferedReader(new FileReader(new File(TopologyConfig.dataFileDir)));
+            bufferedReader = new BufferedReader(new FileReader(new File(config.dataFileDir)));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -66,7 +68,7 @@ public class NetworkDataGenerator extends InputStreamReceiver {
                         }
 
                         try {
-                            bufferedReader = new BufferedReader(new FileReader(new File(TopologyConfig.dataFileDir)));
+                            bufferedReader = new BufferedReader(new FileReader(new File(config.dataFileDir)));
                         } catch (FileNotFoundException e) {
                             e.printStackTrace();
                         }

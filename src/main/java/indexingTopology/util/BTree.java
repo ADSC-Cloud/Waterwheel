@@ -17,10 +17,12 @@ import java.util.*;
 public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializable {
 	private volatile BTreeNode<TKey> root;
 	private boolean templateMode;
+	private TopologyConfig config;
 
-	public BTree(int order) {
+	public BTree(int order, TopologyConfig config) {
 		this.root = new BTreeLeafNode<>(order);
 		templateMode = false;
+		this.config = config;
 	}
 
 	public BTreeNode getRoot() {
@@ -297,7 +299,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		BTree bTree = null;
 //		try {
 //			bTree = (BTree) super.getTemplate();
-			bTree = new BTree(TopologyConfig.BTREE_ORDER);
+			bTree = new BTree(config.BTREE_ORDER, config);
 
 			List<BTreeNode> leafNodes = new ArrayList<>();
 
@@ -339,11 +341,11 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		int offset;
 		Output output = new Output(60000000, 500000000);
 		Kryo kryo = new Kryo();
-		kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
+		kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer(config));
 		int count = 0;
 
 		if (this.root == leaf) {
-			this.root = new BTreeInnerNode(TopologyConfig.BTREE_ORDER);
+			this.root = new BTreeInnerNode(config.BTREE_ORDER);
 
 			((BTreeInnerNode) root).setChild(0, leaf);
 		}

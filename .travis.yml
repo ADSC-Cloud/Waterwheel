@@ -4,6 +4,7 @@ sudo: false
 jdk:
   - oraclejdk8
 
+before_script:
+ - export _JAVA_OPTIONS=-Xmx2048m
 script:
-   - mvn install -DskipTests |grep -v "\[WARNING\] We have a duplicate"
-   - mvn -Dtest=Geo* test
+   - mvn install -q

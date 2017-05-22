@@ -70,8 +70,11 @@ public class HBaseTaxiGenerator extends BaseRichBolt{
 
     FrequencyRestrictor frequencyRestrictor;
 
-    public HBaseTaxiGenerator(City city) {
+    TopologyConfig config;
+
+    public HBaseTaxiGenerator(City city, TopologyConfig config) {
         this.city = city;
+        this.config = config;
     }
 
 
@@ -86,7 +89,7 @@ public class HBaseTaxiGenerator extends BaseRichBolt{
 
         size = generatorIds.size();
 
-        folder = new File(TopologyConfig.dataFileDir);
+        folder = new File(config.dataFileDir);
 
         listOfFiles = folder.listFiles();
 
@@ -96,7 +99,7 @@ public class HBaseTaxiGenerator extends BaseRichBolt{
 
         hBaseHandler = null;
         try {
-            hBaseHandler = new HBaseHandler();
+            hBaseHandler = new HBaseHandler(config);
         } catch (IOException e) {
             e.printStackTrace();
         }

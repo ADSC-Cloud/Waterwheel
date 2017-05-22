@@ -41,7 +41,7 @@ public class TaxiHBaseTester {
     List<Double> latitudes = new ArrayList<>();
     List<Integer> zcodes = new ArrayList<>();
 
-    File folder = new File(TopologyConfig.dataFileDir);
+    File folder = new File(new TopologyConfig().dataFileDir);
     File[] listOfFiles = folder.listFiles();
 
     BufferedReader bufferedReader = null;
@@ -55,7 +55,7 @@ public class TaxiHBaseTester {
         indexingThreads = new ArrayList<>();
         hBaseHandler = null;
         try {
-            hBaseHandler = new HBaseHandler();
+            hBaseHandler = new HBaseHandler(new TopologyConfig());
         } catch (IOException e) {
             e.printStackTrace();
         }

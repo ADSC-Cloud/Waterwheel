@@ -26,6 +26,8 @@ public class ChunkScannerTest <TKey extends Comparable<TKey>> {
 
     private static ArrayBlockingQueue<String> queue;
 
+    static TopologyConfig config = new TopologyConfig();
+
     public static void main(String[] args) throws IOException {
 
         System.out.println(Runtime.getRuntime().totalMemory() * 1.0 / 1024 / 1024);
@@ -106,8 +108,8 @@ public class ChunkScannerTest <TKey extends Comparable<TKey>> {
             long start = System.currentTimeMillis();
 
             Kryo kryo = new Kryo();
-            kryo.register(BTree.class, new KryoTemplateSerializer());
-            kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
+            kryo.register(BTree.class, new KryoTemplateSerializer(config));
+            kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer(config));
 
             Double leftKey = 0.0;
             Double rightKey = 0.01;
@@ -116,10 +118,10 @@ public class ChunkScannerTest <TKey extends Comparable<TKey>> {
             long fileTime = 0;
             long fileStart = System.currentTimeMillis();
             FileSystemHandler fileSystemHandler = null;
-            if (TopologyConfig.HDFSFlag) {
-                fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
+            if (config.HDFSFlag) {
+                fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
             } else {
-                fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
+                fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
             }
             fileSystemHandler.openFile("/", fileName);
             fileTime += (System.currentTimeMillis() - fileStart);
@@ -227,10 +229,10 @@ public class ChunkScannerTest <TKey extends Comparable<TKey>> {
             throws IOException {
 
         FileSystemHandler fileSystemHandler = null;
-        if (TopologyConfig.HDFSFlag) {
-            fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
+        if (config.HDFSFlag) {
+            fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
         } else {
-            fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
+            fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
         }
 
         byte[] bytesToRead = new byte[4];
@@ -261,8 +263,8 @@ public class ChunkScannerTest <TKey extends Comparable<TKey>> {
             throws IOException {
 
         Kryo kryo = new Kryo();
-        kryo.register(BTree.class, new KryoTemplateSerializer());
-        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
+        kryo.register(BTree.class, new KryoTemplateSerializer(config));
+        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer(config));
 
 //        FileSystemHandler fileSystemHandler = null;
 //        if (TopologyConfig.HDFSFlag) {
@@ -298,8 +300,8 @@ public class ChunkScannerTest <TKey extends Comparable<TKey>> {
             throws IOException {
 
         Kryo kryo = new Kryo();
-        kryo.register(BTree.class, new KryoTemplateSerializer());
-        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
+        kryo.register(BTree.class, new KryoTemplateSerializer(config));
+        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer(config));
 //        FileSystemHandler fileSystemHandler = null;
 //        if (TopologyConfig.HDFSFlag) {
 //            fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
@@ -335,10 +337,10 @@ public class ChunkScannerTest <TKey extends Comparable<TKey>> {
         Pair data = null;
         try {
             FileSystemHandler fileSystemHandler = null;
-            if (TopologyConfig.HDFSFlag) {
-                fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
+            if (config.HDFSFlag) {
+                fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
             } else {
-                fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
+                fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
             }
 
             BlockId blockId = new BlockId(fileName, 0);
@@ -401,8 +403,8 @@ public class ChunkScannerTest <TKey extends Comparable<TKey>> {
     private static Pair getTemplateFromExternalStorage(FileSystemHandler fileSystemHandler, String fileName) throws IOException {
 
         Kryo kryo = new Kryo();
-        kryo.register(BTree.class, new KryoTemplateSerializer());
-        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
+        kryo.register(BTree.class, new KryoTemplateSerializer(config));
+        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer(config));
 //        fileSystemHandler.openFile("/", fileName);
         byte[] bytesToRead = new byte[4];
         fileSystemHandler.readBytesFromFile(0, bytesToRead);

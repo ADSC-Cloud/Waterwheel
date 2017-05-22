@@ -1,5 +1,6 @@
 package indexingTopology.util;
 
+import indexingTopology.config.TopologyConfig;
 import org.apache.commons.math3.distribution.ZipfDistribution;
 import org.junit.Test;
 
@@ -11,9 +12,11 @@ import static org.junit.Assert.*;
  * Created by Robert on 3/3/17.
  */
 public class BackPressureTest {
+
+    TopologyConfig config = new TopologyConfig();
     @Test
     public void testBlock() {
-        BackPressure backPressure = new BackPressure(1,2);
+        BackPressure backPressure = new BackPressure(1, 2, config);
         assertTrue(backPressure.tryAcquireNextTupleId() != null);
         assertTrue(backPressure.tryAcquireNextTupleId() != null);
         assertTrue(backPressure.tryAcquireNextTupleId() == null);
@@ -21,7 +24,7 @@ public class BackPressureTest {
 
     @Test
     public void testACK() {
-        BackPressure backPressure = new BackPressure(1,2);
+        BackPressure backPressure = new BackPressure(1,2, config);
         assertTrue(backPressure.tryAcquireNextTupleId() != null);
         assertTrue(backPressure.tryAcquireNextTupleId() != null);
 
@@ -36,7 +39,7 @@ public class BackPressureTest {
 
     @Test
     public void TestOverACK() {
-        BackPressure backPressure = new BackPressure(1, 4);
+        BackPressure backPressure = new BackPressure(1, 4, config);
         assertEquals(0L, (long)backPressure.tryAcquireNextTupleId());
         assertEquals(1L, (long)backPressure.tryAcquireNextTupleId());
         assertEquals(2L, (long)backPressure.tryAcquireNextTupleId());
@@ -58,7 +61,7 @@ public class BackPressureTest {
 
     @Test
     public void TestInvalidedACK() {
-        BackPressure backPressure = new BackPressure(2, 4);
+        BackPressure backPressure = new BackPressure(2, 4, config);
         assertEquals(0L, (long) backPressure.tryAcquireNextTupleId());
         assertEquals(1L, (long) backPressure.tryAcquireNextTupleId());
         assertEquals(2L, (long) backPressure.tryAcquireNextTupleId());
@@ -81,7 +84,7 @@ public class BackPressureTest {
         final int step = 5000;
         final int maxPending = 100000;
         final int tuples = 10000000;
-        BackPressure backPressure = new BackPressure(step, maxPending);
+        BackPressure backPressure = new BackPressure(step, maxPending, config);
         final LinkedBlockingQueue<Long> queue = new LinkedBlockingQueue<>();
         Thread consumerThread = new Thread(new Runnable() {
             @Override

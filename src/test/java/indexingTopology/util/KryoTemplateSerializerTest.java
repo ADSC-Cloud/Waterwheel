@@ -12,6 +12,7 @@ import indexingTopology.util.taxi.Car;
 import indexingTopology.util.taxi.City;
 import indexingTopology.util.taxi.TrajectoryGenerator;
 import indexingTopology.util.taxi.TrajectoryUniformGenerator;
+import junit.framework.TestCase;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
 
@@ -28,10 +29,32 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by acelzj on 1/4/17.
  */
-public class KryoTemplateSerializerTest {
+public class KryoTemplateSerializerTest extends TestCase {
 
     List<String> fieldNames = new ArrayList<String>(Arrays.asList("id", "zcode", "payload"));
     List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, String.class));
+
+    private TopologyConfig config = new TopologyConfig();
+
+    public void setUp() {
+        try {
+            Runtime.getRuntime().exec("mkdir -p ./target/tmp");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        config.dataDir = "./target/tmp";
+        config.HDFSFlag = false;
+        config.CHUNK_SIZE = 4 * 1000 * 1000;
+        System.out.println("dataDir is set to " + config.dataDir);
+    }
+
+    public void tearDown() {
+        try {
+            Runtime.getRuntime().exec("rm ./target/tmp/*");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     @Test
     public void testDeserialize() throws IOException, UnsupportedGenericException {
@@ -47,14 +70,14 @@ public class KryoTemplateSerializerTest {
         TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
         City city = new City(x1, x2, y1, y2, partitions);
 
-        int numTuples = TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK;
+        int numTuples = (int)(config.CHUNK_SIZE / (8 * 3 + payloadSize) * 1.3);
         Long timestamp = 0L;
 
         int chunkId = 0;
 
         List<String> fileNames = new ArrayList<>();
 
-        BTree indexedData = new BTree(TopologyConfig.BTREE_ORDER);
+        BTree indexedData = new BTree(config.BTREE_ORDER, config);
 
         int numberOfTuples = 60;
 
@@ -80,7 +103,7 @@ public class KryoTemplateSerializerTest {
         Output output = new Output(500000);
 
         Kryo kryo = new Kryo();
-        kryo.register(BTree.class, new KryoTemplateSerializer());
+        kryo.register(BTree.class, new KryoTemplateSerializer(config));
 
         kryo.writeObject(output, indexedData);
 
@@ -110,7 +133,7 @@ public class KryoTemplateSerializerTest {
         TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
         City city = new City(x1, x2, y1, y2, partitions);
 
-        int numTuples = 1200000;
+        int numTuples = 120000;
         Long timestamp = 0L;
 
         int chunkId = 0;
@@ -126,7 +149,7 @@ public class KryoTemplateSerializerTest {
 
 
 //        for (int j = 0; j < 10; ++j) {
-            BTree indexedData = new BTree(TopologyConfig.BTREE_ORDER);
+            BTree indexedData = new BTree(config.BTREE_ORDER, config);
 
             for (int i = 0; i < numTuples; ++i) {
                 List<Object> values = new ArrayList<>();
@@ -153,8 +176,8 @@ public class KryoTemplateSerializerTest {
             Output output = new Output(5000000, 20000000);
 
             Kryo kryo = new Kryo();
-            kryo.register(BTree.class, new KryoTemplateSerializer());
-            kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
+            kryo.register(BTree.class, new KryoTemplateSerializer(config));
+            kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer(config));
 
             kryo.writeObject(output, indexedData);
 
@@ -185,10 +208,10 @@ public class KryoTemplateSerializerTest {
 //            System.out.println("Before read " + Runtime.getRuntime().freeMemory());
 
             try {
-                if (TopologyConfig.HDFSFlag) {
-                    fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
+                if (config.HDFSFlag) {
+                    fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
                 } else {
-                    fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
+                    fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
                 }
 
                 fileName = "taskId" + 0 + "chunk" + 0;
@@ -365,7 +388,7 @@ public class KryoTemplateSerializerTest {
 
 
 //        for (int j = 0; j < 10; ++j) {
-        BTree indexedData = new BTree(TopologyConfig.BTREE_ORDER);
+        BTree indexedData = new BTree(config.BTREE_ORDER, config);
 
         for (int i = 0; i < numTuples; ++i) {
             List<Object> values = new ArrayList<>();
@@ -387,11 +410,12 @@ public class KryoTemplateSerializerTest {
 
         byte[] leavesInBytes = indexedData.serializeLeaves();
 
-        Output output = new Output(5000000, 20000000);
+        Output output = new Output(500000, 20000000);
 
         Kryo kryo = new Kryo();
-        kryo.register(BTree.class, new KryoTemplateSerializer());
-        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
+        kryo.register(BTree.class, new KryoTemplateSerializer(config));
+        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer(config));
+
 
 
         kryo.writeObject(output, indexedData);
@@ -401,12 +425,15 @@ public class KryoTemplateSerializerTest {
         int lengthOfTemplate = bytes.length;
 
 //            System.out.println(lengthOfTemplate);
+        output.close();
 
         output = new Output(4);
 
         output.writeInt(lengthOfTemplate);
 
         byte[] lengthInBytes = output.toBytes();
+
+        output.close();
 
         MemChunk chunk = MemChunk.createNew(4 + lengthOfTemplate + leavesInBytes.length);
 
@@ -423,10 +450,10 @@ public class KryoTemplateSerializerTest {
 //            System.out.println("Before read " + Runtime.getRuntime().freeMemory());
 
         try {
-            if (TopologyConfig.HDFSFlag) {
-                fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
+            if (config.HDFSFlag) {
+                fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
             } else {
-                fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
+                fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
             }
 
             fileName = "taskId" + 0 + "chunk" + 0;

@@ -18,8 +18,10 @@ public class TaxiDataReader {
 
         int fileNumber = 1;
 
+        TopologyConfig config = new TopologyConfig();
+
         BufferedReader bufferedReader = null;
-        File folder = new File(TopologyConfig.dataFileDir);
+        File folder = new File(config.dataFileDir);
 
         File[] listOfFiles = folder.listFiles();
 

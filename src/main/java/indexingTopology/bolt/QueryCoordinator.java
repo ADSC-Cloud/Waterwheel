@@ -73,12 +73,14 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private Map<String, Map<String, BloomFilter>> columnToChunkToBloomFilter;
 
+    TopologyConfig config;
 
     private static final Logger LOG = LoggerFactory.getLogger(QueryCoordinator.class);
 
-    public QueryCoordinator(T lowerBound, T upperBound) {
+    public QueryCoordinator(T lowerBound, T upperBound, TopologyConfig config) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
+        this.config = config;
     }
 
     @Override
@@ -89,7 +91,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 //        queryId = 0;
         filePartitionSchemaManager = new FilePartitionSchemaManager();
 
-        taskQueue = new ArrayBlockingQueue<>(TopologyConfig.TASK_QUEUE_CAPACITY);
+        taskQueue = new ArrayBlockingQueue<>(config.TASK_QUEUE_CAPACITY);
 
         queryServers = topologyContext.getComponentTasks("ChunkScannerBolt");
 
@@ -119,7 +121,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
         setTimestamps();
 
         numberOfPartitions = indexServers.size();
-        balancedPartition = new BalancedPartition(numberOfPartitions, lowerBound, upperBound);
+        balancedPartition = new BalancedPartition(numberOfPartitions, lowerBound, upperBound, config);
 
         balancedPartitionToBeDeleted = null;
 
@@ -177,7 +179,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             int taskId = tuple.getSourceTask();
 
 
-            if (TopologyConfig.TASK_QUEUE_MODEL) {
+            if (config.TASK_QUEUE_MODEL) {
                 sendSubqueryToTask(taskId);
             } else {
                 sendSubquery(taskId);
@@ -339,9 +341,9 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             System.out.println(String.format("%d subqueries on chunks are generated!", subQueries.size()));
 
             for (SubQuery subQuery: subQueries) {
-                if (TopologyConfig.SHUFFLE_GROUPING_FLAG) {
+                if (config.SHUFFLE_GROUPING_FLAG) {
                     sendSubqueriesByshuffleGrouping(subQuery);
-                } else if (TopologyConfig.TASK_QUEUE_MODEL) {
+                } else if (config.TASK_QUEUE_MODEL) {
                     try {
                         taskQueue.put(subQuery);
                     } catch (InterruptedException e) {
@@ -353,7 +355,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
             }
 
-            if (TopologyConfig.TASK_QUEUE_MODEL) {
+            if (config.TASK_QUEUE_MODEL) {
                 sendSubqueriesFromTaskQueue();
             } else {
                 sendSubqueriesFromTaskQueues();
@@ -398,7 +400,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private void createTaskQueues(List<Integer> targetTasks) {
         for (Integer taskId : targetTasks) {
-            ArrayBlockingQueue<SubQuery> taskQueue = new ArrayBlockingQueue<SubQuery>(TopologyConfig.TASK_QUEUE_CAPACITY);
+            ArrayBlockingQueue<SubQuery> taskQueue = new ArrayBlockingQueue<SubQuery>(config.TASK_QUEUE_CAPACITY);
             taskIdToTaskQueue.put(taskId, taskQueue);
         }
     }

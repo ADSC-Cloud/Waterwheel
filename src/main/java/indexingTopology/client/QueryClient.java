@@ -17,7 +17,26 @@ public class QueryClient extends ClientSkeleton {
             ClassNotFoundException {
         objectOutputStream.writeUnshared(new QueryRequest<>(lowKey, highKey, startTime, endTime));
         objectOutputStream.reset();
-        return (QueryResponse) objectInputStream.readUnshared();
+        try {
+            boolean eof = false;
+            QueryResponse response = null;
+            while (!eof) {
+                try {
+                    QueryResponse remainingQueryResponse = (QueryResponse) objectInputStream.readUnshared();
+                    if (response == null) {
+                        response = remainingQueryResponse;
+                    } else {
+                        response.dataTuples.addAll(remainingQueryResponse.dataTuples);
+                    }
+                    eof = remainingQueryResponse.getEOFFlag();
+                } catch (SocketTimeoutException e) {
+                }
+            }
+            return response;
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     public QueryResponse query(QueryRequest query) throws IOException  {

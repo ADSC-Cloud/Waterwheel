@@ -23,16 +23,18 @@ public class TemplateUpdaterTest {
             Double.class, Double.class, Double.class, Double.class, Double.class));
     private DataSchema schema = new DataSchema(fieldNames, valueTypes, "user_id");
 
+    private TopologyConfig config = new TopologyConfig();
+
     @Test
     public void testCreateTreeWithBulkLoading() throws Exception, UnsupportedGenericException {
 
 //        int numberOfTuples = 64;
-        int numberOfTuples = TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK;
+        int numberOfTuples = (int)(config.CHUNK_SIZE / (8 * 8) * 1.4);
 
 //        int order = 4;
-        int order = TopologyConfig.BTREE_ORDER;
+        int order = config.BTREE_ORDER;
 
-        BTree bTree = new BTree(order);
+        BTree bTree = new BTree(order, config);
 
         Random random = new Random();
 
@@ -56,7 +58,7 @@ public class TemplateUpdaterTest {
 
 //        bTree.printBtree();
 
-        TemplateUpdater templateUpdater = new TemplateUpdater(order);
+        TemplateUpdater templateUpdater = new TemplateUpdater(order, config);
 
         Long start = System.currentTimeMillis();
         BTree newTree = templateUpdater.createTreeWithBulkLoading(bTree);
@@ -85,13 +87,13 @@ public class TemplateUpdaterTest {
     @Test
     public void testCreateTreeWithBulkLoadingWithDuplicatedTuples() throws Exception, UnsupportedGenericException {
 
-        int numberOfTuples = TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK;
+        int numberOfTuples = (int)(config.CHUNK_SIZE / (8 * 8) * 1.4);
 //        int numberOfTuples = TopologyConfig.NUMBER_TUPLES_OF_A_CHUNK;
 
         int order = 4;
 //        int order = TopologyConfig.BTREE_ORDER;
 
-        BTree bTree = new BTree(order);
+        BTree bTree = new BTree(order, config);
 
         Random random = new Random();
 
@@ -124,7 +126,7 @@ public class TemplateUpdaterTest {
 
 //        bTree.printBtree();
 
-        TemplateUpdater templateUpdater = new TemplateUpdater(order);
+        TemplateUpdater templateUpdater = new TemplateUpdater(order, config);
 
 //        Long start = System.currentTimeMillis();
         BTree newTree = templateUpdater.createTreeWithBulkLoading(bTree);

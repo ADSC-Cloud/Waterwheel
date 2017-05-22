@@ -39,15 +39,18 @@ public class InputStreamReceiver extends BaseRichBolt {
 
     private Thread emittingThread;
 
-    public InputStreamReceiver(DataSchema schema) {
+    TopologyConfig config;
+
+    public InputStreamReceiver(DataSchema schema, TopologyConfig config) {
         this.schema = schema;
+        this.config = config;
     }
 
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         this.collector = outputCollector;
         inputQueue = new LinkedBlockingQueue<>(10000);
-        backPressure = new BackPressure(TopologyConfig.EMIT_NUM, TopologyConfig.MAX_PENDING);
+        backPressure = new BackPressure(config.EMIT_NUM, config.MAX_PENDING, config);
         taskId = topologyContext.getThisTaskId();
         emittingThread = new Thread(new Runnable() {
             @Override

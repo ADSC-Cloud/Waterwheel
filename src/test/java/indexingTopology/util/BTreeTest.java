@@ -2,6 +2,7 @@ package indexingTopology.util;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.exception.UnsupportedGenericException;
 import org.apache.storm.tuple.Values;
@@ -17,10 +18,13 @@ import static org.junit.Assert.*;
  * Created by acelzj on 21/12/16.
  */
 public class BTreeTest {
+
+    TopologyConfig config = new TopologyConfig();
+
     @Test
     public void testGetTemplate() throws Exception, UnsupportedGenericException {
         int order = 4;
-        BTree bTree = new BTree(order);
+        BTree bTree = new BTree(order, config);
 
         int numberOfTuples = 60;
 
@@ -96,7 +100,7 @@ public class BTreeTest {
     @Test
     public void serializeLeaves() throws Exception, UnsupportedGenericException {
         int order = 32;
-        BTree bTree = new BTree(order);
+        BTree bTree = new BTree(order, config);
 
         int numberOfTuples = 2048;
 
@@ -126,7 +130,7 @@ public class BTreeTest {
         Input input = new Input(serializedLeaves, 4, serializedLeaves.length);
 
         Kryo kryo = new Kryo();
-        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer());
+        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer(config));
 
         while (input.position() < serializedLeaves.length) {
             BTreeLeafNode leaf = kryo.readObject(input, BTreeLeafNode.class);
@@ -138,7 +142,7 @@ public class BTreeTest {
     @Test
     public void writeLeavesIntoChunk() throws Exception, UnsupportedGenericException {
         int order = 32;
-        BTree bTree = new BTree(order);
+        BTree bTree = new BTree(order, config);
 
         int numberOfTuples = 2048;
 
@@ -175,7 +179,7 @@ public class BTreeTest {
     @Test
     public void testInsert() throws Exception, UnsupportedGenericException {
         int order = 32;
-        BTree bTree = new BTree(order);
+        BTree bTree = new BTree(order, config);
 
         int numberOfTuples = 2048;
 
@@ -216,7 +220,7 @@ public class BTreeTest {
     @Test
     public void testSearchTuples() throws Exception, UnsupportedGenericException {
         int order = 4;
-        BTree bTree = new BTree(order);
+        BTree bTree = new BTree(order, config);
 
         int numberOfTuples = 64;
 
@@ -272,7 +276,7 @@ public class BTreeTest {
     @Test
     public void testSearchRangeLeftKeyAndRightKeyTheSame() throws Exception, UnsupportedGenericException {
         int order = 32;
-        BTree bTree = new BTree(order);
+        BTree bTree = new BTree(order, config);
 
         int numberOfTuples = 2048;
 
@@ -323,7 +327,7 @@ public class BTreeTest {
     @Test
     public void testSearchRangeLeftKeyAndRightAllTuples() throws Exception, UnsupportedGenericException {
         int order = 4;
-        BTree bTree = new BTree(order);
+        BTree bTree = new BTree(order, config);
 
         int numberOfTuples = 32;
 
@@ -369,7 +373,7 @@ public class BTreeTest {
     @Test
     public void testSearchRangeSomeTuples() throws Exception, UnsupportedGenericException {
         int order = 32;
-        BTree bTree = new BTree(order);
+        BTree bTree = new BTree(order, config);
 
         int numberOfTuples = 2048;
 
@@ -418,7 +422,7 @@ public class BTreeTest {
     @Test
     public void clearPayload() throws Exception, UnsupportedGenericException {
         int order = 32;
-        BTree bTree = new BTree(order);
+        BTree bTree = new BTree(order, config);
 
         int numberOfTuples = 2048;
 
@@ -454,7 +458,7 @@ public class BTreeTest {
     @Test
     public void clearPayloadInTemplateMode() throws Exception, UnsupportedGenericException {
         int order = 32;
-        BTree bTree = new BTree(order);
+        BTree bTree = new BTree(order, config);
 
         int numberOfTuples = 2048;
 
@@ -489,7 +493,7 @@ public class BTreeTest {
 //            bTree.insert(key, bytes);
 //        }
 
-        TemplateUpdater templateUpdater = new TemplateUpdater(32);
+        TemplateUpdater templateUpdater = new TemplateUpdater(32, config);
         bTree = templateUpdater.createTreeWithBulkLoading(bTree);
 
 

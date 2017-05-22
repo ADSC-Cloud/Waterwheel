@@ -30,14 +30,14 @@ public class HBaseHandler {
 
     Admin admin;
 
-    public HBaseHandler() throws IOException {
+    public HBaseHandler(TopologyConfig config) throws IOException {
         configuration = HBaseConfiguration.create();
 
-        configuration.set("hbase.zookeeper.quorum", TopologyConfig.HBASE_CONFIGURATION_ZOOKEEPER_QUORUM);
-        configuration.setInt("hbase.zookeeper.property.clientPort", TopologyConfig.HBASE_CONFIGURATION_ZOOKEEPER_CLIENTPORT);
+        configuration.set("hbase.zookeeper.quorum", config.HBASE_CONFIGURATION_ZOOKEEPER_QUORUM);
+        configuration.setInt("hbase.zookeeper.property.clientPort", config.HBASE_CONFIGURATION_ZOOKEEPER_CLIENTPORT);
 
-        configuration.set("hbase.master", TopologyConfig.HBASE_MASTER);
-        configuration.addResource(new Path(TopologyConfig.HBASE_CONF_DIR, "hbase-site.xml"));
+        configuration.set("hbase.master", config.HBASE_MASTER);
+        configuration.addResource(new Path(config.HBASE_CONF_DIR, "hbase-site.xml"));
 
         connection = ConnectionFactory.createConnection(configuration);
 

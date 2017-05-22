@@ -15,11 +15,14 @@ public class RepartitionManager {
 
     private int nbins;
 
+    private TopologyConfig config;
+
     public RepartitionManager(int numberOfBins, Map<Integer, Integer> ballToBinMapping,
-                              Histogram histogram) {
+                              Histogram histogram, TopologyConfig config) {
         this.ballToBinMapping.putAll(ballToBinMapping);
         this.histogram = histogram;
         nbins = numberOfBins;
+        this.config = config;
     }
 
     public Map<Integer, Integer> getRepartitionPlan() {
@@ -142,7 +145,7 @@ public class RepartitionManager {
 
         List<Long> workLoads = histogram.histogramToList();
 
-        for (int intervalId = 0; intervalId < TopologyConfig.NUMBER_OF_INTERVALS; ++intervalId) {
+        for (int intervalId = 0; intervalId < config.NUMBER_OF_INTERVALS; ++intervalId) {
             if (ballToBinMapping.get(intervalId) != null && ballToBinMapping.get(intervalId) != partitionId) {
                 wordLoads.add(tmpWorkload);
                 tmpWorkload = 0;

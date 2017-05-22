@@ -34,25 +34,20 @@ import java.util.function.Function;
  */
 public class GeoTemporalTopologyTest extends TestCase {
 
-    private String dataDir;
-    private boolean hdfsFlag;
+    TopologyConfig config = new TopologyConfig();
 
     public void setUp() {
-        dataDir = TopologyConfig.dataDir;
-        hdfsFlag = TopologyConfig.HDFSFlag;
         try {
             Runtime.getRuntime().exec("mkdir -p ./target/tmp");
         } catch (IOException e) {
             e.printStackTrace();
         }
-        TopologyConfig.dataDir = "./target/tmp";
-        TopologyConfig.HDFSFlag = false;
-        System.out.println("dataDir is set to " + TopologyConfig.dataDir);
+        config.dataDir = "./target/tmp";
+        config.HDFSFlag = false;
+        System.out.println("dataDir is set to " + config.dataDir);
     }
 
     public void tearDown() {
-        TopologyConfig.dataDir = dataDir;
-        TopologyConfig.HDFSFlag = hdfsFlag;
         try {
             Runtime.getRuntime().exec("rm ./target/tmp/*");
         } catch (IOException e) {
@@ -87,9 +82,9 @@ public class GeoTemporalTopologyTest extends TestCase {
         Integer upperBound = city.getMaxZCode();
 
         QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, 10001, city);
+                upperBound, 10001, city, config);
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000);
+        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000, config);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
@@ -106,7 +101,7 @@ public class GeoTemporalTopologyTest extends TestCase {
         bloomFilterColumns.add("id");
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
-                false, dataSource, queryCoordinator, dataTupleMapper, bloomFilterColumns);
+                false, dataSource, queryCoordinator, dataTupleMapper, bloomFilterColumns, config);
 
         Config conf = new Config();
         conf.setDebug(false);
@@ -120,7 +115,7 @@ public class GeoTemporalTopologyTest extends TestCase {
         IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode("localhost", 10000,
                 rawSchema, 1024);
         try {
-            clientBatchMode.connectWithTimeout(5000);
+            clientBatchMode.connectWithTimeout(10000);
 
 
             final int tuples = 1000 * 1000;
@@ -157,12 +152,10 @@ public class GeoTemporalTopologyTest extends TestCase {
 
             GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient("localhost", 10001);
             try {
-                queryClient.connectWithTimeout(5000);
+                queryClient.connectWithTimeout(10000);
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
-
 
 
             try {
@@ -223,9 +216,9 @@ public class GeoTemporalTopologyTest extends TestCase {
         schema.setPrimaryIndexField("zcode");
 
         final double x1 = 0.0;
-        final double x2 = 100.0;
+        final double x2 = 1000.0;
         final double y1 = 0.0;
-        final double y2 = 100.0;
+        final double y2 = 1000.0;
         final int partitions = 128;
 
         City city = new City(x1, x2, y1, y2, partitions);
@@ -235,9 +228,9 @@ public class GeoTemporalTopologyTest extends TestCase {
         Integer upperBound = city.getMaxZCode();
 
         QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, 10001, city);
+                upperBound, 10001, city, config);
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000);
+        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000, config);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
@@ -254,21 +247,18 @@ public class GeoTemporalTopologyTest extends TestCase {
         bloomFilterColumns.add("id");
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
-                false, dataSource, queryCoordinator, dataTupleMapper, bloomFilterColumns);
+                false, dataSource, queryCoordinator, dataTupleMapper, bloomFilterColumns, config);
 
         Config conf = new Config();
         conf.setDebug(false);
         conf.setNumWorkers(1);
-
-        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
-        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
         LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("T0", conf, topology);
         IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode("localhost", 10000,
                 rawSchema, 1024);
         try {
-            clientBatchMode.connectWithTimeout(5000);
+            clientBatchMode.connectWithTimeout(10000);
 
 
             final int tuples = 1000 * 1000;
@@ -309,7 +299,7 @@ public class GeoTemporalTopologyTest extends TestCase {
 
             GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient("localhost", 10001);
             try {
-                queryClient.connectWithTimeout(5000);
+                queryClient.connectWithTimeout(10000);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -320,18 +310,23 @@ public class GeoTemporalTopologyTest extends TestCase {
 
             try {
 
-//                {// all ranges.
-//                    GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(Double.MIN_VALUE, Double.MAX_VALUE, Double.MIN_VALUE, Double.MAX_VALUE, Long.MIN_VALUE, Long.MAX_VALUE);
-//
-//                    QueryResponse response = queryClient.query(queryRequest);
-//                    assertEquals(tuples, response.dataTuples.size());
-//                }
+                {// all ranges.
+                    DataTuplePredicate predicate = t -> (double) schema.getValue("x", t) >= x1 &&
+                            (double) schema.getValue("x", t) <= x2 &&
+                            (double) schema.getValue("y", t) >= y1 &&
+                            (double) schema.getValue("y", t) <= y2 ;
+                    GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(x1, x2, y1, y2, Long.MIN_VALUE,
+                            Long.MAX_VALUE, predicate);
+
+                    QueryResponse response = queryClient.query(queryRequest);
+                    assertEquals(tuples, response.dataTuples.size());
+                }
 
                 {// geo query with 10% selectivity on both dimension.
-                    double qx1 = 0;
-                    double qx2 = 100;
-                    double qy1 = 0;
-                    double qy2 = 100;
+                    double qx1 = 0.0;
+                    double qx2 = 1000.0;
+                    double qy1 = 0.0;
+                    double qy2 = 1000.0;
 
                     DataTuplePredicate predicate = t -> (double) schema.getValue("x", t) >= qx1 &&
                             (double) schema.getValue("x", t) <= qx2 &&
@@ -342,7 +337,7 @@ public class GeoTemporalTopologyTest extends TestCase {
                     GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(qx1, qx2, qy1, qy2, Long.MIN_VALUE, Long.MAX_VALUE, predicate);
 
                     QueryResponse response = queryClient.query(queryRequest);
-//                    assertEquals(tuples / 100, response.dataTuples.size());
+                    assertEquals(tuples / 100, response.dataTuples.size());
                     for (DataTuple tuple: response.dataTuples) {
                         assertEquals(1, schema.getValue("id", tuple));
                     }

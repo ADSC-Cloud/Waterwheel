@@ -15,6 +15,12 @@ import java.util.Queue;
  */
 public class KryoTemplateSerializer<TKey extends Comparable<TKey>> extends Serializer<BTree> {
 
+    TopologyConfig config;
+
+    public KryoTemplateSerializer(TopologyConfig config) {
+        this.config = config;
+    }
+
     @Override
     public void write(Kryo kryo, Output output, BTree bTree) {
         Queue<BTreeNode> q = new LinkedList<BTreeNode>();
@@ -34,7 +40,7 @@ public class KryoTemplateSerializer<TKey extends Comparable<TKey>> extends Seria
     public BTree read(Kryo kryo, Input input, Class<BTree> aClass) {
         BTreeInnerNode root = null;
         Queue<BTreeNode> q = new LinkedList<BTreeNode>();
-        root = new BTreeInnerNode(TopologyConfig.BTREE_ORDER);
+        root = new BTreeInnerNode(config.BTREE_ORDER);
         deserialize(input, root);
         if (root.getOffsets().size() == 0) {
             q.add(root);
@@ -45,7 +51,7 @@ public class KryoTemplateSerializer<TKey extends Comparable<TKey>> extends Seria
         while (!q.isEmpty()) {
             BTreeInnerNode curr = (BTreeInnerNode) q.remove();
             for (int i = 0; i < curr.getKeyCount() + 1; ++i) {
-                BTreeInnerNode node = new BTreeInnerNode(TopologyConfig.BTREE_ORDER);
+                BTreeInnerNode node = new BTreeInnerNode(config.BTREE_ORDER);
                 deserialize(input, node);
 
 
@@ -67,7 +73,7 @@ public class KryoTemplateSerializer<TKey extends Comparable<TKey>> extends Seria
             }
         }
 
-        BTree bTree = new BTree(TopologyConfig.BTREE_ORDER);
+        BTree bTree = new BTree(config.BTREE_ORDER, config);
         bTree.setRoot(root);
         return bTree;
     }

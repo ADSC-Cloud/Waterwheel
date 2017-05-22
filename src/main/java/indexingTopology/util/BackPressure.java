@@ -22,16 +22,19 @@ public class BackPressure {
 
     private long maxPending;
 
-    public BackPressure() {
-        this(5000, TopologyConfig.MAX_PENDING);
+    private TopologyConfig config;
+
+    public BackPressure(TopologyConfig config) {
+        this(5000, config.MAX_PENDING, config);
     }
 
-    public BackPressure(int emitNumber, long maxPending) {
+    public BackPressure(int emitNumber, long maxPending, TopologyConfig config) {
         currentCount = new AtomicLong(0);
         this.emitNumber = emitNumber;
         pendingIds = new ArrayList<>();
         tupleId = new AtomicLong(0);
         this.maxPending = maxPending;
+        this.config = config;
     }
 
     public void ack(Long tupleId) {

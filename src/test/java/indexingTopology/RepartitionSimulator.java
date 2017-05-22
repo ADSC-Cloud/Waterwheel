@@ -1,5 +1,6 @@
 package indexingTopology;
 
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.util.BalancedPartition;
 import indexingTopology.util.RepartitionManager;
 import org.apache.commons.math3.distribution.NormalDistribution;
@@ -31,7 +32,7 @@ public class RepartitionSimulator {
         mean = 500000;
         lowerBound = (int) (mean - 3*sigma);
         upperBound = (int) (mean + 3 * sigma);
-        balancedPartition = new BalancedPartition(numberOfPartitions, lowerBound, upperBound, true);
+        balancedPartition = new BalancedPartition(numberOfPartitions, lowerBound, upperBound, true, new TopologyConfig());
         repartitionSemaphore = new Semaphore(1);
         offset = 80000;
         random = new Random();
@@ -94,7 +95,7 @@ public class RepartitionSimulator {
 
                     System.out.println(balancedPartition.getIntervalDistribution().getHistogram());
 
-                    RepartitionManager repartitionManager = new RepartitionManager(numberOfPartitions, balancedPartition.getIntervalToPartitionMapping(), balancedPartition.getIntervalDistribution());
+                    RepartitionManager repartitionManager = new RepartitionManager(numberOfPartitions, balancedPartition.getIntervalToPartitionMapping(), balancedPartition.getIntervalDistribution(), new TopologyConfig());
 
                     System.out.println(repartitionManager.getRepartitionPlan());
 

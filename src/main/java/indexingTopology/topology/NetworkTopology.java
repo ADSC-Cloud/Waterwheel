@@ -28,12 +28,13 @@ public class NetworkTopology {
         public static void main(String[] args) throws Exception {
 
             TopologyBuilder builder = new TopologyBuilder();
+            TopologyConfig config = new TopologyConfig();
             final int payloadSize = 1;
             DataSchema schema = new DataSchema();
 //        schema.addDoubleField("id");
             schema.addIntField("sourceIP");
             schema.addIntField("destIP");
-            schema.addVarcharField("url", TopologyConfig.AVERAGE_STRING_LENGTH);
+            schema.addVarcharField("url", config.AVERAGE_STRING_LENGTH);
 
             schema.setPrimaryIndexField("destIP");
 
@@ -64,14 +65,16 @@ public class NetworkTopology {
             final boolean enableLoadBalance = true;
 
 //        InputStreamReceiver dataSource = new InputStreamReceiverServer(schemaWithTimestamp, 10000);
-            InputStreamReceiver dataSource = new NetworkDataGenerator(schemaWithTimestamp);
+            InputStreamReceiver dataSource = new NetworkDataGenerator(schemaWithTimestamp, config);
 
 //        QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound, upperBound, 10001);
-            QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryGenerator<>(lowerBound, upperBound);
+            QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryGenerator<>(lowerBound, upperBound,
+                    config);
 
             TopologyGenerator<Double> topologyGenerator = new TopologyGenerator<>();
 
-            StormTopology topology = topologyGenerator.generateIndexingTopology(schemaWithTimestamp, lowerBound, upperBound, enableLoadBalance, dataSource, queryCoordinator);
+            StormTopology topology = topologyGenerator.generateIndexingTopology(schemaWithTimestamp, lowerBound,
+                    upperBound, enableLoadBalance, dataSource, queryCoordinator, config);
 
             Config conf = new Config();
             conf.setDebug(false);

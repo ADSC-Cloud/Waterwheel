@@ -1,5 +1,6 @@
 package indexingTopology.filesystem;
 
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.util.MemChunk;
 
 import java.io.*;
@@ -14,9 +15,11 @@ public class LocalFileSystemHandler implements FileSystemHandler {
     FileOutputStream fop;
     String path;
     RandomAccessFile randomAccessFile;
+    TopologyConfig config;
 
-    public LocalFileSystemHandler(String path) {
+    public LocalFileSystemHandler(String path, TopologyConfig config) {
         this.path = path;
+        this.config = config;
     }
 
     public void writeToFileSystem(MemChunk chunk, String relativePath, String fileName) throws IOException {
