@@ -281,7 +281,7 @@ public class KryoTemplateSerializerTest extends TestCase {
 
             bytesToRead = new byte[4];
             int lastOffset = offsets.get(offsets.size() - 1);
-            fileSystemHandler.seek(lastOffset + length + 4);
+//            fileSystemHandler.seek(lastOffset + length + 4);
             fileSystemHandler.readBytesFromFile(lastOffset + length + 4, bytesToRead);
 
             Input input1 = new Input(bytesToRead);
@@ -293,7 +293,7 @@ public class KryoTemplateSerializerTest extends TestCase {
 
             bytesToRead = new byte[totalLength + 4];
 
-            fileSystemHandler.seek(startOffset + length + 4);
+//            fileSystemHandler.seek(startOffset + length + 4);
             fileSystemHandler.readBytesFromFile(startOffset + length + 4, bytesToRead);
 //            System.out.println("leaf bytes read " + (System.currentTimeMillis() - leafReadStart));
 
@@ -478,7 +478,7 @@ public class KryoTemplateSerializerTest extends TestCase {
 
         byte[] templateInBytes = new byte[length];
 
-        fileSystemHandler.seek(4);
+//        fileSystemHandler.seek(4);
         fileSystemHandler.readBytesFromFile(4, templateInBytes);
 
         input = new Input(templateInBytes);
@@ -494,7 +494,7 @@ public class KryoTemplateSerializerTest extends TestCase {
 
         bytesToRead = new byte[4];
         int lastOffset = offsets.get(offsets.size() - 1);
-        fileSystemHandler.seek(lastOffset + length + 4);
+//        fileSystemHandler.seek(lastOffset + length + 4);
         fileSystemHandler.readBytesFromFile(lastOffset + length + 4, bytesToRead);
 
         Input input1 = new Input(bytesToRead);
@@ -505,7 +505,7 @@ public class KryoTemplateSerializerTest extends TestCase {
         List<BTreeLeafNode> leaves = new ArrayList<>();
 
         bytesToRead = new byte[totalLength + 4];
-        fileSystemHandler.seek(startOffset + length + 4);
+//        fileSystemHandler.seek(startOffset + length + 4);
         fileSystemHandler.readBytesFromFile(startOffset + length + 4, bytesToRead);
 
 

@@ -78,13 +78,8 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         int templateLength = input.readInt();
 
 
-
         bytesToRead = new byte[templateLength];
-
-        if (!config.HDFSFlag)
-            fileSystemHandler.seek(4);
         fileSystemHandler.readBytesFromFile(4, bytesToRead);
-
 
         input = new Input(bytesToRead);
         BTree template = kryo.readObject(input, BTree.class);
@@ -392,9 +387,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
         Long startTime = System.currentTimeMillis();
 
-        //code below used to change the position of file pointer in local file system
-        if (!config.HDFSFlag)
-            fileSystemHandler.seek(endOffset + length + 4);
 
         fileSystemHandler.readBytesFromFile(endOffset + length + 4, bytesToRead);
 
@@ -407,10 +399,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
         bytesToRead = new byte[totalLength];
         startTime = System.currentTimeMillis();
-
-        ////code below used to change the position of file pointer in local file system
-        if (!config.HDFSFlag)
-            fileSystemHandler.seek(startOffset + length + 4);
 
         fileSystemHandler.readBytesFromFile(startOffset + length + 4, bytesToRead);
         fileScanMetrics.setTotalBytesReadTime(System.currentTimeMillis() - startTime);
