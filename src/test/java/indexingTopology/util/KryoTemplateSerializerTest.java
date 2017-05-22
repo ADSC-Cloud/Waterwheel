@@ -146,6 +146,8 @@ public class KryoTemplateSerializerTest {
 
 //            indexedData.printBtree();
 
+
+
             byte[] leavesInBytes = indexedData.serializeLeaves();
 
             Output output = new Output(5000000, 20000000);
