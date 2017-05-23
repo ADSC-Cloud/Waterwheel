@@ -1,6 +1,7 @@
 package indexingTopology.bolt;
 
 import indexingTopology.config.TopologyConfig;
+import indexingTopology.data.DataSchema;
 import indexingTopology.data.PartialQueryResult;
 import indexingTopology.util.*;
 import org.apache.storm.task.OutputCollector;
@@ -24,8 +25,8 @@ public class QueryCoordinatorWithQueryGenerator<T extends Number & Comparable<T>
 
     private static final Logger LOG = LoggerFactory.getLogger(QueryCoordinatorWithQueryGenerator.class);
 
-    public QueryCoordinatorWithQueryGenerator(T lowerBound, T upperBound, TopologyConfig config) {
-        super(lowerBound, upperBound, config);
+    public QueryCoordinatorWithQueryGenerator(T lowerBound, T upperBound, TopologyConfig config, DataSchema schema) {
+        super(lowerBound, upperBound, config, schema);
     }
 
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {

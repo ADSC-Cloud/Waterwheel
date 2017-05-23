@@ -75,7 +75,7 @@ public class TopologyOverallTest {
 
         InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort, config);
         QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, queryPort, config);
+                upperBound, queryPort, config, schema);
 
         TopologyGenerator<Double> topologyGenerator = new TopologyGenerator<>();
 
@@ -146,7 +146,7 @@ public class TopologyOverallTest {
 
         InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort, config);
         QueryCoordinator<Integer> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, queryPort, config);
+                upperBound, queryPort, config, schema);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
@@ -218,7 +218,7 @@ public class TopologyOverallTest {
 
         InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort, config);
         QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, queryPort, config);
+                upperBound, queryPort, config, schema);
 
         TopologyGenerator<Double> topologyGenerator = new TopologyGenerator<>();
 
@@ -288,7 +288,7 @@ public class TopologyOverallTest {
 
         InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort, config);
         QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, queryPort, config);
+                upperBound, queryPort, config, schema);
 
         TopologyGenerator<Double> topologyGenerator = new TopologyGenerator<>();
 
@@ -361,7 +361,7 @@ public class TopologyOverallTest {
 
         InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort, config);
         QueryCoordinator<Integer> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, queryPort, config);
+                upperBound, queryPort, config, schema);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
@@ -447,7 +447,7 @@ public class TopologyOverallTest {
 
         InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort, config);
         QueryCoordinator<Integer> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, queryPort, config);
+                upperBound, queryPort, config, schema);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 

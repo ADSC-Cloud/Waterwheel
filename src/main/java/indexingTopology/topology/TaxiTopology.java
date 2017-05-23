@@ -71,7 +71,8 @@ public class TaxiTopology {
         InputStreamReceiver dataSource = new TaxiDataGenerator(schemaWithTimestamp, city, config);
 
 //        QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound, upperBound, 10001);
-        QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryGenerator<>(lowerBound, upperBound, config);
+        QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryGenerator<>(lowerBound, upperBound,
+                config, schema);
 
         TopologyGenerator<Double> topologyGenerator = new TopologyGenerator<>();
 

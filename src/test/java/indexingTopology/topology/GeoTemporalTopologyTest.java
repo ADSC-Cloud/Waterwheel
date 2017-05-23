@@ -82,7 +82,7 @@ public class GeoTemporalTopologyTest extends TestCase {
         Integer upperBound = city.getMaxZCode();
 
         QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, 10001, city, config);
+                upperBound, 10001, city, config, schema);
 
         InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000, config);
 
@@ -228,7 +228,7 @@ public class GeoTemporalTopologyTest extends TestCase {
         Integer upperBound = city.getMaxZCode();
 
         QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, 10001, city, config);
+                upperBound, 10001, city, config, schema);
 
         InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000, config);
 
