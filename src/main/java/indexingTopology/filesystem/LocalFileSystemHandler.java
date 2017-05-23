@@ -37,6 +37,7 @@ public class LocalFileSystemHandler implements FileSystemHandler {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } finally {
+            fop.flush();
             fop.close();
         }
     }

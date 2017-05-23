@@ -27,5 +27,6 @@ public class Streams {
     public static final String LoadBalanceStream = "LoadBalanceStream";
     public static final String PartialQueryResultDeliveryStream = "PartialQueryResultDeliveryStream";
     public static final String PartialQueryResultReceivedStream = "PartialQueryResultReceivedStream";
+    public static final String LocationInfoUpdateStream = "LocationInfoUpdateStream";
 }
 

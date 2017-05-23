@@ -1,6 +1,7 @@
 package indexingTopology.bolt;
 
 import indexingTopology.bloom.DataChunkBloomFilters;
+import indexingTopology.bolt.metrics.LocationInfo;
 import indexingTopology.data.DataTuple;
 import indexingTopology.config.TopologyConfig;
 import org.apache.storm.metric.internal.RateTracker;
@@ -15,9 +16,13 @@ import indexingTopology.streams.Streams;
 import indexingTopology.util.*;
 import javafx.util.Pair;
 import org.apache.storm.tuple.Values;
+import org.apache.storm.utils.Utils;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by acelzj on 11/15/16.
@@ -44,6 +49,8 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
     private RateTracker rateTracker;
 
     private List<String> bloomFilterColumns;
+
+    private Thread locationReportingThread;
 
     TopologyConfig config;
 
@@ -80,12 +87,29 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
         numTuples = 0;
 
         rateTracker = new RateTracker(5 * 1000, 5);
+
+        locationReportingThread = new Thread(() -> {
+            while (true) {
+                String hostName = "unknown";
+                try {
+                    hostName = InetAddress.getLocalHost().getHostName();
+                } catch (UnknownHostException e) {
+                    e.printStackTrace();
+                }
+                LocationInfo info = new LocationInfo(LocationInfo.Type.Ingestion, topologyContext.getThisTaskId(), hostName);
+                outputCollector.emit(Streams.LocationInfoUpdateStream, new Values(info));
+
+                Utils.sleep(10000);
+            }
+        });
+        locationReportingThread.start();
     }
 
     @Override
     public void cleanup() {
         super.cleanup();
         indexer.close();
+        locationReportingThread.interrupt();
     }
 
     public void execute(Tuple tuple) {
@@ -102,7 +126,10 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
 
             try {
 //                System.out.println("trying to put");
-                inputQueue.put(dataTuple);
+                while (!inputQueue.offer(dataTuple, 5, TimeUnit.SECONDS)) {
+                    System.out.println("Failed to offer a data tuple to the input queue. Will retry...");
+                }
+//                inputQueue.put(dataTuple);
 //                System.out.println("put finished");
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -157,6 +184,8 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
         outputFieldsDeclarer.declareStream(Streams.AckStream, new Fields("tupleId"));
 
         outputFieldsDeclarer.declareStream(Streams.ThroughputReportStream, new Fields("throughput"));
+
+        outputFieldsDeclarer.declareStream(Streams.LocationInfoUpdateStream, new Fields("info"));
 
     }
 

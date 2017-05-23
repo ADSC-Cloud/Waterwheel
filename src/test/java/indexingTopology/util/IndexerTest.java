@@ -4,8 +4,10 @@ import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import javafx.util.Pair;
+import junit.framework.TestCase;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
@@ -16,9 +18,29 @@ import static org.junit.Assert.*;
 /**
  * Created by acelzj on 20/3/17.
  */
-public class IndexerTest implements Observer{
+public class IndexerTest extends TestCase implements Observer{
 
     private Observable observable;
+    private TopologyConfig config = new TopologyConfig();;
+
+    public void setUp() {
+        try {
+            Runtime.getRuntime().exec("mkdir -p ./target/tmp");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        config.dataDir = "./target/tmp";
+        config.HDFSFlag = false;
+        System.out.println("dataDir is set to " + config.dataDir);
+    }
+
+    public void tearDown() {
+        try {
+            Runtime.getRuntime().exec("rm ./target/tmp/*");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     @Test
     public void testIndexLogic() throws InterruptedException {
