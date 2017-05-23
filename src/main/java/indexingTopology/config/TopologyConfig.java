@@ -34,7 +34,7 @@ public class TopologyConfig implements Serializable {
 
     public final double LOAD_BALANCE_THRESHOLD = 0.2;
 
-    public boolean HDFSFlag = true;
+    public boolean HDFSFlag = false;
 
     public boolean HybridStorage = true;
 
@@ -60,7 +60,7 @@ public class TopologyConfig implements Serializable {
 
     public final int OFFSET_LENGTH = 4;
 
-    public int CHUNK_SIZE = 58000000;
+    public int CHUNK_SIZE = 58000000 / 8;
 //    public static final int CHUNK_SIZE = 58000000 / 16;
 //    public static final int CHUNK_SIZE = 58000000 / 8;
 //    public static final int CHUNK_SIZE = 58000000 / 2;

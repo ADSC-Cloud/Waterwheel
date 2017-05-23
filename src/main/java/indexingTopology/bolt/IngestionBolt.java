@@ -22,6 +22,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by acelzj on 11/15/16.
@@ -125,7 +126,10 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
 
             try {
 //                System.out.println("trying to put");
-                inputQueue.put(dataTuple);
+                while (!inputQueue.offer(dataTuple, 5, TimeUnit.SECONDS)) {
+                    System.out.println("Failed to offer a data tuple to the input queue. Will retry...");
+                }
+//                inputQueue.put(dataTuple);
 //                System.out.println("put finished");
             } catch (InterruptedException e) {
                 e.printStackTrace();

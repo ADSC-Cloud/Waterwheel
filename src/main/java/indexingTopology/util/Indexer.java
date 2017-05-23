@@ -318,11 +318,17 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                             fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
                         }
                         fileName = "taskId" + taskId + "chunk" + chunkId;
+                        long start = System.currentTimeMillis();
                         fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
+                        System.out.println(String.format("File %s is written in %d ms", fileName,
+                                System.currentTimeMillis() - start));
 
                         if (config.HybridStorage && config.HDFSFlag) {
                             FileSystemHandler localFileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+                            start = System.currentTimeMillis();
                             localFileSystemHandler.writeToFileSystem(chunk, "/", fileName);
+                            System.out.println(String.format("File %s is written to the disk cache in %d ms", fileName,
+                                    System.currentTimeMillis() - start));
                             System.out.println(fileName + " is written locally.");
                         }
                     } catch (IOException e) {

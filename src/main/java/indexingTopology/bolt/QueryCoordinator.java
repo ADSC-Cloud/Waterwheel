@@ -542,7 +542,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
             int randomIndex = new Random().nextInt(candidates.size());
 
-            System.out.println("Select Task " + new ArrayList<>(candidates).get(randomIndex) + " among " + candidates.size() + " as the target query server. ");
+//            System.out.println("Select Task " + new ArrayList<>(candidates).get(randomIndex) + " among " + candidates.size() + " as the target query server. ");
 
             return new ArrayList<>(candidates).get(randomIndex);
         }
