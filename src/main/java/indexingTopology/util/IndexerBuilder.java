@@ -6,6 +6,7 @@ import indexingTopology.data.DataTuple;
 
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Created by acelzj on 13/1/17.
@@ -14,7 +15,7 @@ public class IndexerBuilder {
 
     private ArrayBlockingQueue<SubQuery> queryPendingQueue;
 
-    private ArrayBlockingQueue<DataTuple> inputQueue;
+    private LinkedBlockingQueue<DataTuple> inputQueue;
 
     private DataSchema schema;
 
@@ -38,7 +39,7 @@ public class IndexerBuilder {
         return this;
     }
 
-    public IndexerBuilder setInputQueue(ArrayBlockingQueue<DataTuple> inputQueue) {
+    public IndexerBuilder setInputQueue(LinkedBlockingQueue<DataTuple> inputQueue) {
         this.inputQueue = inputQueue;
         return this;
     }
