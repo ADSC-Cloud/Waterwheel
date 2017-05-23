@@ -2,8 +2,10 @@ package indexingTopology.bolt;
 
 import com.github.davidmoten.rtree.RTree;
 import com.github.davidmoten.rtree.Visualizer;
+import com.google.common.collect.Lists;
 import com.google.common.hash.BloomFilter;
 import indexingTopology.bloom.DataChunkBloomFilters;
+import indexingTopology.bolt.metrics.LocationInfo;
 import indexingTopology.data.PartialQueryResult;
 import indexingTopology.util.*;
 import javafx.util.Pair;
@@ -27,6 +29,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by acelzj on 11/15/16.
@@ -75,6 +79,10 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     TopologyConfig config;
 
+    private Map<Integer, String> ingestionServerIdToLocations;
+
+    private Map<String, Set<Integer>> locationToChunkServerIds;
+
     private static final Logger LOG = LoggerFactory.getLogger(QueryCoordinator.class);
 
     public QueryCoordinator(T lowerBound, T upperBound, TopologyConfig config) {
@@ -85,7 +93,13 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
+
+
         collector = outputCollector;
+
+        ingestionServerIdToLocations = new HashMap<>();
+
+        locationToChunkServerIds = new HashMap<>();
 
         concurrentQueriesSemaphore = new Semaphore(MAX_NUMBER_OF_CONCURRENT_QUERIES);
 //        queryId = 0;
@@ -234,6 +248,18 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             } else {
 //                System.out.println(String.format("All query results are collected for Query[%d] !!!!", queryId));
             }
+        } else if (tuple.getSourceStreamId().equals(Streams.LocationInfoUpdateStream)) {
+            LocationInfo info = (LocationInfo) tuple.getValue(0);
+            switch (info.type) {
+                case Ingestion:
+                    ingestionServerIdToLocations.put(info.taskId, info.location);
+                    break;
+                case Query:
+                    Set<Integer> taskIds = locationToChunkServerIds.computeIfAbsent(info.location, t -> new HashSet<>());
+                    taskIds.add(info.taskId);
+                    break;
+            }
+            // TODO: handle location update logic, e.g., update a location from a value to a different value.
         }
     }
 
@@ -474,11 +500,64 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
         return partitionIds;
     }
 
+    private Integer extractInsertionServerId(String fileName) {
+        Pattern pattern = Pattern.compile("taskId(\\d+)");
+        Matcher matcher = pattern.matcher(fileName);
+        if (matcher.find()) {
+            String taskid = matcher.group(1);
+            return Integer.parseInt(taskid);
+        } else {
+            System.err.println("Fail to extract task id from " + fileName);
+            return null;
+        }
+    }
+
+    private int getPreferredLocationByHashing(String fileName) {
+        int index = Math.abs(fileName.hashCode()) % queryServers.size();
+        return queryServers.get(index);
+    }
+
+    private int getPreferredQueryServerId(String fileName) {
+        if (config.HybridStorage) {
+            Integer insertionServerId = extractInsertionServerId(fileName);
+            if (insertionServerId == null) {
+                System.out.println("Fail to extract insertion server id from chunk name," +
+                        " using hashing dispatch instead.");
+                return getPreferredLocationByHashing(fileName);
+            }
+
+            String location = ingestionServerIdToLocations.get(insertionServerId);
+            if (location == null) {
+                System.out.println("ingestionServerIdToLocations info is not available," +
+                        " using hashing dispatch instead.");
+                return getPreferredLocationByHashing(fileName);
+            }
+            Set<Integer> candidates = locationToChunkServerIds.get(location);
+
+            if (candidates == null || candidates.size() == 0) {
+                System.out.println("locationToChunkServerIds info is not available," +
+                        " using hashing dispatch instead.");
+                return getPreferredLocationByHashing(fileName);
+            }
+
+            int randomIndex = new Random().nextInt(candidates.size());
+
+            System.out.println("Select Task " + new ArrayList<>(candidates).get(randomIndex) + " among " + candidates.size() + " as the target query server. ");
+
+            return new ArrayList<>(candidates).get(randomIndex);
+        }
+
+        int index = Math.abs(fileName.hashCode()) % queryServers.size();
+        return queryServers.get(index);
+    }
 
     private void putSubqueryToTaskQueues(SubQuery subQuery) {
         String fileName = ((SubQueryOnFile) subQuery).getFileName();
-        int index = Math.abs(fileName.hashCode()) % queryServers.size();
-        Integer taskId = queryServers.get(index);
+
+        Integer taskId = getPreferredQueryServerId(fileName);
+
+
+
         ArrayBlockingQueue<SubQuery> taskQueue = taskIdToTaskQueue.get(taskId);
         try {
             taskQueue.put(subQuery);

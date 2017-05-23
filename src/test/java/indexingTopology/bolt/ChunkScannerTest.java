@@ -229,7 +229,7 @@ public class ChunkScannerTest <TKey extends Comparable<TKey>> {
             throws IOException {
 
         FileSystemHandler fileSystemHandler = null;
-        if (config.HDFSFlag) {
+        if (config.HDFSFlag ) {
             fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
         } else {
             fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);

@@ -8,9 +8,9 @@ import java.io.Serializable;
 public class TopologyConfig implements Serializable {
     public final double REBUILD_TEMPLATE_THRESHOLD = 10.0;
 
-//    public static final String HDFS_HOST = "hdfs://192.168.0.237:54310/";
+    public static final String HDFS_HOST = "hdfs://192.168.0.237:54310/";
 
-    public final String HDFS_HOST = "hdfs://10.21.25.10:54310/";
+//    public final String HDFS_HOST = "hdfs://10.21.25.10:54310/";
 //    public static final String HDFS_HOST = "hdfs://10.21.25.13:54310/";
 
     /**
@@ -24,7 +24,7 @@ public class TopologyConfig implements Serializable {
 
     public final int NUMBER_TUPLES_OF_A_CHUNK = 600000;
 
-    public final int CACHE_SIZE = 10000;
+    public final int CACHE_SIZE = 100;
 
     public final int TASK_QUEUE_CAPACITY = 10000;
 
@@ -34,10 +34,12 @@ public class TopologyConfig implements Serializable {
 
     public final double LOAD_BALANCE_THRESHOLD = 0.2;
 
-    public boolean HDFSFlag = false;
+    public boolean HDFSFlag = true;
+
+    public boolean HybridStorage = true;
 
 //    public static String dataDir = "/Users/Robert/Documents/data";
-    public String dataDir = "/home/acelzj/data";
+    public String dataDir = "/home/robert/data";
 //    public static String dataDir = "/home/acelzj/data";
 //    public static String dataDir = "./";
 
@@ -58,7 +60,7 @@ public class TopologyConfig implements Serializable {
 
     public final int OFFSET_LENGTH = 4;
 
-    public int CHUNK_SIZE = 58000000 / 32;
+    public int CHUNK_SIZE = 58000000;
 //    public static final int CHUNK_SIZE = 58000000 / 16;
 //    public static final int CHUNK_SIZE = 58000000 / 8;
 //    public static final int CHUNK_SIZE = 58000000 / 2;

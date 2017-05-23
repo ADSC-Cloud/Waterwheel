@@ -319,6 +319,12 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                         }
                         fileName = "taskId" + taskId + "chunk" + chunkId;
                         fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
+
+                        if (config.HybridStorage && config.HDFSFlag) {
+                            FileSystemHandler localFileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+                            localFileSystemHandler.writeToFileSystem(chunk, "/", fileName);
+                            System.out.println(fileName + " is written locally.");
+                        }
                     } catch (IOException e) {
                         e.printStackTrace();
                     }

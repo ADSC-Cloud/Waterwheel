@@ -61,7 +61,8 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
                 .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSubQueryFinishStream)
                 .shuffleGrouping(MetadataServer, Streams.FileInformationUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
-                .shuffleGrouping(MetadataServer, Streams.TimestampUpdateStream);
+                .shuffleGrouping(MetadataServer, Streams.TimestampUpdateStream)
+                .shuffleGrouping(MetadataServer, Streams.LocationInfoUpdateStream);
 
 
         if (config.SHUFFLE_GROUPING_FLAG) {
@@ -86,7 +87,9 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
                 .shuffleGrouping(RangeQueryDispatcherBolt, Streams.StatisticsReportStream)
                 .shuffleGrouping(IndexerBolt, Streams.TimestampUpdateStream)
                 .shuffleGrouping(IndexerBolt, Streams.FileInformationUpdateStream)
-                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.EnableRepartitionStream);
+                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.EnableRepartitionStream)
+                .shuffleGrouping(IndexerBolt, Streams.LocationInfoUpdateStream)
+                .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.LocationInfoUpdateStream);
 
         builder.setBolt(LogWriter, new LogWriter(), 1)
 //                .shuffleGrouping(RangeQueryDispatcherBolt, Streams.ThroughputReportStream)
