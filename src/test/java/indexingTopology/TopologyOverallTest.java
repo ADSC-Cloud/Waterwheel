@@ -32,6 +32,8 @@ import java.util.function.Function;
 public class TopologyOverallTest {
 
     TopologyConfig config = new TopologyConfig();
+    final int ingestionPort = 10000;
+    final int queryPort = 10001;
 
     public void setUp() {
         try {
@@ -54,8 +56,7 @@ public class TopologyOverallTest {
     @Test
     public void testTopologyDouble() {
         boolean fullyTested = false;
-        final int ingestionPort = 10000;
-        final int queryPort = 10001;
+
         final String topologyName = "test_1";
 
         DataSchema schema = new DataSchema();
@@ -128,8 +129,6 @@ public class TopologyOverallTest {
     public void testTopologyIntegerFilter() {
 
         boolean fullyTested = false;
-        final int ingestionPort = 10010;
-        final int queryPort = 10011;
         final String topologyName = "test_2";
 
         DataSchema schema = new DataSchema();
@@ -202,8 +201,6 @@ public class TopologyOverallTest {
 
         boolean fullyTested = false;
 
-        final int ingestionPort = 10020;
-        final int queryPort = 10021;
         final String topologyName = "test_3";
 
         DataSchema schema = new DataSchema();
@@ -274,8 +271,6 @@ public class TopologyOverallTest {
 
         boolean fullyTested = false;
 
-        final int ingestionPort = 10030;
-        final int queryPort = 10031;
         final String topologyName = "test_4";
 
         DataSchema schema = new DataSchema();
@@ -349,8 +344,6 @@ public class TopologyOverallTest {
 
         boolean fullyTested = false;
 
-        final int ingestionPort = 10000;
-        final int queryPort = 10001;
         final String topologyName = "test_4";
 
         DataSchema schema = new DataSchema();
@@ -437,8 +430,6 @@ public class TopologyOverallTest {
     public void testTopologyIntegerFilterWithTrivialMapper() {
 
         boolean fullyTested = false;
-        final int ingestionPort = 10050;
-        final int queryPort = 10051;
         final String topologyName = "test_5";
 
         DataSchema schema = new DataSchema();
