@@ -47,9 +47,8 @@ public class IndexerTest extends TestCase implements Observer{
 
     @Test
     public void testIndexLogic() throws InterruptedException {
-        TopologyConfig config = new TopologyConfig();
         config.dataDir = "./target/tmp";
-        config.CHUNK_SIZE = 58000000 / 16;
+        config.CHUNK_SIZE = 58000000 ;
         IndexerBuilder indexerBuilder = new IndexerBuilder(config);
 
         LinkedBlockingQueue<DataTuple> inputQueue = new LinkedBlockingQueue<DataTuple>(1024);
@@ -76,7 +75,7 @@ public class IndexerTest extends TestCase implements Observer{
         this.observable = indexer;
         observable.addObserver(this);
 
-        int numberOfTuples = 100000;
+        int numberOfTuples = 10000;
 
 //        System.out.println("sed -i 's/${JAVA_HOME}/\\/usr\\/lib\\/jvm/\\/jdk1.8.0_112/g' hadoop-env.sh");
 
