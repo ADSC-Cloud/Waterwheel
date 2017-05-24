@@ -10,6 +10,10 @@ public class DataTuple extends ArrayList<Object> implements Serializable {
     public DataTuple() {
     }
 
+    public DataTuple(DataTuple that) {
+        this.addAll(that);
+    }
+
     public DataTuple(Comparable... fields) {
         super(fields.length);
         Object[] objects = fields;

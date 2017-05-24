@@ -11,6 +11,7 @@ import indexingTopology.bloom.DataFunnel;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import indexingTopology.config.TopologyConfig;
+import indexingTopology.data.TrackedDataTuple;
 import indexingTopology.filesystem.FileSystemHandler;
 import indexingTopology.filesystem.HdfsFileSystemHandler;
 import indexingTopology.filesystem.LocalFileSystemHandler;
@@ -20,6 +21,7 @@ import javafx.util.Pair;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
@@ -33,7 +35,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
     private ArrayBlockingQueue<DataTuple> pendingQueue;
 
-    private ArrayBlockingQueue<DataTuple> inputQueue;
+    private LinkedBlockingQueue<DataTuple> inputQueue;
 
     private ArrayBlockingQueue<SubQuery<DataType>> queryPendingQueue;
 
@@ -92,6 +94,8 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
     private ArrayBlockingQueue<FileInformation> informationToUpdatePendingQueue;
 
+    private ArrayBlockingQueue<TrackedDataTuple> trackedDataTupleQueue;
+
     private Integer estimatedSize;
     private Integer estimatedDataSize;
 
@@ -107,16 +111,18 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
     private TopologyConfig config;
 
-    public Indexer(int taskId, ArrayBlockingQueue<DataTuple> inputQueue, DataSchema schema,
+    public Indexer(int taskId, LinkedBlockingQueue<DataTuple> inputQueue, DataSchema schema,
                    ArrayBlockingQueue<SubQuery<DataType>> queryPendingQueue, TopologyConfig config) {
 
         this.config = config;
 
         pendingQueue = new ArrayBlockingQueue<>(1024);
 
-        queryResultQueue = new ArrayBlockingQueue<Pair>(100);
+        queryResultQueue = new ArrayBlockingQueue<>(100);
 
-        informationToUpdatePendingQueue = new ArrayBlockingQueue<FileInformation>(10);
+        informationToUpdatePendingQueue = new ArrayBlockingQueue<>(10);
+
+        trackedDataTupleQueue = new ArrayBlockingQueue<>(100);
 
         this.inputQueue = inputQueue;
 
@@ -421,6 +427,13 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                         }
 
                         pendingQueue.put(dataTuple);
+
+                        if (dataTuple instanceof TrackedDataTuple) {
+                            trackedDataTupleQueue.put((TrackedDataTuple) dataTuple);
+                            setChanged();
+                            notifyObservers("ack");
+                        }
+
                     } catch (InterruptedException e) {
 //                        e.printStackTrace();
                         Thread.currentThread().interrupt();
@@ -545,7 +558,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                 if (inputQueue.size() * 1.0 / config.PENDING_QUEUE_CAPACITY < 0.1) {
                     System.out.println(inputQueue.size() * 1.0 / config.PENDING_QUEUE_CAPACITY);
                     System.out.println("Warning : the production speed is too slow!!!");
-                    System.out.println(++count);
+//                    System.out.println(++count);
                 }
 //                }
             }
@@ -665,6 +678,10 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
             e.printStackTrace();
         }
         return pair;
+    }
+
+    public TrackedDataTuple getTrackedDataTuple() throws InterruptedException {
+        return trackedDataTupleQueue.take();
     }
 
     private void writeTreeIntoChunk() {

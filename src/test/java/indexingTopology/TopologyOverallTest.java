@@ -32,6 +32,8 @@ import java.util.function.Function;
 public class TopologyOverallTest {
 
     TopologyConfig config = new TopologyConfig();
+    final int ingestionPort = 10000;
+    final int queryPort = 10001;
 
     public void setUp() {
         try {
@@ -54,8 +56,7 @@ public class TopologyOverallTest {
     @Test
     public void testTopologyDouble() {
         boolean fullyTested = false;
-        final int ingestionPort = 10000;
-        final int queryPort = 10001;
+
         final String topologyName = "test_1";
 
         DataSchema schema = new DataSchema();
@@ -112,9 +113,9 @@ public class TopologyOverallTest {
             QueryResponse response = queryClient.temporalRangeQuery(0.0, 10000.0, 0, Long.MAX_VALUE);
 
             assertEquals(numberOfTuples, response.dataTuples.size());
-            cluster.shutdown();
             oneTuplePerTransferIngestionClient.close();
             queryClient.close();
+            cluster.shutdown();
             fullyTested = true;
 //            Thread.sleep(5000);
 
@@ -128,8 +129,6 @@ public class TopologyOverallTest {
     public void testTopologyIntegerFilter() {
 
         boolean fullyTested = false;
-        final int ingestionPort = 10010;
-        final int queryPort = 10011;
         final String topologyName = "test_2";
 
         DataSchema schema = new DataSchema();
@@ -185,9 +184,9 @@ public class TopologyOverallTest {
             QueryResponse response = queryClient.temporalRangeQuery(0, 40, 0, Long.MAX_VALUE);
 
             assertEquals(41, response.dataTuples.size());
-            cluster.shutdown();
             oneTuplePerTransferIngestionClient.close();
             queryClient.close();
+            cluster.shutdown();
             fullyTested = true;
 
         } catch (Exception e) {
@@ -202,8 +201,6 @@ public class TopologyOverallTest {
 
         boolean fullyTested = false;
 
-        final int ingestionPort = 10020;
-        final int queryPort = 10021;
         final String topologyName = "test_3";
 
         DataSchema schema = new DataSchema();
@@ -259,9 +256,9 @@ public class TopologyOverallTest {
             QueryResponse response = queryClient.temporalRangeQuery(0.0, 9.5, 0, Long.MAX_VALUE);
 
             assertEquals(5, response.dataTuples.size());
-            cluster.shutdown();
             oneTuplePerTransferIngestionClient.close();
             queryClient.close();
+            cluster.shutdown();
             fullyTested = true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -274,8 +271,6 @@ public class TopologyOverallTest {
 
         boolean fullyTested = false;
 
-        final int ingestionPort = 10030;
-        final int queryPort = 10031;
         final String topologyName = "test_4";
 
         DataSchema schema = new DataSchema();
@@ -333,9 +328,9 @@ public class TopologyOverallTest {
 
             assertEquals(2, response.dataTuples.size());
 
-            cluster.shutdown();
             oneTuplePerTransferIngestionClient.close();
             queryClient.close();
+            cluster.shutdown();
 
             fullyTested = true;
         } catch (Exception e) {
@@ -349,8 +344,6 @@ public class TopologyOverallTest {
 
         boolean fullyTested = false;
 
-        final int ingestionPort = 10000;
-        final int queryPort = 10001;
         final String topologyName = "test_4";
 
         DataSchema schema = new DataSchema();
@@ -422,9 +415,9 @@ public class TopologyOverallTest {
             assertEquals(new DataTuple(8, 20.0, 5.0), response.dataTuples.get(8));
             assertEquals(new DataTuple(9, 20.0, 5.0), response.dataTuples.get(9));
 
-            cluster.shutdown();
             oneTuplePerTransferIngestionClient.close();
             queryClient.close();
+            cluster.shutdown();
             fullyTested = true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -437,8 +430,6 @@ public class TopologyOverallTest {
     public void testTopologyIntegerFilterWithTrivialMapper() {
 
         boolean fullyTested = false;
-        final int ingestionPort = 10050;
-        final int queryPort = 10051;
         final String topologyName = "test_5";
 
         DataSchema schema = new DataSchema();
@@ -496,9 +487,9 @@ public class TopologyOverallTest {
             QueryResponse response = queryClient.temporalRangeQuery(0, 40, 0, Long.MAX_VALUE);
 
             assertEquals(41, response.dataTuples.size());
-            cluster.shutdown();
             oneTuplePerTransferIngestionClient.close();
             queryClient.close();
+            cluster.shutdown();
             fullyTested = true;
 
         } catch (Exception e) {
