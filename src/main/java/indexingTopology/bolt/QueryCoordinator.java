@@ -11,7 +11,6 @@ import indexingTopology.data.DataSchema;
 import indexingTopology.data.PartialQueryResult;
 import indexingTopology.util.*;
 import javafx.util.Pair;
-import org.apache.storm.shade.org.apache.commons.collections.map.HashedMap;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -416,7 +415,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
     }
 
     List<SubQueryOnFile<T>> mergeSubqueries(List<SubQueryOnFile<T>> subqueries) {
-        Map<String, List<SubQueryOnFile<T>>> fileNameToSubqueries = new HashedMap();
+        Map<String, List<SubQueryOnFile<T>>> fileNameToSubqueries = new HashMap<>();
         subqueries.stream().forEach(t -> {
             List<SubQueryOnFile<T>> list = fileNameToSubqueries.computeIfAbsent(t.getFileName(), x -> new ArrayList<>());
             list.add(t);
@@ -459,6 +458,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
                         handleQuery(queryList);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
+                        break;
                     } catch (Exception e) {
                         e.printStackTrace();
                     }

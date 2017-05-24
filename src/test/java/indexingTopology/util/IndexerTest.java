@@ -6,6 +6,7 @@ import indexingTopology.data.DataTuple;
 import indexingTopology.data.TrackedDataTuple;
 import javafx.util.Pair;
 import junit.framework.TestCase;
+import org.apache.storm.shade.org.eclipse.jetty.util.ConcurrentHashSet;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -34,7 +35,7 @@ public class IndexerTest extends TestCase implements Observer{
         config.dataDir = "./target/tmp";
         config.HDFSFlag = false;
         System.out.println("dataDir is set to " + config.dataDir);
-        tupleIdToBeAcked = new HashSet<>();
+        tupleIdToBeAcked = new ConcurrentHashSet<>();
     }
 
     public void tearDown() {
@@ -128,9 +129,7 @@ public class IndexerTest extends TestCase implements Observer{
         this.observable = indexer;
         observable.addObserver(this);
 
-        int numberOfTuples = 1000;
-
-//        System.out.println("sed -i 's/${JAVA_HOME}/\\/usr\\/lib\\/jvm/\\/jdk1.8.0_112/g' hadoop-env.sh");
+        int numberOfTuples = 10;
 
         Long timestamp = 0L;
         for (int i = 0; i < numberOfTuples; ++i) {
@@ -140,7 +139,7 @@ public class IndexerTest extends TestCase implements Observer{
         }
 
 
-        Thread.sleep(100);
+        Thread.sleep(1000);
 
         assertEquals(0, tupleIdToBeAcked.size());
     }

@@ -152,6 +152,7 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
+            cluster.killTopology("T0");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -159,6 +160,7 @@ public class TopologyTest extends TestCase {
         assertTrue(fullyExecuted);
         cluster.shutdown();
 
+        Thread.sleep(1000);
     }
 
     @Test
@@ -260,13 +262,14 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
+            cluster.killTopology("T0");
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
         cluster.shutdown();
-
+        Thread.sleep(1000);
     }
 
     @Test
@@ -399,13 +402,14 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
+            cluster.killTopology("T0");
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
         cluster.shutdown();
-
+        Thread.sleep(1000);
     }
 
 
@@ -539,13 +543,14 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
+            cluster.killTopology("T0");
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
         cluster.shutdown();
-
+        Thread.sleep(1000);
     }
 
     @Test
@@ -667,13 +672,14 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
+            cluster.killTopology("T0");
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
         cluster.shutdown();
-
+        Thread.sleep(1000);
     }
 
     @Test
@@ -800,13 +806,14 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
+            cluster.killTopology("T0");
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
         cluster.shutdown();
-
+        Thread.sleep(1000);
     }
 
     @Test
@@ -922,13 +929,14 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
+            cluster.killTopology("T0");
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
         cluster.shutdown();
-
+        Thread.sleep(1000);
     }
 
     @Test
@@ -1034,12 +1042,13 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
+            cluster.killTopology("T0");
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
         cluster.shutdown();
-
+        Thread.sleep(1000);
     }
 }

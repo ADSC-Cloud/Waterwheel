@@ -50,6 +50,7 @@ public class Server<T extends ServerHandle> {
             serverSocket = new ServerSocket(port);
         } catch (IOException e) {
             e.printStackTrace();
+            return;
         }
         executorService = Executors.newCachedThreadPool();
 
@@ -58,7 +59,7 @@ public class Server<T extends ServerHandle> {
             Socket client = null;
             while (true) {
             try {
-                serverSocket.setSoTimeout(1000);
+                serverSocket.setSoTimeout(200);
                 client = serverSocket.accept();
                 ServerHandle handle;
 //                if (args.length == 0) {
@@ -99,7 +100,7 @@ public class Server<T extends ServerHandle> {
             } catch (InvocationTargetException e) {
                 e.printStackTrace();
             } catch (SocketTimeoutException e) {
-                if (Thread.interrupted() || closed)
+                if (Thread.currentThread().isInterrupted() || closed)
 //                    break;
                     throw new InterruptedException();
             } catch (RejectedExecutionException e) {
@@ -115,6 +116,12 @@ public class Server<T extends ServerHandle> {
 //                    break;
                     throw new InterruptedException();
             }
+
+            if (Thread.currentThread().isInterrupted()) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+
         }
          return null;}
         ));
@@ -131,6 +138,14 @@ public class Server<T extends ServerHandle> {
         executorService.shutdownNow();
         for(Future future: futureList) {
             future.cancel(true);
+//            while (future.isDone()) {
+//                System.err.println("Waiting a task to be done!");
+//                try {
+//                    Thread.sleep(1000);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//            }
         }
     }
 

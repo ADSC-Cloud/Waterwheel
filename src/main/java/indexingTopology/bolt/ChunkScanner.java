@@ -124,7 +124,13 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
                 LocationInfo info = new LocationInfo(LocationInfo.Type.Query, topologyContext.getThisTaskId(), hostName);
                 outputCollector.emit(Streams.LocationInfoUpdateStream, new Values(info));
 
-                Utils.sleep(10000);
+                try {
+                    Thread.sleep(10000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    Thread.currentThread().interrupt();
+                    break;
+                }
             }
         });
         locationReportingThread.start();
@@ -166,6 +172,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
                     } catch (InterruptedException e) {
 //                        e.printStackTrace();
                         Thread.currentThread().interrupt();
+                        break;
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
