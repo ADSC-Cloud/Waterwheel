@@ -426,18 +426,28 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
         fileNameToSubqueries.forEach((file, queries) -> {
             if (queries.size() > 0) {
                 SubQueryOnFile<T> firstQuery = queries.get(0);
+                T leftMost = firstQuery.leftKey;
+                T rightMost = firstQuery.rightKey;
                 DataTuplePredicate predicate = firstQuery.predicate;
                 if (predicate == null) {
                     predicate = t -> true;
                 }
+
+                DataTuplePredicate additionalPredicate = t -> true;
                 for (int i = 1; i < queries.size(); i++) {
-                    DataTuplePredicate currentPredicate = predicate;
                     SubQueryOnFile<T> currentQuery = queries.get(i);
-                    predicate = t -> currentPredicate.test(t) &&
-                            currentQuery.leftKey.compareTo((T)schema.getIndexValue(t)) >= 0 &&
-                            currentQuery.rightKey.compareTo((T)schema.getIndexValue(t)) <=0;
+                    leftMost = leftMost.compareTo(currentQuery.leftKey) < 0 ? leftMost : currentQuery.leftKey;
+                    rightMost = rightMost.compareTo(currentQuery.rightKey) > 0 ? rightMost : currentQuery.rightKey;
+                    DataTuplePredicate finalAdditionalPredicate1 = additionalPredicate;
+                    additionalPredicate = t -> finalAdditionalPredicate1.test(t) ||
+                            (currentQuery.leftKey.compareTo((T)schema.getIndexValue(t)) <= 0 &&
+                            currentQuery.rightKey.compareTo((T)schema.getIndexValue(t)) >= 0);
                 }
-                firstQuery.predicate = predicate;
+                DataTuplePredicate finalAdditionalPredicate = additionalPredicate;
+                DataTuplePredicate finalPredicate = predicate;
+                firstQuery.predicate = t -> finalPredicate.test(t) && finalAdditionalPredicate.test(t);
+                firstQuery.leftKey = leftMost;
+                firstQuery.rightKey = rightMost;
                 ret.add(firstQuery);
             }
         });

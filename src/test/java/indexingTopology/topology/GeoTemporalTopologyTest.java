@@ -44,6 +44,7 @@ public class GeoTemporalTopologyTest extends TestCase {
         }
         config.dataDir = "./target/tmp";
         config.HDFSFlag = false;
+        config.CHUNK_SIZE = 1024 * 1024;
         System.out.println("dataDir is set to " + config.dataDir);
     }
 
