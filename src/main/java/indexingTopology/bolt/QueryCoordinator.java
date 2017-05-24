@@ -1,11 +1,13 @@
 package indexingTopology.bolt;
 
+import clojure.lang.ArraySeq;
 import com.github.davidmoten.rtree.RTree;
 import com.github.davidmoten.rtree.Visualizer;
 import com.google.common.collect.Lists;
 import com.google.common.hash.BloomFilter;
 import indexingTopology.bloom.DataChunkBloomFilters;
 import indexingTopology.bolt.metrics.LocationInfo;
+import indexingTopology.data.DataSchema;
 import indexingTopology.data.PartialQueryResult;
 import indexingTopology.util.*;
 import javafx.util.Pair;
@@ -83,12 +85,15 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private Map<String, Set<Integer>> locationToChunkServerIds;
 
+    private DataSchema schema;
+
     private static final Logger LOG = LoggerFactory.getLogger(QueryCoordinator.class);
 
-    public QueryCoordinator(T lowerBound, T upperBound, TopologyConfig config) {
+    public QueryCoordinator(T lowerBound, T upperBound, TopologyConfig config, DataSchema schema) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
         this.config = config;
+        this.schema = schema;
     }
 
     @Override
@@ -366,6 +371,14 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
             System.out.println(String.format("%d subqueries on chunks are generated!", subQueries.size()));
 
+
+            int numberOfSubqueryBeforeMerging = subQueries.size();
+            subQueries = mergeSubqueries(subQueries);
+            int numberOfSubqueryAfterMerging = subQueries.size();
+
+            System.out.println(String.format("%d subqueries have been merged into %d subqueires",
+                    numberOfSubqueryBeforeMerging, numberOfSubqueryAfterMerging));
+
             for (SubQuery subQuery: subQueries) {
                 if (config.SHUFFLE_GROUPING_FLAG) {
                     sendSubqueriesByshuffleGrouping(subQuery);
@@ -401,6 +414,37 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
         queryIdToStartTime.put(firstQuery.queryId, new Pair<>(System.currentTimeMillis(), subQueries.size()));
     }
 
+    List<SubQueryOnFile<T>> mergeSubqueries(List<SubQueryOnFile<T>> subqueries) {
+        Map<String, List<SubQueryOnFile<T>>> fileNameToSubqueries = new HashMap<>();
+        subqueries.stream().forEach(t -> {
+            List<SubQueryOnFile<T>> list = fileNameToSubqueries.computeIfAbsent(t.getFileName(), x -> new ArrayList<>());
+            list.add(t);
+        });
+
+        List<SubQueryOnFile<T>> ret = new ArrayList<>();
+
+        fileNameToSubqueries.forEach((file, queries) -> {
+            if (queries.size() > 0) {
+                SubQueryOnFile<T> firstQuery = queries.get(0);
+                DataTuplePredicate predicate = firstQuery.predicate;
+                if (predicate == null) {
+                    predicate = t -> true;
+                }
+                for (int i = 1; i < queries.size(); i++) {
+                    DataTuplePredicate currentPredicate = predicate;
+                    SubQueryOnFile<T> currentQuery = queries.get(i);
+                    predicate = t -> currentPredicate.test(t) &&
+                            currentQuery.leftKey.compareTo((T)schema.getIndexValue(t)) >= 0 &&
+                            currentQuery.rightKey.compareTo((T)schema.getIndexValue(t)) <=0;
+                }
+                firstQuery.predicate = predicate;
+                ret.add(firstQuery);
+            }
+        });
+
+        return ret;
+    }
+
     private void createQueryHandlingThread() {
         queryHandlingThread = new Thread(new Runnable() {
             @Override
@@ -414,6 +458,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
                         handleQuery(queryList);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
+                        break;
                     } catch (Exception e) {
                         e.printStackTrace();
                     }

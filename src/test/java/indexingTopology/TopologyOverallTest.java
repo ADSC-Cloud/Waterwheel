@@ -75,7 +75,7 @@ public class TopologyOverallTest {
 
         InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort, config);
         QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, queryPort, config);
+                upperBound, queryPort, config, schema);
 
         TopologyGenerator<Double> topologyGenerator = new TopologyGenerator<>();
 
@@ -115,7 +115,9 @@ public class TopologyOverallTest {
             assertEquals(numberOfTuples, response.dataTuples.size());
             oneTuplePerTransferIngestionClient.close();
             queryClient.close();
+            cluster.killTopology(topologyName);
             cluster.shutdown();
+            Thread.sleep(1000);
             fullyTested = true;
 //            Thread.sleep(5000);
 
@@ -146,7 +148,7 @@ public class TopologyOverallTest {
 
         InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort, config);
         QueryCoordinator<Integer> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, queryPort, config);
+                upperBound, queryPort, config, schema);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
@@ -186,7 +188,9 @@ public class TopologyOverallTest {
             assertEquals(41, response.dataTuples.size());
             oneTuplePerTransferIngestionClient.close();
             queryClient.close();
+            cluster.killTopology(topologyName);
             cluster.shutdown();
+            Thread.sleep(1000);
             fullyTested = true;
 
         } catch (Exception e) {
@@ -218,7 +222,7 @@ public class TopologyOverallTest {
 
         InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort, config);
         QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, queryPort, config);
+                upperBound, queryPort, config, schema);
 
         TopologyGenerator<Double> topologyGenerator = new TopologyGenerator<>();
 
@@ -258,7 +262,9 @@ public class TopologyOverallTest {
             assertEquals(5, response.dataTuples.size());
             oneTuplePerTransferIngestionClient.close();
             queryClient.close();
+            cluster.killTopology(topologyName);
             cluster.shutdown();
+            Thread.sleep(1000);
             fullyTested = true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -288,7 +294,7 @@ public class TopologyOverallTest {
 
         InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort, config);
         QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, queryPort, config);
+                upperBound, queryPort, config, schema);
 
         TopologyGenerator<Double> topologyGenerator = new TopologyGenerator<>();
 
@@ -330,8 +336,9 @@ public class TopologyOverallTest {
 
             oneTuplePerTransferIngestionClient.close();
             queryClient.close();
+            cluster.killTopology(topologyName);
             cluster.shutdown();
-
+            Thread.sleep(1000);
             fullyTested = true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -361,7 +368,7 @@ public class TopologyOverallTest {
 
         InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort, config);
         QueryCoordinator<Integer> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, queryPort, config);
+                upperBound, queryPort, config, schema);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
@@ -417,7 +424,9 @@ public class TopologyOverallTest {
 
             oneTuplePerTransferIngestionClient.close();
             queryClient.close();
+            cluster.killTopology(topologyName);
             cluster.shutdown();
+            Thread.sleep(1000);
             fullyTested = true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -447,7 +456,7 @@ public class TopologyOverallTest {
 
         InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort, config);
         QueryCoordinator<Integer> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, queryPort, config);
+                upperBound, queryPort, config, schema);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
@@ -489,7 +498,9 @@ public class TopologyOverallTest {
             assertEquals(41, response.dataTuples.size());
             oneTuplePerTransferIngestionClient.close();
             queryClient.close();
+            cluster.killTopology(topologyName);
             cluster.shutdown();
+            Thread.sleep(1000);
             fullyTested = true;
 
         } catch (Exception e) {

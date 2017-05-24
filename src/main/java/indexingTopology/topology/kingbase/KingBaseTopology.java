@@ -263,7 +263,7 @@ public class KingBaseTopology {
         InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000, config);
 
         QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, 10001, city, config);
+                upperBound, 10001, city, config, schema);
 
         DataTupleMapper dataTupleMapper = new DataTupleMapper(rawSchema, (Serializable & Function<DataTuple, DataTuple>) t -> {
             double lon = (double)schema.getValue("lon", t);
@@ -352,7 +352,7 @@ public class KingBaseTopology {
         InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000, config);
 
         QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, 10001, city, config);
+                upperBound, 10001, city, config, schema);
 
 
         DataTupleMapper dataTupleMapper = new DataTupleMapper(rawSchema, (Serializable & Function<DataTuple, DataTuple>) t -> {

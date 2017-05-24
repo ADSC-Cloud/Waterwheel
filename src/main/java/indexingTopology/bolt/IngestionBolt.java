@@ -102,7 +102,13 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
                 LocationInfo info = new LocationInfo(LocationInfo.Type.Ingestion, topologyContext.getThisTaskId(), hostName);
                 outputCollector.emit(Streams.LocationInfoUpdateStream, new Values(info));
 
-                Utils.sleep(10000);
+                try {
+                    Thread.sleep(10000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    Thread.currentThread().interrupt();
+                    break;
+                }
             }
         });
         locationReportingThread.start();
