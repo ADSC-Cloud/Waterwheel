@@ -58,7 +58,7 @@ public class TopologyConfig implements Serializable {
 
     public final int OFFSET_LENGTH = 4;
 
-    public int CHUNK_SIZE = 58000000 / 32;
+    public int CHUNK_SIZE = 58000000;
 //    public static final int CHUNK_SIZE = 58000000 / 16;
 //    public static final int CHUNK_SIZE = 58000000 / 8;
 //    public static final int CHUNK_SIZE = 58000000 / 2;

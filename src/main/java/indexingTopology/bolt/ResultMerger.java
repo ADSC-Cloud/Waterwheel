@@ -310,10 +310,21 @@ public class ResultMerger extends BaseRichBolt {
 //                        totalTime += fileScanMetrics.getTotalTime();
 //                    }
 
+                Long keyRangTime = 0L;
+                Long timestampRangTime = 0L;
+                Long predicationTime = 0L;
+                Long aggregationTime = 0L;
+                Long fileReadingTime = 0L;
+
                 for (Integer taskId : taskIds) {
                     List<FileScanMetrics> records = taskIdToTimeMapping.get(taskId);
                     for (FileScanMetrics fileScanMetrics : records) {
                         totalQueryTime += fileScanMetrics.getTotalTime();
+                        keyRangTime += fileScanMetrics.getKeyRangeTime();
+                        timestampRangTime += fileScanMetrics.getTimestampRangeTime();
+                        predicationTime += fileScanMetrics.getPredicationTime();
+                        aggregationTime += fileScanMetrics.getAggregationTime();
+                        fileReadingTime += fileScanMetrics.getFileReadingTime();
                         ++numberOfSubqueries;
                     }
 
@@ -330,7 +341,13 @@ public class ResultMerger extends BaseRichBolt {
                     */
                 }
 
-                System.out.println("Query time " + (totalQueryTime / numberOfSubqueries));
+//                System.out.println("Query time " + (totalQueryTime / numberOfSubqueries));
+                System.out.println("key range " + keyRangTime);
+                System.out.println("timestamp range " + timestampRangTime);
+                System.out.println("predicate " + predicationTime);
+                System.out.println("aggregation " + aggregationTime);
+                System.out.println("file reading " + fileReadingTime);
+                System.out.println("total " + totalQueryTime);
 //            }
 //                System.out.println("query id " + queryId + " " + numberOfRecords);
 //            }

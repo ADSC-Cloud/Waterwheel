@@ -51,15 +51,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
     private transient Semaphore subQueryHandlingSemaphore;
 
-//    Long startTime;
-
-//    Long timeCostOfReadFile;
-
-//    Long timeCostOfSearching;
-
-//    Long timeCostOfDeserializationATree;
-
-//    Long timeCostOfDeserializationALeaf;
     private Thread subQueryHandlingThread;
 
     TopologyConfig config;
@@ -180,14 +171,9 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
         FileScanMetrics metrics = new FileScanMetrics();
 
-//        metrics.setFileName(fileName);
-
         long start = System.currentTimeMillis();
 
-//        metrics.setSubqueryStartTime(start);
 
-//        long fileTime = 0;
-//        long fileStart = System.currentTimeMillis();
         FileSystemHandler fileSystemHandler = null;
         if (config.HDFSFlag) {
             fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
@@ -195,11 +181,8 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
             fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
         }
         fileSystemHandler.openFile("/", fileName);
-//        fileTime += (System.currentTimeMillis() - fileStart);
 
-//        long readTemplateStart = System.currentTimeMillis();
         Pair data = getTemplateData(fileSystemHandler, fileName);
-//        long temlateRead = System.currentTimeMillis() - readTemplateStart;
 
         BTree template = (BTree) data.getKey();
         Integer length = (Integer) data.getValue();
@@ -209,52 +192,67 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         ArrayList<byte[]> tuples = new ArrayList<byte[]>();
 
 
-//        long searchOffsetsStart = System.currentTimeMillis();
         List<Integer> offsets = template.getOffsetsOfLeafNodesShouldContainKeys(leftKey, rightKey);
 
-//        System.out.println("template");
-//        System.out.println(offsets);
-//        template.printBtree();
-//        metrics.setSearchTime(System.currentTimeMillis() - searchOffsetsStart);
 
-//        long readLeafBytesStart = System.currentTimeMillis();
 //        byte[] bytesToRead = readLeafBytesFromFile(fileSystemHandler, offsets, length);
-        byte[] bytesToRead = readLeafBytesFromFile(fileSystemHandler, offsets, length, metrics);
-//        long leafBytesReadingTime = System.currentTimeMillis() - readLeafBytesStart;
-//        metrics.setLeafBytesReadingTime(leafBytesReadingTime);
+        byte[] bytesToRead = readLeafBytesFromFile(fileSystemHandler, offsets, length);
 
+        Long fileReadingTime = System.currentTimeMillis() - start;
+        metrics.setFileReadingTime(fileReadingTime);
 
-//        long totalTupleGet = 0L;
-//        long totalLeafRead = 0L;
         Input input = new Input(bytesToRead);
+
+        //code below are used to evaluate the specific time cost
+        Long keyRangeTime = 0L;
+        Long timestampRangeTime = 0L;
+        Long predicationTime = 0L;
+        Long aggregationTime = 0L;
 
 
         for (Integer offset : offsets) {
             BlockId blockId = new BlockId(fileName, offset + length + 4);
 
-            long readLeaveStart = System.currentTimeMillis();
             leaf = (BTreeLeafNode) getFromCache(blockId);
 
             if (leaf == null) {
-                leaf = getLeafFromExternalStorage(fileSystemHandler, input);
+                leaf = getLeafFromExternalStorage(input);
                 CacheData cacheData = new LeafNodeCacheData(leaf);
                 putCacheData(blockId, cacheData);
             }
-//            totalLeafRead += (System.currentTimeMillis() - readLeaveStart);
 
-            long tupleGetStart = System.currentTimeMillis();
+            Long startTime = System.currentTimeMillis();
+
+
             ArrayList<byte[]> tuplesInKeyRange = leaf.getTuplesWithinKeyRange(leftKey, rightKey);
+
+            keyRangeTime += System.currentTimeMillis() - startTime;
+
             //deserialize
             List<DataTuple> dataTuples = new ArrayList<>();
             tuplesInKeyRange.stream().forEach(e -> dataTuples.add(schema.deserializeToDataTuple(e)));
 
             //filter by timestamp range
+
+            startTime = System.currentTimeMillis();
+
             filterByTimestamp(dataTuples, timestampLowerBound, timestampUpperBound);
+
+
+            timestampRangeTime += System.currentTimeMillis() - startTime;
+
 
             //filter by predicate
 //            System.out.println("Before predicates: " + dataTuples.size());
+            startTime = System.currentTimeMillis();
+
             filterByPredicate(dataTuples, subQuery.getPredicate());
+
+            predicationTime += System.currentTimeMillis() - startTime;
 //            System.out.println("After predicates: " + dataTuples.size());
+
+
+            startTime = System.currentTimeMillis();
 
             if (subQuery.getAggregator() != null) {
                 Aggregator.IntermediateResult intermediateResult = subQuery.getAggregator().createIntermediateResult();
@@ -263,7 +261,8 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
                 dataTuples.addAll(subQuery.getAggregator().getResults(intermediateResult).dataTuples);
             }
 
-//            totalTupleGet += (System.currentTimeMillis() - tupleGetStart);
+            aggregationTime += System.currentTimeMillis() - startTime;
+
 
             //serialize
             List<byte[]> serializedDataTuples = new ArrayList<>();
@@ -279,30 +278,14 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
             tuples.addAll(serializedDataTuples);
         }
 
-        long closeStart = System.currentTimeMillis();
         fileSystemHandler.closeFile();
-//        fileTime += (System.currentTimeMillis() - closeStart);
-
-//        metrics.setSubqueryEndTime(System.currentTimeMillis());
-
-
-//        System.out.println("total time " + (System.currentTimeMillis() - start));
-//        System.out.println("file open and close time " + fileTime);
-//        System.out.println("template read " + temlateRead);
-//        System.out.println("leaf read " + totalLeafRead);
-//        System.out.println("total tuple get" + totalTupleGet);
-
-//        metrics.setTotalTime(System.currentTimeMillis() - start);
-//        metrics.setFileOpenAndCloseTime(fileTime);
-//        metrics.setLeafReadTime(totalLeafRead);
-//        metrics.setTupleGettingTime(totalTupleGet);
-//        metrics.setTemplateReadingTime(temlateRead);
-
-//        collector.emit(Streams.FileSystemQueryStream, new Values(queryId, tuples, metrics));
-//        metrics.setNumberOfRecords((long) tuples.size());
-//        System.out.println(tuples.size());
 
         metrics.setTotalTime(System.currentTimeMillis() - start);
+        metrics.setFileReadingTime(fileReadingTime);
+        metrics.setKeyRangTime(keyRangeTime);
+        metrics.setTimestampRangeTime(timestampRangeTime);
+        metrics.setPredicationTime(predicationTime);
+        metrics.setAggregationTime(aggregationTime);
 
 
 //        tuples.clear();
@@ -352,7 +335,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
     }
 
 
-    private BTreeLeafNode getLeafFromExternalStorage(FileSystemHandler fileSystemHandler, Input input)
+    private BTreeLeafNode getLeafFromExternalStorage(Input input)
             throws IOException {
         input.setPosition(input.position() + 4);
         BTreeLeafNode leaf = kryo.readObject(input, BTreeLeafNode.class);
@@ -379,29 +362,27 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
     }
 
 
-    private byte[] readLeafBytesFromFile(FileSystemHandler fileSystemHandler, List<Integer> offsets, int length, FileScanMetrics fileScanMetrics) throws IOException {
+    private byte[] readLeafBytesFromFile(FileSystemHandler fileSystemHandler, List<Integer> offsets, int length) throws IOException {
         Integer endOffset = offsets.get(offsets.size() - 1);
         Integer startOffset = offsets.get(0);
 
         byte[] bytesToRead = new byte[4];
 
-        Long startTime = System.currentTimeMillis();
-
 
         fileSystemHandler.readBytesFromFile(endOffset + length + 4, bytesToRead);
+
 
         Input input = new Input(bytesToRead);
         int lastLeafLength = input.readInt();
 
-        fileScanMetrics.setLengthReadTime(System.currentTimeMillis() - startTime);
 
         int totalLength = lastLeafLength + (endOffset - offsets.get(0)) + 4;
 
+
         bytesToRead = new byte[totalLength];
-        startTime = System.currentTimeMillis();
+
 
         fileSystemHandler.readBytesFromFile(startOffset + length + 4, bytesToRead);
-        fileScanMetrics.setTotalBytesReadTime(System.currentTimeMillis() - startTime);
 
         return bytesToRead;
     }

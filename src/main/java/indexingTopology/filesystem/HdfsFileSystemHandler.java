@@ -2,6 +2,7 @@ package indexingTopology.filesystem;
 
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.util.MemChunk;
+import org.apache.commons.compress.utils.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -29,6 +30,8 @@ public class HdfsFileSystemHandler implements FileSystemHandler {
     public HdfsFileSystemHandler(String path, TopologyConfig config) throws IOException {
         configuration = new Configuration();
         configuration.setBoolean("dfs.support.append", true);
+        configuration.setBoolean("dfs.client.read.shortcircuit", true);
+        configuration.set("dfs.domain.socket.path", "/var/lib/hadoop-hdfs/dn_socket");
         this.config = config;
         uri = URI.create(config.HDFS_HOST + path);
         fileSystem = FileSystem.get(uri, configuration);

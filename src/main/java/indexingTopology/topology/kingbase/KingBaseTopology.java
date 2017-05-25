@@ -129,7 +129,8 @@ public class KingBaseTopology {
 //                                (double) schema.getValue("lat", t) <= yHigh ;
 
 //                DataTuplePredicate predicate = t -> schema.getValue("id", t).equals(Integer.toString(new Random().nextInt(100000)));
-                DataTuplePredicate predicate = t -> schema.getValue("id", t).equals(Integer.toString(1000));
+//                DataTuplePredicate predicate = t -> schema.getValue("id", t).equals(Integer.toString(1000));
+                DataTuplePredicate predicate = t -> schema.getValue("car_status", t).equals(1);
 
 
                 Aggregator<Integer> aggregator = new Aggregator<>(schema, null, new AggregateField(new Count(), "*"));
