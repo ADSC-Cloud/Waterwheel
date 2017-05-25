@@ -127,7 +127,7 @@ public class BTreeTest {
 
         byte[] serializedLeaves = bTree.serializeLeaves();
 
-        Input input = new Input(serializedLeaves, 4, serializedLeaves.length);
+        Input input = new Input(serializedLeaves, 0, serializedLeaves.length);
 
         Kryo kryo = new Kryo();
         kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer(config));
@@ -135,7 +135,7 @@ public class BTreeTest {
         while (input.position() < serializedLeaves.length) {
             BTreeLeafNode leaf = kryo.readObject(input, BTreeLeafNode.class);
 //            leaf.print();
-            input.setPosition(input.position() + 4);
+//            input.setPosition(input.position() + 4);
         }
     }
 

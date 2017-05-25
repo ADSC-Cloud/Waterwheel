@@ -39,7 +39,7 @@ public class TopologyConfig implements Serializable {
     public boolean HybridStorage = true;
 
 //    public static String dataDir = "/Users/Robert/Documents/data";
-    public String dataDir = "/home/robert/data";
+    public String dataDir = "/home/acelzj/data";
 //    public static String dataDir = "/home/acelzj/data";
 //    public static String dataDir = "./";
 

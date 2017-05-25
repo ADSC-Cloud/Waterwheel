@@ -684,7 +684,11 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
         return trackedDataTupleQueue.take();
     }
 
-    private void writeTreeIntoChunk() {
+    public MemChunk getChunk() {
+        return chunk;
+    }
+
+    public void writeTreeIntoChunk() {
 
         Output output = new Output(6000000, 500000000);
 
@@ -698,9 +702,18 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
         int templateLength = templateBytesToWrite.length;
         output.writeInt(templateLength);
 
+
         byte[] templateLengthBytesToWrite = output.toBytes();
 
-        chunk = MemChunk.createNew(leafBytesToWrite.length + 4 + templateLength);
+        output = new Output(4);
+        int chunkLength = leafBytesToWrite.length + 4 + templateLength;
+        output.writeInt(chunkLength);
+        byte[] chunkLengthBytesToWrite = output.toBytes();
+
+
+        chunk = MemChunk.createNew(leafBytesToWrite.length + 4 + templateLength + 4);
+
+        chunk.write(chunkLengthBytesToWrite);
         chunk.write(templateLengthBytesToWrite);
         chunk.write(templateBytesToWrite);
         chunk.write(leafBytesToWrite);

@@ -21,7 +21,6 @@ import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
-import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +43,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
     OutputCollector collector;
 
-    private transient LRUCache<BlockId, CacheUnit> blockIdToCacheUnit;
+    private transient LRUCache<String, byte[]> chunkNameToChunkMapping;
 
     private transient Kryo kryo;
 
@@ -61,6 +60,8 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
     private Thread locationReportingThread;
 
     TopologyConfig config;
+
+    private SubqueryHandler subqueryHandler;
 
     public ChunkScanner(DataSchema schema, TopologyConfig config) {
         this.schema = schema;
@@ -92,7 +93,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
 
-        blockIdToCacheUnit = new LRUCache<>(config.CACHE_SIZE);
+        chunkNameToChunkMapping = new LRUCache<>(config.CACHE_SIZE);
 
         pendingQueue = new ArrayBlockingQueue<>(1024);
 
@@ -100,12 +101,14 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
         createSubQueryHandlingThread();
 
-        kryo = new Kryo();
-        kryo.register(BTree.class, new KryoTemplateSerializer(config));
-        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer(config));
+//        kryo = new Kryo();
+//        kryo.register(BTree.class, new KryoTemplateSerializer(config));
+//        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer(config));
+        subqueryHandler = new SubqueryHandler(schema, config);
 
         locationReportingThread = new Thread(() -> {
-            while (true) {
+//            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
                 String hostName = "unknown";
                 try {
                     hostName = InetAddress.getLocalHost().getHostName();
@@ -158,7 +161,13 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
                         SubQueryOnFile subQuery = (SubQueryOnFile) pendingQueue.take();
 //                        System.out.println("sub query " + subQuery.getQueryId() + " has been taken from queue");
 
-                        handleSubQuery(subQuery);
+                        List<byte[]> tuples = subqueryHandler.handleSubquery(subQuery);
+
+                        collector.emit(Streams.FileSystemQueryStream, new Values(subQuery, tuples, new FileScanMetrics()));
+
+                        if (!config.SHUFFLE_GROUPING_FLAG) {
+                            collector.emit(Streams.FileSubQueryFinishStream, new Values("finished"));
+                        }
 //                        System.out.println("sub query " + subQuery.getQueryId() + " has been processed");
                     } catch (InterruptedException e) {
 //                        e.printStackTrace();
@@ -190,240 +199,4 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         subQueryHandlingThread.interrupt();
         locationReportingThread.interrupt();
     }
-
-    @SuppressWarnings("unchecked")
-    private void handleSubQuery(SubQueryOnFile subQuery) throws IOException {
-
-        Long queryId = subQuery.getQueryId();
-        TKey leftKey =  (TKey) subQuery.getLeftKey();
-        TKey rightKey =  (TKey) subQuery.getRightKey();
-        String fileName = subQuery.getFileName();
-        Long timestampLowerBound = subQuery.getStartTimestamp();
-        Long timestampUpperBound = subQuery.getEndTimestamp();
-
-
-        FileScanMetrics metrics = new FileScanMetrics();
-
-        long start = System.currentTimeMillis();
-
-
-        FileSystemHandler fileSystemHandler = null;
-        if (config.HDFSFlag) {
-            if (config.HybridStorage && new File(config.dataDir, fileName).exists()) {
-                fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
-                System.out.println("Subquery will be conducted on local file in cache.");
-            } else {
-                System.out.println("Failed to find local file :" + config.dataDir + "/" + fileName);
-                fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
-            }
-        } else {
-            fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
-        }
-        fileSystemHandler.openFile("/", fileName);
-
-        Pair data = getTemplateData(fileSystemHandler, fileName);
-
-        BTree template = (BTree) data.getKey();
-        Integer length = (Integer) data.getValue();
-
-        
-        BTreeLeafNode leaf = null;
-        ArrayList<byte[]> tuples = new ArrayList<byte[]>();
-
-
-        List<Integer> offsets = template.getOffsetsOfLeafNodesShouldContainKeys(leftKey, rightKey);
-
-
-//        byte[] bytesToRead = readLeafBytesFromFile(fileSystemHandler, offsets, length);
-        byte[] bytesToRead = readLeafBytesFromFile(fileSystemHandler, offsets, length);
-
-        Long fileReadingTime = System.currentTimeMillis() - start;
-        metrics.setFileReadingTime(fileReadingTime);
-
-        Input input = new Input(bytesToRead);
-
-        //code below are used to evaluate the specific time cost
-        Long keyRangeTime = 0L;
-        Long timestampRangeTime = 0L;
-        Long predicationTime = 0L;
-        Long aggregationTime = 0L;
-
-
-        for (Integer offset : offsets) {
-            BlockId blockId = new BlockId(fileName, offset + length + 4);
-
-            leaf = (BTreeLeafNode) getFromCache(blockId);
-
-            if (leaf == null) {
-                leaf = getLeafFromExternalStorage(input);
-                CacheData cacheData = new LeafNodeCacheData(leaf);
-                putCacheData(blockId, cacheData);
-            }
-
-            Long startTime = System.currentTimeMillis();
-
-
-            ArrayList<byte[]> tuplesInKeyRange = leaf.getTuplesWithinKeyRange(leftKey, rightKey);
-
-            keyRangeTime += System.currentTimeMillis() - startTime;
-
-            //deserialize
-            List<DataTuple> dataTuples = new ArrayList<>();
-            tuplesInKeyRange.stream().forEach(e -> dataTuples.add(schema.deserializeToDataTuple(e)));
-
-            //filter by timestamp range
-
-            startTime = System.currentTimeMillis();
-
-            filterByTimestamp(dataTuples, timestampLowerBound, timestampUpperBound);
-
-
-            timestampRangeTime += System.currentTimeMillis() - startTime;
-
-
-            //filter by predicate
-//            System.out.println("Before predicates: " + dataTuples.size());
-            startTime = System.currentTimeMillis();
-
-            filterByPredicate(dataTuples, subQuery.getPredicate());
-
-            predicationTime += System.currentTimeMillis() - startTime;
-//            System.out.println("After predicates: " + dataTuples.size());
-
-
-            startTime = System.currentTimeMillis();
-
-            if (subQuery.getAggregator() != null) {
-                Aggregator.IntermediateResult intermediateResult = subQuery.getAggregator().createIntermediateResult();
-                subQuery.getAggregator().aggregate(dataTuples, intermediateResult);
-                dataTuples.clear();
-                dataTuples.addAll(subQuery.getAggregator().getResults(intermediateResult).dataTuples);
-            }
-
-            aggregationTime += System.currentTimeMillis() - startTime;
-
-
-            //serialize
-            List<byte[]> serializedDataTuples = new ArrayList<>();
-
-            if (subQuery.getAggregator() != null) {
-                DataSchema outputSchema = subQuery.getAggregator().getOutputDataSchema();
-                dataTuples.stream().forEach(p -> serializedDataTuples.add(outputSchema.serializeTuple(p)));
-            } else {
-                dataTuples.stream().forEach(p -> serializedDataTuples.add(schema.serializeTuple(p)));
-            }
-
-
-            tuples.addAll(serializedDataTuples);
-        }
-
-        fileSystemHandler.closeFile();
-
-        metrics.setTotalTime(System.currentTimeMillis() - start);
-        metrics.setFileReadingTime(fileReadingTime);
-        metrics.setKeyRangTime(keyRangeTime);
-        metrics.setTimestampRangeTime(timestampRangeTime);
-        metrics.setPredicationTime(predicationTime);
-        metrics.setAggregationTime(aggregationTime);
-
-
-//        tuples.clear();
-//        System.out.println(String.format("%d tuples are found on file %s", tuples.size(), fileName));
-        collector.emit(Streams.FileSystemQueryStream, new Values(subQuery, tuples, metrics));
-
-
-        if (!config.SHUFFLE_GROUPING_FLAG) {
-            collector.emit(Streams.FileSubQueryFinishStream, new Values("finished"));
-        }
-    }
-
-
-    private Object getFromCache(BlockId blockId) {
-        if (blockIdToCacheUnit.get(blockId) == null) {
-            return null;
-        }
-        return blockIdToCacheUnit.get(blockId).getCacheData().getData();
-    }
-
-
-    private void putCacheData(BlockId blockId, CacheData cacheData) {
-        CacheUnit cacheUnit = new CacheUnit();
-        cacheUnit.setCacheData(cacheData);
-        blockIdToCacheUnit.put(blockId, cacheUnit);
-    }
-
-    private void filterByTimestamp(List<DataTuple> tuples, Long timestampLowerBound, Long timestampUpperBound)
-            throws IOException {
-
-        List<DataTuple> result =
-        tuples.stream().filter(p -> {
-            Long timestamp = (Long) schema.getValue("timestamp", p);
-            return timestampLowerBound <= timestamp && timestampUpperBound >= timestamp;
-        }).collect(Collectors.toList());
-        tuples.clear();
-        tuples.addAll(result);
-
-    }
-
-    private void filterByPredicate(List<DataTuple> tuples, Predicate<DataTuple> predicate) {
-        if (predicate != null) {
-            List<DataTuple> result = tuples.stream().filter(predicate).collect(Collectors.toList());
-            tuples.clear();
-            tuples.addAll(result);
-        }
-    }
-
-
-    private BTreeLeafNode getLeafFromExternalStorage(Input input)
-            throws IOException {
-        input.setPosition(input.position() + 4);
-        BTreeLeafNode leaf = kryo.readObject(input, BTreeLeafNode.class);
-
-        return leaf;
-    }
-
-
-    private Pair getTemplateData(FileSystemHandler fileSystemHandler, String fileName) {
-        Pair data = null;
-        try {
-            BlockId blockId = new BlockId(fileName, 0);
-
-            data = (Pair) getFromCache(blockId);
-            if (data == null) {
-                data = getTemplateFromExternalStorage(fileSystemHandler, fileName);
-                CacheData cacheData = new TemplateCacheData(data);
-                putCacheData(blockId, cacheData);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return data;
-    }
-
-
-    private byte[] readLeafBytesFromFile(FileSystemHandler fileSystemHandler, List<Integer> offsets, int length) throws IOException {
-        Integer endOffset = offsets.get(offsets.size() - 1);
-        Integer startOffset = offsets.get(0);
-
-        byte[] bytesToRead = new byte[4];
-
-
-        fileSystemHandler.readBytesFromFile(endOffset + length + 4, bytesToRead);
-
-
-        Input input = new Input(bytesToRead);
-        int lastLeafLength = input.readInt();
-
-
-        int totalLength = lastLeafLength + (endOffset - offsets.get(0)) + 4;
-
-
-        bytesToRead = new byte[totalLength];
-
-
-        fileSystemHandler.readBytesFromFile(startOffset + length + 4, bytesToRead);
-
-        return bytesToRead;
-    }
-
 }
