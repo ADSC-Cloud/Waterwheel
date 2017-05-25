@@ -68,7 +68,8 @@ public class TopologyTest extends TestCase {
         assertTrue(config != null);
 
         InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001,
+                config, schema);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
                 coordinator, config);
@@ -151,6 +152,7 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
+            cluster.killTopology("T0");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -158,6 +160,7 @@ public class TopologyTest extends TestCase {
         assertTrue(fullyExecuted);
         cluster.shutdown();
 
+        Thread.sleep(1000);
     }
 
     @Test
@@ -175,7 +178,8 @@ public class TopologyTest extends TestCase {
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
         InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001,
+                config, schema);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
                 coordinator, config);
@@ -258,13 +262,14 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
+            cluster.killTopology("T0");
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
         cluster.shutdown();
-
+        Thread.sleep(1000);
     }
 
     @Test
@@ -282,7 +287,8 @@ public class TopologyTest extends TestCase {
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
         InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001,
+                config, schema);
 
         ArrayList<String> bloomFilterColumns = new ArrayList<>();
         bloomFilterColumns.add("a4");
@@ -396,13 +402,14 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
+            cluster.killTopology("T0");
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
         cluster.shutdown();
-
+        Thread.sleep(1000);
     }
 
 
@@ -421,7 +428,8 @@ public class TopologyTest extends TestCase {
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
         InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001,
+                config, schema);
 
         ArrayList<String> bloomFilterColumns = new ArrayList<>();
         bloomFilterColumns.add("a2");
@@ -535,13 +543,14 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
+            cluster.killTopology("T0");
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
         cluster.shutdown();
-
+        Thread.sleep(1000);
     }
 
     @Test
@@ -561,7 +570,8 @@ public class TopologyTest extends TestCase {
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
         InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001,
+                config, schema);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
                 coordinator, config);
@@ -662,13 +672,14 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
+            cluster.killTopology("T0");
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
         cluster.shutdown();
-
+        Thread.sleep(1000);
     }
 
     @Test
@@ -693,7 +704,8 @@ public class TopologyTest extends TestCase {
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
         InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(rawSchema, 10000, config);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001,
+                config, schema);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
                 coordinator, mapper, config);
@@ -794,13 +806,14 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
+            cluster.killTopology("T0");
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
         cluster.shutdown();
-
+        Thread.sleep(1000);
     }
 
     @Test
@@ -818,7 +831,8 @@ public class TopologyTest extends TestCase {
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
         InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001,
+                config, schema);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
                 coordinator, config);
@@ -915,13 +929,14 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
+            cluster.killTopology("T0");
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
         cluster.shutdown();
-
+        Thread.sleep(1000);
     }
 
     @Test
@@ -939,7 +954,8 @@ public class TopologyTest extends TestCase {
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
         InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001,
+                config, schema);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
                 coordinator, config);
@@ -1026,12 +1042,13 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
+            cluster.killTopology("T0");
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
         cluster.shutdown();
-
+        Thread.sleep(1000);
     }
 }

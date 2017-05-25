@@ -4,8 +4,10 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 
 /**
  * Created by robert on 3/3/17.
@@ -31,16 +33,24 @@ public abstract class ServerHandle implements Runnable{
     @Override
     public void run() {
             try {
+                client.setSoTimeout(1000);
                 objectInputStream = new ObjectInputStream(client.getInputStream());
                 objectOutputStream = new ObjectOutputStream(client.getOutputStream());
                 while (true) {
                     try {
+//                        System.out.println("try to read");
                         final Object newObject = objectInputStream.readUnshared();
 //                        System.out.println("Received: " + newObject);
                         handleInputObject(newObject);
 //                        System.out.println("Handled: " + newObject);
                     } catch (ClassNotFoundException e) {
                         e.printStackTrace();
+                    } catch (SocketTimeoutException e) {
+                        if (Thread.currentThread().isInterrupted()) {
+                            System.out.println("ServerHandle is interrupted");
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
                     }
                 }
             } catch (EOFException e) {
@@ -53,10 +63,15 @@ public abstract class ServerHandle implements Runnable{
     }
 
     void handleInputObject(Object object) {
+        Method method = null;
         try {
-            Method method = this.getClass().getMethod("handle", object.getClass());
+            method = this.getClass().getMethod("handle", object.getClass());
             method.invoke(this, object);
-        } catch (Exception e) {
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
             e.printStackTrace();
         }
     }

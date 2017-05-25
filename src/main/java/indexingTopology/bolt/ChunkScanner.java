@@ -3,6 +3,7 @@ package indexingTopology.bolt;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import indexingTopology.aggregator.Aggregator;
+import indexingTopology.bolt.metrics.LocationInfo;
 import indexingTopology.cache.*;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
@@ -20,10 +21,14 @@ import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
+import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +57,8 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
     private transient Semaphore subQueryHandlingSemaphore;
 
     private Thread subQueryHandlingThread;
+
+    private Thread locationReportingThread;
 
     TopologyConfig config;
 
@@ -96,6 +103,28 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         kryo = new Kryo();
         kryo.register(BTree.class, new KryoTemplateSerializer(config));
         kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer(config));
+
+        locationReportingThread = new Thread(() -> {
+            while (true) {
+                String hostName = "unknown";
+                try {
+                    hostName = InetAddress.getLocalHost().getHostName();
+                } catch (UnknownHostException e) {
+                    e.printStackTrace();
+                }
+                LocationInfo info = new LocationInfo(LocationInfo.Type.Query, topologyContext.getThisTaskId(), hostName);
+                outputCollector.emit(Streams.LocationInfoUpdateStream, new Values(info));
+
+                try {
+                    Thread.sleep(10000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        });
+        locationReportingThread.start();
     }
 
     @Override
@@ -134,6 +163,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
                     } catch (InterruptedException e) {
 //                        e.printStackTrace();
                         Thread.currentThread().interrupt();
+                        break;
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -150,12 +180,15 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
         outputFieldsDeclarer.declareStream(Streams.FileSubQueryFinishStream,
                 new Fields("finished"));
+
+        outputFieldsDeclarer.declareStream(Streams.LocationInfoUpdateStream, new Fields("info"));
     }
 
     @Override
     public void cleanup() {
         super.cleanup();
         subQueryHandlingThread.interrupt();
+        locationReportingThread.interrupt();
     }
 
     @SuppressWarnings("unchecked")
@@ -176,7 +209,13 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
         FileSystemHandler fileSystemHandler = null;
         if (config.HDFSFlag) {
-            fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
+            if (config.HybridStorage && new File(config.dataDir, fileName).exists()) {
+                fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+                System.out.println("Subquery will be conducted on local file in cache.");
+            } else {
+                System.out.println("Failed to find local file :" + config.dataDir + "/" + fileName);
+                fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
+            }
         } else {
             fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
         }

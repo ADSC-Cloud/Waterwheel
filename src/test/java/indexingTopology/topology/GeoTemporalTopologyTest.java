@@ -44,6 +44,7 @@ public class GeoTemporalTopologyTest extends TestCase {
         }
         config.dataDir = "./target/tmp";
         config.HDFSFlag = false;
+        config.CHUNK_SIZE = 1024 * 1024;
         System.out.println("dataDir is set to " + config.dataDir);
     }
 
@@ -56,7 +57,7 @@ public class GeoTemporalTopologyTest extends TestCase {
     }
 
     @Test
-    public void testGeoRangeQuery() {
+    public void testGeoRangeQuery() throws InterruptedException {
         boolean fullyExecuted = false;
 
         DataSchema rawSchema = new DataSchema();
@@ -82,7 +83,7 @@ public class GeoTemporalTopologyTest extends TestCase {
         Integer upperBound = city.getMaxZCode();
 
         QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, 10001, city, config);
+                upperBound, 10001, city, config, schema);
 
         InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000, config);
 
@@ -192,6 +193,7 @@ public class GeoTemporalTopologyTest extends TestCase {
 
             queryClient.close();
             clientBatchMode.close();
+            cluster.killTopology("T0");
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -199,10 +201,11 @@ public class GeoTemporalTopologyTest extends TestCase {
         assertTrue(fullyExecuted);
 
         cluster.shutdown();
+        Thread.sleep(1000);
     }
 
     @Test
-    public void testGeoRangeQueryWithBloomFilterOnVarchar() {
+    public void testGeoRangeQueryWithBloomFilterOnVarchar() throws InterruptedException {
         boolean fullyExecuted = false;
 
         DataSchema rawSchema = new DataSchema();
@@ -228,7 +231,7 @@ public class GeoTemporalTopologyTest extends TestCase {
         Integer upperBound = city.getMaxZCode();
 
         QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, 10001, city, config);
+                upperBound, 10001, city, config, schema);
 
         InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000, config);
 
@@ -351,6 +354,7 @@ public class GeoTemporalTopologyTest extends TestCase {
 
             queryClient.close();
             clientBatchMode.close();
+            cluster.killTopology("T0");
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -358,5 +362,6 @@ public class GeoTemporalTopologyTest extends TestCase {
         assertTrue(fullyExecuted);
 
         cluster.shutdown();
+        Thread.sleep(1000);
     }
 }

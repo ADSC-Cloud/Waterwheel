@@ -2,6 +2,7 @@ package indexingTopology.bolt;
 
 import indexingTopology.client.*;
 import indexingTopology.config.TopologyConfig;
+import indexingTopology.data.DataSchema;
 import indexingTopology.data.PartialQueryResult;
 import indexingTopology.util.Query;
 import org.apache.storm.task.OutputCollector;
@@ -9,6 +10,7 @@ import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.awt.image.DataBufferShort;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,8 +36,8 @@ public class QueryCoordinatorWithQueryReceiverServer<T extends Number & Comparab
 
     private static final Logger LOG = LoggerFactory.getLogger(QueryCoordinatorWithQueryReceiverServer.class);
 
-    public QueryCoordinatorWithQueryReceiverServer(T lowerBound, T upperBound, int port, TopologyConfig config) {
-        super(lowerBound, upperBound, config);
+    public QueryCoordinatorWithQueryReceiverServer(T lowerBound, T upperBound, int port, TopologyConfig config, DataSchema schema) {
+        super(lowerBound, upperBound, config, schema);
         this.port = port;
     }
 

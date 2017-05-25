@@ -3,6 +3,7 @@ package indexingTopology.bolt;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import indexingTopology.bloom.DataChunkBloomFilters;
+import indexingTopology.bolt.metrics.LocationInfo;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.util.*;
 import org.apache.storm.task.OutputCollector;
@@ -284,6 +285,12 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
         } else if (tuple.getSourceStreamId().equals(Streams.EnableRepartitionStream)) {
             repartitionEnabled = true;
 //            System.out.println("repartition has been enabled!!!");
+        } else if (tuple.getSourceStreamId().equals(Streams.LocationInfoUpdateStream)) {
+            LocationInfo info = (LocationInfo) tuple.getValue(0);
+            //TODO: maintain the info in mete-data server as well as the backing store.
+
+            // simply forward the info
+            collector.emit(Streams.LocationInfoUpdateStream, new Values(info));
         }
     }
 
@@ -311,6 +318,8 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
 
 
         outputFieldsDeclarer.declareStream(Streams.LoadBalanceStream, new Fields("loadBalance"));
+
+        outputFieldsDeclarer.declareStream(Streams.LocationInfoUpdateStream, new Fields("info"));
     }
 
     @Override

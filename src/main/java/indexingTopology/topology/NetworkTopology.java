@@ -69,7 +69,7 @@ public class NetworkTopology {
 
 //        QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound, upperBound, 10001);
             QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryGenerator<>(lowerBound, upperBound,
-                    config);
+                    config, schema);
 
             TopologyGenerator<Double> topologyGenerator = new TopologyGenerator<>();
 
