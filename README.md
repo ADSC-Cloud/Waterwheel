@@ -7,13 +7,13 @@ Data tuples continuouly arrive at the system. Each tuple consists of a key, a ti
 
 ### Requirement
 1. JDK 8 or higher;
-1. maven;
-1. Apache Storm (not needed in local mode);
-1. HDFS (not needed in local mode);
+1. [maven](http://maven.apache.org);
+1. [Apache Storm](https://github.com/apache/storm) (not needed in local mode);
+1. [HDFS](https://hadoop.apache.org) (not needed in local mode);
 
 ### Quick Start
 #### 1. Local mode
-Running our system in local model is the easiest way to get a feeling of the system. Local model is typically used internally to debug the topology. We highly encourage the users to run our system in cluster model to fully exploit the performance.
+Running our system in local model is the easiest way to get a feeling of the system. Local model is typically used internally to debug the topology. If you want to use our system in production, we suggest you to run our system in cluster model to fully exploit the performance.
 
 To run our system in local mode, you should follow those steps:
 
@@ -38,10 +38,25 @@ set ```HDFSFlag = false``` to use local file system.  <br />
  
 5. Launch the system
 
+Run the following command to launch the system
+
 ```
-$ mvn exec:java -Dexec.mainClass=indexingTopology.topology.KingBaseTopology
+$ mvn exec:java -Dexec.mainClass=indexingTopology.topology.kingbase.KingBaseTopology -Dexec.args="-m submit --local"
 ```
 
+Open a new terminal and run the following command to ingest tuples to the system:
+
+```
+$ mvn exec:java -Dexec.mainClass=indexingTopology.topology.kingbase.KingBaseTopology -Dexec.args="-m ingest -r 10000 --ingest-server-ip localhost"
+```
+
+Open a new terminal and run the following command to issue generated queries:
+
+```
+$ mvn exec:java -Dexec.mainClass=indexingTopology.topology.kingbase.KingBaseTopology -Dexec.args="-m query --query-server-ip localhost"
+```
+
+Use ```-h``` print the detailed usage of the arguments.
 
 #### 2. Cluster model
 
