@@ -28,6 +28,7 @@ import org.apache.storm.utils.Utils;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
@@ -106,6 +107,7 @@ public class KingBaseTopology {
                 queryClient.connectWithTimeout(10000);
             } catch (IOException e) {
                 e.printStackTrace();
+                return;
             }
             Random random = new Random();
 
@@ -117,19 +119,19 @@ public class KingBaseTopology {
                 double x = x1 + (x2 - x1) * (1 - selectivityOnOneDimension) * random.nextDouble();
                 double y = y1 + (y2 - y1) * (1 - selectivityOnOneDimension) * random.nextDouble();
 
-                final Double xLow = x;
-                final Double xHigh = x + selectivityOnOneDimension * (x2 - x1);
-                final Double yLow = y;
-                final Double yHigh = y + selectivityOnOneDimension * (y2 - y1);
+                final double xLow = x;
+                final double xHigh = x + selectivityOnOneDimension * (x2 - x1);
+                final double yLow = y;
+                final double yHigh = y + selectivityOnOneDimension * (y2 - y1);
 
-//                DataTuplePredicate predicate = t ->
-//                                 (double) schema.getValue("lon", t) >= xLow &&
-//                                (double) schema.getValue("lon", t) <= xHigh &&
-//                                (double) schema.getValue("lat", t) >= yLow &&
-//                                (double) schema.getValue("lat", t) <= yHigh ;
+                DataTuplePredicate predicate = t ->
+                                 (double) schema.getValue("lon", t) >= xLow &&
+                                (double) schema.getValue("lon", t) <= xHigh &&
+                                (double) schema.getValue("lat", t) >= yLow &&
+                                (double) schema.getValue("lat", t) <= yHigh ;
 
 //                DataTuplePredicate predicate = t -> schema.getValue("id", t).equals(Integer.toString(new Random().nextInt(100000)));
-                DataTuplePredicate predicate = t -> schema.getValue("id", t).equals(Integer.toString(1000));
+//                DataTuplePredicate predicate = t -> schema.getValue("id", t).equals(Integer.toString(1000));
 
 
                 Aggregator<Integer> aggregator = new Aggregator<>(schema, null, new AggregateField(new Count(), "*"));
@@ -141,10 +143,11 @@ public class KingBaseTopology {
 //                        (double) schemaAfterAggregation.getValue("count(*)", o2));
 
 
-                DataTupleEquivalentPredicateHint equivalentPredicateHint = new DataTupleEquivalentPredicateHint("id", "1000");
+//                DataTupleEquivalentPredicateHint equivalentPredicateHint = new DataTupleEquivalentPredicateHint("id", "1000");
 
                 GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
-                        System.currentTimeMillis() - RecentSecondsOfInterest * 1000, System.currentTimeMillis(), predicate, aggregator, null, equivalentPredicateHint);
+                        System.currentTimeMillis() - RecentSecondsOfInterest * 1000,
+                        System.currentTimeMillis(), predicate, aggregator, null, null);
                 long start = System.currentTimeMillis();
                 try {
                     System.out.println("A query will be issued.");
@@ -186,7 +189,7 @@ public class KingBaseTopology {
         DataSchema rawSchema = getRawDataSchema();
         TrajectoryGenerator generator = new TrajectoryMovingGenerator(x1, x2, y1, y2, 100000, 45.0);
         IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode(IngestServerIp, 10000,
-                rawSchema, 10240);
+                rawSchema, 1024);
 
         RateTracker rateTracker = new RateTracker(1000,2);
         FrequencyRestrictor restrictor = new FrequencyRestrictor(MaxIngestRate, 5);
@@ -218,9 +221,22 @@ public class KingBaseTopology {
                         break;
                     }
                 } catch (IOException e) {
-                    if (clientBatchMode.isClosed())
-                        break;
+//                    if (clientBatchMode.isClosed()) {
+                        try {
+                            System.out.println("try to reconnect....");
+                            clientBatchMode.connectWithTimeout(10000);
+                            System.out.println("connected.");
+                        } catch (IOException e1) {
+                            e1.printStackTrace();
+                        }
+//                    }
                     e.printStackTrace();
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e1) {
+                        e1.printStackTrace();
+                        Thread.currentThread().interrupt();
+                    }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -328,223 +344,6 @@ public class KingBaseTopology {
 //        else if (command.equals("query"))
 //            executeQuery();
 
-    }
-
-    public static void Fakemain(String[] args) throws Exception {
-
-        DataSchema rawSchema = getRawDataSchema();
-        DataSchema schema = getDataSchema();
-
-
-        double selectivity = Math.sqrt(1);
-
-//        TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
-        TrajectoryGenerator generator = new TrajectoryMovingGenerator(x1, x2, y1, y2, 100000, 45.0);
-        City city = new City(x1, x2, y1, y2, partitions);
-
-        Integer lowerBound = 0;
-        Integer upperBound = city.getMaxZCode();
-
-        final boolean enableLoadBalance = false;
-
-        TopologyConfig config = new TopologyConfig();
-
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000, config);
-
-        QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, 10001, city, config, schema);
-
-
-        DataTupleMapper dataTupleMapper = new DataTupleMapper(rawSchema, (Serializable & Function<DataTuple, DataTuple>) t -> {
-            double lon = (double)schema.getValue("lon", t);
-            double lat = (double)schema.getValue("lat", t);
-            int zcode = city.getZCodeForALocation(lon, lat);
-            t.add(zcode);
-            t.add(System.currentTimeMillis());
-            return t;
-        });
-
-        List<String> bloomFilterColumns = new ArrayList<>();
-        bloomFilterColumns.add("id");
-
-        TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
-        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
-                enableLoadBalance, dataSource, queryCoordinator, dataTupleMapper, bloomFilterColumns, config);
-
-        Config conf = new Config();
-        conf.setDebug(false);
-        conf.setNumWorkers(1);
-
-        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
-        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
-
-
-        LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("T0", conf, topology);
-
-        IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode("localhost", 10000,
-                rawSchema, 1024);;
-        Thread ingestionThread = new Thread(()->{
-            Random random = new Random();
-
-            try {
-                clientBatchMode.connectWithTimeout(10000);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            while(true) {
-                Car car = generator.generate();
-                DataTuple tuple = new DataTuple();
-                tuple.add(Integer.toString((int)car.id));
-                tuple.add(Integer.toString(random.nextInt()));
-                tuple.add(car.x);
-                tuple.add(car.y);
-                tuple.add(1);
-                tuple.add(55.3);
-                tuple.add("position 1");
-                tuple.add("2015-10-10, 11:12:34");
-                try {
-                    clientBatchMode.appendInBatch(tuple);
-                    if(Thread.interrupted()) {
-                        break;
-                    }
-                } catch (IOException e) {
-                    if (clientBatchMode.isClosed())
-                        break;
-                    e.printStackTrace();
-                }
-
-//                try {
-////                    Thread.sleep(1);
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
-
-            }
-        });
-        ingestionThread.start();
-
-        GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient("localhost", 10001);
-        Thread queryThread = new Thread(() -> {
-            try {
-                queryClient.connectWithTimeout(10000);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            Random random = new Random();
-
-            while (true) {
-
-                double x = x1 + (x2 - x1) * random.nextDouble();
-                double y = y1 + (y2 - y1) * random.nextDouble();
-
-                final Double xLow = x;
-                final Double xHigh = x + selectivity * (x2 - x1);
-                final Double yLow = y;
-                final Double yHigh = y + selectivity * (y2 - y1);
-
-                DataTuplePredicate predicate = new DataTuplePredicate() {
-                    @Override
-                    public boolean test(DataTuple objects) {
-                        return (double)schema.getValue("lon", objects) >= xLow &&
-                                (double)schema.getValue("lon", objects) <= xHigh &&
-                                (double)schema.getValue("lat", objects) >= yLow &&
-                                (double)schema.getValue("lat", objects) <= yHigh &&
-                                schema.getValue("id", objects).equals("100");
-                    }
-                };
-
-                Aggregator<Integer> aggregator = new Aggregator<>(schema, "zcode", new AggregateField(new Count(), "*"));
-                DataSchema schemaAfterAggregation = aggregator.getOutputDataSchema();
-
-                DataTupleSorter sorter = new DataTupleSorter() {
-                    @Override
-                    public int compare(DataTuple o1, DataTuple o2) {
-                        return Double.compare((double)schemaAfterAggregation.getValue("count(*)", o1),
-                                (double)schemaAfterAggregation.getValue("count(*)", o2));
-                    }
-                };
-
-                DataTupleEquivalentPredicateHint equivalentPredicate = new DataTupleEquivalentPredicateHint("id", "100");
-
-                GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
-                        System.currentTimeMillis() - 5000, System.currentTimeMillis(), predicate, aggregator, sorter,
-                        equivalentPredicate);
-                long start = System.currentTimeMillis();
-                try {
-                        while(true) {
-                            Utils.sleep(1000);
-                            QueryResponse response = queryClient.query(queryRequest);
-                            if (response.getEOFFlag()) {
-                                System.out.println("EOF.");
-                                long end = System.currentTimeMillis();
-                                System.out.println(String.format("Query time: %d ms", end - start));
-                                break;
-                            }
-                            System.out.println(response);
-                        }
-                    } catch (SocketTimeoutException e) {
-                        Thread.interrupted();
-                    } catch (IOException e) {
-                        if (Thread.currentThread().interrupted()) {
-                            Thread.interrupted();
-                        }
-                    } catch (ClassNotFoundException e) {
-                        e.printStackTrace();
-                    }
-
-            }
-
-//            while (true) {
-//
-//                final Double xLow = 10.0;
-//                final Double xHigh = 15.0;
-//                final Double yLow = 40.0;
-//                final Double yHigh = 50.0;
-//                Intervals intervals = city.getZCodeIntervalsInARectagle(xLow, xHigh, yLow, yHigh);
-//
-//                DataTuplePredicate predicate = new DataTuplePredicate() {
-//                    @Override
-//                    public boolean test(DataTuple objects) {
-//                        return (double)rawSchema.getValue("lon", objects) >= xLow &&
-//                                (double)rawSchema.getValue("lon", objects) <= xHigh &&
-//                                (double)rawSchema.getValue("lat", objects) >= yLow &&
-//                                (double)rawSchema.getValue("lat", objects) <= yHigh;
-//                    }
-//                };
-//
-//
-//                for (Interval interval: intervals.intervals) {
-//                    QueryRequest queryRequest = new QueryRequest(interval.low, interval.high, System.currentTimeMillis()-6000, System.currentTimeMillis(), predicate);
-//                    try {
-//                        while(true) {
-//                            QueryResponse response = queryClient.query(queryRequest);
-//                            if (response.getEOFFlag()) {
-//                                System.out.println("EOF.");
-//                                break;
-//                            }
-//                            System.out.println(response);
-//                        }
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    } catch (ClassNotFoundException e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//                System.out.println("A query is fully executed!");
-//            }
-        });
-        queryThread.start();
-
-        Utils.sleep(50000);
-        cluster.shutdown();
-        System.out.println("Local cluster is shut down!");
-        ingestionThread.interrupt();
-        clientBatchMode.close();
-        queryClient.close();
-        queryThread.interrupt();
-        System.out.println("Waiting to interrupt!");
-//        StormSubmitter.submitTopologyWithProgressBar(args[0], conf, topology);
     }
 
 

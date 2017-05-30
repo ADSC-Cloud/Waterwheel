@@ -31,6 +31,8 @@ public class FileScanMetrics implements Serializable {
 
     private Long subqueryStartTime;
     private Long subqueryEndTime;
+
+    public String debugInfo;
     public FileScanMetrics() {
 
     }

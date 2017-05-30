@@ -41,6 +41,8 @@ public class InputStreamReceiver extends BaseRichBolt {
 
     TopologyConfig config;
 
+    Thread backPressureDisplayThread;
+
     public InputStreamReceiver(DataSchema schema, TopologyConfig config) {
         this.schema = schema;
         this.config = config;
@@ -82,12 +84,17 @@ public class InputStreamReceiver extends BaseRichBolt {
         });
         emittingThread.start();
 
-//        new Thread(() -> {
-//            while(true) {
-//                Utils.sleep(5000);
-//                System.out.println(backPressure);
-//            }
-//        }).start();
+        backPressureDisplayThread = new Thread(() -> {
+            while(true) {
+                Utils.sleep(5000);
+                System.out.println(backPressure);
+                if (Thread.currentThread().isInterrupted()) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        });
+        backPressureDisplayThread.start();
 
 //        Thread capacityCheckingThread = new Thread(new Runnable() {
 //            @Override
@@ -123,5 +130,6 @@ public class InputStreamReceiver extends BaseRichBolt {
     public void cleanup() {
         super.cleanup();
         emittingThread.interrupt();
+        backPressureDisplayThread.interrupt();
     }
 }

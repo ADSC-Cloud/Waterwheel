@@ -11,6 +11,7 @@ import indexingTopology.data.DataSchema;
 import indexingTopology.data.PartialQueryResult;
 import indexingTopology.util.*;
 import javafx.util.Pair;
+import org.apache.commons.lang.SerializationUtils;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -43,7 +44,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private FilePartitionSchemaManager filePartitionSchemaManager;
 
-    private Semaphore concurrentQueriesSemaphore;
+     private Semaphore concurrentQueriesSemaphore;
 
     private static final int MAX_NUMBER_OF_CONCURRENT_QUERIES = 1;
 
@@ -415,6 +416,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
     }
 
     List<SubQueryOnFile<T>> mergeSubqueries(List<SubQueryOnFile<T>> subqueries) {
+        final DataSchema localSchema = this.schema.duplicate();
         Map<String, List<SubQueryOnFile<T>>> fileNameToSubqueries = new HashMap<>();
         subqueries.stream().forEach(t -> {
             List<SubQueryOnFile<T>> list = fileNameToSubqueries.computeIfAbsent(t.getFileName(), x -> new ArrayList<>());
@@ -440,15 +442,27 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
                     rightMost = rightMost.compareTo(currentQuery.rightKey) > 0 ? rightMost : currentQuery.rightKey;
                     DataTuplePredicate finalAdditionalPredicate1 = additionalPredicate;
                     additionalPredicate = t -> finalAdditionalPredicate1.test(t) ||
-                            (currentQuery.leftKey.compareTo((T)schema.getIndexValue(t)) <= 0 &&
-                            currentQuery.rightKey.compareTo((T)schema.getIndexValue(t)) >= 0);
+                            (currentQuery.leftKey.compareTo((T)localSchema.getIndexValue(t)) <= 0 &&
+                            currentQuery.rightKey.compareTo((T)localSchema.getIndexValue(t)) >= 0);
                 }
                 DataTuplePredicate finalAdditionalPredicate = additionalPredicate;
                 DataTuplePredicate finalPredicate = predicate;
-                firstQuery.predicate = t -> finalPredicate.test(t) && finalAdditionalPredicate.test(t);
-                firstQuery.leftKey = leftMost;
-                firstQuery.rightKey = rightMost;
-                ret.add(firstQuery);
+
+                DataTuplePredicate composedPredicate = t -> finalPredicate.test(t) && finalAdditionalPredicate.test(t);
+
+                SubQueryOnFile<T> subQuery = new SubQueryOnFile<>(firstQuery.queryId, leftMost,
+                        rightMost, firstQuery.getFileName(), firstQuery.startTimestamp,
+                        firstQuery.endTimestamp, composedPredicate, firstQuery.aggregator,
+                        firstQuery.sorter);
+
+
+//                firstQuery.predicate = t -> finalPredicate.test(t) && finalAdditionalPredicate.test(t);
+//                firstQuery.leftKey = leftMost;
+//                firstQuery.rightKey = rightMost;
+//                ret.add(firstQuery);
+                byte[] bytes = SerializationUtils.serialize(subQuery);
+                System.out.println("serialized size: " + bytes.length);
+                ret.add(subQuery);
             }
         });
 
@@ -634,14 +648,15 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private void sendSubqueriesFromTaskQueues() {
         for (Integer taskId : queryServers) {
-            ArrayBlockingQueue<SubQuery> taskQueue = taskIdToTaskQueue.get(taskId);
-            SubQuery subQuery = taskQueue.poll();
-            if (subQuery != null) {
-
-                collector.emitDirect(taskId, Streams.FileSystemQueryStream
-                        , new Values(subQuery));
-
-            }
+//            ArrayBlockingQueue<SubQuery> taskQueue = taskIdToTaskQueue.get(taskId);
+//            SubQuery subQuery = taskQueue.poll();
+//            if (subQuery != null) {
+//
+//                collector.emitDirect(taskId, Streams.FileSystemQueryStream
+//                        , new Values(subQuery));
+//
+//            }
+            sendSubquery(taskId);
         }
     }
 

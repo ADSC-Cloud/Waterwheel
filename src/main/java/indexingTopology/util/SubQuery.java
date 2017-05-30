@@ -6,23 +6,23 @@ import java.io.Serializable;
 
 public class SubQuery <T extends Number> implements Serializable {
 
-    public long queryId;
+    final public long queryId;
 
-    public T leftKey;
+    final public T leftKey;
 
-    public T rightKey;
+    final public T rightKey;
 
-    public Long startTimestamp;
+    final public Long startTimestamp;
 
-    public Long endTimestamp;
+    final public Long endTimestamp;
 
-    public DataTuplePredicate predicate;
+    final public DataTuplePredicate predicate;
 
-    public Aggregator aggregator;
+    final public Aggregator aggregator;
 
-    public DataTupleSorter sorter;
+    final public DataTupleSorter sorter;
 
-    public DataTupleEquivalentPredicateHint equivalentPredicate;
+    final public DataTupleEquivalentPredicateHint equivalentPredicate;
 
     public SubQuery(long queryId, T leftKey, T rightKey, Long startTimestamp, Long endTimestamp,
                     DataTuplePredicate predicate, Aggregator aggregator, DataTupleSorter sorter,

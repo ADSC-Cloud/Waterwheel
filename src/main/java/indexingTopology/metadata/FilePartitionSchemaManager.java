@@ -27,12 +27,16 @@ public class FilePartitionSchemaManager {
     public List<String> search(double keyRangeLowerBound, double keyRangeUpperBound, long startTime,
                                      long endTime) {
         List<String> ret = new ArrayList<String>();
-        Observable<Entry<FileMetaData, Rectangle>> result = tree.search(Geometries.rectangle(keyRangeLowerBound,
-                startTime, keyRangeUpperBound, endTime));
+        try {
+            Observable<Entry<FileMetaData, Rectangle>> result = tree.search(Geometries.rectangle(keyRangeLowerBound,
+                    startTime, keyRangeUpperBound, endTime));
 
 
-        for (Entry<FileMetaData, Rectangle> e : result.toBlocking().toIterable()) {
-            ret.add(e.value().filename);
+            for (Entry<FileMetaData, Rectangle> e : result.toBlocking().toIterable()) {
+                ret.add(e.value().filename);
+            }
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
         }
 
         return ret;
