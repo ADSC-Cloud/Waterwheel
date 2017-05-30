@@ -7,6 +7,7 @@ import java.io.ObjectOutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 
 /**
@@ -32,34 +33,69 @@ public abstract class ServerHandle implements Runnable{
 
     @Override
     public void run() {
+        try {
+            client.setSoTimeout(1000);
+            objectInputStream = new ObjectInputStream(client.getInputStream());
+            objectOutputStream = new ObjectOutputStream(client.getOutputStream());
+
+
+        } catch (SocketException e1) {
+            e1.printStackTrace();
+        } catch (IOException e1) {
+            e1.printStackTrace();
+        }
+
+        while (true) {
             try {
-                client.setSoTimeout(1000);
-                objectInputStream = new ObjectInputStream(client.getInputStream());
-                objectOutputStream = new ObjectOutputStream(client.getOutputStream());
-                while (true) {
-                    try {
 //                        System.out.println("try to read");
-                        final Object newObject = objectInputStream.readUnshared();
+                Object newObject = objectInputStream.readUnshared();
 //                        System.out.println("Received: " + newObject);
-                        handleInputObject(newObject);
+                handleInputObject(newObject);
 //                        System.out.println("Handled: " + newObject);
-                    } catch (ClassNotFoundException e) {
-                        e.printStackTrace();
-                    } catch (SocketTimeoutException e) {
-                        if (Thread.currentThread().isInterrupted()) {
-                            System.out.println("ServerHandle is interrupted");
-                            Thread.currentThread().interrupt();
-                            break;
-                        }
-                    }
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            } catch (SocketTimeoutException e) {
+                if (Thread.currentThread().isInterrupted()) {
+                    System.out.println("ServerHandle is interrupted");
+                    Thread.currentThread().interrupt();
+                    break;
                 }
             } catch (EOFException e) {
-                System.out.println("Client is closed.");
+                try {
+                    client.close();
+                    System.out.println("EOFException occurs, close client");
+                    break;
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
             } catch (IOException io) {
-                System.out.println("IOException occurs.");
-                if (!client.isClosed())
-                    io.printStackTrace();
+    //            io.printStackTrace();
+                if (client.isClosed())
+                    break;
+//                System.out.println("IOException occurs.");
+                io.printStackTrace();
+                try {
+                    client.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                break;
+//                if (!client.isClosed()) {
+//                    io.printStackTrace();
+//                    try {
+//                        client.close();
+//                        break;
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
+//
+//                } else {
+//                    break;
+//                }
             }
+        }
+
+        System.out.println("ServerHandling thread terminated.");
     }
 
     void handleInputObject(Object object) {

@@ -10,6 +10,7 @@ import org.apache.storm.shade.org.eclipse.jetty.util.ConcurrentHashSet;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.io.ObjectStreamConstants;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -128,8 +129,7 @@ public class IndexerTest extends TestCase implements Observer{
 
         this.observable = indexer;
         observable.addObserver(this);
-
-        int numberOfTuples = 10;
+        int numberOfTuples = 10000;
 
         Long timestamp = 0L;
         for (int i = 0; i < numberOfTuples; ++i) {

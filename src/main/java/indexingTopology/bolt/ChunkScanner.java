@@ -1,6 +1,7 @@
 package indexingTopology.bolt;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import indexingTopology.aggregator.Aggregator;
 import indexingTopology.bolt.metrics.LocationInfo;
@@ -14,6 +15,7 @@ import indexingTopology.filesystem.LocalFileSystemHandler;
 import indexingTopology.streams.Streams;
 import indexingTopology.util.*;
 import javafx.util.Pair;
+import org.apache.storm.shade.org.eclipse.jetty.util.BlockingArrayQueue;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -34,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -68,6 +71,14 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
     private Thread subQueryHandlingThread;
 
     private Thread locationReportingThread;
+
+    private Thread debugThread;
+
+    private DebugInfo debugInfo;
+
+    static class DebugInfo {
+        String runningPosition;
+    }
 
     TopologyConfig config;
 
@@ -134,6 +145,23 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
             }
         });
         locationReportingThread.start();
+
+
+        debugInfo = new DebugInfo();
+
+        debugThread = new Thread(() -> {
+            while (true) {
+                try {
+                    Thread.sleep(10000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+                System.out.println(String.format("Debug info: %s", debugInfo.runningPosition));
+            }
+        });
+        debugThread.start();
     }
 
     @Override
@@ -145,7 +173,10 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
             try {
 //                System.out.println("query id " + subQuery.getQueryId() + " has been put to the queue");
-                pendingQueue.put(subQuery);
+                while (!pendingQueue.offer(subQuery, 1, TimeUnit.SECONDS)) {
+                    System.out.println("Fail to offer a subquery to pending queue. Will retry.");
+                }
+//                pendingQueue.put(subQuery);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -165,15 +196,15 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
                     try {
                         subQueryHandlingSemaphore.acquire();
                         SubQueryOnFile subQuery = (SubQueryOnFile) pendingQueue.take();
-//                        System.out.println("sub query " + subQuery.getQueryId() + " has been taken from queue");
-
+                        System.out.println("$$$ sub query " + subQuery.getQueryId() + " to be processed " + subQuery.getFileName());
                         handleSubQuery(subQuery);
-//                        System.out.println("sub query " + subQuery.getQueryId() + " has been processed");
+                        System.out.println("$$$ sub query " + subQuery.getQueryId() + " processed " + subQuery.getFileName());
                     } catch (InterruptedException e) {
 //                        e.printStackTrace();
                         Thread.currentThread().interrupt();
+                        System.out.println("subqueryHandlding thread is interrupted.");
                         break;
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
@@ -198,59 +229,71 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         super.cleanup();
         subQueryHandlingThread.interrupt();
         locationReportingThread.interrupt();
+        debugThread.interrupt();
     }
 
     @SuppressWarnings("unchecked")
     private void handleSubQuery(SubQueryOnFile subQuery) throws IOException {
-
-        Long queryId = subQuery.getQueryId();
-        TKey leftKey =  (TKey) subQuery.getLeftKey();
-        TKey rightKey =  (TKey) subQuery.getRightKey();
-        String fileName = subQuery.getFileName();
-        Long timestampLowerBound = subQuery.getStartTimestamp();
-        Long timestampUpperBound = subQuery.getEndTimestamp();
-
-
+//        ArrayList<byte[]> tuples = new ArrayList<>();
+        List<DataTuple> dataTuplesInKeyRange = new ArrayList<>();
         FileScanMetrics metrics = new FileScanMetrics();
+        List<byte[]> serializedDataTuples = new ArrayList<>();
+        metrics.debugInfo += String.format("subquery on %s, executed on %s ", subQuery.getFileName(),
+                InetAddress.getLocalHost().getHostName());
+        debugInfo.runningPosition = "breakpoint 1";
+        try {
+            Long queryId = subQuery.getQueryId();
+            TKey leftKey = (TKey) subQuery.getLeftKey();
+            TKey rightKey = (TKey) subQuery.getRightKey();
+            String fileName = subQuery.getFileName();
+            Long timestampLowerBound = subQuery.getStartTimestamp();
+            Long timestampUpperBound = subQuery.getEndTimestamp();
+
 
 //        metrics.setFileName(fileName);
 
-        long start = System.currentTimeMillis();
+            long start = System.currentTimeMillis();
 
 //        metrics.setSubqueryStartTime(start);
 
 //        long fileTime = 0;
 //        long fileStart = System.currentTimeMillis();
-        FileSystemHandler fileSystemHandler = null;
-        if (config.HDFSFlag) {
-            if (config.HybridStorage && new File(config.dataDir, fileName).exists()) {
-                fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
-                System.out.println("Subquery will be conducted on local file in cache.");
+            FileSystemHandler fileSystemHandler = null;
+            debugInfo.runningPosition = "breakpoint 2";
+            if (config.HDFSFlag) {
+                if (config.HybridStorage && new File(config.dataDir, fileName).exists()) {
+                    fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+                    System.out.println("Subquery will be conducted on local file in cache.");
+                    metrics.debugInfo += " local";
+                } else {
+                    System.out.println("Failed to find local file :" + config.dataDir + "/" + fileName);
+                    fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
+                    metrics.debugInfo += " HDFS";
+                }
             } else {
-                System.out.println("Failed to find local file :" + config.dataDir + "/" + fileName);
-                fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
+                fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+                metrics.debugInfo += " local";
             }
-        } else {
-            fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
-        }
-        fileSystemHandler.openFile("/", fileName);
+            debugInfo.runningPosition = "breakpoint 3";
+            fileSystemHandler.openFile("/", fileName);
+            debugInfo.runningPosition = "breakpoint 4";
 //        fileTime += (System.currentTimeMillis() - fileStart);
 
 //        long readTemplateStart = System.currentTimeMillis();
-        Pair data = getTemplateData(fileSystemHandler, fileName);
+            Pair data = getTemplateData(fileSystemHandler, fileName);
 //        long temlateRead = System.currentTimeMillis() - readTemplateStart;
 
-        BTree template = (BTree) data.getKey();
-        Integer length = (Integer) data.getValue();
+            BTree template = (BTree) data.getKey();
+            Integer length = (Integer) data.getValue();
 
-        
-        BTreeLeafNode leaf = null;
-        ArrayList<byte[]> tuples = new ArrayList<byte[]>();
+
+            BTreeLeafNode leaf = null;
+
 
 
 //        long searchOffsetsStart = System.currentTimeMillis();
-        List<Integer> offsets = template.getOffsetsOfLeafNodesShouldContainKeys(leftKey, rightKey);
-
+            List<Integer> offsets = template.getOffsetsOfLeafNodesShouldContainKeys(leftKey, rightKey);
+            debugInfo.runningPosition = "breakpoint 5";
 //        System.out.println("template");
 //        System.out.println(offsets);
 //        template.printBtree();
@@ -258,68 +301,70 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
 //        long readLeafBytesStart = System.currentTimeMillis();
 //        byte[] bytesToRead = readLeafBytesFromFile(fileSystemHandler, offsets, length);
-        byte[] bytesToRead = readLeafBytesFromFile(fileSystemHandler, offsets, length, metrics);
+            byte[] bytesToRead = readLeafBytesFromFile(fileSystemHandler, offsets, length, metrics);
+            debugInfo.runningPosition = "breakpoint 6";
 //        long leafBytesReadingTime = System.currentTimeMillis() - readLeafBytesStart;
 //        metrics.setLeafBytesReadingTime(leafBytesReadingTime);
 
-
 //        long totalTupleGet = 0L;
 //        long totalLeafRead = 0L;
-        Input input = new Input(bytesToRead);
+            Input input = new Input(bytesToRead);
 
+            int count = 0;
+            debugInfo.runningPosition = "breakpoint 7";
+            for (Integer offset : offsets) {
+                BlockId blockId = new BlockId(fileName, offset + length + 4);
 
-        for (Integer offset : offsets) {
-            BlockId blockId = new BlockId(fileName, offset + length + 4);
-
-            long readLeaveStart = System.currentTimeMillis();
-            leaf = (BTreeLeafNode) getFromCache(blockId);
-
-            if (leaf == null) {
-                leaf = getLeafFromExternalStorage(fileSystemHandler, input);
-                CacheData cacheData = new LeafNodeCacheData(leaf);
-                putCacheData(blockId, cacheData);
-            }
+                long readLeaveStart = System.currentTimeMillis();
+                leaf = (BTreeLeafNode) getFromCache(blockId);
+                debugInfo.runningPosition = String.format("breakpoint 8.%d.1", count);
+                if (leaf == null) {
+                    leaf = getLeafFromExternalStorage(fileSystemHandler, input);
+                    CacheData cacheData = new LeafNodeCacheData(leaf);
+                    putCacheData(blockId, cacheData);
+                }
+                debugInfo.runningPosition = String.format("breakpoint 8.%d.2", count);
 //            totalLeafRead += (System.currentTimeMillis() - readLeaveStart);
 
-            long tupleGetStart = System.currentTimeMillis();
-            ArrayList<byte[]> tuplesInKeyRange = leaf.getTuplesWithinKeyRange(leftKey, rightKey);
-            //deserialize
-            List<DataTuple> dataTuples = new ArrayList<>();
-            tuplesInKeyRange.stream().forEach(e -> dataTuples.add(schema.deserializeToDataTuple(e)));
+                long tupleGetStart = System.currentTimeMillis();
+                ArrayList<byte[]> tuplesInKeyRange = leaf.getTuplesWithinKeyRange(leftKey, rightKey);
+                debugInfo.runningPosition = String.format("breakpoint 8.%d.3", count);
+                //deserialize
+                tuplesInKeyRange.stream().forEach(e -> dataTuplesInKeyRange.add(schema.deserializeToDataTuple(e)));
+                debugInfo.runningPosition = String.format("breakpoint 8.%d.4", count);
+                count++;
+            }
 
-            //filter by timestamp range
-            filterByTimestamp(dataTuples, timestampLowerBound, timestampUpperBound);
+            debugInfo.runningPosition = "breakpoint 9";
+//filter by timestamp range
+            filterByTimestamp(dataTuplesInKeyRange, timestampLowerBound, timestampUpperBound);
 
             //filter by predicate
 //            System.out.println("Before predicates: " + dataTuples.size());
-            filterByPredicate(dataTuples, subQuery.getPredicate());
+            filterByPredicate(dataTuplesInKeyRange, subQuery.getPredicate());
 //            System.out.println("After predicates: " + dataTuples.size());
-
+            metrics.debugInfo += " size = " + dataTuplesInKeyRange.size();
+            debugInfo.runningPosition = "breakpoint 10";
             if (subQuery.getAggregator() != null) {
                 Aggregator.IntermediateResult intermediateResult = subQuery.getAggregator().createIntermediateResult();
-                subQuery.getAggregator().aggregate(dataTuples, intermediateResult);
-                dataTuples.clear();
-                dataTuples.addAll(subQuery.getAggregator().getResults(intermediateResult).dataTuples);
+                subQuery.getAggregator().aggregate(dataTuplesInKeyRange, intermediateResult);
+                dataTuplesInKeyRange.clear();
+                dataTuplesInKeyRange.addAll(subQuery.getAggregator().getResults(intermediateResult).dataTuples);
             }
-
+            debugInfo.runningPosition = "breakpoint 11";
 //            totalTupleGet += (System.currentTimeMillis() - tupleGetStart);
 
             //serialize
-            List<byte[]> serializedDataTuples = new ArrayList<>();
 
             if (subQuery.getAggregator() != null) {
                 DataSchema outputSchema = subQuery.getAggregator().getOutputDataSchema();
-                dataTuples.stream().forEach(p -> serializedDataTuples.add(outputSchema.serializeTuple(p)));
+                dataTuplesInKeyRange.stream().forEach(p -> serializedDataTuples.add(outputSchema.serializeTuple(p)));
             } else {
-                dataTuples.stream().forEach(p -> serializedDataTuples.add(schema.serializeTuple(p)));
+                dataTuplesInKeyRange.stream().forEach(p -> serializedDataTuples.add(schema.serializeTuple(p)));
             }
-
-
-            tuples.addAll(serializedDataTuples);
-        }
-
-        long closeStart = System.currentTimeMillis();
-        fileSystemHandler.closeFile();
+            debugInfo.runningPosition = "breakpoint 12";
+            long closeStart = System.currentTimeMillis();
+            fileSystemHandler.closeFile();
 //        fileTime += (System.currentTimeMillis() - closeStart);
 
 //        metrics.setSubqueryEndTime(System.currentTimeMillis());
@@ -341,17 +386,21 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 //        metrics.setNumberOfRecords((long) tuples.size());
 //        System.out.println(tuples.size());
 
-        metrics.setTotalTime(System.currentTimeMillis() - start);
+            metrics.setTotalTime(System.currentTimeMillis() - start);
 
 
 //        tuples.clear();
 //        System.out.println(String.format("%d tuples are found on file %s", tuples.size(), fileName));
-        collector.emit(Streams.FileSystemQueryStream, new Values(subQuery, tuples, metrics));
 
 
-        if (!config.SHUFFLE_GROUPING_FLAG) {
-            collector.emit(Streams.FileSubQueryFinishStream, new Values("finished"));
+        } finally {
+            collector.emit(Streams.FileSystemQueryStream, new Values(subQuery, serializedDataTuples, metrics));
+
+            if (!config.SHUFFLE_GROUPING_FLAG) {
+                collector.emit(Streams.FileSubQueryFinishStream, new Values("finished"));
+            }
         }
+
     }
 
 

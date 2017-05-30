@@ -26,6 +26,8 @@ public class ResultMerger extends BaseRichBolt {
 
     Map<Long, Integer> queryIdToCounter;
 
+    Map<Long, Integer> queryIdToNumberOfQueriesOnFileFinished;
+
     Map<Long, Integer> queryIdToNumberOfFilesToScan;
 
     Map<Long, Integer> queryIdToNumberOfTasksToSearch;
@@ -51,6 +53,8 @@ public class ResultMerger extends BaseRichBolt {
         queryIdToNumberOfTasksToSearch = new HashMap<Long, Integer>();
 
         queryIdToFileScanMetrics = new HashMap<Long, FileScanMetrics>();
+
+        queryIdToNumberOfQueriesOnFileFinished = new HashMap<>();
 
         queryIdToTaskIdToTimeMapping = new HashMap<>();
         queryIdToPartialQueryResults = new HashMap<>();
@@ -106,10 +110,16 @@ public class ResultMerger extends BaseRichBolt {
 //                }
 //            }
             if (tuple.getSourceStreamId().equals(Streams.FileSystemQueryStream)) {
+                Integer fileCounter = queryIdToNumberOfQueriesOnFileFinished.getOrDefault(queryId, 0);
+                fileCounter++;
+                queryIdToNumberOfQueriesOnFileFinished.put(queryId, fileCounter);
+
                 int taskId = tuple.getSourceTask();
                 FileScanMetrics fileScanMetrics = (FileScanMetrics) tuple.getValueByField("metrics");
 //                        System.out.println(queryId + "has been finished");
 
+
+                System.out.println("Subquery on file debug: " + fileScanMetrics.debugInfo);
 
                 if (queryIdToTaskIdToTimeMapping.get(queryId) == null) {
                     Map<Integer, List<FileScanMetrics>> taskIdToTimeMapping = new HashMap<>();
@@ -185,9 +195,11 @@ public class ResultMerger extends BaseRichBolt {
 
     private boolean isQueryFinished(Long queryId) {
 
-//        System.out.println(String.format("query: %d, numberOfFilesToScan: %s, B+ tree to scan: %s", queryId,
-//                queryIdToNumberOfFilesToScan.get(queryId),
-//                queryIdToNumberOfTasksToSearch.get(queryId)));
+        System.out.println(String.format("query: %d, numberOfFilesToScan: %s -> %s, B+ tree to scan: %s, Count: %s", queryId,
+                queryIdToNumberOfFilesToScan.get(queryId),
+                queryIdToNumberOfQueriesOnFileFinished.get(queryId),
+                queryIdToNumberOfTasksToSearch.get(queryId),
+                queryIdToCounter.get(queryId)));
         if (queryIdToNumberOfFilesToScan.get(queryId) != null &&
                 queryIdToNumberOfTasksToSearch.get(queryId) != null) {
             int numberOfFilesToScan = queryIdToNumberOfFilesToScan.get(queryId);
@@ -279,6 +291,7 @@ public class ResultMerger extends BaseRichBolt {
         queryIdToNumberOfFilesToScan.remove(queryId);
         queryIdToNumberOfTasksToSearch.remove(queryId);
         queryIdToFileScanMetrics.remove(queryId);
+        queryIdToNumberOfQueriesOnFileFinished.remove(queryId);
     }
 
     private void putFileScanMetrics(Long queryId, FileScanMetrics metrics) {

@@ -7,7 +7,12 @@ import indexingTopology.data.DataTupleBlock;
  */
 public class AppendRequestBatchMode extends IClientRequest {
     public DataTupleBlock dataTupleBlock;
+    public boolean requireAck;
     AppendRequestBatchMode(DataTupleBlock dataTupleBlock) {
         this.dataTupleBlock = dataTupleBlock;
+    }
+    AppendRequestBatchMode(DataTupleBlock dataTupleBlock, boolean requireAck) {
+        this.dataTupleBlock = dataTupleBlock;
+        this.requireAck = requireAck;
     }
 }

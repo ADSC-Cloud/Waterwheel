@@ -40,6 +40,7 @@ public class TopologyTest extends TestCase {
             e.printStackTrace();
         }
         config.dataDir = "./target/tmp";
+        config.CHUNK_SIZE = 2 * 1024 * 1024;
         config.HDFSFlag = false;
         System.out.println("dataDir is set to " + config.dataDir);
     }

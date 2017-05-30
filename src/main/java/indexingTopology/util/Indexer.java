@@ -325,8 +325,9 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                         }
                         fileName = "taskId" + taskId + "chunk" + chunkId;
                         long start = System.currentTimeMillis();
+                        System.out.println("Before writing into HDFS ###");
                         fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
-                        System.out.println(String.format("File %s is written in %d ms", fileName,
+                        System.out.println(String.format("File %s is written in %d ms. ###", fileName,
                                 System.currentTimeMillis() - start));
 
                         if (config.HybridStorage && config.HDFSFlag) {
