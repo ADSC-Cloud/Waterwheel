@@ -71,6 +71,16 @@ public class Aggregator<Key extends Comparable<Key>> implements Serializable{
         this.isGlobal = isGlobal;
     }
 
+    private void initializeGroup(IntermediateResult intermediateResult, Object group) {
+        intermediateResult.aggregationResults.computeIfAbsent(group, p -> {
+            Object[] aggregationValues = new Object[aggregateFields.length];
+            for (int i = 0; i < aggregateFields.length; i++) {
+                aggregationValues[i] = aggregateFields[i].function.init();
+            }
+            return aggregationValues;
+        });
+    }
+
     public void aggregate(DataTuple dataTuple, IntermediateResult intermediateResult) {
         //TODO: performance optimization by computing the group-by column index before aggregate.
 
@@ -81,13 +91,16 @@ public class Aggregator<Key extends Comparable<Key>> implements Serializable{
             group = dataTuple.get(groupByIndex);
         else
             group = "scalar";
-        intermediateResult.aggregationResults.computeIfAbsent(group, p -> {
-            Object[] aggregationValues = new Object[aggregateFields.length];
-            for (int i = 0; i < aggregateFields.length; i++) {
-                aggregationValues[i] = aggregateFields[i].function.init();
-            }
-            return aggregationValues;
-        });
+//        intermediateResult.aggregationResults.computeIfAbsent(group, p -> {
+//            Object[] aggregationValues = new Object[aggregateFields.length];
+//            for (int i = 0; i < aggregateFields.length; i++) {
+//                aggregationValues[i] = aggregateFields[i].function.init();
+//            }
+//            return aggregationValues;
+//        });
+
+        initializeGroup(intermediateResult, group);
+
 
         intermediateResult.aggregationResults.compute(group, (k, v) -> {
             Object[] aggregationValues = (Object[]) v;
@@ -133,6 +146,11 @@ public class Aggregator<Key extends Comparable<Key>> implements Serializable{
         if (intermediateResult.aggregationResults == null) {
             intermediateResult.aggregationResults = new HashMap<>();
         }
+
+        if (scalar) {
+            initializeGroup(intermediateResult, "scalar");
+        }
+
         for (DataTuple dataTuple: dataTupleList) {
             aggregate(dataTuple, intermediateResult);
         }

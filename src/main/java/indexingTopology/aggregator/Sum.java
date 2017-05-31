@@ -9,11 +9,13 @@ public class Sum<I extends Number> implements AggregationFunction<I, Double> {
 
     @Override
     public Double aggregateFunction(I value, Double originalA) {
+        if (value == null || originalA == null)
+            return value == null ? originalA : value.doubleValue();
         return (value.doubleValue() + originalA);
     }
 
     @Override
     public Double init() {
-        return 0.0;
+        return null;
     }
 }
