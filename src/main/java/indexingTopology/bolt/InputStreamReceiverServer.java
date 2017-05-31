@@ -60,6 +60,10 @@ public class InputStreamReceiverServer extends InputStreamReceiver {
 
         @Override
         public void handle(AppendRequestBatchMode tuple) throws IOException {
+//            if (tuple.requireAck) {
+//                objectOutputStream.writeUnshared("received");
+//                objectOutputStream.reset();
+//            }
             tuple.dataTupleBlock.deserialize();
             tuple.dataTupleBlock.tuples.forEach(t -> {
                 try {

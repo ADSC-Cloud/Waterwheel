@@ -29,11 +29,18 @@ public class FileScanMetrics implements Serializable {
 
     private String fileName;
 
+
     private Long fileReadingTime;
     private Long keyRangTime;
     private Long timestampRangeTime;
     private Long predicationTime;
     private Long aggregationTime;
+
+    private Long subqueryStartTime;
+    private Long subqueryEndTime;
+
+    public String debugInfo;
+
     public FileScanMetrics() {
 
     }
