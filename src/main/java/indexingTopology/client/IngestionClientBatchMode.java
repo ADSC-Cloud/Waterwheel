@@ -46,6 +46,8 @@ public class IngestionClientBatchMode extends ClientSkeleton implements IIngesti
 
     @Override
     public void flush() throws IOException {
+        if (dataTupleBlock.tuples.size() == 0)
+            return;
         dataTupleBlock.serialize();
 //        try {
 //            semaphore.acquire();

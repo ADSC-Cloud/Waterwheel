@@ -2,15 +2,63 @@ package indexingTopology.client;
 
 import indexingTopology.data.DataTuple;
 import indexingTopology.data.PartialQueryResult;
+import indexingTopology.util.FrequencyRestrictor;
+import org.apache.storm.metric.internal.RateTracker;
 
 import java.io.IOException;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by robert on 3/3/17.
  */
-public class FakeServerHandle extends ServerHandle implements QueryHandle, AppendRequestHandle {
+public class FakeServerHandle extends ServerHandle implements QueryHandle, AppendRequestHandle, IAppendRequestBatchModeHandle {
+
+    public RateTracker rateTracker;
+
+    private Thread throughputDisplayThread;
+
+    public volatile FrequencyRestrictor restrictor;
+
+    final private Object lock = new Object();
+
+    int currentFrequency = 100000;
+
+    private Thread rateFluctuationThread;
 
     public FakeServerHandle(int i) {
+        System.out.println("Construct function is called!");
+        rateTracker = new RateTracker(1000,5);
+        restrictor = new FrequencyRestrictor(600000, 5);
+        throughputDisplayThread = new Thread(() ->{
+            while (true) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+                System.out.println(String.format("Throughput: %4.4f", rateTracker.reportRate()));
+            }
+        });
+        throughputDisplayThread.start();
+
+        rateFluctuationThread = new Thread(() -> {
+            while (true) {
+                try {
+                    Thread.sleep(10000);
+                    currentFrequency = (currentFrequency + 100000) % 600000;
+                    synchronized (lock) {
+                        restrictor = new FrequencyRestrictor(Math.max(10000, currentFrequency), 5);
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        rateFluctuationThread.start();
     }
 
     public void handle(final QueryRequest clientQueryRequest) throws IOException {
@@ -43,4 +91,23 @@ public class FakeServerHandle extends ServerHandle implements QueryHandle, Appen
         objectOutputStream.writeObject(new MessageResponse(String.format("Insertion [%s] success!", tuple.dataTuple)));
     }
 
+    @Override
+    public void handle(AppendRequestBatchMode tuple) throws IOException {
+        tuple.dataTupleBlock.deserialize();
+        final int size = tuple.dataTupleBlock.tuples.size();
+        rateTracker.notify(size);
+        try {
+            synchronized (lock) {
+                restrictor.getPermission(size);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void close() {
+        rateTracker.close();
+        throughputDisplayThread.interrupt();
+        rateFluctuationThread.interrupt();
+    }
 }

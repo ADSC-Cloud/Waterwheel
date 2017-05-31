@@ -69,7 +69,7 @@ public abstract class ServerHandle implements Runnable{
                     e1.printStackTrace();
                 }
             } catch (IOException io) {
-    //            io.printStackTrace();
+                io.printStackTrace();
                 if (client.isClosed())
                     break;
 //                System.out.println("IOException occurs.");
@@ -92,10 +92,13 @@ public abstract class ServerHandle implements Runnable{
 //                } else {
 //                    break;
 //                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
 
         System.out.println("ServerHandling thread terminated.");
+        close();
     }
 
     void handleInputObject(Object object) {
@@ -109,6 +112,11 @@ public abstract class ServerHandle implements Runnable{
             e.printStackTrace();
         } catch (InvocationTargetException e) {
             e.printStackTrace();
+            System.err.println(String.format("Object: %s", object.getClass()));
         }
+    }
+
+    public void close() {
+
     }
 }
