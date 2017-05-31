@@ -82,7 +82,7 @@ public class KingBaseTopology {
     private String QueryServerIp = "localhost";
 
     @Option(name = "--selectivity", usage = "the selectivity on the key domain")
-    private double Selectivity = 0.01;
+    private double Selectivity = 1;
 
     @Option(name = "--temporal", usage = "recent time in seconds of interest")
     private int RecentSecondsOfInterest = 5;
@@ -124,17 +124,19 @@ public class KingBaseTopology {
                 final double yLow = y;
                 final double yHigh = y + selectivityOnOneDimension * (y2 - y1);
 
-                DataTuplePredicate predicate = t ->
-                                 (double) schema.getValue("lon", t) >= xLow &&
-                                (double) schema.getValue("lon", t) <= xHigh &&
-                                (double) schema.getValue("lat", t) >= yLow &&
-                                (double) schema.getValue("lat", t) <= yHigh ;
+//                DataTuplePredicate predicate = t ->
+//                                 (double) schema.getValue("lon", t) >= xLow &&
+//                                (double) schema.getValue("lon", t) <= xHigh &&
+//                                (double) schema.getValue("lat", t) >= yLow &&
+//                                (double) schema.getValue("lat", t) <= yHigh ;
 
+                final int id = new Random().nextInt(100000);
+                final String idString = "" + id;
 //                DataTuplePredicate predicate = t -> schema.getValue("id", t).equals(Integer.toString(new Random().nextInt(100000)));
-//                DataTuplePredicate predicate = t -> schema.getValue("id", t).equals(Integer.toString(1000));
+                DataTuplePredicate predicate = t -> schema.getValue("id", t).equals(idString);
 
 
-                Aggregator<Integer> aggregator = new Aggregator<>(schema, null, new AggregateField(new Count(), "*"));
+                Aggregator<Integer> aggregator = new Aggregator<>(schema, "id", new AggregateField(new Count(), "*"));
 //                Aggregator<Integer> aggregator = null;
 
 
@@ -143,11 +145,11 @@ public class KingBaseTopology {
 //                        (double) schemaAfterAggregation.getValue("count(*)", o2));
 
 
-//                DataTupleEquivalentPredicateHint equivalentPredicateHint = new DataTupleEquivalentPredicateHint("id", "1000");
+                DataTupleEquivalentPredicateHint equivalentPredicateHint = new DataTupleEquivalentPredicateHint("id", idString);
 
                 GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
                         System.currentTimeMillis() - RecentSecondsOfInterest * 1000,
-                        System.currentTimeMillis(), predicate, aggregator, null, null);
+                        System.currentTimeMillis(), predicate, aggregator, null, equivalentPredicateHint);
                 long start = System.currentTimeMillis();
                 try {
                     System.out.println("A query will be issued.");

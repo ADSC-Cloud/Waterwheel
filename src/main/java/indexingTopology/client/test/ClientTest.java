@@ -13,7 +13,7 @@ import java.io.IOException;
 public class ClientTest {
     static public void main(String [] args) throws IOException {
 
-        String host = "localhost";
+        String host = "yy05";
         if (args.length != 0) {
             host = args[0];
         }

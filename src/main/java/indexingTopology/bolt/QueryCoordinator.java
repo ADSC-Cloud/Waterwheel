@@ -460,8 +460,8 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 //                firstQuery.leftKey = leftMost;
 //                firstQuery.rightKey = rightMost;
 //                ret.add(firstQuery);
-                byte[] bytes = SerializationUtils.serialize(subQuery);
-                System.out.println("serialized size: " + bytes.length);
+//                byte[] bytes = SerializationUtils.serialize(subQuery);
+//                System.out.println("serialized size: " + bytes.length);
                 ret.add(subQuery);
             }
         });
