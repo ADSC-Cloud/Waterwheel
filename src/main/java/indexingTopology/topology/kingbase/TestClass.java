@@ -9,13 +9,19 @@ import java.util.regex.Pattern;
 public class TestClass {
 
     public static void main(String[] args) {
-        String name = "taskId" + 100 + "chunk" + 32;
-        Pattern pattern = Pattern.compile("taskId(\\d+)");
-        Matcher matcher = pattern.matcher(name);
-//        return matcher.group(1);
-        if (matcher.find())
-        {
-            System.out.println(matcher.group(1));
-        }
+        Number a = null;
+        Double b = null;
+        Double result = a == null ? b : (a.doubleValue());
+        System.out.println(result);
+    }
+
+    static private boolean test1() {
+        System.out.println("Test 1");
+        return true;
+    }
+
+    static private boolean test2() {
+        System.out.println("Test 2");
+        return true;
     }
 }

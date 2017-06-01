@@ -262,6 +262,61 @@ public class AggregationTest {
         assertEquals(result.dataTuples.get(2), new DataTuple(3.0, 2.0, 4.0, 3.0, 3L, 2L, 5.0));
     }
 
+    @Test
+    public void testHybridAggregationEmptyInput() {
+        DataSchema schema = new DataSchema();
+        schema.addIntField("c1");
+        schema.addDoubleField("c2");
+        schema.addLongField("c3");
+
+
+        PartialQueryResult partialQueryResult1 = new PartialQueryResult();
+        PartialQueryResult partialQueryResult2 = new PartialQueryResult();
+
+        Aggregator<Integer> localAggregator1 = new Aggregator<>(schema, null, new AggregateField[]{
+                new AggregateField(new Count<>(), "c2"),
+                new AggregateField(new Sum<>(), "c2"),
+                new AggregateField(new Max<>(), "c2"),
+                new AggregateField(new Max<>(), "c3"),
+                new AggregateField(new Min<>(), "c3"),
+                new AggregateField(new Sum<>(), "c3")
+
+        });
+
+        Aggregator<Integer> localAggregator2 = new Aggregator<>(schema, null, new AggregateField[]{
+                new AggregateField(new Count<>(), "c2"),
+                new AggregateField(new Sum<>(), "c2"),
+                new AggregateField(new Max<>(), "c2"),
+                new AggregateField(new Max<>(), "c3"),
+                new AggregateField(new Min<>(), "c3"),
+                new AggregateField(new Sum<>(), "c3")
+
+        });
+
+        Aggregator.IntermediateResult intermediateResult1 = localAggregator1.createIntermediateResult();
+        Aggregator.IntermediateResult intermediateResult2= localAggregator2.createIntermediateResult();
+        localAggregator1.aggregate(partialQueryResult1.dataTuples, intermediateResult1);
+        localAggregator2.aggregate(partialQueryResult2.dataTuples, intermediateResult2);
+
+        Aggregator<Integer> globalAggregator = localAggregator1.generateGlobalAggregator();
+        Aggregator.IntermediateResult globalIntermediateResult = globalAggregator.createIntermediateResult();
+
+        globalAggregator.aggregate(localAggregator1.getResults(intermediateResult1).dataTuples, globalIntermediateResult);
+        globalAggregator.aggregate(localAggregator2.getResults(intermediateResult2).dataTuples, globalIntermediateResult);
+
+        PartialQueryResult result = globalAggregator.getResults(globalIntermediateResult);
+        assertEquals(1, result.dataTuples.size());
+        DataTuple tuple = result.dataTuples.get(0);
+        assertEquals(0.0, tuple.get(0));
+        assertEquals(null, tuple.get(1));
+        assertEquals(null, tuple.get(2));
+        assertEquals(null, tuple.get(3));
+        assertEquals(null, tuple.get(4));
+        assertEquals(null, tuple.get(5));
+
+    }
+
+
 
     @Test
     public void testHybridScalarAggregation() {

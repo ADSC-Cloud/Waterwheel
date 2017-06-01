@@ -9,8 +9,12 @@ public class Sum<I extends Number> implements AggregationFunction<I, Double> {
 
     @Override
     public Double aggregateFunction(I value, Double originalA) {
-        if (value == null || originalA == null)
-            return value == null ? originalA : value.doubleValue();
+        if (value == null || originalA == null) {
+            if (value == null)
+                return originalA;
+            else
+                return value.doubleValue();
+        }
         return (value.doubleValue() + originalA);
     }
 
