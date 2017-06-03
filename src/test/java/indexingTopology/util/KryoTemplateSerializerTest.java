@@ -4,6 +4,7 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import indexingTopology.config.TopologyConfig;
+import indexingTopology.data.DataSchema;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.filesystem.FileSystemHandler;
 import indexingTopology.filesystem.HdfsFileSystemHandler;
@@ -36,6 +37,7 @@ public class KryoTemplateSerializerTest extends TestCase {
 
     private TopologyConfig config = new TopologyConfig();
 
+    /*
     public void setUp() {
         try {
             Runtime.getRuntime().exec("mkdir -p ./target/tmp");
@@ -55,6 +57,8 @@ public class KryoTemplateSerializerTest extends TestCase {
             e.printStackTrace();
         }
     }
+    */
+
 
     @Test
     public void testDeserialize() throws IOException, UnsupportedGenericException {
@@ -119,6 +123,18 @@ public class KryoTemplateSerializerTest extends TestCase {
     public void testTemplateAndLeaveDeserialization() throws IOException, UnsupportedGenericException {
 
 
+//        DataSchema schema = new DataSchema();
+//        schema.addVarcharField("id", 32);
+//        schema.addVarcharField("veh_no", 10);
+//        schema.addDoubleField("lon");
+//        schema.addDoubleField("lat");
+//        schema.addIntField("car_status");
+//        schema.addDoubleField("speed");
+//        schema.addVarcharField("position_type", 10);
+//        schema.addVarcharField("update_time", 32);
+//        schema.addIntField("zcode");
+//        schema.addLongField("timestamp");
+//        schema.setPrimaryIndexField("zcode");
 //        System.out.println("Total " + Runtime.getRuntime().totalMemory());
 
 
@@ -228,7 +244,9 @@ public class KryoTemplateSerializerTest extends TestCase {
             long totalStart = System.currentTimeMillis();
 
             long start = System.currentTimeMillis();
-            fileSystemHandler.openFile("/", "taskId0chunk0");
+//            System.out.println(fileName);
+//            fileSystemHandler.openFile("/", "taskId65chunk3");
+            fileSystemHandler.openFile("/", fileName);
             fileOpenTime += System.currentTimeMillis() - start;
 
             byte[] bytesToRead;
@@ -255,6 +273,8 @@ public class KryoTemplateSerializerTest extends TestCase {
 
             indexedData = kryo.readObject(input, BTree.class);
 
+//            indexedData.printBtree();
+
 //            System.out.println("template read time " + (System.currentTimeMillis() - templateReadStart));
 
 //            BTreeNode mostLeftNode = indexedData.findInnerNodeShouldContainKey(0.0);
@@ -263,7 +283,7 @@ public class KryoTemplateSerializerTest extends TestCase {
 //        System.out.println(((BTreeInnerNode) indexedData.getRoot()).getChild(0).getClass());
 
             List<Integer> offsets = indexedData.getOffsetsOfLeafNodesShouldContainKeys(0
-                    , numTuples);
+                    , 100000);
 
 
             List<byte[]> list = new ArrayList<>();
@@ -306,12 +326,27 @@ public class KryoTemplateSerializerTest extends TestCase {
 
                 BTreeLeafNode leafNode = kryo.readObject(input2, BTreeLeafNode.class);
 
+
                 long tuplgGetStart = System.currentTimeMillis();
 
-                list.addAll(leafNode.getTuplesWithinKeyRange(0, numTuples));
+                List<byte[]> tuplesInKeyRange = leafNode.getTuplesWithinKeyRange(0, 100000);
+
+//                System.out.println(offset);
+
+                for (int i = 0 ; i < tuplesInKeyRange.size(); ++i) {
+//                    System.out.println("length " + tuplesInKeyRange.get(i).length);
+                    deserialize(tuplesInKeyRange.get(i));
+//                    schema.deserializeToDataTuple(tuplesInKeyRange.get(i)).toDataTypes();
+                }
+
+//                System.out.println("******");
+
+                list.addAll(leafNode.getTuplesWithinKeyRange(Integer.MIN_VALUE, Integer.MAX_VALUE));
 
                 getTupleTime += (System.currentTimeMillis() - tuplgGetStart);
             }
+
+//            System.out.println(list.size());
 
 
 
@@ -363,7 +398,7 @@ public class KryoTemplateSerializerTest extends TestCase {
 //
 //            System.out.println("after read " + Runtime.getRuntime().freeMemory());
 
-//            assertEquals(2, list.size());
+//            assertEquals(, list.size());
 //        }
     }
 

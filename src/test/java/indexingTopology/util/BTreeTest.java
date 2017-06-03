@@ -274,6 +274,64 @@ public class BTreeTest {
     }
 
     @Test
+    public void testSearchTuplesWithDumplicateKeys() throws Exception, UnsupportedGenericException {
+        int order = 64;
+        BTree bTree = new BTree(order, config);
+
+        int numberOfTuples = 65;
+
+        Random random = new Random();
+
+        List<Integer> keys = new ArrayList<>();
+
+        for (int i = 0; i < numberOfTuples; ++i) {
+//            Integer key = random.nextInt();
+            keys.add(i);
+        }
+
+//        Collections.shuffle(keys);
+
+        for (Integer key : keys) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) key);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            bTree.insert(key*1.0, bytes);
+            bTree.insert(key*1.0, bytes);
+        }
+
+//        bTree.printBtree();
+
+        for (Integer key : keys) {
+            assertEquals(2, bTree.searchRange(key * 1.0, key * 1.0).size());
+        }
+        //Test template mode
+        bTree.clearPayload();
+
+//        for (int i = 0; i < numberOfTuples; ++i) {
+//            Integer key = random.nextInt();
+//            keys.add(i + 100);
+//        }
+
+        for (Integer key : keys) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) key);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            bTree.insert(key*1.0, bytes);
+            bTree.insert(key*1.0, bytes);
+        }
+
+        for (Integer key : keys) {
+            assertEquals(2, bTree.searchRange(key*1.0, key*1.0).size());
+        }
+    }
+
+    @Test
     public void testSearchRangeLeftKeyAndRightKeyTheSame() throws Exception, UnsupportedGenericException {
         int order = 32;
         BTree bTree = new BTree(order, config);

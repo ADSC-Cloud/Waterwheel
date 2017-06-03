@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.junit.Assert.assertEquals;
+
 /**
  * Created by acelzj on 1/4/17.
  */
@@ -68,6 +70,62 @@ public class KryoLeafNodeSerializerTest {
         for (int i = 0; i < 1024; ++i) {
             leaf.acquireReadLock();
             List<byte[]> serializedTuples = leaf.getTuplesWithinKeyRange((double) i, (double) i);
+//            leaf.releaseReadLock();
+//            for (int j = 0; j < serializedTuples.size(); ++j) {
+//                System.out.println(deserialize(serializedTuples.get(j)));
+//            }
+        }
+    }
+
+    @Test
+    public void testSerializerWithDumplicateKeys() throws IOException, UnsupportedGenericException {
+
+        Kryo kryo = new Kryo();
+        kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer(config));
+
+        BTreeLeafNode leaf = new BTreeLeafNode(config.BTREE_ORDER);
+
+        for (int i = 0; i < 64; ++i) {
+            List<Double> values = new ArrayList<>();
+
+            for (int j = 0; j < fieldNames.size(); ++j) {
+                values.add((double) j);
+            }
+
+
+            byte[] bytes = serializeIndexValue(values);
+
+            leaf.insertKeyTuples((double) i, bytes ,false);
+            leaf.insertKeyTuples((double) i, bytes ,false);
+            leaf.insertKeyTuples((double) i, bytes ,false);
+        }
+
+
+//        int totalBytes = leaf.getBytesCount() + (1 + leaf.getKeys().size()) * (Integer.SIZE / Byte.SIZE);
+
+//        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+
+        Output output = new Output(200000, 2000000);
+
+        kryo.writeObject(output, leaf);
+
+//        output.close();
+
+        byte[] bytes = output.toBytes();
+
+        Input input = new Input(bytes);
+
+        leaf = kryo.readObject(input, BTreeLeafNode.class);
+
+        for (int i = 0; i < 64; ++i) {
+            leaf.acquireReadLock();
+            List<byte[]> serializedTuples = leaf.getTuplesWithinKeyRange((double) i, (double) i);
+
+            assertEquals(3, serializedTuples.size());
+
+            for (int j = 0; j < serializedTuples.size(); ++j) {
+                deserialize(serializedTuples.get(j));
+            }
 //            leaf.releaseReadLock();
 //            for (int j = 0; j < serializedTuples.size(); ++j) {
 //                System.out.println(deserialize(serializedTuples.get(j)));

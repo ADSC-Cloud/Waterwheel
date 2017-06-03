@@ -2,17 +2,18 @@ package indexingTopology.filesystem;
 
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.util.MemChunk;
-import org.apache.commons.compress.utils.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Created by dmir on 10/26/16.
@@ -39,6 +40,9 @@ public class HdfsFileSystemHandler implements FileSystemHandler {
     }
 
     public void writeToFileSystem(MemChunk chunk, String relativePath, String fileName) throws IOException{
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+
+        Integer waitingTimeInMilliSecond = 15 * 1000;
 
         createNewFile(relativePath, fileName);
 
@@ -54,9 +58,60 @@ public class HdfsFileSystemHandler implements FileSystemHandler {
 //        } catch (IOException e) {
 //            e.printStackTrace();
 //        }
-        FSDataOutputStream fsDataOutputStream = fileSystem.append(path);
-        fsDataOutputStream.write(bytes);
-        fsDataOutputStream.close();
+        Runnable writingTask = new Runnable() {
+            @Override
+            public void run() {
+                FSDataOutputStream fsDataOutputStream = null;
+                try {
+                    fsDataOutputStream = fileSystem.append(path);
+                    fsDataOutputStream.write(bytes);
+                    fsDataOutputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+
+        Future future = executorService.submit(writingTask);
+
+        Integer waitingTime = 0;
+
+        int retries = 0;
+
+        int maxRetries = 5;
+        while (retries < maxRetries) {
+            while (waitingTime < waitingTimeInMilliSecond) {
+                if (future.isDone()) {
+                    executorService.shutdown();
+                    break;
+                } else {
+                    try {
+                        Thread.sleep(10);
+                        waitingTime += 10;
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            if (!future.isDone()) {
+                future.cancel(true);
+                executorService.submit(writingTask);
+                ++retries;
+                waitingTime = 0;
+            } else {
+                executorService.shutdown();
+                break;
+            }
+        }
+
+        if (retries == maxRetries) {
+            System.err.println("Writing tries exceed max retries");
+            throw new RuntimeException();
+        }
+//        FSDataOutputStream fsDataOutputStream = fileSystem.append(path);
+//        fsDataOutputStream.write(bytes);
+//        fsDataOutputStream.close();
     }
 
     public void createNewFile(String relativePath, String fileName) {

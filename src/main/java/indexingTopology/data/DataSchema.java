@@ -248,9 +248,14 @@ public class DataSchema implements Serializable {
         DataTuple dataTuple = new DataTuple();
         Input input = new Input(b);
         for (int i = 0; i < dataTypes.size(); i++) {
+
+//            System.out.print(input.position() + " ");
+
             if (dataTypes.get(i).type.equals(Double.class)) {
                 dataTuple.add(input.readDouble());
             } else if (dataTypes.get(i).type.equals(String.class)) {
+//                String s = input.readString();
+//                dataTuple.add(s);
                 dataTuple.add(input.readString());
             } else if (dataTypes.get(i).type.equals(Integer.class)) {
                 dataTuple.add(input.readInt());
@@ -260,6 +265,7 @@ public class DataSchema implements Serializable {
                 throw new RuntimeException("Only classes supported till now are string and double");
             }
         }
+//        System.out.println("***");
 
         return dataTuple;
     }

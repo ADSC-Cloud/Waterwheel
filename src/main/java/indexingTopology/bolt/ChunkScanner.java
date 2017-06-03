@@ -233,6 +233,9 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
                 InetAddress.getLocalHost().getHostName());
         debugInfo.runningPosition = "breakpoint 1";
         try {
+//            System.out.println(String.format("chunk name %s is being executed !!!", subQuery.getFileName()));
+
+
             Long queryId = subQuery.getQueryId();
             TKey leftKey = (TKey) subQuery.getLeftKey();
             TKey rightKey = (TKey) subQuery.getRightKey();
@@ -415,7 +418,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
 //        tuples.clear();
 //        System.out.println(String.format("%d tuples are found on file %s", tuples.size(), fileName));
-
+//            System.out.println(String.format("chunk name %s has been finished !!!", subQuery.getFileName()));
 
         } finally {
             collector.emit(Streams.FileSystemQueryStream, new Values(subQuery, serializedDataTuples, metrics));

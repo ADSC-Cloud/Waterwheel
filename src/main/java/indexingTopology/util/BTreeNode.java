@@ -119,6 +119,7 @@ public abstract class BTreeNode<TKey extends Comparable<TKey>> implements Serial
 
 		newRNode = this.split();
 
+
 		if (this.getParent() == null) {
 			this.setParent(new BTreeInnerNode<TKey>(this.ORDER));
 		}
