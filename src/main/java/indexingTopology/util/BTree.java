@@ -359,7 +359,9 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 
 			byte[] bytesToWrite = leafOutput.toBytes();
 			leafOutput.close();
-//			output.writeInt(bytesToWrite.length);
+			if (!config.ChunkOrientedCaching) {
+				output.writeInt(bytesToWrite.length);
+			}
 			output.write(bytesToWrite);
 
 			((BTreeInnerNode)leaf.getParent()).putOffset(offset);

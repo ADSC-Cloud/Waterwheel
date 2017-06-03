@@ -40,6 +40,8 @@ public class SubqueryHandlerTest {
     @Test
     public void TestHandleSubquery() throws Exception, UnsupportedGenericException {
 
+        config.ChunkOrientedCaching = true;
+
         config.CHUNK_SIZE = 58000000 / 4;
 
         int numTuples = 120000;
@@ -94,6 +96,7 @@ public class SubqueryHandlerTest {
     @Test
     public void TestHandleSubqueryOnOneLayerTemplate() throws InterruptedException, IOException {
         config.CHUNK_SIZE = 58000000 / 4;
+        config.ChunkOrientedCaching = true;
 
         int numTuples = 60;
 
