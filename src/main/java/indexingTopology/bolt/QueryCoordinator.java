@@ -9,9 +9,13 @@ import indexingTopology.bloom.DataChunkBloomFilters;
 import indexingTopology.bolt.metrics.LocationInfo;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.PartialQueryResult;
+import indexingTopology.filesystem.HdfsFileSystemHandler;
 import indexingTopology.util.*;
 import javafx.util.Pair;
 import org.apache.commons.lang.SerializationUtils;
+import org.apache.hadoop.fs.BlockLocation;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -27,6 +31,7 @@ import indexingTopology.streams.Streams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -90,6 +95,8 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private static final Logger LOG = LoggerFactory.getLogger(QueryCoordinator.class);
 
+    private FileSystem fileSystem;
+
     public QueryCoordinator(T lowerBound, T upperBound, TopologyConfig config, DataSchema schema) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
@@ -148,6 +155,12 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
         pendingQueue = new LinkedBlockingQueue<>();
 
         columnToChunkToBloomFilter = new HashMap<>();
+
+        try {
+            fileSystem = new HdfsFileSystemHandler(config.dataDir, config).getFileSystem();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         createQueryHandlingThread();
     }
@@ -614,11 +627,49 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 //            System.out.println("Select Task " + new ArrayList<>(candidates).get(randomIndex) + " among " + candidates.size() + " as the target query server. ");
 
             return new ArrayList<>(candidates).get(randomIndex);
+        } else if (config.HDFSFlag && config.HdfsTaskLocality) {
+            Path path = new Path(config.dataDir + "/" + fileName);
+            Long fileLength = 0L;
+            try {
+                fileLength = fileSystem.getFileStatus(path).getLen();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            BlockLocation[] blockLocations;
+            String[] locations;
+            String location = null;
+            try {
+                blockLocations = fileSystem.getFileBlockLocations(path, 0, fileLength);
+                BlockLocation blockLocation = blockLocations[new Random().nextInt(blockLocations.length)];
+                locations = blockLocation.getHosts();
+
+                int randomIndex = new Random().nextInt(locations.length);
+                location = locations[randomIndex];
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            Set<Integer> candidates = locationToChunkServerIds.get(location);
+
+            if (candidates == null || candidates.size() == 0) {
+                System.out.println("locationToChunkServerIds info is not available," +
+                        " using hashing dispatch instead.");
+                return getPreferredLocationByHashing(fileName);
+            }
+
+            int randomIndex = new Random().nextInt(candidates.size());
+
+//            System.out.println("Select Task " + new ArrayList<>(candidates).get(randomIndex) + " among " + candidates.size() + " as the target query server. ");
+
+            return new ArrayList<>(candidates).get(randomIndex);
         }
 
         int index = Math.abs(fileName.hashCode()) % queryServers.size();
         return queryServers.get(index);
     }
+
+
 
     private void putSubqueryToTaskQueues(SubQuery subQuery) {
         String fileName = ((SubQueryOnFile) subQuery).getFileName();
