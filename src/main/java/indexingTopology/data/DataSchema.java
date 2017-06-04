@@ -189,7 +189,10 @@ public class DataSchema implements Serializable {
             if (dataTypes.get(i).type.equals(Double.class)) {
                 output.writeDouble((double)t.get(i));
             } else if (dataTypes.get(i).type.equals(String.class)) {
-                output.writeString((String)t.get(i));
+//                output.writeString((String)t.get(i));
+                byte[] bytes = ((String) t.get(i)).getBytes();
+                output.writeInt(bytes.length);
+                output.write(bytes);
             } else if (dataTypes.get(i).type.equals(Integer.class)) {
                 output.writeInt((int)t.get(i));
             } else if (dataTypes.get(i).type.equals(Long.class)) {
@@ -254,9 +257,11 @@ public class DataSchema implements Serializable {
             if (dataTypes.get(i).type.equals(Double.class)) {
                 dataTuple.add(input.readDouble());
             } else if (dataTypes.get(i).type.equals(String.class)) {
-//                String s = input.readString();
-//                dataTuple.add(s);
-                dataTuple.add(input.readString());
+//                dataTuple.add(input.readString());
+                int length = input.readInt();
+                byte[] bytes = input.readBytes(length);
+                dataTuple.add(new String(bytes));
+//                dataTuple.add(input.re);
             } else if (dataTypes.get(i).type.equals(Integer.class)) {
                 dataTuple.add(input.readInt());
             } else if (dataTypes.get(i).type.equals(Long.class)) {

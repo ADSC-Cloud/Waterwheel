@@ -123,19 +123,18 @@ public class KryoTemplateSerializerTest extends TestCase {
     public void testTemplateAndLeaveDeserialization() throws IOException, UnsupportedGenericException {
 
 
-//        DataSchema schema = new DataSchema();
-//        schema.addVarcharField("id", 32);
-//        schema.addVarcharField("veh_no", 10);
-//        schema.addDoubleField("lon");
-//        schema.addDoubleField("lat");
-//        schema.addIntField("car_status");
-//        schema.addDoubleField("speed");
-//        schema.addVarcharField("position_type", 10);
-//        schema.addVarcharField("update_time", 32);
-//        schema.addIntField("zcode");
-//        schema.addLongField("timestamp");
-//        schema.setPrimaryIndexField("zcode");
-//        System.out.println("Total " + Runtime.getRuntime().totalMemory());
+        DataSchema schema = new DataSchema();
+        schema.addVarcharField("id", 32);
+        schema.addVarcharField("veh_no", 10);
+        schema.addDoubleField("lon");
+        schema.addDoubleField("lat");
+        schema.addIntField("car_status");
+        schema.addDoubleField("speed");
+        schema.addVarcharField("position_type", 10);
+        schema.addVarcharField("update_time", 32);
+        schema.addIntField("zcode");
+        schema.addLongField("timestamp");
+        schema.setPrimaryIndexField("zcode");
 
 
         final int payloadSize = 10;
@@ -334,7 +333,6 @@ public class KryoTemplateSerializerTest extends TestCase {
 //                System.out.println(offset);
 
                 for (int i = 0 ; i < tuplesInKeyRange.size(); ++i) {
-//                    System.out.println("length " + tuplesInKeyRange.get(i).length);
                     deserialize(tuplesInKeyRange.get(i));
 //                    schema.deserializeToDataTuple(tuplesInKeyRange.get(i)).toDataTypes();
                 }
@@ -717,6 +715,23 @@ public class KryoTemplateSerializerTest extends TestCase {
 
     }
     */
+
+    /*
+    @Test
+    public void testKryo() {
+        Output output = new Output(50000, 200000);
+
+        byte[] bytes = (new String("Hello")).getBytes();
+        output.writeInt(bytes.length);
+        output.write(bytes);
+
+        Input input = new Input(output.toBytes());
+
+        int length = input.readInt();
+        bytes = input.readBytes(length);
+
+        System.out.println(new String(bytes));
+    }*/
 
     public byte[] serializeIndexValue(List<Object> values) throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
