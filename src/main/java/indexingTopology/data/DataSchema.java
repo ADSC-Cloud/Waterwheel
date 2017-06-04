@@ -204,45 +204,45 @@ public class DataSchema implements Serializable {
         return bytes;
     }
 
-    @Deprecated
-    public byte[] serializeTuple(Tuple t) throws IOException {
-        Output output = new Output(1000, 2000000);
-        for (int i = 0; i < dataTypes.size(); i++) {
-            if (dataTypes.get(i).type.equals(Double.class)) {
-                output.writeDouble(t.getDouble(i));
-            } else if (dataTypes.get(i).type.equals(String.class)) {
-                output.writeString(t.getString(i));
-            } else if (dataTypes.get(i).type.equals(Integer.class)) {
-                output.writeInt(t.getInteger(i));
-            } else if (dataTypes.get(i).type.equals(Long.class)) {
-                output.writeLong(t.getLong(i));
-            } else {
-                throw new IOException("Only classes supported till now are string and double");
-            }
-        }
-        output.close();
-        return output.toBytes();
-    }
-
-    @Deprecated
-    public Values deserialize(byte [] b) throws IOException {
-        Values values = new Values();
-        Input input = new Input(b);
-        for (int i = 0; i < dataTypes.size(); i++) {
-            if (dataTypes.get(i).type.equals(Double.class)) {
-                values.add(input.readDouble());
-            } else if (dataTypes.get(i).type.equals(String.class)) {
-                values.add(input.readString());
-            } else if (dataTypes.get(i).type.equals(Integer.class)) {
-                values.add(input.readInt());
-            } else if (dataTypes.get(i).type.equals(Long.class)) {
-                values.add(input.readLong());
-            } else {
-                throw new IOException("Only classes supported till now are string and double");
-            }
-        }
-        return values;
-    }
+//    @Deprecated
+//    public byte[] serializeTuple(Tuple t) throws IOException {
+//        Output output = new Output(1000, 2000000);
+//        for (int i = 0; i < dataTypes.size(); i++) {
+//            if (dataTypes.get(i).type.equals(Double.class)) {
+//                output.writeDouble(t.getDouble(i));
+//            } else if (dataTypes.get(i).type.equals(String.class)) {
+//                output.writeString(t.getString(i));
+//            } else if (dataTypes.get(i).type.equals(Integer.class)) {
+//                output.writeInt(t.getInteger(i));
+//            } else if (dataTypes.get(i).type.equals(Long.class)) {
+//                output.writeLong(t.getLong(i));
+//            } else {
+//                throw new IOException("Only classes supported till now are string and double");
+//            }
+//        }
+//        output.close();
+//        return output.toBytes();
+//    }
+//
+//    @Deprecated
+//    public Values deserialize(byte [] b) throws IOException {
+//        Values values = new Values();
+//        Input input = new Input(b);
+//        for (int i = 0; i < dataTypes.size(); i++) {
+//            if (dataTypes.get(i).type.equals(Double.class)) {
+//                values.add(input.readDouble());
+//            } else if (dataTypes.get(i).type.equals(String.class)) {
+//                values.add(input.readString());
+//            } else if (dataTypes.get(i).type.equals(Integer.class)) {
+//                values.add(input.readInt());
+//            } else if (dataTypes.get(i).type.equals(Long.class)) {
+//                values.add(input.readLong());
+//            } else {
+//                throw new IOException("Only classes supported till now are string and double");
+//            }
+//        }
+//        return values;
+//    }
 
     public DataTuple deserializeToDataTuple(byte[] b) {
         DataTuple dataTuple = new DataTuple();
