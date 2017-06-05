@@ -67,8 +67,8 @@ public class LocalFileSystemHandler implements FileSystemHandler {
 //            buffer.position(0);
 //            buffer.get(bytes);
                     fop.write(bytes);
-                    fop.flush();
-                    fop.close();
+//                    fop.flush();
+//                    fop.close();
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 } catch (IOException e) {
@@ -89,6 +89,8 @@ public class LocalFileSystemHandler implements FileSystemHandler {
         while (retries < maxRetries) {
             while (waitingTime < waitingTimeInMilliSecond) {
                 if (future.isDone()) {
+                    fop.flush();
+                    fop.close();
                     executorService.shutdown();
                     break;
                 } else {
@@ -103,11 +105,14 @@ public class LocalFileSystemHandler implements FileSystemHandler {
 
             if (!future.isDone()) {
                 future.cancel(true);
+                fop.close();
                 executorService.submit(writingTask);
                 ++retries;
                 waitingTime = 0;
             } else {
                 executorService.shutdown();
+                fop.flush();
+                fop.close();
                 break;
             }
         }

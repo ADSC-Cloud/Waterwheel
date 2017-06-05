@@ -341,12 +341,12 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                             System.out.println(fileName + " is written locally.");
                         }
 
-                        if (config.HDFSFlag) {
-                            fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
-                        } else {
-                            fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
-                        }
-                        deserilizeChunkFile(fileSystemHandler, fileName);
+//                        if (config.HDFSFlag) {
+//                            fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
+//                        } else {
+//                            fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+//                        }
+//                        deserilizeChunkFile(fileSystemHandler, fileName);
 
 
                     } catch (IOException e) {
