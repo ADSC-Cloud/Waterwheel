@@ -136,6 +136,7 @@ public class KingBaseTopology {
                 DataTuplePredicate predicate = t -> schema.getValue("id", t).equals(idString);
 
 
+
                 Aggregator<Integer> aggregator = new Aggregator<>(schema, "id", new AggregateField(new Count(), "*"));
 //                Aggregator<Integer> aggregator = null;
 

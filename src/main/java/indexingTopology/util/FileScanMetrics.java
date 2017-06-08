@@ -29,16 +29,27 @@ public class FileScanMetrics implements Serializable {
 
     private String fileName;
 
+
+    private Long fileReadingTime;
+    private Long keyRangTime;
+    private Long timestampRangeTime;
+    private Long predicationTime;
+    private Long aggregationTime;
+
     private Long subqueryStartTime;
     private Long subqueryEndTime;
 
     public String debugInfo;
+
     public FileScanMetrics() {
 
     }
 
-    public void setTupleGettingTime(Long time) {
-        this.tupleGettingTime = time;
+    public void setFileReadingTime(Long time) {
+        this.fileReadingTime = time;
+    }
+    public Long getFileReadingTime() {
+        return fileReadingTime;
     }
 
     public void setLeafReadTime(Long time) {
@@ -107,20 +118,36 @@ public class FileScanMetrics implements Serializable {
         this.fileName = fileName;
     }
 
-    public void setSubqueryStartTime(Long subqueryStartTime) {
-        this.subqueryStartTime = subqueryStartTime;
+    public void setKeyRangTime(Long time) {
+        this.keyRangTime = time;
     }
 
-    public void setSubqueryEndTime(Long subqueryEndTime) {
-        this.subqueryEndTime = subqueryEndTime;
+    public Long getKeyRangeTime() {
+        return this.keyRangTime;
     }
 
-    public Long getSubqueryStartTime() {
-        return subqueryStartTime;
+    public void setTimestampRangeTime(Long time) {
+        this.timestampRangeTime = time;
     }
 
-    public Long getSubqueryEndTime() {
-        return subqueryEndTime;
+    public Long getTimestampRangeTime() {
+        return this.timestampRangeTime;
+    }
+
+    public void setPredicationTime(Long time) {
+        this.predicationTime = time;
+    }
+
+    public Long getPredicationTime() {
+        return predicationTime;
+    }
+
+    public void setAggregationTime(Long time) {
+        this.aggregationTime = time;
+    }
+
+    public Long getAggregationTime() {
+        return aggregationTime;
     }
 
 //    public void addWithAnotherMetrics(FileScanMetrics otherMetrics) {
@@ -142,7 +169,6 @@ public class FileScanMetrics implements Serializable {
                 + " tuple search time " + tupleGettingTime + " template reading time " + templateReadingTime
                 + " leaf reading time " + leafReadingTime + " search offset time " + searchTime
                 + " leaf bytes reading time" + leafBytesReadingTime + " length read time" + lengthReadTime
-                + " total bytes read time" + totalBytesReadTime + " file name" + fileName
-                + " subquery start time " + subqueryStartTime + " subquery end time " + subqueryEndTime;
+                + " total bytes read time" + totalBytesReadTime + " file name" + fileName;
     }
 }

@@ -136,6 +136,8 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
         this.tuples.get(index).add(serilizedTuple);
         this.offsets.get(index).add(serilizedTuple.length);
 
+
+
         if (!templateMode && isOverflow()) {
             node = dealOverflow();
         }

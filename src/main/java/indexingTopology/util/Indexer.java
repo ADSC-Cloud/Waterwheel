@@ -1,6 +1,8 @@
 package indexingTopology.util;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.google.common.base.Charsets;
 import com.google.common.hash.BloomFilter;
@@ -338,6 +340,15 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                                     System.currentTimeMillis() - start));
                             System.out.println(fileName + " is written locally.");
                         }
+
+//                        if (config.HDFSFlag) {
+//                            fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
+//                        } else {
+//                            fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+//                        }
+//                        deserilizeChunkFile(fileSystemHandler, fileName);
+
+
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -509,6 +520,10 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                         localCount++;
                         final DataType indexValue = (DataType) schema.getIndexValue(tuple);
                         final byte[] serializedTuple = schema.serializeTuple(tuple);
+
+                        final DataTuple deserializedDataTuple = schema.deserializeToDataTuple(serializedTuple);
+
+
                         bTree.insert((Comparable) indexValue, serializedTuple);
 
                         // update the bloom filter upon the arrival of a new tuple.
@@ -685,26 +700,140 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
         return trackedDataTupleQueue.take();
     }
 
-    private void writeTreeIntoChunk() {
+    public MemChunk getChunk() {
+        return chunk;
+    }
 
-        Output output = new Output(6000000, 500000000);
-
-        byte[] leafBytesToWrite = bTree.serializeLeaves();
-
-        kryo.writeObject(output, bTree);
-        byte[] templateBytesToWrite = output.toBytes();
+    public void writeTreeIntoChunk() {
 
 
-        output = new Output(4);
-        int templateLength = templateBytesToWrite.length;
-        output.writeInt(templateLength);
+        if (config.ChunkOrientedCaching) {
 
-        byte[] templateLengthBytesToWrite = output.toBytes();
+            Output output = new Output(6000000, 500000000);
 
-        chunk = MemChunk.createNew(leafBytesToWrite.length + 4 + templateLength);
-        chunk.write(templateLengthBytesToWrite);
-        chunk.write(templateBytesToWrite);
-        chunk.write(leafBytesToWrite);
-        output.close();
+            byte[] leafBytesToWrite = bTree.serializeLeaves();
+
+            kryo.writeObject(output, bTree);
+            byte[] templateBytesToWrite = output.toBytes();
+
+
+            output = new Output(4);
+            int templateLength = templateBytesToWrite.length;
+            output.writeInt(templateLength);
+
+
+            byte[] templateLengthBytesToWrite = output.toBytes();
+
+            output = new Output(4);
+            int chunkLength = leafBytesToWrite.length + 4 + templateLength;
+            output.writeInt(chunkLength);
+            byte[] chunkLengthBytesToWrite = output.toBytes();
+
+
+            chunk = MemChunk.createNew(leafBytesToWrite.length + 4 + templateLength + 4);
+
+            chunk.write(chunkLengthBytesToWrite);
+            chunk.write(templateLengthBytesToWrite);
+            chunk.write(templateBytesToWrite);
+            chunk.write(leafBytesToWrite);
+            output.close();
+        } else {
+            Output output = new Output(6000000, 500000000);
+
+            byte[] leafBytesToWrite = bTree.serializeLeaves();
+
+            kryo.writeObject(output, bTree);
+            byte[] templateBytesToWrite = output.toBytes();
+
+
+            output = new Output(4);
+            int templateLength = templateBytesToWrite.length;
+            output.writeInt(templateLength);
+
+            byte[] templateLengthBytesToWrite = output.toBytes();
+
+            chunk = MemChunk.createNew(leafBytesToWrite.length + 4 + templateLength);
+            chunk.write(templateLengthBytesToWrite);
+            chunk.write(templateBytesToWrite);
+            chunk.write(leafBytesToWrite);
+            output.close();
+        }
+    }
+
+
+    private void deserilizeChunkFile(FileSystemHandler fileSystemHandler, String fileName) {
+
+        System.out.println("Deserializing chunk name " + fileName);
+
+        fileSystemHandler.openFile("/", fileName);
+
+        byte[] bytesToRead;
+        byte[] temlateLengthInBytes = new byte[4];
+
+        fileSystemHandler.readBytesFromFile(0, temlateLengthInBytes);
+
+        Input input = new Input(temlateLengthInBytes);
+
+        int length = input.readInt();
+
+        byte[] templateInBytes = new byte[length];
+        fileSystemHandler.readBytesFromFile(4, templateInBytes);
+
+        input = new Input(templateInBytes);
+        BTree indexedData = kryo.readObject(input, BTree.class);
+
+        List<Integer> offsets = indexedData.getOffsetsOfLeafNodesShouldContainKeys(0
+                , 100000);
+
+
+        int startOffset = offsets.get(0);
+
+
+        bytesToRead = new byte[4];
+        int lastOffset = offsets.get(offsets.size() - 1);
+
+
+        fileSystemHandler.readBytesFromFile(lastOffset + length + 4, bytesToRead);
+
+        Input input1 = new Input(bytesToRead);
+        int tempLength = input1.readInt();
+        int totalLength = tempLength + (lastOffset - offsets.get(0));
+
+
+        List<BTreeLeafNode> leaves = new ArrayList<>();
+
+        bytesToRead = new byte[totalLength + 4];
+
+//            fileSystemHandler.seek(startOffset + length + 4);
+        fileSystemHandler.readBytesFromFile(startOffset + length + 4, bytesToRead);
+//            System.out.println("leaf bytes read " + (System.currentTimeMillis() - leafReadStart));
+
+        Input input2 = new Input(bytesToRead);
+
+
+        for (Integer offset : offsets) {
+            input2.setPosition(input2.position() + 4);
+
+
+            BTreeLeafNode leafNode = kryo.readObject(input2, BTreeLeafNode.class);
+
+
+            List<byte[]> tuplesInKeyRange = leafNode.getTuplesWithinKeyRange(Integer.MIN_VALUE, Integer.MAX_VALUE);
+
+//                System.out.println(offset);
+
+            for (int i = 0 ; i < tuplesInKeyRange.size(); ++i) {
+                try {
+                    schema.deserializeToDataTuple(tuplesInKeyRange.get(i));
+                } catch (KryoException e) {
+                    System.out.println("Deserialization error, the template is ");
+                    bTree.printBtree();
+                }
+            }
+
+
+        }
+
+        System.out.println("Deserialization for " + fileName + " has been finished!!!");
     }
 }

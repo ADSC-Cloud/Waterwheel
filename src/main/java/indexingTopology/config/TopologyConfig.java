@@ -24,7 +24,7 @@ public class TopologyConfig implements Serializable {
 
     public final int NUMBER_TUPLES_OF_A_CHUNK = 600000;
 
-    public final int CACHE_SIZE = 100;
+    public final int CACHE_SIZE = 200;
 
     public final int TASK_QUEUE_CAPACITY = 10000;
 
@@ -34,13 +34,19 @@ public class TopologyConfig implements Serializable {
 
     public final double LOAD_BALANCE_THRESHOLD = 0.2;
 
-    public boolean HDFSFlag = true;
+    public boolean HDFSFlag = false;
 
-    public boolean HybridStorage = true;
+    public boolean HybridStorage = false;
+
+    public boolean HdfsTaskLocality = false;
+
+    public boolean ChunkOrientedCaching = true;
 
 //    public static String dataDir = "/Users/Robert/Documents/data";
-    public String dataDir = "/home/robert/data";
-//    public static String dataDir = "/home/acelzj/data";
+    public String dataDir = "/home/acelzj/data";
+
+//    public static String dataDir = "/home/acelzj/data";                                                   
+
 //    public static String dataDir = "./";
 
     public String dataFileDir = "/home/acelzj/Downloads/taxi-trajectory";
@@ -86,5 +92,5 @@ public class TopologyConfig implements Serializable {
     public final boolean TASK_QUEUE_MODEL = false;
 
     // parallelism configuration
-    public int CHUNK_SCANNER_PER_NODE = 4;
+    public int CHUNK_SCANNER_PER_NODE = 1;
 }
