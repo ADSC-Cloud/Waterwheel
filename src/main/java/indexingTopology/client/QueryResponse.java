@@ -5,7 +5,7 @@ import indexingTopology.data.PartialQueryResult;
 /**
  * Created by robert on 8/3/17.
  */
-public class QueryResponse extends PartialQueryResult {
+public class QueryResponse extends PartialQueryResult implements IResponse {
 
     final Long queryId;
 

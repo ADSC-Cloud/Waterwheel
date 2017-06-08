@@ -84,7 +84,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
     }
 
     private Pair getTemplateFromExternalStorage(FileSystemHandler fileSystemHandler, String fileName) throws IOException {
-//        fileSystemHandler.openFile("/", fileName);
         byte[] bytesToRead = new byte[4];
         fileSystemHandler.readBytesFromFile(0, bytesToRead);
 
@@ -124,7 +123,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         subqueryHandler = new SubqueryHandler(schema, config);
 
         locationReportingThread = new Thread(() -> {
-//            while (true) {
             while (!Thread.currentThread().isInterrupted()) {
                 String hostName = "unknown";
                 try {
@@ -172,11 +170,9 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
             SubQueryOnFile subQuery = (SubQueryOnFile) tuple.getValueByField("subquery");
 
             try {
-//                System.out.println("query id " + subQuery.getQueryId() + " has been put to the queue");
                 while (!pendingQueue.offer(subQuery, 1, TimeUnit.SECONDS)) {
                     System.out.println("Fail to offer a subquery to pending queue. Will retry.");
                 }
-//                pendingQueue.put(subQuery);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -212,7 +208,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
                         }
 
                     } catch (InterruptedException e) {
-//                        e.printStackTrace();
                         Thread.currentThread().interrupt();
                         System.out.println("subqueryHandlding thread is interrupted.");
                         break;

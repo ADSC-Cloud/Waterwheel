@@ -1,15 +1,15 @@
 package indexingTopology.data;
 
 
-import indexingTopology.client.IResponse;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by robert on 3/3/17.
  */
-public class PartialQueryResult implements IResponse {
+public class PartialQueryResult implements Serializable {
 
     public List<DataTuple> dataTuples = new ArrayList<>();
 
