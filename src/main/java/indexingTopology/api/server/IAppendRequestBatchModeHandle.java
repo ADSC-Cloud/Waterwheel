@@ -1,6 +1,6 @@
-package indexingTopology.client;
+package indexingTopology.api.server;
 
-import indexingTopology.data.DataTupleBlock;
+import indexingTopology.api.client.AppendRequestBatchMode;
 
 import java.io.IOException;
 

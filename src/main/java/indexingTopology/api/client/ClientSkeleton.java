@@ -1,4 +1,4 @@
-package indexingTopology.client;
+package indexingTopology.api.client;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

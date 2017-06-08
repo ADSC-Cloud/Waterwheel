@@ -1,6 +1,10 @@
 package indexingTopology.bolt;
 
-import indexingTopology.client.*;
+import indexingTopology.api.client.QueryRequest;
+import indexingTopology.api.client.QueryResponse;
+import indexingTopology.api.server.QueryHandle;
+import indexingTopology.api.server.Server;
+import indexingTopology.api.server.ServerHandle;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.PartialQueryResult;
@@ -10,7 +14,6 @@ import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.awt.image.DataBufferShort;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -2,12 +2,7 @@ package indexingTopology.data;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import org.apache.storm.tuple.Fields;
-import org.apache.storm.tuple.Tuple;
-import org.apache.storm.tuple.Values;
 
-import javax.xml.crypto.Data;
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -100,32 +95,32 @@ public class DataSchema implements Serializable {
 //        return dataTypes.get(index);
 //    }
 
-    public Fields getFieldsObject() {
-        return new Fields(fieldNames);
-    }
+//    public Fields getFieldsObject() {
+//        return new Fields(fieldNames);
+//    }
 
-    public Values getValuesObject(String [] valuesAsString) throws RuntimeException {
-        if (dataFieldNameToIndex.size() != valuesAsString.length) throw new RuntimeException("number of values provided does not " +
-                "match number of fields in data schema");
-
-        Values values = new Values();
-        for (int i=0;i < dataTypes.size();i++) {
-            if (dataTypes.get(i).equals(Double.class)) {
-                values.add(Double.parseDouble(valuesAsString[i]));
-            }
-            else if (dataTypes.get(i).equals(String.class)) {
-                values.add(valuesAsString[i]);
-            } else if (dataTypes.get(i).equals(Integer.class)) {
-                values.add(Integer.parseInt(valuesAsString[i]));
-            } else if (dataTypes.get(i).equals(Long.class)) {
-                values.add(Long.parseLong(valuesAsString[i]));
-            } else {
-                throw new RuntimeException("Only classes supported till now are string and double");
-            }
-        }
-
-        return values;
-    }
+//    public Values getValuesObject(String [] valuesAsString) throws RuntimeException {
+//        if (dataFieldNameToIndex.size() != valuesAsString.length) throw new RuntimeException("number of values provided does not " +
+//                "match number of fields in data schema");
+//
+//        Values values = new Values();
+//        for (int i=0;i < dataTypes.size();i++) {
+//            if (dataTypes.get(i).equals(Double.class)) {
+//                values.add(Double.parseDouble(valuesAsString[i]));
+//            }
+//            else if (dataTypes.get(i).equals(String.class)) {
+//                values.add(valuesAsString[i]);
+//            } else if (dataTypes.get(i).equals(Integer.class)) {
+//                values.add(Integer.parseInt(valuesAsString[i]));
+//            } else if (dataTypes.get(i).equals(Long.class)) {
+//                values.add(Long.parseLong(valuesAsString[i]));
+//            } else {
+//                throw new RuntimeException("Only classes supported till now are string and double");
+//            }
+//        }
+//
+//        return values;
+//    }
 
     /*
     public Values deserialize(byte [] b) throws IOException {

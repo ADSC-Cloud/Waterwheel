@@ -1,7 +1,13 @@
 package indexingTopology.bolt;
 
 import indexingTopology.aggregator.Aggregator;
-import indexingTopology.client.*;
+import indexingTopology.api.client.GeoTemporalQueryRequest;
+import indexingTopology.api.client.QueryRequest;
+import indexingTopology.api.client.QueryResponse;
+import indexingTopology.api.server.GeoTemporalQueryHandle;
+import indexingTopology.api.server.QueryHandle;
+import indexingTopology.api.server.Server;
+import indexingTopology.api.server.ServerHandle;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.PartialQueryResult;

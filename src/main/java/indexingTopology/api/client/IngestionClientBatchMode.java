@@ -1,11 +1,10 @@
-package indexingTopology.client;
+package indexingTopology.api.client;
 
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import indexingTopology.data.DataTupleBlock;
 
 import java.io.IOException;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.concurrent.Semaphore;
 

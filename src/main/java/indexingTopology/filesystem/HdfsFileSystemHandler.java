@@ -31,7 +31,7 @@ public class HdfsFileSystemHandler implements FileSystemHandler {
     public HdfsFileSystemHandler(String path, TopologyConfig config) throws IOException {
         configuration = new Configuration();
         configuration.setBoolean("dfs.support.append", true);
-        configuration.setBoolean("dfs.client.read.shortcircuit", true);
+        configuration.setBoolean("dfs.api.read.shortcircuit", true);
         configuration.set("dfs.domain.socket.path", "/var/lib/hadoop-hdfs/dn_socket");
         this.config = config;
         uri = URI.create(config.HDFS_HOST + path);

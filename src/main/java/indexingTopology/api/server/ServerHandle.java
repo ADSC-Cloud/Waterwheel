@@ -1,4 +1,4 @@
-package indexingTopology.client;
+package indexingTopology.api.server;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -19,8 +19,8 @@ public abstract class ServerHandle implements Runnable{
     protected ObjectOutputStream objectOutputStream;
     Socket client;
 
-//    public ServerHandle(Socket client) {
-//        this.client = client;
+//    public ServerHandle(Socket api) {
+//        this.api = api;
 //    }
 
     public ServerHandle() {
@@ -63,7 +63,7 @@ public abstract class ServerHandle implements Runnable{
             } catch (EOFException e) {
                 try {
                     client.close();
-                    System.out.println("EOFException occurs, close client");
+                    System.out.println("EOFException occurs, close api");
                     break;
                 } catch (IOException e1) {
                     e1.printStackTrace();
@@ -80,10 +80,10 @@ public abstract class ServerHandle implements Runnable{
                     e.printStackTrace();
                 }
                 break;
-//                if (!client.isClosed()) {
+//                if (!api.isClosed()) {
 //                    io.printStackTrace();
 //                    try {
-//                        client.close();
+//                        api.close();
 //                        break;
 //                    } catch (IOException e) {
 //                        e.printStackTrace();

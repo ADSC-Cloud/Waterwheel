@@ -1,8 +1,6 @@
-package indexingTopology.client;
+package indexingTopology.api.client;
 
 import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
 import java.net.SocketTimeoutException;
 
 /**

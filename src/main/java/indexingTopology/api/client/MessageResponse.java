@@ -1,4 +1,5 @@
-package indexingTopology.client;
+package indexingTopology.api.client;
+
 
 /**
  * Created by robert on 8/3/17.

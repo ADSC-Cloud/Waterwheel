@@ -1,4 +1,6 @@
-package indexingTopology.client;
+package indexingTopology.api.server;
+
+import indexingTopology.api.client.AppendRequest;
 
 import java.io.IOException;
 

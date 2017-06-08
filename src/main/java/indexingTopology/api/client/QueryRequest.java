@@ -1,4 +1,4 @@
-package indexingTopology.client;
+package indexingTopology.api.client;
 
 import indexingTopology.aggregator.Aggregator;
 import indexingTopology.util.DataTupleEquivalentPredicateHint;

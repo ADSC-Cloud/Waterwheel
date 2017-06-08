@@ -48,7 +48,7 @@ public class NormalDistributionGenerator extends BaseRichSpout {
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        List<String> fields = schema.getFieldsObject().toList();
+        List<String> fields = null; //schema.getFieldsObject().toList();
         fields.add("timeStamp");
         declarer.declareStream(Streams.IndexStream, new Fields(fields));
     }
@@ -115,7 +115,7 @@ public class NormalDistributionGenerator extends BaseRichSpout {
             String [] tuple = text.split(" ");
 //            System.out.println("The tuple is " + schema.getValuesObject(tuple));
 //            double indexValue = Double.parseDouble(text);
-            Values values = schema.getValuesObject(tuple);
+            Values values = null; //schema.getValuesObject(tuple);
             values.add(timeStamp);
 
             collector_.emit(Streams.IndexStream, values, msgId);

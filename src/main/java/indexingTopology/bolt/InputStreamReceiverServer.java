@@ -1,6 +1,12 @@
 package indexingTopology.bolt;
 
-import indexingTopology.client.*;
+import indexingTopology.api.client.AppendRequest;
+import indexingTopology.api.client.AppendRequestBatchMode;
+import indexingTopology.api.client.MessageResponse;
+import indexingTopology.api.server.AppendRequestHandle;
+import indexingTopology.api.server.IAppendRequestBatchModeHandle;
+import indexingTopology.api.server.Server;
+import indexingTopology.api.server.ServerHandle;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;

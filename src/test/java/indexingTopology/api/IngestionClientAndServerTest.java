@@ -1,13 +1,17 @@
-package indexingTopology.client;
+package indexingTopology.api;
 
-import indexingTopology.bolt.InputStreamReceiverServer;
+import indexingTopology.api.client.AppendRequest;
+import indexingTopology.api.client.AppendRequestBatchMode;
+import indexingTopology.api.client.IngestionClientBatchMode;
+import indexingTopology.api.server.AppendRequestHandle;
+import indexingTopology.api.server.IAppendRequestBatchModeHandle;
+import indexingTopology.api.server.Server;
+import indexingTopology.api.server.ServerHandle;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import junit.framework.TestCase;
-import org.apache.storm.shade.org.eclipse.jetty.util.BlockingArrayQueue;
 
 import java.io.IOException;
-import java.util.concurrent.BlockingQueue;
 
 /**
  * Created by robert on 29/5/17.

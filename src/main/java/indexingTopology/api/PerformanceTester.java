@@ -1,5 +1,7 @@
-package indexingTopology.client;
+package indexingTopology.api;
 
+import indexingTopology.api.client.*;
+import indexingTopology.api.server.*;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
 import org.apache.commons.lang.RandomStringUtils;
@@ -120,7 +122,7 @@ public class PerformanceTester {
         } else if (option.equals("server")) {
             System.out.println("Server!");
             server = launchServerDaemon(1024);
-        } else if (option.equals("client")) {
+        } else if (option.equals("api")) {
             System.out.println("ClientSkeleton!");
             String serverHost = "localhost";
             if (args.length > 1 && args[1] != null) {

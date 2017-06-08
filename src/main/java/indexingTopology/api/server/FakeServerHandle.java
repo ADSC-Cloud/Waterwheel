@@ -1,14 +1,12 @@
-package indexingTopology.client;
+package indexingTopology.api.server;
 
+import indexingTopology.api.client.*;
 import indexingTopology.data.DataTuple;
 import indexingTopology.data.PartialQueryResult;
 import indexingTopology.util.FrequencyRestrictor;
 import org.apache.storm.metric.internal.RateTracker;
 
 import java.io.IOException;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by robert on 3/3/17.

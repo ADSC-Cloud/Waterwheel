@@ -1,8 +1,7 @@
-package indexingTopology.client.test;
+package indexingTopology.api.test;
 
-import indexingTopology.client.FakeServerHandle;
-import indexingTopology.client.QueryClient;
-import indexingTopology.client.Server;
+import indexingTopology.api.server.FakeServerHandle;
+import indexingTopology.api.server.Server;
 
 /**
  * Created by robert on 31/5/17.

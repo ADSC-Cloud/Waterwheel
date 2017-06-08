@@ -1,9 +1,8 @@
-package indexingTopology.client.test;
+package indexingTopology.api.test;
 
-import indexingTopology.client.IngestionClientBatchMode;
+import indexingTopology.api.client.IngestionClientBatchMode;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
-import indexingTopology.util.FrequencyRestrictor;
 
 import java.io.IOException;
 

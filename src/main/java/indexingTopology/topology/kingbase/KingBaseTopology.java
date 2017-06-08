@@ -7,10 +7,10 @@ import indexingTopology.bolt.GeoTemporalQueryCoordinatorWithQueryReceiverServer;
 import indexingTopology.bolt.InputStreamReceiver;
 import indexingTopology.bolt.InputStreamReceiverServer;
 import indexingTopology.bolt.QueryCoordinator;
-import indexingTopology.client.GeoTemporalQueryClient;
-import indexingTopology.client.GeoTemporalQueryRequest;
-import indexingTopology.client.IngestionClientBatchMode;
-import indexingTopology.client.QueryResponse;
+import indexingTopology.api.client.GeoTemporalQueryClient;
+import indexingTopology.api.client.GeoTemporalQueryRequest;
+import indexingTopology.api.client.IngestionClientBatchMode;
+import indexingTopology.api.client.QueryResponse;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
@@ -24,11 +24,9 @@ import org.apache.storm.generated.AuthorizationException;
 import org.apache.storm.generated.InvalidTopologyException;
 import org.apache.storm.generated.StormTopology;
 import org.apache.storm.metric.internal.RateTracker;
-import org.apache.storm.utils.Utils;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
@@ -67,7 +65,7 @@ public class KingBaseTopology {
     private boolean LocalMode = false;
 
     /**
-     * ingest client configuration
+     * ingest api configuration
      */
     @Option(name = "--ingest-server-ip", usage = "the ingestion server ip")
     private String IngestServerIp = "localhost";
@@ -76,7 +74,7 @@ public class KingBaseTopology {
     private int MaxIngestRate = Integer.MAX_VALUE;
 
     /**
-     * query client configuration
+     * query api configuration
      */
     @Option(name = "--query-server-ip", usage = "the query server ip")
     private String QueryServerIp = "localhost";

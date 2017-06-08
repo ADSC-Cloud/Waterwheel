@@ -1,10 +1,13 @@
 package indexingTopology.topology;
 import indexingTopology.aggregator.*;
+import indexingTopology.api.client.IngestionClientBatchMode;
+import indexingTopology.api.client.QueryClient;
+import indexingTopology.api.client.QueryRequest;
+import indexingTopology.api.client.QueryResponse;
 import indexingTopology.bolt.InputStreamReceiver;
 import indexingTopology.bolt.InputStreamReceiverServer;
 import indexingTopology.bolt.QueryCoordinator;
 import indexingTopology.bolt.QueryCoordinatorWithQueryReceiverServer;
-import indexingTopology.client.*;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.data.DataSchema;
 import indexingTopology.data.DataTuple;
@@ -19,11 +22,9 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Function;
 
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 
 /**

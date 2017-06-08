@@ -1,4 +1,6 @@
-package indexingTopology.client;
+package indexingTopology.api.server;
+
+import indexingTopology.api.client.QueryClient;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandle;
@@ -63,7 +65,7 @@ public class Server<T extends ServerHandle> {
                 client = serverSocket.accept();
                 ServerHandle handle;
 //                if (args.length == 0) {
-//                    handle = SomeServerHandle.getDeclaredConstructor(Socket.class).newInstance(client);
+//                    handle = SomeServerHandle.getDeclaredConstructor(Socket.class).newInstance(api);
 //                } else {
 //                    ArrayList<Class<?>> classTypes = new ArrayList<>();
 //                    for (int i = 0; i < args.length; i++) {
