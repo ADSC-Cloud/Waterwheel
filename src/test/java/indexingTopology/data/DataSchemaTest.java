@@ -36,6 +36,22 @@ public class DataSchemaTest {
     }
 
     @Test
+    public void SerializationTest1() {
+        DataSchema schema = new DataSchema();
+        schema.addDoubleField("f1");
+        schema.addLongField("f2");
+        schema.addVarcharField("f3",3);
+        schema.addVarcharField("f4", 2);
+        DataTuple dataTuple = new DataTuple(0.01, 10L, "aaaaa", "bbbbbb");
+        byte[] bytes = schema.serializeTuple(dataTuple);
+        DataTuple dataTupleDeserialized = schema.deserializeToDataTuple(bytes);
+        assertEquals(0.01, dataTupleDeserialized.get(0));
+        assertEquals(10L, dataTupleDeserialized.get(1));
+        assertEquals("aaaaa", dataTupleDeserialized.get(2));
+        assertEquals("bbbbbb", dataTupleDeserialized.get(3));
+    }
+
+    @Test
     public void IndexFieldTest() {
         DataSchema schema = new DataSchema();
         schema.addDoubleField("f1");

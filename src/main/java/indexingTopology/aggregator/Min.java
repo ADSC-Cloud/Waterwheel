@@ -6,7 +6,9 @@ package indexingTopology.aggregator;
 public class Min<V extends Number & Comparable<V>> implements AggregationFunction<V, V>  {
     @Override
     public V aggregateFunction(V value, V originalA) {
-
+        if (originalA == null || value == null) {
+            return originalA == null ? value: originalA;
+        }
         return value.doubleValue() < originalA.doubleValue() ? value : originalA;
     }
 
@@ -15,7 +17,7 @@ public class Min<V extends Number & Comparable<V>> implements AggregationFunctio
 //        if(this.getClass() == Max<Double>) {
 //
 //        }
-        return (V)new Double(Double.MAX_VALUE);
+        return null;
     }
 
 }
