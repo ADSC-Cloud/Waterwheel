@@ -700,27 +700,64 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
         return trackedDataTupleQueue.take();
     }
 
-    private void writeTreeIntoChunk() {
+    public MemChunk getChunk() {
+        return chunk;
+    }
 
-        Output output = new Output(6000000, 500000000);
-
-        byte[] leafBytesToWrite = bTree.serializeLeaves();
-
-        kryo.writeObject(output, bTree);
-        byte[] templateBytesToWrite = output.toBytes();
+    public void writeTreeIntoChunk() {
 
 
-        output = new Output(4);
-        int templateLength = templateBytesToWrite.length;
-        output.writeInt(templateLength);
+        if (config.ChunkOrientedCaching) {
 
-        byte[] templateLengthBytesToWrite = output.toBytes();
+            Output output = new Output(6000000, 500000000);
 
-        chunk = MemChunk.createNew(leafBytesToWrite.length + 4 + templateLength);
-        chunk.write(templateLengthBytesToWrite);
-        chunk.write(templateBytesToWrite);
-        chunk.write(leafBytesToWrite);
-        output.close();
+            byte[] leafBytesToWrite = bTree.serializeLeaves();
+
+            kryo.writeObject(output, bTree);
+            byte[] templateBytesToWrite = output.toBytes();
+
+
+            output = new Output(4);
+            int templateLength = templateBytesToWrite.length;
+            output.writeInt(templateLength);
+
+
+            byte[] templateLengthBytesToWrite = output.toBytes();
+
+            output = new Output(4);
+            int chunkLength = leafBytesToWrite.length + 4 + templateLength;
+            output.writeInt(chunkLength);
+            byte[] chunkLengthBytesToWrite = output.toBytes();
+
+
+            chunk = MemChunk.createNew(leafBytesToWrite.length + 4 + templateLength + 4);
+
+            chunk.write(chunkLengthBytesToWrite);
+            chunk.write(templateLengthBytesToWrite);
+            chunk.write(templateBytesToWrite);
+            chunk.write(leafBytesToWrite);
+            output.close();
+        } else {
+            Output output = new Output(6000000, 500000000);
+
+            byte[] leafBytesToWrite = bTree.serializeLeaves();
+
+            kryo.writeObject(output, bTree);
+            byte[] templateBytesToWrite = output.toBytes();
+
+
+            output = new Output(4);
+            int templateLength = templateBytesToWrite.length;
+            output.writeInt(templateLength);
+
+            byte[] templateLengthBytesToWrite = output.toBytes();
+
+            chunk = MemChunk.createNew(leafBytesToWrite.length + 4 + templateLength);
+            chunk.write(templateLengthBytesToWrite);
+            chunk.write(templateBytesToWrite);
+            chunk.write(leafBytesToWrite);
+            output.close();
+        }
     }
 
 

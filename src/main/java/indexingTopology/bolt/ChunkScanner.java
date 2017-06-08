@@ -23,7 +23,6 @@ import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
-import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +45,8 @@ import java.util.stream.Collectors;
 public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseRichBolt {
 
     OutputCollector collector;
+
+    private transient LRUCache<String, byte[]> chunkNameToChunkMapping;
 
     private transient LRUCache<BlockId, CacheUnit> blockIdToCacheUnit;
 
@@ -72,6 +73,10 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
     }
 
     TopologyConfig config;
+
+    private SubqueryHandler subqueryHandler;
+
+
 
     public ChunkScanner(DataSchema schema, TopologyConfig config) {
         this.schema = schema;
@@ -103,6 +108,8 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
 
+        chunkNameToChunkMapping = new LRUCache<>(config.CACHE_SIZE);
+
         blockIdToCacheUnit = new LRUCache<>(config.CACHE_SIZE);
 
         pendingQueue = new ArrayBlockingQueue<>(1024);
@@ -114,9 +121,11 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         kryo = new Kryo();
         kryo.register(BTree.class, new KryoTemplateSerializer(config));
         kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer(config));
+        subqueryHandler = new SubqueryHandler(schema, config);
 
         locationReportingThread = new Thread(() -> {
-            while (true) {
+//            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
                 String hostName = "unknown";
                 try {
                     hostName = InetAddress.getLocalHost().getHostName();
@@ -187,9 +196,21 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
                     try {
                         subQueryHandlingSemaphore.acquire();
                         SubQueryOnFile subQuery = (SubQueryOnFile) pendingQueue.take();
-                        System.out.println("$$$ sub query " + subQuery.getQueryId() + " to be processed " + subQuery.getFileName());
-                        handleSubQuery(subQuery);
-                        System.out.println("$$$ sub query " + subQuery.getQueryId() + " processed " + subQuery.getFileName());
+
+//                        System.out.println("sub query " + subQuery.getQueryId() + " has been taken from queue");
+
+                        if (config.ChunkOrientedCaching) {
+                            List<byte[]> tuples = subqueryHandler.handleSubquery(subQuery);
+
+                            collector.emit(Streams.FileSystemQueryStream, new Values(subQuery, tuples, new FileScanMetrics()));
+
+                            if (!config.SHUFFLE_GROUPING_FLAG) {
+                                collector.emit(Streams.FileSubQueryFinishStream, new Values("finished"));
+                            }
+                        } else {
+                            handleSubQuery(subQuery);
+                        }
+
                     } catch (InterruptedException e) {
 //                        e.printStackTrace();
                         Thread.currentThread().interrupt();
@@ -229,6 +250,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         List<DataTuple> dataTuplesInKeyRange = new ArrayList<>();
         FileScanMetrics metrics = new FileScanMetrics();
         List<byte[]> serializedDataTuples = new ArrayList<>();
+
         metrics.debugInfo += String.format("subquery on %s, executed on %s ", subQuery.getFileName(),
                 InetAddress.getLocalHost().getHostName());
         debugInfo.runningPosition = "breakpoint 1";
@@ -248,7 +270,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 //        metrics.setFileName(fileName);
 
             long start = System.currentTimeMillis();
-
 
 
             FileSystemHandler fileSystemHandler = null;
@@ -278,18 +299,27 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
             Pair data = getTemplateData(fileSystemHandler, fileName);
 //        long temlateRead = System.currentTimeMillis() - readTemplateStart;
 
+            fileSystemHandler.openFile("/", fileName);
+//        fileTime += (System.currentTimeMillis() - fileStart);
 
+//        long readTemplateStart = System.currentTimeMillis();
             BTree template = (BTree) data.getKey();
             Integer length = (Integer) data.getValue();
+
 
 
             BTreeLeafNode leaf = null;
 
 
-
-
 //        long searchOffsetsStart = System.currentTimeMillis();
             List<Integer> offsets = template.getOffsetsOfLeafNodesShouldContainKeys(leftKey, rightKey);
+//        System.out.println("template");
+//        System.out.println(offsets);
+//        template.printBtree();
+//        metrics.setSearchTime(System.currentTimeMillis() - searchOffsetsStart);
+
+
+//        byte[] bytesToRead = readLeafBytesFromFile(fileSystemHandler, offsets, length);
             debugInfo.runningPosition = "breakpoint 5";
 //        System.out.println("template");
 //        System.out.println(offsets);
@@ -347,8 +377,10 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
             filterByPredicate(dataTuplesInKeyRange, subQuery.getPredicate());
 //            System.out.println("After predicates: " + dataTuples.size());
+
             metrics.debugInfo += " size = " + dataTuplesInKeyRange.size();
             debugInfo.runningPosition = "breakpoint 10";
+
 
             if (subQuery.getAggregator() != null) {
                 Aggregator.IntermediateResult intermediateResult = subQuery.getAggregator().createIntermediateResult();
@@ -361,7 +393,9 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 //            aggregationTime += System.currentTimeMillis() - startTime;
 
 
+
             debugInfo.runningPosition = "breakpoint 11";
+
 //            totalTupleGet += (System.currentTimeMillis() - tupleGetStart);
 
 
@@ -375,20 +409,18 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
             }
 
 
-
 //            tuples.addAll(serializedDataTuples);
 
 
-        fileSystemHandler.closeFile();
+            fileSystemHandler.closeFile();
 
-        metrics.setTotalTime(System.currentTimeMillis() - start);
+            metrics.setTotalTime(System.currentTimeMillis() - start);
 //        metrics.setFileReadingTime(fileReadingTime);
 //        metrics.setKeyRangTime(keyRangeTime);
 //        metrics.setTimestampRangeTime(timestampRangeTime);
 //        metrics.setPredicationTime(predicationTime);
 //        metrics.setAggregationTime(aggregationTime);
 
-            debugInfo.runningPosition = "breakpoint 12";
             long closeStart = System.currentTimeMillis();
             fileSystemHandler.closeFile();
 //        fileTime += (System.currentTimeMillis() - closeStart);
@@ -415,6 +447,37 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
             metrics.setTotalTime(System.currentTimeMillis() - start);
 
 
+        metrics.setTotalTime(System.currentTimeMillis() - start);
+//        metrics.setFileReadingTime(fileReadingTime);
+//        metrics.setKeyRangTime(keyRangeTime);
+//        metrics.setTimestampRangeTime(timestampRangeTime);
+//        metrics.setPredicationTime(predicationTime);
+//        metrics.setAggregationTime(aggregationTime);
+
+            debugInfo.runningPosition = "breakpoint 12";
+            fileSystemHandler.closeFile();
+//        fileTime += (System.currentTimeMillis() - closeStart);
+
+//        metrics.setSubqueryEndTime(System.currentTimeMillis());
+
+
+//        System.out.println("total time " + (System.currentTimeMillis() - start));
+//        System.out.println("file open and close time " + fileTime);
+//        System.out.println("template read " + temlateRead);
+//        System.out.println("leaf read " + totalLeafRead);
+//        System.out.println("total tuple get" + totalTupleGet);
+
+//        metrics.setTotalTime(System.currentTimeMillis() - start);
+//        metrics.setFileOpenAndCloseTime(fileTime);
+//        metrics.setLeafReadTime(totalLeafRead);
+//        metrics.setTupleGettingTime(totalTupleGet);
+//        metrics.setTemplateReadingTime(temlateRead);
+
+//        collector.emit(Streams.FileSystemQueryStream, new Values(queryId, tuples, metrics));
+//        metrics.setNumberOfRecords((long) tuples.size());
+//        System.out.println(tuples.size());
+
+            metrics.setTotalTime(System.currentTimeMillis() - start);
 
 //        tuples.clear();
 //        System.out.println(String.format("%d tuples are found on file %s", tuples.size(), fileName));
@@ -449,10 +512,10 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
             throws IOException {
 
         List<DataTuple> result =
-        tuples.stream().filter(p -> {
-            Long timestamp = (Long) schema.getValue("timestamp", p);
-            return timestampLowerBound <= timestamp && timestampUpperBound >= timestamp;
-        }).collect(Collectors.toList());
+                tuples.stream().filter(p -> {
+                    Long timestamp = (Long) schema.getValue("timestamp", p);
+                    return timestampLowerBound <= timestamp && timestampUpperBound >= timestamp;
+                }).collect(Collectors.toList());
         tuples.clear();
         tuples.addAll(result);
 
@@ -518,5 +581,4 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
         return bytesToRead;
     }
-
 }

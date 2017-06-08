@@ -119,6 +119,7 @@ public class KryoTemplateSerializerTest extends TestCase {
 
     }
 
+
     @Test
     public void testTemplateAndLeaveDeserialization() throws IOException, UnsupportedGenericException {
 
@@ -320,7 +321,9 @@ public class KryoTemplateSerializerTest extends TestCase {
 
 
             for (Integer offset : offsets) {
-                input2.setPosition(input2.position() + 4);
+                if (!config.ChunkOrientedCaching) {
+                    input2.setPosition(input2.position() + 4);
+                }
 
 
                 BTreeLeafNode leafNode = kryo.readObject(input2, BTreeLeafNode.class);
@@ -546,7 +549,9 @@ public class KryoTemplateSerializerTest extends TestCase {
 
 
         for (Integer offset : offsets) {
-            input2.setPosition(input2.position() + 4);
+            if (!config.ChunkOrientedCaching) {
+                input2.setPosition(input2.position() + 4);
+            }
 
             BTreeLeafNode leafNode = kryo.readObject(input2, BTreeLeafNode.class);
 
@@ -732,6 +737,7 @@ public class KryoTemplateSerializerTest extends TestCase {
 
         System.out.println(new String(bytes));
     }*/
+
 
     public byte[] serializeIndexValue(List<Object> values) throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
