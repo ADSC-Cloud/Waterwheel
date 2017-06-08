@@ -2,8 +2,8 @@ package indexingTopology.api;
 
 import indexingTopology.api.client.*;
 import indexingTopology.api.server.*;
-import indexingTopology.data.DataSchema;
-import indexingTopology.data.DataTuple;
+import indexingTopology.common.data.DataSchema;
+import indexingTopology.common.data.DataTuple;
 import org.apache.commons.lang.RandomStringUtils;
 
 import java.io.IOException;

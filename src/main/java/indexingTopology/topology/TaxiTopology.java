@@ -2,11 +2,10 @@ package indexingTopology.topology;
 
 import indexingTopology.bolt.*;
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.data.DataSchema;
+import indexingTopology.common.data.DataSchema;
 import indexingTopology.util.TopologyGenerator;
 import indexingTopology.util.taxi.City;
 import org.apache.storm.Config;
-import org.apache.storm.StormSubmitter;
 import org.apache.storm.generated.StormTopology;
 import org.apache.storm.topology.TopologyBuilder;
 import org.apache.storm.utils.Utils;

@@ -1,9 +1,9 @@
 package indexingTopology.api.client;
 
 import indexingTopology.aggregator.Aggregator;
-import indexingTopology.util.DataTupleEquivalentPredicateHint;
-import indexingTopology.util.DataTuplePredicate;
-import indexingTopology.util.DataTupleSorter;
+import indexingTopology.common.logics.DataTupleEquivalentPredicateHint;
+import indexingTopology.common.logics.DataTuplePredicate;
+import indexingTopology.common.logics.DataTupleSorter;
 
 /**
  * Created by robert on 3/3/17.

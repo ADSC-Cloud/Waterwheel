@@ -1,8 +1,8 @@
 package indexingTopology.api.test;
 
 import indexingTopology.api.client.IngestionClientBatchMode;
-import indexingTopology.data.DataSchema;
-import indexingTopology.data.DataTuple;
+import indexingTopology.common.data.DataSchema;
+import indexingTopology.common.data.DataTuple;
 
 import java.io.IOException;
 

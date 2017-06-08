@@ -1,7 +1,7 @@
-package indexingTopology.util;
+package indexingTopology.common.logics;
 
-import indexingTopology.data.DataSchema;
-import indexingTopology.data.DataTuple;
+import indexingTopology.common.data.DataSchema;
+import indexingTopology.common.data.DataTuple;
 
 import java.io.Serializable;
 import java.util.function.Predicate;

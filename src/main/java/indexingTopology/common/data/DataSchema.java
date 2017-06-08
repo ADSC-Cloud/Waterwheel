@@ -1,4 +1,4 @@
-package indexingTopology.data;
+package indexingTopology.common.data;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;

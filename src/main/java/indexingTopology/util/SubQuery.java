@@ -1,6 +1,9 @@
 package indexingTopology.util;
 
 import indexingTopology.aggregator.Aggregator;
+import indexingTopology.common.logics.DataTupleEquivalentPredicateHint;
+import indexingTopology.common.logics.DataTuplePredicate;
+import indexingTopology.common.logics.DataTupleSorter;
 
 import java.io.Serializable;
 

@@ -1,7 +1,5 @@
-package indexingTopology.data;
+package indexingTopology.common.data;
 
-import indexingTopology.data.DataSchema;
-import indexingTopology.data.DataTuple;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;

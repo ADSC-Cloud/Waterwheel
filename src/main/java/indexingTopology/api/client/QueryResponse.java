@@ -1,6 +1,6 @@
 package indexingTopology.api.client;
 
-import indexingTopology.data.PartialQueryResult;
+import indexingTopology.common.data.PartialQueryResult;
 
 /**
  * Created by robert on 8/3/17.

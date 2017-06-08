@@ -2,8 +2,8 @@ package indexingTopology.bolt;
 
 
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.data.DataSchema;
-import indexingTopology.data.DataTuple;
+import indexingTopology.common.data.DataSchema;
+import indexingTopology.common.data.DataTuple;
 import indexingTopology.util.FrequencyRestrictor;
 import indexingTopology.util.Permutation;
 import indexingTopology.util.taxi.Car;

@@ -7,7 +7,7 @@ import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichSpout;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
-import indexingTopology.data.DataSchema;
+import indexingTopology.common.data.DataSchema;
 import org.apache.commons.math3.distribution.NormalDistribution;
 
 import java.io.*;

@@ -1,4 +1,4 @@
-package indexingTopology.data;
+package indexingTopology.common.data;
 
 /**
  * Created by Robert on 5/23/17.

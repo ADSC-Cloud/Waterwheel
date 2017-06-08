@@ -1,7 +1,7 @@
 package indexingTopology.bolt;
 
 import indexingTopology.aggregator.Aggregator;
-import indexingTopology.data.PartialQueryResult;
+import indexingTopology.common.data.PartialQueryResult;
 import indexingTopology.util.Query;
 import indexingTopology.util.SubQuery;
 import org.apache.storm.task.OutputCollector;
@@ -11,7 +11,7 @@ import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
-import indexingTopology.data.DataSchema;
+import indexingTopology.common.data.DataSchema;
 import indexingTopology.streams.Streams;
 import indexingTopology.util.FileScanMetrics;
 

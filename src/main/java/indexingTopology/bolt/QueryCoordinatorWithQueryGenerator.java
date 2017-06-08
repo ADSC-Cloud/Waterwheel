@@ -1,8 +1,8 @@
 package indexingTopology.bolt;
 
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.data.DataSchema;
-import indexingTopology.data.PartialQueryResult;
+import indexingTopology.common.data.DataSchema;
+import indexingTopology.common.data.PartialQueryResult;
 import indexingTopology.util.*;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;

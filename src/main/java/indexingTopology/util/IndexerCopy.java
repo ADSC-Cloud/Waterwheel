@@ -3,7 +3,7 @@ package indexingTopology.util;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import indexingTopology.data.DataSchema;
+import indexingTopology.common.data.DataSchema;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.filesystem.FileSystemHandler;
 import indexingTopology.exception.UnsupportedGenericException;

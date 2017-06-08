@@ -1,18 +1,14 @@
 package indexingTopology.bolt;
 
-import com.google.common.net.InetAddresses;
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.data.DataSchema;
-import indexingTopology.data.DataTuple;
+import indexingTopology.common.data.DataSchema;
+import indexingTopology.common.data.DataTuple;
 import indexingTopology.util.FrequencyRestrictor;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 
 import java.io.*;
-import java.net.InetAddress;
-import java.util.ArrayList;
 import java.util.Map;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**

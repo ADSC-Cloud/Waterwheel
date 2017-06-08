@@ -1,18 +1,14 @@
 package indexingTopology.bolt;
 
-import clojure.lang.ArraySeq;
-import com.github.davidmoten.rtree.RTree;
-import com.github.davidmoten.rtree.Visualizer;
-import com.google.common.collect.Lists;
 import com.google.common.hash.BloomFilter;
 import indexingTopology.bloom.DataChunkBloomFilters;
 import indexingTopology.bolt.metrics.LocationInfo;
-import indexingTopology.data.DataSchema;
-import indexingTopology.data.PartialQueryResult;
+import indexingTopology.common.data.DataSchema;
+import indexingTopology.common.data.PartialQueryResult;
+import indexingTopology.common.logics.DataTuplePredicate;
 import indexingTopology.filesystem.HdfsFileSystemHandler;
 import indexingTopology.util.*;
 import javafx.util.Pair;
-import org.apache.commons.lang.SerializationUtils;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;

@@ -1,19 +1,12 @@
 package indexingTopology.util;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Output;
-import com.sun.tools.doclets.internal.toolkit.util.IndexBuilder;
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.data.DataSchema;
-import indexingTopology.data.DataTuple;
+import indexingTopology.common.data.DataSchema;
+import indexingTopology.common.data.DataTuple;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.filesystem.FileSystemHandler;
 import indexingTopology.filesystem.HdfsFileSystemHandler;
 import indexingTopology.filesystem.LocalFileSystemHandler;
-import indexingTopology.util.taxi.Car;
-import indexingTopology.util.taxi.City;
-import indexingTopology.util.taxi.TrajectoryGenerator;
-import indexingTopology.util.taxi.TrajectoryUniformGenerator;
 import junit.framework.TestCase;
 import org.junit.Test;
 
@@ -23,12 +16,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.SynchronousQueue;
-
-import static org.junit.Assert.*;
 
 /**
  * Created by acelzj on 5/25/17.

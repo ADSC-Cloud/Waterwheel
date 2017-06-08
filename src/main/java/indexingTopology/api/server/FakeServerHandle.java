@@ -1,8 +1,8 @@
 package indexingTopology.api.server;
 
 import indexingTopology.api.client.*;
-import indexingTopology.data.DataTuple;
-import indexingTopology.data.PartialQueryResult;
+import indexingTopology.common.data.DataTuple;
+import indexingTopology.common.data.PartialQueryResult;
 import indexingTopology.util.FrequencyRestrictor;
 import org.apache.storm.metric.internal.RateTracker;
 

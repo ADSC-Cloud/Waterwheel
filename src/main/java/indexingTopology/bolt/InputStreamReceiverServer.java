@@ -8,8 +8,8 @@ import indexingTopology.api.server.IAppendRequestBatchModeHandle;
 import indexingTopology.api.server.Server;
 import indexingTopology.api.server.ServerHandle;
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.data.DataSchema;
-import indexingTopology.data.DataTuple;
+import indexingTopology.common.data.DataSchema;
+import indexingTopology.common.data.DataTuple;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 

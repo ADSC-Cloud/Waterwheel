@@ -1,6 +1,6 @@
 package indexingTopology.util;
 
-import indexingTopology.data.DataTuple;
+import indexingTopology.common.data.DataTuple;
 import org.junit.Test;
 import static junit.framework.TestCase.*;
 /**

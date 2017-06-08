@@ -1,6 +1,6 @@
 package indexingTopology.util;
 
-import indexingTopology.data.DataSchema;
+import indexingTopology.common.data.DataSchema;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
 import org.junit.Test;

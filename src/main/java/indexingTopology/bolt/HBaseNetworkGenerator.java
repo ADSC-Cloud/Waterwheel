@@ -1,7 +1,6 @@
 package indexingTopology.bolt;
 
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.data.DataTuple;
 import indexingTopology.streams.Streams;
 import indexingTopology.util.FrequencyRestrictor;
 import indexingTopology.util.HBaseHandler;

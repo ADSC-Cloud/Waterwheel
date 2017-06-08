@@ -1,6 +1,6 @@
 package indexingTopology.api.client;
 
-import indexingTopology.data.DataTuple;
+import indexingTopology.common.data.DataTuple;
 
 /**
  * Created by robert on 8/3/17.

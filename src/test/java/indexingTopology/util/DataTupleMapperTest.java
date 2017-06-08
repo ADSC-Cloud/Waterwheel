@@ -1,12 +1,10 @@
 package indexingTopology.util;
 
-import indexingTopology.data.DataSchema;
-import indexingTopology.data.DataTuple;
+import indexingTopology.common.data.DataSchema;
+import indexingTopology.common.data.DataTuple;
+import indexingTopology.common.logics.DataTupleMapper;
 import org.junit.Test;
 import static junit.framework.TestCase.*;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Created by acelzj on 21/2/17.

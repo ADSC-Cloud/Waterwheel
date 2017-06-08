@@ -2,23 +2,21 @@ package indexingTopology.bolt;
 
 import indexingTopology.bloom.DataChunkBloomFilters;
 import indexingTopology.bolt.metrics.LocationInfo;
-import indexingTopology.data.DataTuple;
+import indexingTopology.common.data.DataTuple;
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.data.TrackedDataTuple;
+import indexingTopology.common.data.TrackedDataTuple;
 import org.apache.storm.metric.internal.RateTracker;
-import org.apache.storm.shade.com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
-import indexingTopology.data.DataSchema;
+import indexingTopology.common.data.DataSchema;
 import indexingTopology.streams.Streams;
 import indexingTopology.util.*;
 import javafx.util.Pair;
 import org.apache.storm.tuple.Values;
-import org.apache.storm.utils.Utils;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;

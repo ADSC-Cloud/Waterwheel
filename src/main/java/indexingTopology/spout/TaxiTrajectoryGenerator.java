@@ -1,6 +1,6 @@
 package indexingTopology.spout;
 
-import indexingTopology.data.DataTuple;
+import indexingTopology.common.data.DataTuple;
 import indexingTopology.streams.Streams;
 import org.apache.commons.math3.distribution.ZipfDistribution;
 import org.apache.storm.spout.SpoutOutputCollector;
@@ -8,7 +8,7 @@ import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichSpout;
 import org.apache.storm.tuple.Fields;
-import indexingTopology.data.DataSchema;
+import indexingTopology.common.data.DataSchema;
 import indexingTopology.util.taxi.Car;
 import indexingTopology.util.taxi.City;
 import indexingTopology.util.taxi.TrajectoryGenerator;

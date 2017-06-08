@@ -1,8 +1,9 @@
 package indexingTopology.util;
 
 import indexingTopology.bolt.*;
+import indexingTopology.common.logics.DataTupleMapper;
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.data.DataSchema;
+import indexingTopology.common.data.DataSchema;
 import indexingTopology.streams.Streams;
 import org.apache.storm.generated.StormTopology;
 import org.apache.storm.topology.TopologyBuilder;

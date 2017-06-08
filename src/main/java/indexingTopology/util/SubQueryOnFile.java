@@ -1,6 +1,8 @@
 package indexingTopology.util;
 
 import indexingTopology.aggregator.Aggregator;
+import indexingTopology.common.logics.DataTuplePredicate;
+import indexingTopology.common.logics.DataTupleSorter;
 
 /**
  * Created by acelzj on 10/2/17.

@@ -1,9 +1,8 @@
 package indexingTopology.aggregator;
 
-import indexingTopology.data.DataSchema;
-import indexingTopology.data.DataTuple;
-import indexingTopology.data.PartialQueryResult;
-import sun.security.provider.Sun;
+import indexingTopology.common.data.DataSchema;
+import indexingTopology.common.data.DataTuple;
+import indexingTopology.common.data.PartialQueryResult;
 
 import java.io.Serializable;
 import java.util.HashMap;

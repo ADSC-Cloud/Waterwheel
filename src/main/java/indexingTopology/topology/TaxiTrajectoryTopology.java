@@ -1,11 +1,10 @@
 package indexingTopology.topology;
 
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.data.DataSchema;
+import indexingTopology.common.data.DataSchema;
 import indexingTopology.util.TopologyGenerator;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
-import org.apache.storm.StormSubmitter;
 import org.apache.storm.generated.StormTopology;
 import org.apache.storm.topology.TopologyBuilder;
 import indexingTopology.bolt.*;

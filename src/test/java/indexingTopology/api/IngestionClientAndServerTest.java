@@ -7,8 +7,8 @@ import indexingTopology.api.server.AppendRequestHandle;
 import indexingTopology.api.server.IAppendRequestBatchModeHandle;
 import indexingTopology.api.server.Server;
 import indexingTopology.api.server.ServerHandle;
-import indexingTopology.data.DataSchema;
-import indexingTopology.data.DataTuple;
+import indexingTopology.common.data.DataSchema;
+import indexingTopology.common.data.DataTuple;
 import junit.framework.TestCase;
 
 import java.io.IOException;

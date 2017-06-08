@@ -1,7 +1,7 @@
 package indexingTopology.bolt;
 
 import com.esotericsoftware.kryo.io.Output;
-import indexingTopology.data.DataSchema;
+import indexingTopology.common.data.DataSchema;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.util.*;
 import indexingTopology.util.taxi.*;

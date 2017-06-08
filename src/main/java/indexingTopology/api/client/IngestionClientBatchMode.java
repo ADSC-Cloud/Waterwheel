@@ -1,8 +1,8 @@
 package indexingTopology.api.client;
 
-import indexingTopology.data.DataSchema;
-import indexingTopology.data.DataTuple;
-import indexingTopology.data.DataTupleBlock;
+import indexingTopology.common.data.DataSchema;
+import indexingTopology.common.data.DataTuple;
+import indexingTopology.common.data.DataTupleBlock;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;

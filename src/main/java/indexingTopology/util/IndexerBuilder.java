@@ -1,8 +1,8 @@
 package indexingTopology.util;
 
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.data.DataSchema;
-import indexingTopology.data.DataTuple;
+import indexingTopology.common.data.DataSchema;
+import indexingTopology.common.data.DataTuple;
 
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;

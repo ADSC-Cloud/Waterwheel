@@ -1,21 +1,18 @@
 package indexingTopology.util;
 
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.data.DataSchema;
-import indexingTopology.data.DataTuple;
-import indexingTopology.data.TrackedDataTuple;
+import indexingTopology.common.data.DataSchema;
+import indexingTopology.common.data.DataTuple;
+import indexingTopology.common.data.TrackedDataTuple;
 import javafx.util.Pair;
 import junit.framework.TestCase;
 import org.apache.storm.shade.org.eclipse.jetty.util.ConcurrentHashSet;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.io.ObjectStreamConstants;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-
-import static org.junit.Assert.*;
 
 /**
  * Created by acelzj on 20/3/17.
