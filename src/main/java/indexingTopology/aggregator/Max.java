@@ -6,16 +6,15 @@ package indexingTopology.aggregator;
 public class Max<V extends Number & Comparable<V>> implements AggregationFunction<V, V>  {
     @Override
     public V aggregateFunction(V value, V originalA) {
-
+        if (originalA == null || value == null) {
+            return originalA == null ? value: originalA;
+        }
         return value.doubleValue() > originalA.doubleValue() ? value : originalA;
     }
 
     @Override
     public V init() {
-//        if(this.getClass() == Max<Double>) {
-//
-//        }
-        return (V)new Double(Double.MIN_VALUE);
+        return null;
     }
 
 }
