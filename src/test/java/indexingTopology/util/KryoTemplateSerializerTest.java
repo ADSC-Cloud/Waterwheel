@@ -37,6 +37,26 @@ public class KryoTemplateSerializerTest extends TestCase {
 
     private TopologyConfig config = new TopologyConfig();
 
+    public void setUp() {
+        try {
+            Runtime.getRuntime().exec("mkdir -p ./target/tmp");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        config.dataDir = "./target/tmp";
+        config.HDFSFlag = false;
+        config.CHUNK_SIZE = 1024 * 1024;
+        System.out.println("dataDir is set to " + config.dataDir);
+    }
+
+    public void tearDown() {
+        try {
+            Runtime.getRuntime().exec("rm ./target/tmp/*");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     /*
     public void setUp() {
         try {

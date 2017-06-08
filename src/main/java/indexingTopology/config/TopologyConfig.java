@@ -24,7 +24,7 @@ public class TopologyConfig implements Serializable {
 
     public final int NUMBER_TUPLES_OF_A_CHUNK = 600000;
 
-    public final int CACHE_SIZE = 100;
+    public final int CACHE_SIZE = 200;
 
     public final int TASK_QUEUE_CAPACITY = 10000;
 
@@ -38,7 +38,7 @@ public class TopologyConfig implements Serializable {
 
     public boolean HybridStorage = false;
 
-    public boolean HdfsTaskLocality = true;
+    public boolean HdfsTaskLocality = false;
 
     public boolean ChunkOrientedCaching = true;
 

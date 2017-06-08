@@ -14,6 +14,7 @@ import indexingTopology.util.taxi.Car;
 import indexingTopology.util.taxi.City;
 import indexingTopology.util.taxi.TrajectoryGenerator;
 import indexingTopology.util.taxi.TrajectoryUniformGenerator;
+import junit.framework.TestCase;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -32,13 +33,34 @@ import static org.junit.Assert.*;
 /**
  * Created by acelzj on 5/25/17.
  */
-public class SubqueryHandlerTest {
+public class SubqueryHandlerTest extends TestCase {
 
     private TopologyConfig config = new TopologyConfig();
     List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, String.class));
 
+
+    public void setUp() {
+        try {
+            Runtime.getRuntime().exec("mkdir -p ./target/tmp");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        config.dataDir = "./target/tmp";
+        config.HDFSFlag = false;
+        config.CHUNK_SIZE = 1024 * 1024;
+        System.out.println("dataDir is set to " + config.dataDir);
+    }
+
+    public void tearDown() {
+        try {
+            Runtime.getRuntime().exec("rm ./target/tmp/*");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     @Test
-    public void TestHandleSubquery() throws Exception, UnsupportedGenericException {
+    public void testHandleSubquery() throws Exception, UnsupportedGenericException {
 
         config.ChunkOrientedCaching = true;
 
@@ -94,7 +116,7 @@ public class SubqueryHandlerTest {
     }
 
     @Test
-    public void TestHandleSubqueryOnOneLayerTemplate() throws InterruptedException, IOException {
+    public void testHandleSubqueryOnOneLayerTemplate() throws InterruptedException, IOException {
         config.CHUNK_SIZE = 58000000 / 4;
         config.ChunkOrientedCaching = true;
 
