@@ -136,6 +136,8 @@ public class Server<T extends ServerHandle> {
             serverSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         executorService.shutdownNow();
         for(Future future: futureList) {
