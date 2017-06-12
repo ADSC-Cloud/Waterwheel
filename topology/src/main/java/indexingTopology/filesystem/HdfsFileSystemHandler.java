@@ -65,7 +65,7 @@ public class HdfsFileSystemHandler implements FileSystemHandler {
                 try {
                     fsDataOutputStream = fileSystem.append(path);
                     fsDataOutputStream.write(bytes);
-//                    fsDataOutputStream.close();
+                    fsDataOutputStream.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

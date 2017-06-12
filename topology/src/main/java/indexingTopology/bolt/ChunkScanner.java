@@ -273,7 +273,8 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
                     System.out.println("Subquery will be conducted on local file in cache.");
                     metrics.debugInfo += " local";
                 } else {
-                    System.out.println("Failed to find local file :" + config.dataDir + "/" + fileName);
+                    if (config.HybridStorage)
+                        System.out.println("Failed to find local file :" + config.dataDir + "/" + fileName);
                     fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
                     metrics.debugInfo += " HDFS";
                 }

@@ -59,7 +59,8 @@ public class SubqueryHandler<TKey extends Number & Comparable<TKey>> {
                     fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
                     System.out.println("Subquery will be conducted on local file in cache.");
                 } else {
-                    System.out.println("Failed to find local file :" + config.dataDir + "/" + fileName);
+                    if (config.HybridStorage)
+                        System.out.println("Failed to find local file :" + config.dataDir + "/" + fileName);
                     fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
                 }
             } else {

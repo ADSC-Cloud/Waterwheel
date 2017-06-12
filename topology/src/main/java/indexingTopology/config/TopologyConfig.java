@@ -34,7 +34,7 @@ public class TopologyConfig implements Serializable {
 
     public final double LOAD_BALANCE_THRESHOLD = 0.2;
 
-    public boolean HDFSFlag = false;
+    public boolean HDFSFlag = true;
 
     public boolean HybridStorage = false;
 
