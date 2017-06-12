@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Created by dmir on 10/26/16.
@@ -93,7 +94,8 @@ public class LocalFileSystemHandler implements FileSystemHandler {
 
     public void closeFile() {
         try {
-            randomAccessFile.close();
+            if (randomAccessFile != null)
+                randomAccessFile.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

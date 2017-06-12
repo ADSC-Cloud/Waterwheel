@@ -292,7 +292,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
             Pair data = getTemplateData(fileSystemHandler, fileName);
 //        long temlateRead = System.currentTimeMillis() - readTemplateStart;
 
-            fileSystemHandler.openFile("/", fileName);
+//            fileSystemHandler.openFile("/", fileName);
 //        fileTime += (System.currentTimeMillis() - fileStart);
 
 //        long readTemplateStart = System.currentTimeMillis();
@@ -414,8 +414,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 //        metrics.setPredicationTime(predicationTime);
 //        metrics.setAggregationTime(aggregationTime);
 
-            long closeStart = System.currentTimeMillis();
-            fileSystemHandler.closeFile();
 //        fileTime += (System.currentTimeMillis() - closeStart);
 
 //        metrics.setSubqueryEndTime(System.currentTimeMillis());
@@ -437,10 +435,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 //        metrics.setNumberOfRecords((long) tuples.size());
 //        System.out.println(tuples.size());
 
-            metrics.setTotalTime(System.currentTimeMillis() - start);
-
-
-        metrics.setTotalTime(System.currentTimeMillis() - start);
 //        metrics.setFileReadingTime(fileReadingTime);
 //        metrics.setKeyRangTime(keyRangeTime);
 //        metrics.setTimestampRangeTime(timestampRangeTime);
@@ -448,7 +442,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 //        metrics.setAggregationTime(aggregationTime);
 
             debugInfo.runningPosition = "breakpoint 12";
-            fileSystemHandler.closeFile();
 //        fileTime += (System.currentTimeMillis() - closeStart);
 
 //        metrics.setSubqueryEndTime(System.currentTimeMillis());
@@ -469,8 +462,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 //        collector.emit(Streams.FileSystemQueryStream, new Values(queryId, tuples, metrics));
 //        metrics.setNumberOfRecords((long) tuples.size());
 //        System.out.println(tuples.size());
-
-            metrics.setTotalTime(System.currentTimeMillis() - start);
 
 //        tuples.clear();
 //        System.out.println(String.format("%d tuples are found on file %s", tuples.size(), fileName));
