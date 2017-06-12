@@ -43,113 +43,119 @@ public class SubqueryHandler<TKey extends Number & Comparable<TKey>> {
 
     @SuppressWarnings("unchecked")
     public List<byte[]> handleSubquery(SubQueryOnFile subQuery) throws IOException {
+        ArrayList<byte[]> tuples = new ArrayList<byte[]>();
         Long queryId = subQuery.getQueryId();
         TKey leftKey =  (TKey) subQuery.getLeftKey();
         TKey rightKey =  (TKey) subQuery.getRightKey();
         String fileName = subQuery.getFileName();
-        Long timestampLowerBound = subQuery.getStartTimestamp();
-        Long timestampUpperBound = subQuery.getEndTimestamp();
-
-
         FileSystemHandler fileSystemHandler = null;
-        if (config.HDFSFlag) {
-            if (config.HybridStorage && new File(config.dataDir, fileName).exists()) {
-                fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
-                System.out.println("Subquery will be conducted on local file in cache.");
+        try {
+            Long timestampLowerBound = subQuery.getStartTimestamp();
+            Long timestampUpperBound = subQuery.getEndTimestamp();
+
+
+            if (config.HDFSFlag) {
+                if (config.HybridStorage && new File(config.dataDir, fileName).exists()) {
+                    fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+                    System.out.println("Subquery will be conducted on local file in cache.");
+                } else {
+                    System.out.println("Failed to find local file :" + config.dataDir + "/" + fileName);
+                    fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
+                }
             } else {
-                System.out.println("Failed to find local file :" + config.dataDir + "/" + fileName);
-                fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
+                fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
             }
-        } else {
-            fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
-        }
 
-        fileSystemHandler.openFile("/", fileName);
+            fileSystemHandler.openFile("/", fileName);
 
-        byte[] chunkBytes = getChunkBytes(fileSystemHandler, fileName);
+            byte[] chunkBytes = getChunkBytes(fileSystemHandler, fileName);
 
-        Pair data = getTemplateData(chunkBytes);
+            Pair data = getTemplateData(chunkBytes);
 
-        BTree template = (BTree) data.getKey();
-        Integer length = (Integer) data.getValue();
+            BTree template = (BTree) data.getKey();
+            Integer length = (Integer) data.getValue();
 
 
-        BTreeLeafNode leaf = null;
-        ArrayList<byte[]> tuples = new ArrayList<byte[]>();
+            BTreeLeafNode leaf = null;
 
 
-        List<Integer> offsets = template.getOffsetsOfLeafNodesShouldContainKeys(leftKey, rightKey);
+            List<Integer> offsets = template.getOffsetsOfLeafNodesShouldContainKeys(leftKey, rightKey);
 
 
-        //code below are used to evaluate the specific time cost
-        Long keyRangeTime = 0L;
-        Long timestampRangeTime = 0L;
-        Long predicationTime = 0L;
-        Long aggregationTime = 0L;
+            //code below are used to evaluate the specific time cost
+            Long keyRangeTime = 0L;
+            Long timestampRangeTime = 0L;
+            Long predicationTime = 0L;
+            Long aggregationTime = 0L;
 
 
-        for (Integer offset : offsets) {
-            Input input = new Input(chunkBytes);
-            input.setPosition(offset + length + 4);
-            leaf = kryo.readObject(input, BTreeLeafNode.class);
+            for (Integer offset : offsets) {
+                Input input = new Input(chunkBytes);
+                input.setPosition(offset + length + 4);
+                leaf = kryo.readObject(input, BTreeLeafNode.class);
 
-            Long startTime = System.currentTimeMillis();
-
-
-            ArrayList<byte[]> tuplesInKeyRange = leaf.getTuplesWithinKeyRange(leftKey, rightKey);
-
-            keyRangeTime += System.currentTimeMillis() - startTime;
-
-            //deserialize
-            List<DataTuple> dataTuples = new ArrayList<>();
-            tuplesInKeyRange.stream().forEach(e -> dataTuples.add(schema.deserializeToDataTuple(e)));
-
-            //filter by timestamp range
-
-            startTime = System.currentTimeMillis();
-
-            filterByTimestamp(dataTuples, timestampLowerBound, timestampUpperBound);
+                Long startTime = System.currentTimeMillis();
 
 
-            timestampRangeTime += System.currentTimeMillis() - startTime;
+                ArrayList<byte[]> tuplesInKeyRange = leaf.getTuplesWithinKeyRange(leftKey, rightKey);
+
+                keyRangeTime += System.currentTimeMillis() - startTime;
+
+                //deserialize
+                List<DataTuple> dataTuples = new ArrayList<>();
+                tuplesInKeyRange.stream().forEach(e -> dataTuples.add(schema.deserializeToDataTuple(e)));
+
+                //filter by timestamp range
+
+                startTime = System.currentTimeMillis();
+
+                filterByTimestamp(dataTuples, timestampLowerBound, timestampUpperBound);
 
 
-            //filter by predicate
+                timestampRangeTime += System.currentTimeMillis() - startTime;
+
+
+                //filter by predicate
 //            System.out.println("Before predicates: " + dataTuples.size());
-            startTime = System.currentTimeMillis();
+                startTime = System.currentTimeMillis();
 
-            filterByPredicate(dataTuples, subQuery.getPredicate());
+                filterByPredicate(dataTuples, subQuery.getPredicate());
 
-            predicationTime += System.currentTimeMillis() - startTime;
+                predicationTime += System.currentTimeMillis() - startTime;
 //            System.out.println("After predicates: " + dataTuples.size());
 
 
-            startTime = System.currentTimeMillis();
+                startTime = System.currentTimeMillis();
 
-            if (subQuery.getAggregator() != null) {
-                Aggregator.IntermediateResult intermediateResult = subQuery.getAggregator().createIntermediateResult();
-                subQuery.getAggregator().aggregate(dataTuples, intermediateResult);
-                dataTuples.clear();
-                dataTuples.addAll(subQuery.getAggregator().getResults(intermediateResult).dataTuples);
+                if (subQuery.getAggregator() != null) {
+                    Aggregator.IntermediateResult intermediateResult = subQuery.getAggregator().createIntermediateResult();
+                    subQuery.getAggregator().aggregate(dataTuples, intermediateResult);
+                    dataTuples.clear();
+                    dataTuples.addAll(subQuery.getAggregator().getResults(intermediateResult).dataTuples);
+                }
+
+                aggregationTime += System.currentTimeMillis() - startTime;
+
+
+                //serialize
+                List<byte[]> serializedDataTuples = new ArrayList<>();
+
+                if (subQuery.getAggregator() != null) {
+                    DataSchema outputSchema = subQuery.getAggregator().getOutputDataSchema();
+                    dataTuples.stream().forEach(p -> serializedDataTuples.add(outputSchema.serializeTuple(p)));
+                } else {
+                    dataTuples.stream().forEach(p -> serializedDataTuples.add(schema.serializeTuple(p)));
+                }
+
+
+                tuples.addAll(serializedDataTuples);
             }
-
-            aggregationTime += System.currentTimeMillis() - startTime;
-
-
-            //serialize
-            List<byte[]> serializedDataTuples = new ArrayList<>();
-
-            if (subQuery.getAggregator() != null) {
-                DataSchema outputSchema = subQuery.getAggregator().getOutputDataSchema();
-                dataTuples.stream().forEach(p -> serializedDataTuples.add(outputSchema.serializeTuple(p)));
-            } else {
-                dataTuples.stream().forEach(p -> serializedDataTuples.add(schema.serializeTuple(p)));
-            }
-
-
-            tuples.addAll(serializedDataTuples);
         }
-
+        finally {
+            if (fileSystemHandler != null) {
+                fileSystemHandler.closeFile();
+            }
+        }
         return tuples;
     }
 

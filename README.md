@@ -41,19 +41,19 @@ set ```HDFSFlag = false``` to use local file system.  <br />
 Run the following command to launch the system
 
 ```
-$ mvn exec:java -Dexec.mainClass=indexingTopology.topology.kingbase.KingBaseTopology -Dexec.args="-m submit --local"
+$ mvn exec:java -pl topology -Dexec.mainClass=indexingTopology.topology.kingbase.KingBaseTopology -Dexec.args="-m submit --local"
 ```
 
 Open a new terminal and run the following command to ingest tuples to the system:
 
 ```
-$ mvn exec:java -Dexec.mainClass=indexingTopology.topology.kingbase.KingBaseTopology -Dexec.args="-m ingest -r 10000 --ingest-server-ip localhost"
+$ mvn exec:java -pl topology -Dexec.mainClass=indexingTopology.topology.kingbase.KingBaseTopology -Dexec.args="-m ingest -r 10000 --ingest-server-ip localhost"
 ```
 
 Open a new terminal and run the following command to issue generated queries:
 
 ```
-$ mvn exec:java -Dexec.mainClass=indexingTopology.topology.kingbase.KingBaseTopology -Dexec.args="-m query --query-server-ip localhost"
+$ mvn exec:java -pl topology -Dexec.mainClass=indexingTopology.topology.kingbase.KingBaseTopology -Dexec.args="-m query --query-server-ip localhost"
 ```
 
 Use ```-h``` print the detailed usage of the arguments.
