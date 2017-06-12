@@ -247,6 +247,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         metrics.debugInfo += String.format("subquery on %s, executed on %s ", subQuery.getFileName(),
                 InetAddress.getLocalHost().getHostName());
         debugInfo.runningPosition = "breakpoint 1";
+            FileSystemHandler fileSystemHandler = null;
         try {
 //            System.out.println(String.format("chunk name %s is being executed !!!", subQuery.getFileName()));
 
@@ -265,7 +266,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
             long start = System.currentTimeMillis();
 
 
-            FileSystemHandler fileSystemHandler = null;
             debugInfo.runningPosition = "breakpoint 2";
             if (config.HDFSFlag) {
                 if (config.HybridStorage && new File(config.dataDir, fileName).exists()) {
@@ -397,7 +397,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
             if (subQuery.getAggregator() != null) {
                 DataSchema outputSchema = subQuery.getAggregator().getOutputDataSchema();
                 dataTuplesInKeyRange.stream().forEach(p -> serializedDataTuples.add(outputSchema.serializeTuple(p)));
-            } else {
+            } else {fileSystemHandler.closeFile();
                 dataTuplesInKeyRange.stream().forEach(p -> serializedDataTuples.add(schema.serializeTuple(p)));
             }
 
@@ -405,7 +405,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 //            tuples.addAll(serializedDataTuples);
 
 
-            fileSystemHandler.closeFile();
+
 
             metrics.setTotalTime(System.currentTimeMillis() - start);
 //        metrics.setFileReadingTime(fileReadingTime);
@@ -468,6 +468,9 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 //            System.out.println(String.format("chunk name %s has been finished !!!", subQuery.getFileName()));
 
         } finally {
+            if (fileSystemHandler != null)
+                fileSystemHandler.closeFile();
+
             collector.emit(Streams.FileSystemQueryStream, new Values(subQuery, serializedDataTuples, metrics));
 
             if (!config.SHUFFLE_GROUPING_FLAG) {
