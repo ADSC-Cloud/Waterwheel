@@ -2,6 +2,7 @@ package indexingTopology.util;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
+import indexingTopology.bolt.ChunkScanner;
 import indexingTopology.common.aggregator.Aggregator;
 import indexingTopology.cache.LRUCache;
 import indexingTopology.config.TopologyConfig;
@@ -14,6 +15,7 @@ import javafx.util.Pair;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
@@ -42,18 +44,20 @@ public class SubqueryHandler<TKey extends Number & Comparable<TKey>> {
     }
 
     @SuppressWarnings("unchecked")
-    public List<byte[]> handleSubquery(SubQueryOnFile subQuery) throws IOException {
+    public List<byte[]> handleSubquery(SubQueryOnFile subQuery, ChunkScanner.DebugInfo debugInfo) throws IOException {
         ArrayList<byte[]> tuples = new ArrayList<byte[]>();
         Long queryId = subQuery.getQueryId();
         TKey leftKey =  (TKey) subQuery.getLeftKey();
         TKey rightKey =  (TKey) subQuery.getRightKey();
         String fileName = subQuery.getFileName();
         FileSystemHandler fileSystemHandler = null;
+        debugInfo.runningPosition = "breakpoint 1";
         try {
             Long timestampLowerBound = subQuery.getStartTimestamp();
             Long timestampUpperBound = subQuery.getEndTimestamp();
 
-
+//
+            debugInfo.runningPosition = "breakpoint 2";
             if (config.HDFSFlag) {
                 if (config.HybridStorage && new File(config.dataDir, fileName).exists()) {
                     fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
@@ -66,22 +70,24 @@ public class SubqueryHandler<TKey extends Number & Comparable<TKey>> {
             } else {
                 fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
             }
-
+            debugInfo.runningPosition = "breakpoint 3";
             fileSystemHandler.openFile("/", fileName);
+            debugInfo.runningPosition = "breakpoint 4";
+
 
             byte[] chunkBytes = getChunkBytes(fileSystemHandler, fileName);
-
+            debugInfo.runningPosition = "breakpoint 5";
             Pair data = getTemplateData(chunkBytes);
-
+            debugInfo.runningPosition = "breakpoint 6";
             BTree template = (BTree) data.getKey();
             Integer length = (Integer) data.getValue();
 
 
             BTreeLeafNode leaf = null;
 
-
+            debugInfo.runningPosition = "breakpoint 7";
             List<Integer> offsets = template.getOffsetsOfLeafNodesShouldContainKeys(leftKey, rightKey);
-
+            debugInfo.runningPosition = "breakpoint 8";
 
             //code below are used to evaluate the specific time cost
             Long keyRangeTime = 0L;
@@ -89,30 +95,31 @@ public class SubqueryHandler<TKey extends Number & Comparable<TKey>> {
             Long predicationTime = 0L;
             Long aggregationTime = 0L;
 
-
+            int count = 0;
+            debugInfo.runningPosition = "breakpoint 9";
             for (Integer offset : offsets) {
                 Input input = new Input(chunkBytes);
                 input.setPosition(offset + length + 4);
                 leaf = kryo.readObject(input, BTreeLeafNode.class);
 
                 Long startTime = System.currentTimeMillis();
-
+                debugInfo.runningPosition = String.format("breakpoint 9.%d.1", count);
 
                 ArrayList<byte[]> tuplesInKeyRange = leaf.getTuplesWithinKeyRange(leftKey, rightKey);
 
                 keyRangeTime += System.currentTimeMillis() - startTime;
-
+                debugInfo.runningPosition = String.format("breakpoint 9.%d.2", count);
                 //deserialize
                 List<DataTuple> dataTuples = new ArrayList<>();
                 tuplesInKeyRange.stream().forEach(e -> dataTuples.add(schema.deserializeToDataTuple(e)));
-
+                debugInfo.runningPosition = String.format("breakpoint 9.%d.3", count);
                 //filter by timestamp range
 
                 startTime = System.currentTimeMillis();
 
                 filterByTimestamp(dataTuples, timestampLowerBound, timestampUpperBound);
 
-
+                debugInfo.runningPosition = String.format("breakpoint 9.%d.4", count);
                 timestampRangeTime += System.currentTimeMillis() - startTime;
 
 
@@ -121,7 +128,7 @@ public class SubqueryHandler<TKey extends Number & Comparable<TKey>> {
                 startTime = System.currentTimeMillis();
 
                 filterByPredicate(dataTuples, subQuery.getPredicate());
-
+                debugInfo.runningPosition = String.format("breakpoint 9.%d.5", count);
                 predicationTime += System.currentTimeMillis() - startTime;
 //            System.out.println("After predicates: " + dataTuples.size());
 
@@ -136,7 +143,7 @@ public class SubqueryHandler<TKey extends Number & Comparable<TKey>> {
                 }
 
                 aggregationTime += System.currentTimeMillis() - startTime;
-
+                debugInfo.runningPosition = String.format("breakpoint 9.%d.6", count);
 
                 //serialize
                 List<byte[]> serializedDataTuples = new ArrayList<>();
@@ -147,16 +154,19 @@ public class SubqueryHandler<TKey extends Number & Comparable<TKey>> {
                 } else {
                     dataTuples.stream().forEach(p -> serializedDataTuples.add(schema.serializeTuple(p)));
                 }
-
+                debugInfo.runningPosition = String.format("breakpoint 9.%d.7", count);
 
                 tuples.addAll(serializedDataTuples);
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         finally {
             if (fileSystemHandler != null) {
                 fileSystemHandler.closeFile();
             }
         }
+        debugInfo.runningPosition = "breakpoint 10";
         return tuples;
     }
 

@@ -66,8 +66,8 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
     private DebugInfo debugInfo;
 
-    static class DebugInfo {
-        String runningPosition;
+    public static class DebugInfo {
+        public String runningPosition;
     }
 
     TopologyConfig config;
@@ -193,8 +193,9 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
 //                        System.out.println("sub query " + subQuery.getQueryId() + " has been taken from queue");
 
+                        System.out.println("$$$ to process a subquery on " + subQuery.getFileName() + " for " + subQuery.queryId);
                         if (config.ChunkOrientedCaching) {
-                            List<byte[]> tuples = subqueryHandler.handleSubquery(subQuery);
+                            List<byte[]> tuples = subqueryHandler.handleSubquery(subQuery, debugInfo);
 
                             collector.emit(Streams.FileSystemQueryStream, new Values(subQuery, tuples, new FileScanMetrics()));
 
@@ -204,7 +205,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
                         } else {
                             handleSubQuery(subQuery);
                         }
-
+                        System.out.println("$$$ processed a subquery on " + subQuery.getFileName() + " for " + subQuery.queryId);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         System.out.println("subqueryHandlding thread is interrupted.");

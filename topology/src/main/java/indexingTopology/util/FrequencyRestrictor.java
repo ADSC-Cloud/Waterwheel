@@ -31,11 +31,17 @@ public class FrequencyRestrictor {
 //                    Utils.sleep(Math.max(0, millisecondPerWindows - (currentTime - lastSleepTime)));
 //                    lastSleepTime = System.currentTimeMillis();
 //                    semaphore.release(frequencyPerWindow);
-                    Utils.sleep(millisecondPerWindows);
-                    final long now = System.currentTimeMillis();
-                    semaphore.release((int)((now - lastSleepTime) / (double) millisecondPerWindows * frequencyPerWindow) );
-                    lastSleepTime = now;
 
+                    try {
+                        Thread.sleep(millisecondPerWindows);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        Thread.interrupted();
+                        break;
+                    }
+                    final long now = System.currentTimeMillis();
+                    semaphore.release(Math.max(0, (int)((now - lastSleepTime) / (double) millisecondPerWindows * frequencyPerWindow)));
+                    lastSleepTime = now;
                 }
             }
         }).start();
