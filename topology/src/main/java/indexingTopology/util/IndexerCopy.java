@@ -768,6 +768,8 @@ public class IndexerCopy {
 
 //        System.out.println("length " + lengthOfTemplate);
 
+        output.close();
+
         output = new Output(4);
 
         output.writeInt(lengthOfTemplate);
@@ -781,5 +783,7 @@ public class IndexerCopy {
         chunk.write(bytes);
 
         chunk.write(leavesInBytes);
+
+        output.close();
     }
 }

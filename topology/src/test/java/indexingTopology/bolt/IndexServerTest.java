@@ -302,7 +302,9 @@ public class IndexServerTest {
 
         //As we add timestamp for a field, so we need to serialize the timestamp
         output.writeLong((Long) values.get(valueTypes.size()));
-        return output.toBytes();
+        byte[] ret = output.toBytes();
+        output.close();
+        return ret;
     }
 
 

@@ -97,7 +97,7 @@ public class KryoTemplateSerializer<TKey extends Comparable<TKey>> extends Seria
 
 
         byte[] bytes = output.toBytes();
-
+        output.close();
         return bytes;
     }
 

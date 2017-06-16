@@ -261,6 +261,7 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+                metaDataOutput.close();
             }
 
 

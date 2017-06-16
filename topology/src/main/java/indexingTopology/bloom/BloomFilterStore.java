@@ -76,10 +76,12 @@ public class BloomFilterStore {
     public void store(BloomFilterId id, BloomFilter filter) throws IOException {
         byte[] bytes = SerializationUtils.serialize(filter);
         MemChunk memChunk = MemChunk.createNew(bytes.length + 4);
+
         Output output = new Output(4);
         output.writeInt(bytes.length);
-
         memChunk.write(output.toBytes());
+        output.close();
+
         memChunk.write(bytes);
         FileSystemHandler fileSystemHandler;
         fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);

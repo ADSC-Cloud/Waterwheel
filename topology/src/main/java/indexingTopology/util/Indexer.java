@@ -745,19 +745,19 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
             kryo.writeObject(output, bTree);
             byte[] templateBytesToWrite = output.toBytes();
 
-
+            output.close();
             output = new Output(4);
             int templateLength = templateBytesToWrite.length;
             output.writeInt(templateLength);
 
 
             byte[] templateLengthBytesToWrite = output.toBytes();
-
+            output.close();
             output = new Output(4);
             int chunkLength = leafBytesToWrite.length + 4 + templateLength;
             output.writeInt(chunkLength);
             byte[] chunkLengthBytesToWrite = output.toBytes();
-
+            output.close();
 
             chunk = MemChunk.createNew(leafBytesToWrite.length + 4 + templateLength + 4);
 
@@ -765,7 +765,6 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
             chunk.write(templateLengthBytesToWrite);
             chunk.write(templateBytesToWrite);
             chunk.write(leafBytesToWrite);
-            output.close();
         } else {
             Output output = new Output(6000000, 500000000);
 
@@ -774,7 +773,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
             kryo.writeObject(output, bTree);
             byte[] templateBytesToWrite = output.toBytes();
 
-
+            output.close();
             output = new Output(4);
             int templateLength = templateBytesToWrite.length;
             output.writeInt(templateLength);

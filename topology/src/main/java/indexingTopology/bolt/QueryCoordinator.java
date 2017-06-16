@@ -1,6 +1,7 @@
 package indexingTopology.bolt;
 
 import com.google.common.hash.BloomFilter;
+import indexingTopology.bloom.BloomFilterStore;
 import indexingTopology.bloom.DataChunkBloomFilters;
 import indexingTopology.bolt.metrics.LocationInfo;
 import indexingTopology.common.data.DataSchema;
@@ -79,7 +80,9 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private Thread queryHandlingThread;
 
-    private Map<String, Map<String, BloomFilter>> columnToChunkToBloomFilter;
+//    private Map<String, Map<String, BloomFilter>> columnToChunkToBloomFilter;
+
+    private BloomFilterStore bloomFilterStore;
 
     TopologyConfig config;
 
@@ -107,6 +110,8 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
 
         collector = outputCollector;
+
+        bloomFilterStore = new BloomFilterStore(config);
 
         ingestionServerIdToLocations = new HashMap<>();
 
@@ -154,7 +159,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
         pendingQueue = new LinkedBlockingQueue<>();
 
-        columnToChunkToBloomFilter = new HashMap<>();
+//        columnToChunkToBloomFilter = new HashMap<>();
 
         try {
             fileSystem = new HdfsFileSystemHandler(config.dataDir, config).getFileSystem();
@@ -180,11 +185,17 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
             DataChunkBloomFilters bloomFilters = (DataChunkBloomFilters)tuple.getValueByField("bloomFilters");
 
+
             for(String column: bloomFilters.columnToBloomFilter.keySet()) {
-                Map<String, BloomFilter> chunkNameToFilter = columnToChunkToBloomFilter.computeIfAbsent(column, t->
-                    new ConcurrentHashMap<>());
-                chunkNameToFilter.put(fileName, bloomFilters.columnToBloomFilter.get(column));
-                System.out.println(String.format("A bloom filter is added for chunk: %s, column: %s", fileName, column));
+//                Map<String, BloomFilter> chunkNameToFilter = columnToChunkToBloomFilter.computeIfAbsent(column, t->
+//                    new ConcurrentHashMap<>());
+//                chunkNameToFilter.put(fileName, bloomFilters.columnToBloomFilter.get(column));
+                try {
+                    bloomFilterStore.store(new BloomFilterStore.BloomFilterId(fileName, column), bloomFilters.columnToBloomFilter.get(column));
+                    System.out.println(String.format("A bloom filter is added for chunk: %s, column: %s", fileName, column));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         } else if (tuple.getSourceStreamId().equals(Streams.QueryFinishedStream)) {
             Long queryId = tuple.getLong(0);
@@ -355,15 +366,23 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 //                    System.out.println("equivalentPredicate is null.");
 //                }
 
-                if (query.equivalentPredicate != null && columnToChunkToBloomFilter.containsKey(query.equivalentPredicate.column)) {
-                    BloomFilter bloomFilter = columnToChunkToBloomFilter.get(query.equivalentPredicate.column).get(chunkName);
-                    if (bloomFilter != null && !bloomFilter.mightContain(query.equivalentPredicate.value)) {
-                        prunedByBloomFilter = true;
+                if (query.equivalentPredicate != null) {
+                    BloomFilterStore.BloomFilterId id = new BloomFilterStore.BloomFilterId(chunkName, query.equivalentPredicate.column);
+                    BloomFilter filter = bloomFilterStore.get(id);
+                    if (filter != null) {
+                        prunedByBloomFilter = !bloomFilterStore.get(id).mightContain(query.equivalentPredicate.value);
                     }
-//                    else {
-//                        System.out.println("Failed to prune by bloom filter.");
-//                    }
                 }
+
+//                if (query.equivalentPredicate != null && columnToChunkToBloomFilter.containsKey(query.equivalentPredicate.column)) {
+//                    BloomFilter bloomFilter = columnToChunkToBloomFilter.get(query.equivalentPredicate.column).get(chunkName);
+//                    if (bloomFilter != null && !bloomFilter.mightContain(query.equivalentPredicate.value)) {
+//                        prunedByBloomFilter = true;
+//                    }
+////                    else {
+////                        System.out.println("Failed to prune by bloom filter.");
+////                    }
+//                }
 
                 if (!prunedByBloomFilter) {
                     subQueries.add(new SubQueryOnFile<>(queryId, leftKey, rightKey, chunkName, startTimestamp, endTimestamp,
