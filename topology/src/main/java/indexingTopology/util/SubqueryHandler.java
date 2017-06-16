@@ -7,9 +7,7 @@ import indexingTopology.cache.LRUCache;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
-import indexingTopology.filesystem.FileSystemHandler;
-import indexingTopology.filesystem.HdfsFileSystemHandler;
-import indexingTopology.filesystem.LocalFileSystemHandler;
+import indexingTopology.filesystem.*;
 import javafx.util.Pair;
 
 import java.io.File;
@@ -49,27 +47,47 @@ public class SubqueryHandler<TKey extends Number & Comparable<TKey>> {
         TKey rightKey =  (TKey) subQuery.getRightKey();
         String fileName = subQuery.getFileName();
         FileSystemHandler fileSystemHandler = null;
+
+        ReadingHandler readingHandler = null;
+
         try {
             Long timestampLowerBound = subQuery.getStartTimestamp();
             Long timestampUpperBound = subQuery.getEndTimestamp();
 
 
+//            if (config.HDFSFlag) {
+//                if (config.HybridStorage && new File(config.dataDir, fileName).exists()) {
+//                    fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+//                    System.out.println("Subquery will be conducted on local file in cache.");
+//                } else {
+//                    if (config.HybridStorage)
+//                        System.out.println("Failed to find local file :" + config.dataDir + "/" + fileName);
+//                    fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
+//                }
+//            } else {
+//                fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+//            }
+
+
             if (config.HDFSFlag) {
                 if (config.HybridStorage && new File(config.dataDir, fileName).exists()) {
-                    fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+                    readingHandler = new LocalReadingHandler(config.dataDir);
                     System.out.println("Subquery will be conducted on local file in cache.");
                 } else {
                     if (config.HybridStorage)
                         System.out.println("Failed to find local file :" + config.dataDir + "/" + fileName);
-                    fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
+                    readingHandler = new HdfsReadingHandler(config.dataDir, config);
                 }
             } else {
-                fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+                readingHandler = new LocalReadingHandler(config.dataDir);
             }
 
-            fileSystemHandler.openFile("/", fileName);
 
-            byte[] chunkBytes = getChunkBytes(fileSystemHandler, fileName);
+//            fileSystemHandler.openFile("/", fileName);
+            readingHandler.openFile(fileName);
+
+//            byte[] chunkBytes = getChunkBytes(fileSystemHandler, fileName);
+            byte[] chunkBytes = getChunkBytes(readingHandler, fileName);
 
             Pair data = getTemplateData(chunkBytes);
 
@@ -151,10 +169,12 @@ public class SubqueryHandler<TKey extends Number & Comparable<TKey>> {
 
                 tuples.addAll(serializedDataTuples);
             }
-        }
-        finally {
-            if (fileSystemHandler != null) {
-                fileSystemHandler.closeFile();
+        } finally {
+//            if (fileSystemHandler != null) {
+//                fileSystemHandler.closeFile();
+//            }
+            if (readingHandler != null) {
+                readingHandler.closeFile();
             }
         }
         return tuples;
@@ -211,6 +231,27 @@ public class SubqueryHandler<TKey extends Number & Comparable<TKey>> {
         }
 
         return chunkBytes;
+    }
+
+    private byte[] getChunkBytes(ReadingHandler readingHandlerHandler, String chunkName) throws IOException {
+        byte[] chunkBytes;
+
+        chunkBytes = getFromCache(chunkName);
+        if (chunkBytes == null) {
+            chunkBytes = getFromExternalStorage(readingHandlerHandler);
+            chunkNameToChunkMapping.put(chunkName, chunkBytes);
+        }
+
+        return chunkBytes;
+    }
+
+    private byte[] getFromExternalStorage(ReadingHandler readingHandler) throws IOException {
+        long chunkLength = readingHandler.getFileLength();
+
+        byte[] bytesToRead = new byte[(int) chunkLength];
+        readingHandler.read(bytesToRead);
+
+        return bytesToRead;
     }
 
     private Pair getTemplateData(byte[] chunkBytes) {

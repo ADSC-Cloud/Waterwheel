@@ -8,9 +8,9 @@ import java.io.Serializable;
 public class TopologyConfig implements Serializable {
     public final double REBUILD_TEMPLATE_THRESHOLD = 10.0;
 
-    public static final String HDFS_HOST = "hdfs://192.168.0.237:54310/";
+//    public static final String HDFS_HOST = "hdfs://192.168.0.237:54310/";
 
-//    public final String HDFS_HOST = "hdfs://10.21.25.10:54310/";
+    public final String HDFS_HOST = "hdfs://10.21.25.10:54310/";
 //    public static final String HDFS_HOST = "hdfs://10.21.25.13:54310/";
 
     /**
