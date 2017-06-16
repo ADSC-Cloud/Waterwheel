@@ -10,9 +10,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Currently assume that there is only one bloom filter in a chunk.
- */
+
 public class DataChunkBloomFilters implements Serializable {
     public String chunkName;
     public Map<String, BloomFilter> columnToBloomFilter;
