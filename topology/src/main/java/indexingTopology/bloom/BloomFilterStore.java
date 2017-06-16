@@ -68,6 +68,7 @@ public class BloomFilterStore {
         int length = input.readInt();
         byte[] contentBytes = new byte[length];
         fileSystemHandler.readBytesFromFile(4, contentBytes);
+        fileSystemHandler.closeFile();
         BloomFilter filter = (BloomFilter) SerializationUtils.deserialize(contentBytes);
         return filter;
     }
