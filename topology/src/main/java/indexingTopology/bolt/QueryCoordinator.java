@@ -1,6 +1,7 @@
 package indexingTopology.bolt;
 
 import com.google.common.hash.BloomFilter;
+import indexingTopology.bloom.BloomFilterStore;
 import indexingTopology.bloom.DataChunkBloomFilters;
 import indexingTopology.bolt.metrics.LocationInfo;
 import indexingTopology.common.data.DataSchema;
@@ -57,9 +58,9 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private transient Map<Integer, Long> indexTaskToTimestampMapping;
 
-    private ArrayBlockingQueue<SubQuery> taskQueue;
+    private ArrayBlockingQueue<SubQueryOnFile> taskQueue;
 
-    private transient Map<Integer, ArrayBlockingQueue<SubQuery>> taskIdToTaskQueue;
+    private transient Map<Integer, ArrayBlockingQueue<SubQueryOnFile>> taskIdToTaskQueue;
 
     private BalancedPartition balancedPartition;
 
@@ -79,13 +80,17 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private Thread queryHandlingThread;
 
-    private Map<String, Map<String, BloomFilter>> columnToChunkToBloomFilter;
+//    private Map<String, Map<String, BloomFilter>> columnToChunkToBloomFilter;
+
+    private BloomFilterStore bloomFilterStore;
 
     TopologyConfig config;
 
     private Map<Integer, String> ingestionServerIdToLocations;
 
     private Map<String, Set<Integer>> locationToChunkServerIds;
+
+    private Map<Integer, String> chunkServerIdToLocation;
 
     private DataSchema schema;
 
@@ -106,9 +111,13 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
         collector = outputCollector;
 
+        bloomFilterStore = new BloomFilterStore(config);
+
         ingestionServerIdToLocations = new HashMap<>();
 
         locationToChunkServerIds = new HashMap<>();
+
+        chunkServerIdToLocation = new HashMap<>();
 
         concurrentQueriesSemaphore = new Semaphore(MAX_NUMBER_OF_CONCURRENT_QUERIES);
 //        queryId = 0;
@@ -119,7 +128,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
         queryServers = topologyContext.getComponentTasks("ChunkScannerBolt");
 
 //        System.out.println("query sever ids " + queryServers);
-        taskIdToTaskQueue = new HashMap<Integer, ArrayBlockingQueue<SubQuery>>();
+        taskIdToTaskQueue = new HashMap<>();
 //        queryServers = new ArrayList<Integer>();
 //        for (String componentId : componentIds) {
 //            queryServers.addAll(topologyContext.getComponentTasks(componentId));
@@ -150,7 +159,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
         pendingQueue = new LinkedBlockingQueue<>();
 
-        columnToChunkToBloomFilter = new HashMap<>();
+//        columnToChunkToBloomFilter = new HashMap<>();
 
         try {
             fileSystem = new HdfsFileSystemHandler(config.dataDir, config).getFileSystem();
@@ -176,11 +185,17 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
             DataChunkBloomFilters bloomFilters = (DataChunkBloomFilters)tuple.getValueByField("bloomFilters");
 
+
             for(String column: bloomFilters.columnToBloomFilter.keySet()) {
-                Map<String, BloomFilter> chunkNameToFilter = columnToChunkToBloomFilter.computeIfAbsent(column, t->
-                    new ConcurrentHashMap<>());
-                chunkNameToFilter.put(fileName, bloomFilters.columnToBloomFilter.get(column));
-                System.out.println(String.format("A bloom filter is added for chunk: %s, column: %s", fileName, column));
+//                Map<String, BloomFilter> chunkNameToFilter = columnToChunkToBloomFilter.computeIfAbsent(column, t->
+//                    new ConcurrentHashMap<>());
+//                chunkNameToFilter.put(fileName, bloomFilters.columnToBloomFilter.get(column));
+                try {
+                    bloomFilterStore.store(new BloomFilterStore.BloomFilterId(fileName, column), bloomFilters.columnToBloomFilter.get(column));
+                    System.out.println(String.format("A bloom filter is added for chunk: %s, column: %s", fileName, column));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         } else if (tuple.getSourceStreamId().equals(Streams.QueryFinishedStream)) {
             Long queryId = tuple.getLong(0);
@@ -272,6 +287,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
                 case Query:
                     Set<Integer> taskIds = locationToChunkServerIds.computeIfAbsent(info.location, t -> new HashSet<>());
                     taskIds.add(info.taskId);
+                    chunkServerIdToLocation.put(info.taskId, info.location);
                     break;
             }
             // TODO: handle location update logic, e.g., update a location from a value to a different value.
@@ -350,15 +366,23 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 //                    System.out.println("equivalentPredicate is null.");
 //                }
 
-                if (query.equivalentPredicate != null && columnToChunkToBloomFilter.containsKey(query.equivalentPredicate.column)) {
-                    BloomFilter bloomFilter = columnToChunkToBloomFilter.get(query.equivalentPredicate.column).get(chunkName);
-                    if (bloomFilter != null && !bloomFilter.mightContain(query.equivalentPredicate.value)) {
-                        prunedByBloomFilter = true;
+                if (query.equivalentPredicate != null) {
+                    BloomFilterStore.BloomFilterId id = new BloomFilterStore.BloomFilterId(chunkName, query.equivalentPredicate.column);
+                    BloomFilter filter = bloomFilterStore.get(id);
+                    if (filter != null) {
+                        prunedByBloomFilter = !bloomFilterStore.get(id).mightContain(query.equivalentPredicate.value);
                     }
-//                    else {
-//                        System.out.println("Failed to prune by bloom filter.");
-//                    }
                 }
+
+//                if (query.equivalentPredicate != null && columnToChunkToBloomFilter.containsKey(query.equivalentPredicate.column)) {
+//                    BloomFilter bloomFilter = columnToChunkToBloomFilter.get(query.equivalentPredicate.column).get(chunkName);
+//                    if (bloomFilter != null && !bloomFilter.mightContain(query.equivalentPredicate.value)) {
+//                        prunedByBloomFilter = true;
+//                    }
+////                    else {
+////                        System.out.println("Failed to prune by bloom filter.");
+////                    }
+//                }
 
                 if (!prunedByBloomFilter) {
                     subQueries.add(new SubQueryOnFile<>(queryId, leftKey, rightKey, chunkName, startTimestamp, endTimestamp,
@@ -389,7 +413,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             System.out.println(String.format("%d subqueries have been merged into %d subqueires",
                     numberOfSubqueryBeforeMerging, numberOfSubqueryAfterMerging));
 
-            for (SubQuery subQuery: subQueries) {
+            for (SubQueryOnFile subQuery: subQueries) {
                 if (config.SHUFFLE_GROUPING_FLAG) {
                     sendSubqueriesByshuffleGrouping(subQuery);
                 } else if (config.TASK_QUEUE_MODEL) {
@@ -504,7 +528,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private void createTaskQueues(List<Integer> targetTasks) {
         for (Integer taskId : targetTasks) {
-            ArrayBlockingQueue<SubQuery> taskQueue = new ArrayBlockingQueue<SubQuery>(config.TASK_QUEUE_CAPACITY);
+            ArrayBlockingQueue<SubQueryOnFile> taskQueue = new ArrayBlockingQueue<>(config.TASK_QUEUE_CAPACITY);
             taskIdToTaskQueue.put(taskId, taskQueue);
         }
     }
@@ -667,14 +691,14 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
 
 
-    private void putSubqueryToTaskQueues(SubQuery subQuery) {
+    private void putSubqueryToTaskQueues(SubQueryOnFile subQuery) {
         String fileName = ((SubQueryOnFile) subQuery).getFileName();
 
         Integer taskId = getPreferredQueryServerId(fileName);
 
 
 
-        ArrayBlockingQueue<SubQuery> taskQueue = taskIdToTaskQueue.get(taskId);
+        ArrayBlockingQueue<SubQueryOnFile> taskQueue = taskIdToTaskQueue.get(taskId);
         try {
             taskQueue.put(subQuery);
         } catch (InterruptedException e) {
@@ -724,9 +748,9 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
 
     private void sendSubquery(int taskId) {
-        ArrayBlockingQueue<SubQuery> taskQueue = taskIdToTaskQueue.get(taskId);
+        ArrayBlockingQueue<SubQueryOnFile> taskQueue = taskIdToTaskQueue.get(taskId);
 
-        SubQuery subQuery = taskQueue.poll();
+        SubQueryOnFile subQuery = taskQueue.poll();
 
         if (subQuery == null) {
             taskQueue = getLongestQueue();
@@ -736,16 +760,20 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
         if (subQuery != null) {
             collector.emitDirect(taskId, Streams.FileSystemQueryStream
                     , new Values(subQuery));
+            System.out.println(String.format("subquery %d is sent to %s for %s", subQuery.queryId,
+                    chunkServerIdToLocation.get(taskId), subQuery.getFileName()));
         }
+
     }
 
-    private ArrayBlockingQueue<SubQuery> getLongestQueue() {
-        List<ArrayBlockingQueue<SubQuery>> taskQueues
-                = new ArrayList<ArrayBlockingQueue<SubQuery>>(taskIdToTaskQueue.values());
+    private ArrayBlockingQueue<SubQueryOnFile> getLongestQueue() {
+
+        List<ArrayBlockingQueue<SubQueryOnFile>> taskQueues = new ArrayList<>();
+        taskQueues.addAll(taskIdToTaskQueue.values());
 
         Collections.sort(taskQueues, (taskQueue1, taskQueue2) -> Integer.compare(taskQueue2.size(), taskQueue1.size()));
 
-        ArrayBlockingQueue<SubQuery> taskQueue = taskQueues.get(0);
+        ArrayBlockingQueue<SubQueryOnFile> taskQueue = taskQueues.get(0);
 
         return taskQueue;
     }
