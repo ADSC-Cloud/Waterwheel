@@ -13,7 +13,7 @@ Data tuples continuouly arrive at the system. Each tuple consists of a key, a ti
 
 ### Quick Start
 #### 1. Local mode
-Running our system in local model is the easiest way to get a feeling of the system. Local model is typically used internally to debug the topology. If you want to use our system in production, we suggest you to run our system in cluster model to fully exploit the performance.
+Running our system in local model is the easiest way to get a feeling of the system. Local model is typically used internally to debug the topology. If you want to use our system in production, we highly suggest you to run our system in cluster model to fully exploit the potential performance of the system.
 
 To run our system in local mode, you should follow those steps:
 
@@ -56,7 +56,7 @@ Open a new terminal and run the following command to issue generated queries:
 $ mvn exec:java -pl topology -Dexec.mainClass=indexingTopology.topology.kingbase.KingBaseTopology -Dexec.args="-m query --query-server-ip localhost"
 ```
 
-Use ```-h``` print the detailed usage of the arguments.
+Use ```-h``` to print the detailed usage of the arguments.
 
 #### 2. Cluster model
 
