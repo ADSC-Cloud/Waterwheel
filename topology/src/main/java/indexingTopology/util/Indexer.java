@@ -715,6 +715,10 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
         return fileInformation;
     }
 
+    public FileInformation tryToGetFileInformation() {
+        return informationToUpdatePendingQueue.poll();
+    }
+
     public Pair getQueryResult() {
         Pair pair = null;
         try {
@@ -725,8 +729,16 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
         return pair;
     }
 
+    public Pair tryToGetQueryResult() {
+        return queryResultQueue.poll();
+    }
+
     public TrackedDataTuple getTrackedDataTuple() throws InterruptedException {
         return trackedDataTupleQueue.take();
+    }
+
+    public TrackedDataTuple tryToGetTrackedDataTuple() {
+        return trackedDataTupleQueue.poll();
     }
 
     public MemChunk getChunk() {

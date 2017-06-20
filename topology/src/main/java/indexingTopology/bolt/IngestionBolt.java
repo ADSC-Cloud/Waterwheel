@@ -202,46 +202,86 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
     @Override
     public void update(Observable o, Object arg) {
         if (o instanceof Indexer) {
-            try {
-                String s = (String) arg;
-                if (s.equals("information update")) {
-                    FileInformation fileInformation = ((Indexer) o).getFileInformation();
-                    String fileName = fileInformation.getFileName();
-                    Domain domain = fileInformation.getDomain();
-                    KeyDomain keyDomain = new KeyDomain(domain.getLowerBound(), domain.getUpperBound());
-                    TimeDomain timeDomain = new TimeDomain(domain.getStartTimestamp(), domain.getEndTimestamp());
-                    Long numTuples = fileInformation.getNumberOfRecords();
-                    DataChunkBloomFilters bloomFilters = fileInformation.getBloomFilters();
+
+            Indexer indexer = (Indexer)o;
+
+            // handle file information upadtes
+            FileInformation fileInformation = indexer.tryToGetFileInformation();
+            while (fileInformation != null) {
+                String fileName = fileInformation.getFileName();
+                Domain domain = fileInformation.getDomain();
+                KeyDomain keyDomain = new KeyDomain(domain.getLowerBound(), domain.getUpperBound());
+                TimeDomain timeDomain = new TimeDomain(domain.getStartTimestamp(), domain.getEndTimestamp());
+                Long numTuples = fileInformation.getNumberOfRecords();
+                DataChunkBloomFilters bloomFilters = fileInformation.getBloomFilters();
 
 //                System.out.println("File information is sent from insertion servers");
-                    collector.emit(Streams.FileInformationUpdateStream, new Values(fileName, keyDomain, timeDomain,
-                            numTuples, bloomFilters));
+                collector.emit(Streams.FileInformationUpdateStream, new Values(fileName, keyDomain, timeDomain,
+                        numTuples, bloomFilters));
 
-                    collector.emit(Streams.TimestampUpdateStream, new Values(timeDomain, keyDomain));
-
-
-                } else if (s.equals("query result")) {
-                    Pair pair = ((Indexer) o).getQueryResult();
-                    SubQuery subQuery = (SubQuery) pair.getKey();
-                    List<byte[]> queryResults = (List<byte[]>) pair.getValue();
-//                List<byte[]> serializedTuples = new ArrayList<>();
-//                for(DataTuple dataTuple: queryResults) {
-//                    serializedTuples.add(schema.serializeTuple(dataTuple));
-//                }
-                    System.out.println(String.format("query result on B+tree for %d will be emitted!", subQuery.queryId));
-                    collector.emit(Streams.BPlusTreeQueryStream, new Values(subQuery, queryResults));
-                    System.out.println(String.format("query result on B+tree for %d has been emitted!", subQuery.queryId));
-                } else if (s.equals("ack")) {
-                    try {
-                        TrackedDataTuple dataTuple = ((Indexer) o).getTrackedDataTuple();
-                        collector.emitDirect(dataTuple.sourceTaskId, Streams.AckStream, new Values(dataTuple.tupleId));
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
+                collector.emit(Streams.TimestampUpdateStream, new Values(timeDomain, keyDomain));
+                fileInformation = indexer.tryToGetFileInformation();
             }
+
+            // handle query results
+            Pair pair = indexer.tryToGetQueryResult();
+            while (pair != null) {
+                SubQuery subQuery = (SubQuery) pair.getKey();
+                List<byte[]> queryResults = (List<byte[]>) pair.getValue();
+                System.out.println(String.format("query result on B+tree for %d will be emitted!", subQuery.queryId));
+                collector.emit(Streams.BPlusTreeQueryStream, new Values(subQuery, queryResults));
+                System.out.println(String.format("query result on B+tree for %d has been emitted!", subQuery.queryId));
+                pair = indexer.tryToGetQueryResult();
+            }
+
+            // handle tuple ack
+            TrackedDataTuple dataTuple = indexer.tryToGetTrackedDataTuple();
+            while (dataTuple != null) {
+                collector.emitDirect(dataTuple.sourceTaskId, Streams.AckStream, new Values(dataTuple.tupleId));
+                dataTuple = indexer.tryToGetTrackedDataTuple();
+            }
+
+
+//            try {
+//                String s = (String) arg;
+//                if (s.equals("information update")) {
+//                    FileInformation fileInformation = ((Indexer) o).getFileInformation();
+//                    String fileName = fileInformation.getFileName();
+//                    Domain domain = fileInformation.getDomain();
+//                    KeyDomain keyDomain = new KeyDomain(domain.getLowerBound(), domain.getUpperBound());
+//                    TimeDomain timeDomain = new TimeDomain(domain.getStartTimestamp(), domain.getEndTimestamp());
+//                    Long numTuples = fileInformation.getNumberOfRecords();
+//                    DataChunkBloomFilters bloomFilters = fileInformation.getBloomFilters();
+//
+////                System.out.println("File information is sent from insertion servers");
+//                    collector.emit(Streams.FileInformationUpdateStream, new Values(fileName, keyDomain, timeDomain,
+//                            numTuples, bloomFilters));
+//
+//                    collector.emit(Streams.TimestampUpdateStream, new Values(timeDomain, keyDomain));
+//
+//
+//                } else if (s.equals("query result")) {
+//                    Pair pair = ((Indexer) o).getQueryResult();
+//                    SubQuery subQuery = (SubQuery) pair.getKey();
+//                    List<byte[]> queryResults = (List<byte[]>) pair.getValue();
+////                List<byte[]> serializedTuples = new ArrayList<>();
+////                for(DataTuple dataTuple: queryResults) {
+////                    serializedTuples.add(schema.serializeTuple(dataTuple));
+////                }
+//                    System.out.println(String.format("query result on B+tree for %d will be emitted!", subQuery.queryId));
+//                    collector.emit(Streams.BPlusTreeQueryStream, new Values(subQuery, queryResults));
+//                    System.out.println(String.format("query result on B+tree for %d has been emitted!", subQuery.queryId));
+//                } else if (s.equals("ack")) {
+//                    try {
+//                        TrackedDataTuple dataTuple = ((Indexer) o).getTrackedDataTuple();
+//                        collector.emitDirect(dataTuple.sourceTaskId, Streams.AckStream, new Values(dataTuple.tupleId));
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
         }
     }
 }

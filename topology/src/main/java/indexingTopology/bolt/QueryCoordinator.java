@@ -368,7 +368,9 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
                 if (query.equivalentPredicate != null) {
                     BloomFilterStore.BloomFilterId id = new BloomFilterStore.BloomFilterId(chunkName, query.equivalentPredicate.column);
+                    long start = System.currentTimeMillis();
                     BloomFilter filter = bloomFilterStore.get(id);
+                    System.out.println(String.format("bloom filter fetch time: %d ms.", System.currentTimeMillis() - start));
                     if (filter != null) {
                         prunedByBloomFilter = !bloomFilterStore.get(id).mightContain(query.equivalentPredicate.value);
                     }
