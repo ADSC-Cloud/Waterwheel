@@ -31,8 +31,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -60,7 +60,9 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private ArrayBlockingQueue<SubQueryOnFile> taskQueue;
 
-    private transient Map<Integer, ArrayBlockingQueue<SubQueryOnFile>> taskIdToTaskQueue;
+    private transient Map<Integer, PriorityBlockingQueue<SubQueryOnFileWithPriority>> taskIdToTaskQueue;
+
+    private HashSet<String> unprocessedSubqueries;
 
     private BalancedPartition balancedPartition;
 
@@ -118,6 +120,8 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
         locationToChunkServerIds = new HashMap<>();
 
         chunkServerIdToLocation = new HashMap<>();
+
+        unprocessedSubqueries = new HashSet<>();
 
         concurrentQueriesSemaphore = new Semaphore(MAX_NUMBER_OF_CONCURRENT_QUERIES);
 //        queryId = 0;
@@ -416,6 +420,8 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
                     numberOfSubqueryBeforeMerging, numberOfSubqueryAfterMerging));
 
             for (SubQueryOnFile subQuery: subQueries) {
+                unprocessedSubqueries.add(subQuery.getFileName());
+
                 if (config.SHUFFLE_GROUPING_FLAG) {
                     sendSubqueriesByshuffleGrouping(subQuery);
                 } else if (config.TASK_QUEUE_MODEL) {
@@ -530,7 +536,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private void createTaskQueues(List<Integer> targetTasks) {
         for (Integer taskId : targetTasks) {
-            ArrayBlockingQueue<SubQueryOnFile> taskQueue = new ArrayBlockingQueue<>(config.TASK_QUEUE_CAPACITY);
+            PriorityBlockingQueue<SubQueryOnFileWithPriority> taskQueue = new PriorityBlockingQueue<>(config.TASK_QUEUE_CAPACITY);
             taskIdToTaskQueue.put(taskId, taskQueue);
         }
     }
@@ -621,34 +627,38 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
         return queryServers.get(index);
     }
 
-    private int getPreferredQueryServerId(String fileName) {
+    private List<Integer> getPreferredQueryServerIds(String fileName) {
+        List<Integer> ids = new ArrayList<>();
         if (config.HybridStorage) {
             Integer insertionServerId = extractInsertionServerId(fileName);
             if (insertionServerId == null) {
                 System.out.println("Fail to extract insertion server id from chunk name," +
                         " using hashing dispatch instead.");
-                return getPreferredLocationByHashing(fileName);
+                ids.add(getPreferredLocationByHashing(fileName));
+                return ids;
             }
 
             String location = ingestionServerIdToLocations.get(insertionServerId);
             if (location == null) {
                 System.out.println("ingestionServerIdToLocations info is not available," +
                         " using hashing dispatch instead.");
-                return getPreferredLocationByHashing(fileName);
+                ids.add(getPreferredLocationByHashing(fileName));
+                return ids;
             }
             Set<Integer> candidates = locationToChunkServerIds.get(location);
 
             if (candidates == null || candidates.size() == 0) {
                 System.out.println("locationToChunkServerIds info is not available," +
                         " using hashing dispatch instead.");
-                return getPreferredLocationByHashing(fileName);
+                ids.add(getPreferredLocationByHashing(fileName));
+                return ids;
             }
 
             int randomIndex = new Random().nextInt(candidates.size());
 
 //            System.out.println("Select Task " + new ArrayList<>(candidates).get(randomIndex) + " among " + candidates.size() + " as the target query server. ");
-
-            return new ArrayList<>(candidates).get(randomIndex);
+            ids.addAll(candidates);
+            return ids;
         } else if (config.HDFSFlag && config.HdfsTaskLocality) {
             Path path = new Path(config.dataDir + "/" + fileName);
             Long fileLength = 0L;
@@ -677,43 +687,41 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             if (candidates == null || candidates.size() == 0) {
                 System.out.println("locationToChunkServerIds info is not available," +
                         " using hashing dispatch instead.");
-                return getPreferredLocationByHashing(fileName);
+                ids.add(getPreferredLocationByHashing(fileName));
+                return ids;
             }
 
-            int randomIndex = new Random().nextInt(candidates.size());
-
-//            System.out.println("Select Task " + new ArrayList<>(candidates).get(randomIndex) + " among " + candidates.size() + " as the target query server. ");
-
-            return new ArrayList<>(candidates).get(randomIndex);
+            ids.addAll(candidates);
+            return ids;
+        } else {
+            int index = Math.abs(fileName.hashCode()) % queryServers.size();
+            ids.add(queryServers.get(index));
+            return ids;
         }
-
-        int index = Math.abs(fileName.hashCode()) % queryServers.size();
-        return queryServers.get(index);
     }
 
 
 
     private void putSubqueryToTaskQueues(SubQueryOnFile subQuery) {
-        String fileName = ((SubQueryOnFile) subQuery).getFileName();
+        String fileName = subQuery.getFileName();
 
-        Integer taskId = getPreferredQueryServerId(fileName);
+        List<Integer> taskIds = getPreferredQueryServerIds(fileName);
 
+        Collections.sort(taskIds);
+        Collections.shuffle(taskIds, new Random(subQuery.getFileName().hashCode()));
 
-
-        ArrayBlockingQueue<SubQueryOnFile> taskQueue = taskIdToTaskQueue.get(taskId);
-        try {
-            taskQueue.put(subQuery);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        for(int i = 0; i < taskIds.size(); i++) {
+            PriorityBlockingQueue<SubQueryOnFileWithPriority> taskQueue = taskIdToTaskQueue.get(taskIds.get(i));
+                taskQueue.put(new SubQueryOnFileWithPriority(subQuery,i));
         }
-        taskIdToTaskQueue.put(taskId, taskQueue);
     }
 
 
     private void sendSubqueriesFromTaskQueue() {
         for (Integer taskId : queryServers) {
-            SubQuery subQuery = taskQueue.poll();
+            SubQueryOnFile subQuery = taskQueue.poll();
             if (subQuery != null) {
+                unprocessedSubqueries.remove(subQuery.getFileName());
                 collector.emitDirect(taskId, Streams.FileSystemQueryStream, new Values(subQuery));
             }
         }
@@ -721,14 +729,6 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private void sendSubqueriesFromTaskQueues() {
         for (Integer taskId : queryServers) {
-//            ArrayBlockingQueue<SubQuery> taskQueue = taskIdToTaskQueue.get(taskId);
-//            SubQuery subQuery = taskQueue.poll();
-//            if (subQuery != null) {
-//
-//                collector.emitDirect(taskId, Streams.FileSystemQueryStream
-//                        , new Values(subQuery));
-//
-//            }
             sendSubquery(taskId);
         }
     }
@@ -740,9 +740,10 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
 
     private void sendSubqueryToTask(int taskId) {
-        SubQuery subQuery = taskQueue.poll();
+        SubQueryOnFile subQuery = taskQueue.poll();
 
         if (subQuery != null) {
+            unprocessedSubqueries.remove(subQuery.getFileName());
             collector.emitDirect(taskId, Streams.FileSystemQueryStream, new Values(subQuery));
         }
     }
@@ -750,16 +751,27 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
 
     private void sendSubquery(int taskId) {
-        ArrayBlockingQueue<SubQueryOnFile> taskQueue = taskIdToTaskQueue.get(taskId);
+        SubQueryOnFileWithPriority subQuery = null;
 
-        SubQueryOnFile subQuery = taskQueue.poll();
+        while (subQuery == null) {
 
-        if (subQuery == null) {
-            taskQueue = getLongestQueue();
+            PriorityBlockingQueue<SubQueryOnFileWithPriority> taskQueue = taskIdToTaskQueue.get(taskId);
+
             subQuery = taskQueue.poll();
-        }
 
+            if (subQuery == null) {
+                taskQueue = getLongestQueue();
+                if (taskQueue.size() > 0)
+                    subQuery = taskQueue.poll();
+                else
+                    break;
+
+            }
+            if (!unprocessedSubqueries.contains(subQuery.getFileName()))
+                subQuery = null;
+        }
         if (subQuery != null) {
+            unprocessedSubqueries.remove(subQuery.getFileName());
             collector.emitDirect(taskId, Streams.FileSystemQueryStream
                     , new Values(subQuery));
             System.out.println(String.format("subquery %d is sent to %s for %s", subQuery.queryId,
@@ -768,14 +780,14 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     }
 
-    private ArrayBlockingQueue<SubQueryOnFile> getLongestQueue() {
+    private PriorityBlockingQueue<SubQueryOnFileWithPriority> getLongestQueue() {
 
-        List<ArrayBlockingQueue<SubQueryOnFile>> taskQueues = new ArrayList<>();
+        List<PriorityBlockingQueue<SubQueryOnFileWithPriority>> taskQueues = new ArrayList<>();
         taskQueues.addAll(taskIdToTaskQueue.values());
 
         Collections.sort(taskQueues, (taskQueue1, taskQueue2) -> Integer.compare(taskQueue2.size(), taskQueue1.size()));
 
-        ArrayBlockingQueue<SubQueryOnFile> taskQueue = taskQueues.get(0);
+        PriorityBlockingQueue<SubQueryOnFileWithPriority> taskQueue = taskQueues.get(0);
 
         return taskQueue;
     }
