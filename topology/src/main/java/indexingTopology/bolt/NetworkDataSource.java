@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 /**
  * Created by acelzj on 30/3/17.
  */
-public class NetworkDataGenerator extends InputStreamReceiver {
+public class NetworkDataSource extends InputStreamReceiver {
 
     BufferedReader bufferedReader = null;
 
@@ -28,7 +28,7 @@ public class NetworkDataGenerator extends InputStreamReceiver {
 
     private TopologyConfig config;
 
-    public NetworkDataGenerator(DataSchema schema, TopologyConfig config) {
+    public NetworkDataSource(DataSchema schema, TopologyConfig config) {
         super(schema, config);
     }
 

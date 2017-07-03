@@ -74,7 +74,7 @@ public class KingBaseTopology {
 
         double selectivity = Math.sqrt(1);
 
-//        TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
+//        TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, destIp, x2, y1, y2);
         TrajectoryGenerator generator = new TrajectoryMovingGenerator(x1, x2, y1, y2, 100000, 45.0);
         City city = new City(x1, x2, y1, y2, partitions);
 

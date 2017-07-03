@@ -16,7 +16,7 @@ import java.util.Map;
 /**
  * Created by acelzj on 15/3/17.
  */
-public class TaxiDataGenerator extends InputStreamReceiver {
+public class TDriveDataSource extends InputStreamReceiver {
     private City city;
 
     private BufferedReader bufferedReader = null;
@@ -45,7 +45,7 @@ public class TaxiDataGenerator extends InputStreamReceiver {
     private Thread generationThread;
 
 
-    public TaxiDataGenerator(DataSchema schema, City city, TopologyConfig config) {
+    public TDriveDataSource(DataSchema schema, City city, TopologyConfig config) {
         super(schema, config);
         this.city = city;
     }
@@ -71,7 +71,7 @@ public class TaxiDataGenerator extends InputStreamReceiver {
         taxiIds = new ArrayList<>();
         zcodes = new ArrayList<>();
 
-//        frequencyRestrictor = new FrequencyRestrictor(50000 / 24, 50);
+        frequencyRestrictor = new FrequencyRestrictor(150000, 50);
 
         int index = 0;
         while (true) {
@@ -183,11 +183,11 @@ public class TaxiDataGenerator extends InputStreamReceiver {
                         Double latitude = latitudes.get(index);
                         Long timestamp = System.currentTimeMillis();
 
-//                        try {
-//                            frequencyRestrictor.getPermission(1);
-//                        } catch (InterruptedException e) {
-//                            e.printStackTrace();
-//                        }
+                        try {
+                            frequencyRestrictor.getPermission(1);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
 
                         final DataTuple dataTuple = new DataTuple(taxiId, zcode, longitude, latitude, timestamp);
                         try {

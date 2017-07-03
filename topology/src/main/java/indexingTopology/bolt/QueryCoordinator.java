@@ -215,7 +215,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
                 queryIdToStartTime.remove(queryId);
             }
 
-//            System.out.println("query id " + queryId + " has been finished!!!");
+            System.out.println("query id " + queryId + " has been finished!!!");
             concurrentQueriesSemaphore.release();
 
         } else if (tuple.getSourceStreamId().equals(Streams.FileSubQueryFinishStream)) {
