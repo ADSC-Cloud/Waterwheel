@@ -100,6 +100,8 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private FileSystem fileSystem;
 
+    private HashMap<String, String[]> chunkNameToPreferredHostsMapping;
+
     public QueryCoordinator(T lowerBound, T upperBound, TopologyConfig config, DataSchema schema) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
@@ -123,6 +125,8 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
         unprocessedSubqueries = new HashSet<>();
 
+        chunkNameToPreferredHostsMapping = new HashMap<>();
+
         concurrentQueriesSemaphore = new Semaphore(MAX_NUMBER_OF_CONCURRENT_QUERIES);
 //        queryId = 0;
         filePartitionSchemaManager = new FilePartitionSchemaManager();
@@ -131,20 +135,9 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
         queryServers = topologyContext.getComponentTasks("ChunkScannerBolt");
 
-//        System.out.println("query sever ids " + queryServers);
         taskIdToTaskQueue = new HashMap<>();
-//        queryServers = new ArrayList<Integer>();
-//        for (String componentId : componentIds) {
-//            queryServers.addAll(topologyContext.getComponentTasks(componentId));
-//        }
         createTaskQueues(queryServers);
 
-        
-//        componentIds = topologyContext.getThisTargets().get(Streams.BPlusTreeQueryStream).keySet();
-//        indexServers = new ArrayList<Integer>();
-//        for (String componentId : componentIds) {
-//            indexServers.addAll(topologyContext.getComponentTasks(componentId));
-//        }
         indexServers = topologyContext.getComponentTasks("IndexerBolt");
 
 
@@ -162,8 +155,6 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
         balancedPartitionToBeDeleted = null;
 
         pendingQueue = new LinkedBlockingQueue<>();
-
-//        columnToChunkToBloomFilter = new HashMap<>();
 
         try {
             fileSystem = new HdfsFileSystemHandler(config.dataDir, config).getFileSystem();
@@ -660,31 +651,39 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             ids.addAll(candidates);
             return ids;
         } else if (config.HDFSFlag && config.HdfsTaskLocality) {
-            Path path = new Path(config.dataDir + "/" + fileName);
-            Long fileLength = 0L;
-            try {
-                fileLength = fileSystem.getFileStatus(path).getLen();
-            } catch (IOException e) {
-                e.printStackTrace();
+            Set<Integer> candidates = new HashSet<>();
+            String[] locations = new String[0];
+            if (chunkNameToPreferredHostsMapping.containsKey(fileName)) {
+                locations = chunkNameToPreferredHostsMapping.get(fileName);
+            } else {
+
+
+                Path path = new Path(config.dataDir + "/" + fileName);
+                Long fileLength = 0L;
+                try {
+                    fileLength = fileSystem.getFileStatus(path).getLen();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                BlockLocation[] blockLocations;
+//            String location = null;
+                try {
+                    blockLocations = fileSystem.getFileBlockLocations(path, 0, fileLength);
+                    BlockLocation blockLocation = blockLocations[new Random().nextInt(blockLocations.length)];
+                    locations = blockLocation.getHosts();
+                    chunkNameToPreferredHostsMapping.put(fileName, locations);
+//                int randomIndex = new Random().nextInt(locations.length);
+//                location = locations[randomIndex];
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
 
-            BlockLocation[] blockLocations;
-            String[] locations;
-            String location = null;
-            try {
-                blockLocations = fileSystem.getFileBlockLocations(path, 0, fileLength);
-                BlockLocation blockLocation = blockLocations[new Random().nextInt(blockLocations.length)];
-                locations = blockLocation.getHosts();
-
-                int randomIndex = new Random().nextInt(locations.length);
-                location = locations[randomIndex];
-            } catch (IOException e) {
-                e.printStackTrace();
+            for (String location: locations) {
+                candidates.addAll(locationToChunkServerIds.get(location));
             }
-
-            Set<Integer> candidates = locationToChunkServerIds.get(location);
-
-            if (candidates == null || candidates.size() == 0) {
+            if (candidates.size() == 0) {
                 System.out.println("locationToChunkServerIds info is not available," +
                         " using hashing dispatch instead.");
                 ids.add(getPreferredLocationByHashing(fileName));

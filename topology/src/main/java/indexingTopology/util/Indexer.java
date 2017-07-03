@@ -691,7 +691,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                 setChanged();
                 notifyObservers("query result");
                 debugger.info = "Indexer: B11";
-                System.out.println(String.format("Indexer: query %d on B+tree finished!", queryId));
+//                System.out.println(String.format("Indexer: query %d on B+tree finished!", queryId));
             }
 
         }

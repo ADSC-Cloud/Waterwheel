@@ -92,5 +92,5 @@ public class TopologyConfig implements Serializable {
     public final boolean TASK_QUEUE_MODEL = false;
 
     // parallelism configuration
-    public int CHUNK_SCANNER_PER_NODE = 1;
+    public int CHUNK_SCANNER_PER_NODE = 2;
 }
