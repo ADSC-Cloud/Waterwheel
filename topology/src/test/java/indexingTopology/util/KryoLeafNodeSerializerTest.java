@@ -59,8 +59,6 @@ public class KryoLeafNodeSerializerTest {
 
         kryo.writeObject(output, leaf);
 
-//        output.close();
-
         byte[] bytes = output.toBytes();
 
         Input input = new Input(bytes);
@@ -75,6 +73,7 @@ public class KryoLeafNodeSerializerTest {
 //                System.out.println(deserialize(serializedTuples.get(j)));
 //            }
         }
+        output.close();
     }
 
     @Test
@@ -131,6 +130,7 @@ public class KryoLeafNodeSerializerTest {
 //                System.out.println(deserialize(serializedTuples.get(j)));
 //            }
         }
+        output.close();
     }
 
     public byte[] serializeIndexValue(List<Double> values) throws IOException{

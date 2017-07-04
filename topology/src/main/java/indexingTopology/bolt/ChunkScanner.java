@@ -66,8 +66,8 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
     private DebugInfo debugInfo;
 
-    static class DebugInfo {
-        String runningPosition;
+    public static class DebugInfo {
+        public String runningPosition;
     }
 
     TopologyConfig config;
@@ -193,8 +193,9 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
 //                        System.out.println("sub query " + subQuery.getQueryId() + " has been taken from queue");
 
+                        System.out.println("$$$ to process a subquery on " + subQuery.getFileName() + " for " + subQuery.queryId);
                         if (config.ChunkOrientedCaching) {
-                            List<byte[]> tuples = subqueryHandler.handleSubquery(subQuery);
+                            List<byte[]> tuples = subqueryHandler.handleSubquery(subQuery, debugInfo);
 
                             collector.emit(Streams.FileSystemQueryStream, new Values(subQuery, tuples, new FileScanMetrics()));
 
@@ -204,7 +205,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
                         } else {
                             handleSubQuery(subQuery);
                         }
-
+                        System.out.println("$$$ processed a subquery on " + subQuery.getFileName() + " for " + subQuery.queryId);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         System.out.println("subqueryHandlding thread is interrupted.");
@@ -247,6 +248,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
         metrics.debugInfo += String.format("subquery on %s, executed on %s ", subQuery.getFileName(),
                 InetAddress.getLocalHost().getHostName());
         debugInfo.runningPosition = "breakpoint 1";
+            FileSystemHandler fileSystemHandler = null;
         try {
 //            System.out.println(String.format("chunk name %s is being executed !!!", subQuery.getFileName()));
 
@@ -265,7 +267,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
             long start = System.currentTimeMillis();
 
 
-            FileSystemHandler fileSystemHandler = null;
             debugInfo.runningPosition = "breakpoint 2";
             if (config.HDFSFlag) {
                 if (config.HybridStorage && new File(config.dataDir, fileName).exists()) {
@@ -273,7 +274,8 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
                     System.out.println("Subquery will be conducted on local file in cache.");
                     metrics.debugInfo += " local";
                 } else {
-                    System.out.println("Failed to find local file :" + config.dataDir + "/" + fileName);
+                    if (config.HybridStorage)
+                        System.out.println("Failed to find local file :" + config.dataDir + "/" + fileName);
                     fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
                     metrics.debugInfo += " HDFS";
                 }
@@ -292,7 +294,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
             Pair data = getTemplateData(fileSystemHandler, fileName);
 //        long temlateRead = System.currentTimeMillis() - readTemplateStart;
 
-            fileSystemHandler.openFile("/", fileName);
+//            fileSystemHandler.openFile("/", fileName);
 //        fileTime += (System.currentTimeMillis() - fileStart);
 
 //        long readTemplateStart = System.currentTimeMillis();
@@ -397,7 +399,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
             if (subQuery.getAggregator() != null) {
                 DataSchema outputSchema = subQuery.getAggregator().getOutputDataSchema();
                 dataTuplesInKeyRange.stream().forEach(p -> serializedDataTuples.add(outputSchema.serializeTuple(p)));
-            } else {
+            } else {fileSystemHandler.closeFile();
                 dataTuplesInKeyRange.stream().forEach(p -> serializedDataTuples.add(schema.serializeTuple(p)));
             }
 
@@ -405,7 +407,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 //            tuples.addAll(serializedDataTuples);
 
 
-            fileSystemHandler.closeFile();
+
 
             metrics.setTotalTime(System.currentTimeMillis() - start);
 //        metrics.setFileReadingTime(fileReadingTime);
@@ -414,8 +416,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 //        metrics.setPredicationTime(predicationTime);
 //        metrics.setAggregationTime(aggregationTime);
 
-            long closeStart = System.currentTimeMillis();
-            fileSystemHandler.closeFile();
 //        fileTime += (System.currentTimeMillis() - closeStart);
 
 //        metrics.setSubqueryEndTime(System.currentTimeMillis());
@@ -437,10 +437,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 //        metrics.setNumberOfRecords((long) tuples.size());
 //        System.out.println(tuples.size());
 
-            metrics.setTotalTime(System.currentTimeMillis() - start);
-
-
-        metrics.setTotalTime(System.currentTimeMillis() - start);
 //        metrics.setFileReadingTime(fileReadingTime);
 //        metrics.setKeyRangTime(keyRangeTime);
 //        metrics.setTimestampRangeTime(timestampRangeTime);
@@ -448,7 +444,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 //        metrics.setAggregationTime(aggregationTime);
 
             debugInfo.runningPosition = "breakpoint 12";
-            fileSystemHandler.closeFile();
 //        fileTime += (System.currentTimeMillis() - closeStart);
 
 //        metrics.setSubqueryEndTime(System.currentTimeMillis());
@@ -470,13 +465,14 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 //        metrics.setNumberOfRecords((long) tuples.size());
 //        System.out.println(tuples.size());
 
-            metrics.setTotalTime(System.currentTimeMillis() - start);
-
 //        tuples.clear();
 //        System.out.println(String.format("%d tuples are found on file %s", tuples.size(), fileName));
 //            System.out.println(String.format("chunk name %s has been finished !!!", subQuery.getFileName()));
 
         } finally {
+            if (fileSystemHandler != null)
+                fileSystemHandler.closeFile();
+
             collector.emit(Streams.FileSystemQueryStream, new Values(subQuery, serializedDataTuples, metrics));
 
             if (!config.SHUFFLE_GROUPING_FLAG) {

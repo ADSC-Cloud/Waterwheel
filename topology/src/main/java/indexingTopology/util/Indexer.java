@@ -113,9 +113,11 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
     private TopologyConfig config;
 
+    private Thread debuggerThread;
+
     public Indexer(int taskId, LinkedBlockingQueue<DataTuple> inputQueue, DataSchema schema,
                    ArrayBlockingQueue<SubQuery<DataType>> queryPendingQueue, TopologyConfig config) {
-
+        debugger = new QueryDebugger();
         this.config = config;
 
         pendingQueue = new ArrayBlockingQueue<>(1024);
@@ -188,6 +190,20 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
         createIndexingThread();
 
         createQueryThread();
+
+        debuggerThread = new Thread(()->{
+            while (true) {
+                try {
+                    Thread.sleep(10000);
+                    System.out.println(debugger.info);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    Thread.interrupted();
+                    break;
+                }
+            }
+        });
+        debuggerThread.start();
     }
 
     public void setBloomFilterIndexedColumns(List<String> columns) {
@@ -275,6 +291,8 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
         for (Thread queryThread : queryThreads) {
             queryThread.interrupt();
         }
+
+        debuggerThread.interrupt();
     }
 
 
@@ -583,18 +601,21 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
 
 
+
+    class QueryDebugger {
+        String info = "";
+    }
+
+    QueryDebugger debugger;
+
     class QueryRunnable implements Runnable {
         @Override
         public void run() {
 //            while (true) {
             while (!Thread.currentThread().isInterrupted()) {
 
-//                try {
-//                    processQuerySemaphore.acquire();
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
 
+                debugger.info = "Indexer: B1";
                 SubQuery<DataType> subQuery = null;
 
                 try {
@@ -604,25 +625,31 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                     continue;
 //                    e.printStackTrace();
                 }
-
+                debugger.info = "Indexer: B2";
 
                 Long queryId = subQuery.getQueryId();
                 DataType leftKey = subQuery.getLeftKey();
                 DataType rightKey = subQuery.getRightKey();
                 Long startTimestamp = subQuery.getStartTimestamp();
                 Long endTimestamp = subQuery.getEndTimestamp();
-
-                lock.lock();
-
+                debugger.info = "Indexer: B3";
                 List<byte[]> serializedTuples = new ArrayList<>();
-                serializedTuples.addAll(bTree.searchRange(leftKey, rightKey));
-
-                List<BTree> bTrees = new ArrayList<>(domainToBTreeMapping.values());
-                for (BTree bTree : bTrees) {
+                lock.lock();
+                try {
+                    debugger.info = "Indexer: B4";
                     serializedTuples.addAll(bTree.searchRange(leftKey, rightKey));
-                }
-                lock.unlock();
 
+                    debugger.info = "Indexer: B5";
+                    List<BTree> bTrees = new ArrayList<>(domainToBTreeMapping.values());
+                    for (BTree bTree : bTrees) {
+                        serializedTuples.addAll(bTree.searchRange(leftKey, rightKey));
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    lock.unlock();
+                }
+                debugger.info = "Indexer: B6";
                 List<DataTuple> dataTuples = new ArrayList<>();
 
 
@@ -635,13 +662,13 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                         }
                     }
                 }
-
+                debugger.info = "Indexer: B7";
                 if (subQuery.getAggregator() != null) {
                     Aggregator.IntermediateResult intermediateResult = subQuery.getAggregator().createIntermediateResult();
                     subQuery.getAggregator().aggregate(dataTuples, intermediateResult);
                     dataTuples = subQuery.getAggregator().getResults(intermediateResult).dataTuples;
                 }
-
+                debugger.info = "Indexer: B8";
                 List<byte[]> serializedQueryResults = new ArrayList<>();
                 for(DataTuple dataTuple: dataTuples) {
                     if (subQuery.getAggregator() != null) {
@@ -651,7 +678,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                         serializedQueryResults.add(schema.serializeTuple(dataTuple));
                     }
                 }
-
+                debugger.info = "Indexer: B9";
 //                processQuerySemaphore.release();
 
                 try {
@@ -660,9 +687,11 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                     Thread.currentThread().interrupt();
 //                    e.printStackTrace();
                 }
-
+                debugger.info = "Indexer: B10";
                 setChanged();
                 notifyObservers("query result");
+                debugger.info = "Indexer: B11";
+//                System.out.println(String.format("Indexer: query %d on B+tree finished!", queryId));
             }
 
         }
@@ -686,6 +715,10 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
         return fileInformation;
     }
 
+    public FileInformation tryToGetFileInformation() {
+        return informationToUpdatePendingQueue.poll();
+    }
+
     public Pair getQueryResult() {
         Pair pair = null;
         try {
@@ -696,8 +729,16 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
         return pair;
     }
 
+    public Pair tryToGetQueryResult() {
+        return queryResultQueue.poll();
+    }
+
     public TrackedDataTuple getTrackedDataTuple() throws InterruptedException {
         return trackedDataTupleQueue.take();
+    }
+
+    public TrackedDataTuple tryToGetTrackedDataTuple() {
+        return trackedDataTupleQueue.poll();
     }
 
     public MemChunk getChunk() {
@@ -716,19 +757,19 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
             kryo.writeObject(output, bTree);
             byte[] templateBytesToWrite = output.toBytes();
 
-
+            output.close();
             output = new Output(4);
             int templateLength = templateBytesToWrite.length;
             output.writeInt(templateLength);
 
 
             byte[] templateLengthBytesToWrite = output.toBytes();
-
+            output.close();
             output = new Output(4);
             int chunkLength = leafBytesToWrite.length + 4 + templateLength;
             output.writeInt(chunkLength);
             byte[] chunkLengthBytesToWrite = output.toBytes();
-
+            output.close();
 
             chunk = MemChunk.createNew(leafBytesToWrite.length + 4 + templateLength + 4);
 
@@ -736,7 +777,6 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
             chunk.write(templateLengthBytesToWrite);
             chunk.write(templateBytesToWrite);
             chunk.write(leafBytesToWrite);
-            output.close();
         } else {
             Output output = new Output(6000000, 500000000);
 
@@ -745,7 +785,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
             kryo.writeObject(output, bTree);
             byte[] templateBytesToWrite = output.toBytes();
 
-
+            output.close();
             output = new Output(4);
             int templateLength = templateBytesToWrite.length;
             output.writeInt(templateLength);

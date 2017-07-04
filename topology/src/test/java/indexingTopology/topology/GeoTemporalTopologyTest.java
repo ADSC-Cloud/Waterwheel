@@ -146,7 +146,8 @@ public class GeoTemporalTopologyTest extends TestCase {
 
             try {
                 // wait for the completion of insertion.
-                Thread.sleep(2000);
+                clientBatchMode.waitFinish();
+                Thread.sleep(3000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -201,7 +202,7 @@ public class GeoTemporalTopologyTest extends TestCase {
         assertTrue(fullyExecuted);
 
         cluster.shutdown();
-        Thread.sleep(1000);
+        Thread.sleep(5000);
     }
 
     @Test
@@ -295,6 +296,7 @@ public class GeoTemporalTopologyTest extends TestCase {
 
             try {
                 // wait for the completion of insertion.
+                clientBatchMode.waitFinish();
                 Thread.sleep(3000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -362,6 +364,6 @@ public class GeoTemporalTopologyTest extends TestCase {
         assertTrue(fullyExecuted);
 
         cluster.shutdown();
-        Thread.sleep(1000);
+        Thread.sleep(5000);
     }
 }

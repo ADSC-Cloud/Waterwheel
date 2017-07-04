@@ -370,6 +370,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		}
 
 		byte[] returnBytes = output.toBytes();
+		output.close();
 		return returnBytes;
 	}
 

@@ -34,7 +34,7 @@ public class TopologyConfig implements Serializable {
 
     public final double LOAD_BALANCE_THRESHOLD = 0.2;
 
-    public boolean HDFSFlag = false;
+    public boolean HDFSFlag = true;
 
     public boolean HybridStorage = false;
 
@@ -43,7 +43,7 @@ public class TopologyConfig implements Serializable {
     public boolean ChunkOrientedCaching = true;
 
 //    public static String dataDir = "/Users/Robert/Documents/data";
-    public String dataDir = "/home/acelzj/data";
+    public String dataDir = "/home/robert/data";
 
 //    public static String dataDir = "/home/acelzj/data";                                                   
 
@@ -92,5 +92,5 @@ public class TopologyConfig implements Serializable {
     public final boolean TASK_QUEUE_MODEL = false;
 
     // parallelism configuration
-    public int CHUNK_SCANNER_PER_NODE = 1;
+    public int CHUNK_SCANNER_PER_NODE = 2;
 }

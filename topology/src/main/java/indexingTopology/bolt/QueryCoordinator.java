@@ -1,6 +1,7 @@
 package indexingTopology.bolt;
 
 import com.google.common.hash.BloomFilter;
+import indexingTopology.bloom.BloomFilterStore;
 import indexingTopology.bloom.DataChunkBloomFilters;
 import indexingTopology.bolt.metrics.LocationInfo;
 import indexingTopology.common.data.DataSchema;
@@ -30,8 +31,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -57,9 +58,11 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private transient Map<Integer, Long> indexTaskToTimestampMapping;
 
-    private ArrayBlockingQueue<SubQuery> taskQueue;
+    private ArrayBlockingQueue<SubQueryOnFile> taskQueue;
 
-    private transient Map<Integer, ArrayBlockingQueue<SubQuery>> taskIdToTaskQueue;
+    private transient Map<Integer, PriorityBlockingQueue<SubQueryOnFileWithPriority>> taskIdToTaskQueue;
+
+    private HashSet<String> unprocessedSubqueries;
 
     private BalancedPartition balancedPartition;
 
@@ -79,7 +82,9 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private Thread queryHandlingThread;
 
-    private Map<String, Map<String, BloomFilter>> columnToChunkToBloomFilter;
+//    private Map<String, Map<String, BloomFilter>> columnToChunkToBloomFilter;
+
+    private BloomFilterStore bloomFilterStore;
 
     TopologyConfig config;
 
@@ -87,11 +92,15 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private Map<String, Set<Integer>> locationToChunkServerIds;
 
+    private Map<Integer, String> chunkServerIdToLocation;
+
     private DataSchema schema;
 
     private static final Logger LOG = LoggerFactory.getLogger(QueryCoordinator.class);
 
     private FileSystem fileSystem;
+
+    private HashMap<String, String[]> chunkNameToPreferredHostsMapping;
 
     public QueryCoordinator(T lowerBound, T upperBound, TopologyConfig config, DataSchema schema) {
         this.lowerBound = lowerBound;
@@ -106,9 +115,17 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
         collector = outputCollector;
 
+        bloomFilterStore = new BloomFilterStore(config);
+
         ingestionServerIdToLocations = new HashMap<>();
 
         locationToChunkServerIds = new HashMap<>();
+
+        chunkServerIdToLocation = new HashMap<>();
+
+        unprocessedSubqueries = new HashSet<>();
+
+        chunkNameToPreferredHostsMapping = new HashMap<>();
 
         concurrentQueriesSemaphore = new Semaphore(MAX_NUMBER_OF_CONCURRENT_QUERIES);
 //        queryId = 0;
@@ -118,20 +135,9 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
         queryServers = topologyContext.getComponentTasks("ChunkScannerBolt");
 
-//        System.out.println("query sever ids " + queryServers);
-        taskIdToTaskQueue = new HashMap<Integer, ArrayBlockingQueue<SubQuery>>();
-//        queryServers = new ArrayList<Integer>();
-//        for (String componentId : componentIds) {
-//            queryServers.addAll(topologyContext.getComponentTasks(componentId));
-//        }
+        taskIdToTaskQueue = new HashMap<>();
         createTaskQueues(queryServers);
 
-        
-//        componentIds = topologyContext.getThisTargets().get(Streams.BPlusTreeQueryStream).keySet();
-//        indexServers = new ArrayList<Integer>();
-//        for (String componentId : componentIds) {
-//            indexServers.addAll(topologyContext.getComponentTasks(componentId));
-//        }
         indexServers = topologyContext.getComponentTasks("IndexerBolt");
 
 
@@ -149,8 +155,6 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
         balancedPartitionToBeDeleted = null;
 
         pendingQueue = new LinkedBlockingQueue<>();
-
-        columnToChunkToBloomFilter = new HashMap<>();
 
         try {
             fileSystem = new HdfsFileSystemHandler(config.dataDir, config).getFileSystem();
@@ -176,11 +180,17 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
             DataChunkBloomFilters bloomFilters = (DataChunkBloomFilters)tuple.getValueByField("bloomFilters");
 
+
             for(String column: bloomFilters.columnToBloomFilter.keySet()) {
-                Map<String, BloomFilter> chunkNameToFilter = columnToChunkToBloomFilter.computeIfAbsent(column, t->
-                    new ConcurrentHashMap<>());
-                chunkNameToFilter.put(fileName, bloomFilters.columnToBloomFilter.get(column));
-                System.out.println(String.format("A bloom filter is added for chunk: %s, column: %s", fileName, column));
+//                Map<String, BloomFilter> chunkNameToFilter = columnToChunkToBloomFilter.computeIfAbsent(column, t->
+//                    new ConcurrentHashMap<>());
+//                chunkNameToFilter.put(fileName, bloomFilters.columnToBloomFilter.get(column));
+                try {
+                    bloomFilterStore.store(new BloomFilterStore.BloomFilterId(fileName, column), bloomFilters.columnToBloomFilter.get(column));
+                    System.out.println(String.format("A bloom filter is added for chunk: %s, column: %s", fileName, column));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         } else if (tuple.getSourceStreamId().equals(Streams.QueryFinishedStream)) {
             Long queryId = tuple.getLong(0);
@@ -272,6 +282,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
                 case Query:
                     Set<Integer> taskIds = locationToChunkServerIds.computeIfAbsent(info.location, t -> new HashSet<>());
                     taskIds.add(info.taskId);
+                    chunkServerIdToLocation.put(info.taskId, info.location);
                     break;
             }
             // TODO: handle location update logic, e.g., update a location from a value to a different value.
@@ -350,15 +361,25 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 //                    System.out.println("equivalentPredicate is null.");
 //                }
 
-                if (query.equivalentPredicate != null && columnToChunkToBloomFilter.containsKey(query.equivalentPredicate.column)) {
-                    BloomFilter bloomFilter = columnToChunkToBloomFilter.get(query.equivalentPredicate.column).get(chunkName);
-                    if (bloomFilter != null && !bloomFilter.mightContain(query.equivalentPredicate.value)) {
-                        prunedByBloomFilter = true;
+                if (query.equivalentPredicate != null) {
+                    BloomFilterStore.BloomFilterId id = new BloomFilterStore.BloomFilterId(chunkName, query.equivalentPredicate.column);
+                    long start = System.currentTimeMillis();
+                    BloomFilter filter = bloomFilterStore.get(id);
+                    System.out.println(String.format("bloom filter fetch time: %d ms.", System.currentTimeMillis() - start));
+                    if (filter != null) {
+                        prunedByBloomFilter = !bloomFilterStore.get(id).mightContain(query.equivalentPredicate.value);
                     }
-//                    else {
-//                        System.out.println("Failed to prune by bloom filter.");
-//                    }
                 }
+
+//                if (query.equivalentPredicate != null && columnToChunkToBloomFilter.containsKey(query.equivalentPredicate.column)) {
+//                    BloomFilter bloomFilter = columnToChunkToBloomFilter.get(query.equivalentPredicate.column).get(chunkName);
+//                    if (bloomFilter != null && !bloomFilter.mightContain(query.equivalentPredicate.value)) {
+//                        prunedByBloomFilter = true;
+//                    }
+////                    else {
+////                        System.out.println("Failed to prune by bloom filter.");
+////                    }
+//                }
 
                 if (!prunedByBloomFilter) {
                     subQueries.add(new SubQueryOnFile<>(queryId, leftKey, rightKey, chunkName, startTimestamp, endTimestamp,
@@ -389,7 +410,9 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             System.out.println(String.format("%d subqueries have been merged into %d subqueires",
                     numberOfSubqueryBeforeMerging, numberOfSubqueryAfterMerging));
 
-            for (SubQuery subQuery: subQueries) {
+            for (SubQueryOnFile subQuery: subQueries) {
+                unprocessedSubqueries.add(subQuery.getFileName());
+
                 if (config.SHUFFLE_GROUPING_FLAG) {
                     sendSubqueriesByshuffleGrouping(subQuery);
                 } else if (config.TASK_QUEUE_MODEL) {
@@ -504,7 +527,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private void createTaskQueues(List<Integer> targetTasks) {
         for (Integer taskId : targetTasks) {
-            ArrayBlockingQueue<SubQuery> taskQueue = new ArrayBlockingQueue<SubQuery>(config.TASK_QUEUE_CAPACITY);
+            PriorityBlockingQueue<SubQueryOnFileWithPriority> taskQueue = new PriorityBlockingQueue<>(config.TASK_QUEUE_CAPACITY);
             taskIdToTaskQueue.put(taskId, taskQueue);
         }
     }
@@ -595,99 +618,109 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
         return queryServers.get(index);
     }
 
-    private int getPreferredQueryServerId(String fileName) {
+    private List<Integer> getPreferredQueryServerIds(String fileName) {
+        List<Integer> ids = new ArrayList<>();
         if (config.HybridStorage) {
             Integer insertionServerId = extractInsertionServerId(fileName);
             if (insertionServerId == null) {
                 System.out.println("Fail to extract insertion server id from chunk name," +
                         " using hashing dispatch instead.");
-                return getPreferredLocationByHashing(fileName);
+                ids.add(getPreferredLocationByHashing(fileName));
+                return ids;
             }
 
             String location = ingestionServerIdToLocations.get(insertionServerId);
             if (location == null) {
                 System.out.println("ingestionServerIdToLocations info is not available," +
                         " using hashing dispatch instead.");
-                return getPreferredLocationByHashing(fileName);
+                ids.add(getPreferredLocationByHashing(fileName));
+                return ids;
             }
             Set<Integer> candidates = locationToChunkServerIds.get(location);
 
             if (candidates == null || candidates.size() == 0) {
                 System.out.println("locationToChunkServerIds info is not available," +
                         " using hashing dispatch instead.");
-                return getPreferredLocationByHashing(fileName);
+                ids.add(getPreferredLocationByHashing(fileName));
+                return ids;
             }
 
             int randomIndex = new Random().nextInt(candidates.size());
 
 //            System.out.println("Select Task " + new ArrayList<>(candidates).get(randomIndex) + " among " + candidates.size() + " as the target query server. ");
-
-            return new ArrayList<>(candidates).get(randomIndex);
+            ids.addAll(candidates);
+            return ids;
         } else if (config.HDFSFlag && config.HdfsTaskLocality) {
-            Path path = new Path(config.dataDir + "/" + fileName);
-            Long fileLength = 0L;
-            try {
-                fileLength = fileSystem.getFileStatus(path).getLen();
-            } catch (IOException e) {
-                e.printStackTrace();
+            Set<Integer> candidates = new HashSet<>();
+            String[] locations = new String[0];
+            if (chunkNameToPreferredHostsMapping.containsKey(fileName)) {
+                locations = chunkNameToPreferredHostsMapping.get(fileName);
+            } else {
+
+
+                Path path = new Path(config.dataDir + "/" + fileName);
+                Long fileLength = 0L;
+                try {
+                    fileLength = fileSystem.getFileStatus(path).getLen();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                BlockLocation[] blockLocations;
+//            String location = null;
+                try {
+                    blockLocations = fileSystem.getFileBlockLocations(path, 0, fileLength);
+                    BlockLocation blockLocation = blockLocations[new Random().nextInt(blockLocations.length)];
+                    locations = blockLocation.getHosts();
+                    chunkNameToPreferredHostsMapping.put(fileName, locations);
+//                int randomIndex = new Random().nextInt(locations.length);
+//                location = locations[randomIndex];
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
 
-            BlockLocation[] blockLocations;
-            String[] locations;
-            String location = null;
-            try {
-                blockLocations = fileSystem.getFileBlockLocations(path, 0, fileLength);
-                BlockLocation blockLocation = blockLocations[new Random().nextInt(blockLocations.length)];
-                locations = blockLocation.getHosts();
-
-                int randomIndex = new Random().nextInt(locations.length);
-                location = locations[randomIndex];
-            } catch (IOException e) {
-                e.printStackTrace();
+            for (String location: locations) {
+                candidates.addAll(locationToChunkServerIds.get(location));
             }
-
-            Set<Integer> candidates = locationToChunkServerIds.get(location);
-
-            if (candidates == null || candidates.size() == 0) {
+            if (candidates.size() == 0) {
                 System.out.println("locationToChunkServerIds info is not available," +
                         " using hashing dispatch instead.");
-                return getPreferredLocationByHashing(fileName);
+                ids.add(getPreferredLocationByHashing(fileName));
+                return ids;
             }
 
-            int randomIndex = new Random().nextInt(candidates.size());
-
-//            System.out.println("Select Task " + new ArrayList<>(candidates).get(randomIndex) + " among " + candidates.size() + " as the target query server. ");
-
-            return new ArrayList<>(candidates).get(randomIndex);
+            ids.addAll(candidates);
+            return ids;
+        } else {
+            int index = Math.abs(fileName.hashCode()) % queryServers.size();
+            ids.add(queryServers.get(index));
+            return ids;
         }
-
-        int index = Math.abs(fileName.hashCode()) % queryServers.size();
-        return queryServers.get(index);
     }
 
 
 
-    private void putSubqueryToTaskQueues(SubQuery subQuery) {
-        String fileName = ((SubQueryOnFile) subQuery).getFileName();
+    private void putSubqueryToTaskQueues(SubQueryOnFile subQuery) {
+        String fileName = subQuery.getFileName();
 
-        Integer taskId = getPreferredQueryServerId(fileName);
+        List<Integer> taskIds = getPreferredQueryServerIds(fileName);
 
+        Collections.sort(taskIds);
+        Collections.shuffle(taskIds, new Random(subQuery.getFileName().hashCode()));
 
-
-        ArrayBlockingQueue<SubQuery> taskQueue = taskIdToTaskQueue.get(taskId);
-        try {
-            taskQueue.put(subQuery);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        for(int i = 0; i < taskIds.size(); i++) {
+            PriorityBlockingQueue<SubQueryOnFileWithPriority> taskQueue = taskIdToTaskQueue.get(taskIds.get(i));
+                taskQueue.put(new SubQueryOnFileWithPriority(subQuery,i));
         }
-        taskIdToTaskQueue.put(taskId, taskQueue);
     }
 
 
     private void sendSubqueriesFromTaskQueue() {
         for (Integer taskId : queryServers) {
-            SubQuery subQuery = taskQueue.poll();
+            SubQueryOnFile subQuery = taskQueue.poll();
             if (subQuery != null) {
+                unprocessedSubqueries.remove(subQuery.getFileName());
                 collector.emitDirect(taskId, Streams.FileSystemQueryStream, new Values(subQuery));
             }
         }
@@ -695,14 +728,6 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private void sendSubqueriesFromTaskQueues() {
         for (Integer taskId : queryServers) {
-//            ArrayBlockingQueue<SubQuery> taskQueue = taskIdToTaskQueue.get(taskId);
-//            SubQuery subQuery = taskQueue.poll();
-//            if (subQuery != null) {
-//
-//                collector.emitDirect(taskId, Streams.FileSystemQueryStream
-//                        , new Values(subQuery));
-//
-//            }
             sendSubquery(taskId);
         }
     }
@@ -714,9 +739,10 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
 
     private void sendSubqueryToTask(int taskId) {
-        SubQuery subQuery = taskQueue.poll();
+        SubQueryOnFile subQuery = taskQueue.poll();
 
         if (subQuery != null) {
+            unprocessedSubqueries.remove(subQuery.getFileName());
             collector.emitDirect(taskId, Streams.FileSystemQueryStream, new Values(subQuery));
         }
     }
@@ -724,28 +750,43 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
 
     private void sendSubquery(int taskId) {
-        ArrayBlockingQueue<SubQuery> taskQueue = taskIdToTaskQueue.get(taskId);
+        SubQueryOnFileWithPriority subQuery = null;
 
-        SubQuery subQuery = taskQueue.poll();
+        while (subQuery == null) {
 
-        if (subQuery == null) {
-            taskQueue = getLongestQueue();
+            PriorityBlockingQueue<SubQueryOnFileWithPriority> taskQueue = taskIdToTaskQueue.get(taskId);
+
             subQuery = taskQueue.poll();
-        }
 
+            if (subQuery == null) {
+                taskQueue = getLongestQueue();
+                if (taskQueue.size() > 0)
+                    subQuery = taskQueue.poll();
+                else
+                    break;
+
+            }
+            if (!unprocessedSubqueries.contains(subQuery.getFileName()))
+                subQuery = null;
+        }
         if (subQuery != null) {
+            unprocessedSubqueries.remove(subQuery.getFileName());
             collector.emitDirect(taskId, Streams.FileSystemQueryStream
                     , new Values(subQuery));
+            System.out.println(String.format("subquery %d is sent to %s for %s", subQuery.queryId,
+                    chunkServerIdToLocation.get(taskId), subQuery.getFileName()));
         }
+
     }
 
-    private ArrayBlockingQueue<SubQuery> getLongestQueue() {
-        List<ArrayBlockingQueue<SubQuery>> taskQueues
-                = new ArrayList<ArrayBlockingQueue<SubQuery>>(taskIdToTaskQueue.values());
+    private PriorityBlockingQueue<SubQueryOnFileWithPriority> getLongestQueue() {
+
+        List<PriorityBlockingQueue<SubQueryOnFileWithPriority>> taskQueues = new ArrayList<>();
+        taskQueues.addAll(taskIdToTaskQueue.values());
 
         Collections.sort(taskQueues, (taskQueue1, taskQueue2) -> Integer.compare(taskQueue2.size(), taskQueue1.size()));
 
-        ArrayBlockingQueue<SubQuery> taskQueue = taskQueues.get(0);
+        PriorityBlockingQueue<SubQueryOnFileWithPriority> taskQueue = taskQueues.get(0);
 
         return taskQueue;
     }

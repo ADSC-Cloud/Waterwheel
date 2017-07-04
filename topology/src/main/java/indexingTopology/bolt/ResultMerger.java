@@ -15,6 +15,7 @@ import indexingTopology.common.data.DataSchema;
 import indexingTopology.streams.Streams;
 import indexingTopology.util.FileScanMetrics;
 
+import java.net.InetAddress;
 import java.util.*;
 
 /**
@@ -118,7 +119,6 @@ public class ResultMerger extends BaseRichBolt {
                 FileScanMetrics fileScanMetrics = (FileScanMetrics) tuple.getValueByField("metrics");
 //                        System.out.println(queryId + "has been finished");
 
-
                 System.out.println("Subquery on file debug: " + fileScanMetrics.debugInfo);
 
                 if (queryIdToTaskIdToTimeMapping.get(queryId) == null) {
@@ -195,11 +195,11 @@ public class ResultMerger extends BaseRichBolt {
 
     private boolean isQueryFinished(Long queryId) {
 
-//        System.out.println(String.format("query: %d, numberOfFilesToScan: %s -> %s, B+ tree to scan: %s, Count: %s", queryId,
-//                queryIdToNumberOfFilesToScan.get(queryId),
-//                queryIdToNumberOfQueriesOnFileFinished.get(queryId),
-//                queryIdToNumberOfTasksToSearch.get(queryId),
-//                queryIdToCounter.get(queryId)));
+        System.out.println(String.format("query: %d, numberOfFilesToScan: %s -> %s, B+ tree to scan: %s, Count: %s", queryId,
+                queryIdToNumberOfFilesToScan.get(queryId),
+                queryIdToNumberOfQueriesOnFileFinished.get(queryId),
+                queryIdToNumberOfTasksToSearch.get(queryId),
+                queryIdToCounter.get(queryId)));
         if (queryIdToNumberOfFilesToScan.get(queryId) != null &&
                 queryIdToNumberOfTasksToSearch.get(queryId) != null) {
             int numberOfFilesToScan = queryIdToNumberOfFilesToScan.get(queryId);

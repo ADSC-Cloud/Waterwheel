@@ -11,9 +11,7 @@ import org.apache.hadoop.fs.Path;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 /**
  * Created by dmir on 10/26/16.
@@ -58,56 +56,98 @@ public class HdfsFileSystemHandler implements FileSystemHandler {
 //        } catch (IOException e) {
 //            e.printStackTrace();
 //        }
-        Runnable writingTask = new Runnable() {
+
+        Callable<Boolean> writingTask = new Callable<Boolean>() {
             @Override
-            public void run() {
+            public Boolean call() throws Exception {
                 FSDataOutputStream fsDataOutputStream = null;
                 try {
                     fsDataOutputStream = fileSystem.append(path);
                     fsDataOutputStream.write(bytes);
-//                    fsDataOutputStream.close();
+                    return true;
                 } catch (IOException e) {
                     e.printStackTrace();
+                } finally {
+                    if (fsDataOutputStream != null)
+                        try {
+                            fsDataOutputStream.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                 }
+                return false;
             }
         };
 
-        Future future = executorService.submit(writingTask);
+//        Runnable writingTask = new Runnable() {
+//            @Override
+//            public void run() {
+//                FSDataOutputStream fsDataOutputStream = null;
+//                try {
+//                    fsDataOutputStream = fileSystem.append(path);
+//                    fsDataOutputStream.write(bytes);
+//                    fsDataOutputStream.close();
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        };
+
+        Future<Boolean> future = executorService.submit(writingTask);
 
         Integer waitingTime = 0;
 
         int retries = 0;
 
         int maxRetries = 5;
-        while (retries < maxRetries) {
-            while (waitingTime < waitingTimeInMilliSecond) {
-                if (future.isDone()) {
-                    executorService.shutdown();
-                    break;
-                } else {
-                    try {
-                        Thread.sleep(10);
-                        waitingTime += 10;
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
 
-            if (!future.isDone()) {
-                future.cancel(true);
-                executorService.submit(writingTask);
-                ++retries;
-                waitingTime = 0;
-            } else {
-                executorService.shutdown();
+        boolean success = false;
+        while (retries <= maxRetries && !success) {
+
+            try {
+                success = future.get(15, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
                 break;
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            } catch (TimeoutException e) {
+                e.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
+            retries++;
         }
+        executorService.shutdownNow();
+
+//        while (retries < maxRetries) {
+//            while (waitingTime < waitingTimeInMilliSecond) {
+//                if (future.isDone()) {
+//                    executorService.shutdown();
+//                    break;
+//                } else {
+//                    try {
+//                        Thread.sleep(10);
+//                        waitingTime += 10;
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            }
+//
+//            if (!future.isDone()) {
+//                future.cancel(true);
+//                executorService.submit(writingTask);
+//                ++retries;
+//                waitingTime = 0;
+//            } else {
+//                executorService.shutdown();
+//                break;
+//            }
+//        }
 
         if (retries == maxRetries) {
-            System.err.println("Writing tries exceed max retries");
-            throw new RuntimeException();
+            throw new IOException("Writing " + fileName + " to HDFS fails: writing retries exceed 5. ");
         }
 //        FSDataOutputStream fsDataOutputStream = fileSystem.append(path);
 //        fsDataOutputStream.write(bytes);

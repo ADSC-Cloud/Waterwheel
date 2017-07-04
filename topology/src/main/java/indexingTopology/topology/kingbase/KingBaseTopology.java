@@ -1,12 +1,9 @@
 package indexingTopology.topology.kingbase;
 
+import indexingTopology.bolt.*;
 import indexingTopology.common.aggregator.AggregateField;
 import indexingTopology.common.aggregator.Aggregator;
 import indexingTopology.common.aggregator.Count;
-import indexingTopology.bolt.GeoTemporalQueryCoordinatorWithQueryReceiverServer;
-import indexingTopology.bolt.InputStreamReceiver;
-import indexingTopology.bolt.InputStreamReceiverServer;
-import indexingTopology.bolt.QueryCoordinator;
 import indexingTopology.api.client.GeoTemporalQueryClient;
 import indexingTopology.api.client.GeoTemporalQueryRequest;
 import indexingTopology.api.client.IngestionClientBatchMode;
@@ -31,14 +28,18 @@ import org.apache.storm.metric.internal.RateTracker;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.SocketTimeoutException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Function;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -154,7 +155,9 @@ public class KingBaseTopology {
                         System.currentTimeMillis(), predicate, aggregator, null, equivalentPredicateHint);
                 long start = System.currentTimeMillis();
                 try {
-                    System.out.println("A query will be issued.");
+                    DateFormat dateFormat = new SimpleDateFormat("MM-dd HH:mm:ss");
+                    Calendar cal = Calendar.getInstance();
+                    System.out.println("[" + dateFormat.format(cal.getTime()) + "]: A query will be issued.");
                     QueryResponse response = queryClient.query(queryRequest);
                     System.out.println("A query finished.");
                     long end = System.currentTimeMillis();
@@ -263,7 +266,9 @@ public class KingBaseTopology {
                     e.printStackTrace();
                     break;
                 }
-                System.out.println("Insertion throughput: " + rateTracker.reportRate());
+                DateFormat dateFormat = new SimpleDateFormat("MM-dd HH:mm:ss");
+                Calendar cal = Calendar.getInstance();
+                System.out.println("[" + dateFormat.format(cal.getTime()) + "]: " + rateTracker.reportRate() + " tuples/s");
             }
         }).start();
     }

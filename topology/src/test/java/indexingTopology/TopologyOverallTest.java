@@ -17,11 +17,11 @@ import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 import indexingTopology.common.logics.DataTupleMapper;
 import indexingTopology.util.TopologyGenerator;
+import junit.framework.TestCase;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
 import org.apache.storm.generated.StormTopology;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -31,7 +31,7 @@ import java.util.function.Function;
 /**
  * Created by robert on 10/3/17.
  */
-public class TopologyOverallTest {
+public class TopologyOverallTest extends TestCase {
 
     TopologyConfig config = new TopologyConfig();
     final int ingestionPort = 10000;

@@ -132,7 +132,7 @@ public class KryoTemplateSerializerTest extends TestCase {
         kryo.writeObject(output, indexedData);
 
         byte[] bytes = output.toBytes();
-
+        output.close();
         Input input = new Input(bytes);
 
         indexedData = kryo.readObject(input, BTree.class);
@@ -222,12 +222,13 @@ public class KryoTemplateSerializerTest extends TestCase {
             int lengthOfTemplate = bytes.length;
 
 //            System.out.println(lengthOfTemplate);
-
+            output.close();
             output = new Output(4);
 
             output.writeInt(lengthOfTemplate);
 
             byte[] lengthInBytes = output.toBytes();
+            output.close();
 
             MemChunk chunk = MemChunk.createNew(4 + lengthOfTemplate + leavesInBytes.length);
 
