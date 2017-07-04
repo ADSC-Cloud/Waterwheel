@@ -139,9 +139,11 @@ public class Server<T extends ServerHandle> {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        executorService.shutdownNow();
-        for(Future future: futureList) {
-            future.cancel(true);
+
+        try {
+            executorService.shutdownNow();
+            for (Future future : futureList) {
+                future.cancel(true);
 //            while (future.isDone()) {
 //                System.err.println("Waiting a task to be done!");
 //                try {
@@ -150,6 +152,9 @@ public class Server<T extends ServerHandle> {
 //                    e.printStackTrace();
 //                }
 //            }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

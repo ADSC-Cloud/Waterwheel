@@ -202,7 +202,7 @@ public class GeoTemporalTopologyTest extends TestCase {
         assertTrue(fullyExecuted);
 
         cluster.shutdown();
-        Thread.sleep(1000);
+        Thread.sleep(5000);
     }
 
     @Test
@@ -364,6 +364,6 @@ public class GeoTemporalTopologyTest extends TestCase {
         assertTrue(fullyExecuted);
 
         cluster.shutdown();
-        Thread.sleep(1000);
+        Thread.sleep(5000);
     }
 }
