@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.regex.Matcher;
@@ -409,7 +408,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
 
             int numberOfSubqueryBeforeMerging = subQueries.size();
-            subQueries = mergeSubqueries(subQueries);
+            subQueries = mergeSubqueriesOnFiles(subQueries);
             int numberOfSubqueryAfterMerging = subQueries.size();
 
             System.out.println(String.format("%d subqueries have been merged into %d subqueires",
@@ -450,7 +449,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
         queryIdToStartTime.put(firstQuery.queryId, new Pair<>(System.currentTimeMillis(), subQueries.size()));
     }
 
-    List<SubQueryOnFile<T>> mergeSubqueries(List<SubQueryOnFile<T>> subqueries) {
+    List<SubQueryOnFile<T>> mergeSubqueriesOnFiles(List<SubQueryOnFile<T>> subqueries) {
         final DataSchema localSchema = this.schema.duplicate();
         Map<String, List<SubQueryOnFile<T>>> fileNameToSubqueries = new HashMap<>();
         subqueries.stream().forEach(t -> {
@@ -489,19 +488,48 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
                         rightMost, firstQuery.getFileName(), firstQuery.startTimestamp,
                         firstQuery.endTimestamp, composedPredicate, firstQuery.aggregator,
                         firstQuery.sorter);
-
-
-//                firstQuery.predicate = t -> finalPredicate.test(t) && finalAdditionalPredicate.test(t);
-//                firstQuery.leftKey = leftMost;
-//                firstQuery.rightKey = rightMost;
-//                ret.add(firstQuery);
-//                byte[] bytes = SerializationUtils.serialize(subQuery);
-//                System.out.println("serialized size: " + bytes.length);
                 ret.add(subQuery);
             }
         });
 
         return ret;
+    }
+
+    private Map<Integer, SubQuery<T>> mergeSubqueriesOnInsertionServers(Map<Integer, List<SubQuery<T>>> insertionServerIdToSubqueries) {
+        final DataSchema localSchema = this.schema.duplicate();
+        Map<Integer, SubQuery<T>> insertionServerIdToCompactedSubquery = new HashMap<>();
+        insertionServerIdToSubqueries.forEach((id, subQueries) -> {
+            if (subQueries.size() > 0) {
+                SubQuery<T> first = subQueries.get(0);
+                T leftmostKey = first.leftKey;
+                T rightmostKey = first.rightKey;
+                DataTuplePredicate predicate = first.predicate;
+                if (predicate == null) {
+                    predicate = t -> true;
+                }
+
+                DataTuplePredicate additionalPredicate = t -> true;
+                for (int i = 0; i < subQueries.size(); i++) {
+                    SubQuery<T> currentSubquery = subQueries.get(i);
+                    leftmostKey = leftmostKey.compareTo(currentSubquery.leftKey) < 0 ? leftmostKey : currentSubquery.leftKey;
+                    rightmostKey = rightmostKey.compareTo(currentSubquery.rightKey) > 0 ? rightmostKey : currentSubquery.rightKey;
+                    DataTuplePredicate finalAdditionalPredicate1 = additionalPredicate;
+                    additionalPredicate = t -> finalAdditionalPredicate1.test(t) ||
+                            (currentSubquery.leftKey.compareTo((T)localSchema.getIndexValue(t)) <= 0 &&
+                                    currentSubquery.rightKey.compareTo((T)localSchema.getIndexValue(t)) >=0);
+                }
+
+                DataTuplePredicate finalAddtionalPredicate = additionalPredicate;
+                DataTuplePredicate finalPredicate = predicate;
+
+                DataTuplePredicate composedPredicate = t -> finalPredicate.test(t) && finalAddtionalPredicate.test(t);
+
+                SubQuery<T> subquery = new SubQuery<T>(first.queryId,leftmostKey, rightmostKey, first.startTimestamp,
+                        first.endTimestamp, composedPredicate, first.aggregator, first.sorter);
+                insertionServerIdToCompactedSubquery.put(id, subquery);
+            }
+        });
+        return insertionServerIdToCompactedSubquery;
     }
 
     private void createQueryHandlingThread() {
@@ -539,6 +567,9 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
     private void generateSubQueriesOnTheInsertionServer(List<Query<T>> queryList) {
         int numberOfTasksToSearch = 0;
         Query firstQuery = queryList.get(0);
+
+        Map<Integer, List<SubQuery<T>>> insertionSeverIdToSubqueries = new HashMap<>();
+
 //        System.out.println("Decompose subquery for " + queryList.get(0).queryId + "(on insertion servers)");
         for(Query<T> query: queryList) {
 
@@ -566,18 +597,29 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
                 Integer taskId = indexServers.get(partitionId);
                 Long timestamp = indexTaskToTimestampMapping.get(taskId);
                 if ((timestamp <= endTimestamp && timestamp >= startTimestamp) || (timestamp <= startTimestamp)) {
-                    SubQuery subQuery = new SubQuery<>(query.getQueryId(), query.leftKey, query.rightKey, query.startTimestamp,
+                    SubQuery<T> subQuery = new SubQuery<>(query.getQueryId(), query.leftKey, query.rightKey, query.startTimestamp,
                             query.endTimestamp, query.predicate, query.aggregator, query.sorter);
-                    collector.emitDirect(taskId, Streams.BPlusTreeQueryStream, new Values(subQuery));
+                    List<SubQuery<T>> subQueries = insertionSeverIdToSubqueries.computeIfAbsent(taskId, t ->new ArrayList<>());
+                    subQueries.add(subQuery);
+//                    collector.emitDirect(taskId, Streams.BPlusTreeQueryStream, new Values(subQuery));
                     ++numberOfTasksToSearch;
                 }
             }
         }
 
-        System.out.println( firstQuery.queryId+ ": " + numberOfTasksToSearch + "sub-queries on insertion servers");
+        Map<Integer, SubQuery<T>> insertionServerIdToCompactedSubquery = mergeSubqueriesOnInsertionServers(insertionSeverIdToSubqueries);
 
-        collector.emit(Streams.BPlusTreeQueryInformationStream, new Values(firstQuery.queryId, numberOfTasksToSearch));
+        System.out.println(String.format("%d subqueries on B+tree are compacted into %d", numberOfTasksToSearch,
+                insertionServerIdToCompactedSubquery.size()));
+
+        for(Integer taskId: insertionServerIdToCompactedSubquery.keySet()) {
+            collector.emitDirect(taskId, Streams.BPlusTreeQueryStream, new Values(insertionServerIdToCompactedSubquery.get(taskId)));
+        }
+
+        collector.emit(Streams.BPlusTreeQueryInformationStream, new Values(firstQuery.queryId, insertionServerIdToCompactedSubquery.size()));
     }
+
+
 
     private List<Integer> mergePartitionIds(List<Integer> partitionIdsInBalancedPartition, List<Integer> partitionIdsInStalePartition) {
         List<Integer> partitionIds = new ArrayList<>();
