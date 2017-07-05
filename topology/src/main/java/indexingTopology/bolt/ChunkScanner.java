@@ -150,8 +150,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
                 try {
                     Thread.sleep(10000);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    Thread.currentThread().interrupt();
+                    System.out.println("Debugging thread terminates.");
                     break;
                 }
                 System.out.println(String.format("Debug info: %s", debugInfo.runningPosition));
