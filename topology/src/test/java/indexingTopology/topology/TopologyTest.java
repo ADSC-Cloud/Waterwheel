@@ -132,7 +132,9 @@ public class TopologyTest extends TestCase {
         }
 
         // wait for the tuples to be appended.
-        Thread.sleep(2000);
+//        Thread.sleep(2000);
+        ingestionClient.waitFinish();
+        Thread.sleep(3000);
 
         try {
 
@@ -167,7 +169,7 @@ public class TopologyTest extends TestCase {
         assertTrue(fullyExecuted);
         cluster.shutdown();
 
-        Thread.sleep(1000);
+        Thread.sleep(5000);
     }
 
     @Test
@@ -242,7 +244,8 @@ public class TopologyTest extends TestCase {
         }
 
         // wait for the tuples to be appended.
-        Thread.sleep(2000);
+        ingestionClient.waitFinish();
+        Thread.sleep(5000);
 
         try {
 
@@ -276,7 +279,7 @@ public class TopologyTest extends TestCase {
 
         assertTrue(fullyExecuted);
         cluster.shutdown();
-        Thread.sleep(1000);
+        Thread.sleep(5000);
     }
 
     @Test
@@ -353,6 +356,7 @@ public class TopologyTest extends TestCase {
         }
 
         // wait for the tuples to be appended.
+        ingestionClient.waitFinish();
         Thread.sleep(5000);
 
         try {
@@ -416,7 +420,7 @@ public class TopologyTest extends TestCase {
 
         assertTrue(fullyExecuted);
         cluster.shutdown();
-        Thread.sleep(1000);
+        Thread.sleep(5000);
     }
 
 
@@ -494,7 +498,8 @@ public class TopologyTest extends TestCase {
         }
 
         // wait for the tuples to be appended.
-        Thread.sleep(5000);
+        ingestionClient.waitFinish();
+        Thread.sleep(3000);
 
         try {
 
@@ -557,7 +562,7 @@ public class TopologyTest extends TestCase {
 
         assertTrue(fullyExecuted);
         cluster.shutdown();
-        Thread.sleep(1000);
+        Thread.sleep(5000);
     }
 
     @Test
@@ -634,7 +639,8 @@ public class TopologyTest extends TestCase {
         }
 
         // wait for the tuples to be appended.
-        Thread.sleep(2000);
+        ingestionClient.waitFinish();
+        Thread.sleep(3000);
 
         try {
 
@@ -686,7 +692,7 @@ public class TopologyTest extends TestCase {
 
         assertTrue(fullyExecuted);
         cluster.shutdown();
-        Thread.sleep(1000);
+        Thread.sleep(5000);
     }
 
     @Test
@@ -768,7 +774,8 @@ public class TopologyTest extends TestCase {
         }
 
         // wait for the tuples to be appended.
-        Thread.sleep(2000);
+        ingestionClient.waitFinish();
+        Thread.sleep(3000);
 
         try {
 
@@ -820,7 +827,7 @@ public class TopologyTest extends TestCase {
 
         assertTrue(fullyExecuted);
         cluster.shutdown();
-        Thread.sleep(1000);
+        Thread.sleep(5000);
     }
 
     @Test
@@ -895,7 +902,8 @@ public class TopologyTest extends TestCase {
         }
 
         // wait for the tuples to be appended.
-        Thread.sleep(2000);
+        ingestionClient.waitFinish();
+        Thread.sleep(3000);
 
         try {
 
@@ -943,7 +951,7 @@ public class TopologyTest extends TestCase {
 
         assertTrue(fullyExecuted);
         cluster.shutdown();
-        Thread.sleep(1000);
+        Thread.sleep(5000);
     }
 
     @Test
@@ -1018,6 +1026,7 @@ public class TopologyTest extends TestCase {
         }
 
         // wait for the tuples to be appended.
+        ingestionClient.waitFinish();
         Thread.sleep(3000);
 
         try {
@@ -1056,6 +1065,6 @@ public class TopologyTest extends TestCase {
 
         assertTrue(fullyExecuted);
         cluster.shutdown();
-        Thread.sleep(1000);
+        Thread.sleep(5000);
     }
 }

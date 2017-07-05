@@ -80,8 +80,8 @@ public class InputStreamReceiverServer extends InputStreamReceiver {
 //                    return;
                 }
             });
-//            objectOutputStream.writeUnshared("handled the block!");
-//            objectOutputStream.reset();
+            objectOutputStream.writeUnshared("handled the block!");
+            objectOutputStream.reset();
         }
     }
 }
