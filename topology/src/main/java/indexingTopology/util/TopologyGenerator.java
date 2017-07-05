@@ -48,7 +48,7 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 //                .allGrouping(LogWriter, Streams.ThroughputRequestStream);
 
-        builder.setBolt(IndexerBolt, new IngestionBolt(dataSchema, bloomFilterColumns, config), 2 * numberOfNodes)
+        builder.setBolt(IndexerBolt, new IngestionBolt(dataSchema, bloomFilterColumns, config), config.INSERTION_SERVER_PER_NODE * numberOfNodes)
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream) // direct grouping should be used.
                 .directGrouping(RangeQueryDecompositionBolt, Streams.TreeCleanStream)

@@ -14,13 +14,13 @@ import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.TrackedDataTuple;
-import indexingTopology.filesystem.FileSystemHandler;
-import indexingTopology.filesystem.HdfsFileSystemHandler;
-import indexingTopology.filesystem.LocalFileSystemHandler;
+import indexingTopology.filesystem.*;
 import indexingTopology.exception.UnsupportedGenericException;
 import javafx.util.Pair;
 
 import java.io.IOException;
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -335,8 +335,9 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
                     FileSystemHandler fileSystemHandler = null;
 
-                    writeTreeIntoChunk();
+//                    writeTreeIntoChunk();
 
+                    /*
                     try {
                         if (config.HDFSFlag) {
                             fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
@@ -354,6 +355,53 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                             FileSystemHandler localFileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
                             start = System.currentTimeMillis();
                             localFileSystemHandler.writeToFileSystem(chunk, "/", fileName);
+                            System.out.println(String.format("File %s is written to the disk cache in %d ms", fileName,
+                                    System.currentTimeMillis() - start));
+                            System.out.println(fileName + " is written locally.");
+                        }
+
+//                        if (config.HDFSFlag) {
+//                            fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
+//                        } else {
+//                            fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+//                        }
+//                        deserilizeChunkFile(fileSystemHandler, fileName);
+
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    */
+
+
+                    try {
+
+                        WritingHandler writingHandler  = null;
+
+                        if (config.HDFSFlag) {
+                            writingHandler = new HdfsWritingHandler(config, config.dataDir, false);
+                        } else {
+                            writingHandler = new LocalWritingHandler(config.dataDir, false);
+                        }
+
+                        byte[] bytes = getTreeBytes();
+
+                        fileName = "taskId" + taskId + "chunk" + chunkId;
+                        long start = System.currentTimeMillis();
+                        System.out.println("Before writing into HDFS ###");
+                        writingHandler.openFile(fileName);
+                        writingHandler.writeToFileSystem(bytes, fileName);
+                        writingHandler.closeFile();
+                        System.out.println(String.format("File %s is written in %d ms. ###", fileName,
+                                System.currentTimeMillis() - start));
+
+                        if (config.HybridStorage && config.HDFSFlag) {
+                            LocalWritingHandler localWritingHandler = new LocalWritingHandler(config.dataDir, false);
+                            start = System.currentTimeMillis();
+                            localWritingHandler.openFile(fileName);
+                            localWritingHandler.writeToFileSystem(bytes, fileName);
+                            localWritingHandler.closeFile();
+//                            localFileSystemHandler.writeToFileSystem(chunk, "/", fileName);
                             System.out.println(String.format("File %s is written to the disk cache in %d ms", fileName,
                                     System.currentTimeMillis() - start));
                             System.out.println(fileName + " is written locally.");
@@ -796,9 +844,44 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
             chunk.write(templateLengthBytesToWrite);
             chunk.write(templateBytesToWrite);
             chunk.write(leafBytesToWrite);
+
             output.close();
         }
     }
+
+
+    public byte[] getTreeBytes() {
+        Output output = new Output(6000000, 500000000);
+
+        byte[] leafBytesToWrite = bTree.serializeLeaves();
+
+        kryo.writeObject(output, bTree);
+        byte[] templateBytesToWrite = output.toBytes();
+
+
+        output = new Output(4);
+        int templateLength = templateBytesToWrite.length;
+        output.writeInt(templateLength);
+
+        byte[] templateLengthBytesToWrite = output.toBytes();
+
+        chunk = MemChunk.createNew(leafBytesToWrite.length + 4 + templateLength);
+        chunk.write(templateLengthBytesToWrite);
+        chunk.write(templateBytesToWrite);
+        chunk.write(leafBytesToWrite);
+
+        output.close();
+
+        ByteBuffer buffer = chunk.getData();
+        int size = chunk.getAllocatedSize();
+        byte[] bytes = new byte[size];
+        buffer.position(0);
+        buffer.get(bytes);
+
+        return bytes;
+    }
+
+
 
 
     private void deserilizeChunkFile(FileSystemHandler fileSystemHandler, String fileName) {

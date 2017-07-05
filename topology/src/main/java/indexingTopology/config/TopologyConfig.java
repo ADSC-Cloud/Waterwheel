@@ -8,9 +8,9 @@ import java.io.Serializable;
 public class TopologyConfig implements Serializable {
     public final double REBUILD_TEMPLATE_THRESHOLD = 10.0;
 
-    public static final String HDFS_HOST = "hdfs://192.168.0.237:54310/";
+//    public static final String HDFS_HOST = "hdfs://192.168.0.237:54310/";
 
-//    public final String HDFS_HOST = "hdfs://10.21.25.10:54310/";
+    public final String HDFS_HOST = "hdfs://10.21.25.10:54310/";
 //    public static final String HDFS_HOST = "hdfs://10.21.25.13:54310/";
 
     /**
@@ -34,7 +34,7 @@ public class TopologyConfig implements Serializable {
 
     public final double LOAD_BALANCE_THRESHOLD = 0.2;
 
-    public boolean HDFSFlag = true;
+    public boolean HDFSFlag = false;
 
     public boolean HybridStorage = false;
 
@@ -43,13 +43,13 @@ public class TopologyConfig implements Serializable {
     public boolean ChunkOrientedCaching = true;
 
 //    public static String dataDir = "/Users/Robert/Documents/data";
-    public String dataDir = "/home/robert/data";
+//    public String dataDir = "/home/robert/data";
 
-//    public static String dataDir = "/home/acelzj/data";                                                   
+    public String dataDir = "/home/robert/data";
 
 //    public static String dataDir = "./";
 
-    public String dataFileDir = "/home/acelzj/Downloads/taxi-trajectory";
+    public String dataFileDir = "/home/robert/data/t";
 //    public static String dataFileDir = "/home/lzj/dataset/20150430_processed.txt";
 //    public static String dataFileDir = "/home/acelzj/Downloads/DPI/20150430_processed.txt";
 //    public static String dataFileDir = "/home/acelzj/Downloads/DPI/20150430.txt";
@@ -93,4 +93,6 @@ public class TopologyConfig implements Serializable {
 
     // parallelism configuration
     public int CHUNK_SCANNER_PER_NODE = 2;
+
+    public int INSERTION_SERVER_PER_NODE = 2;
 }

@@ -159,7 +159,7 @@ public class TestIndexing {
 //
                 City city = new City(x1, x2, y1, y2, partitions);
 
-//                final double x1 = 0;
+//                final double destIp = 0;
 //                final double x2 = 1000;
 //                final double y1 = 0;
 //                final double y2 = 500;
@@ -173,7 +173,7 @@ public class TestIndexing {
 
                 int index = -1;
 
-//                TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
+//                TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, destIp, x2, y1, y2);
 //                RandomGenerator randomGenerator = new Well19937c();
 //                randomGenerator.setSeed(1000);
 //                KeyGenerator keyGenerator = new ZipfKeyGenerator( 200048, 0.5, randomGenerator);

@@ -591,14 +591,14 @@ public class KryoTemplateSerializerTest extends TestCase {
     public void testTemplateUpdateDeserialization() throws UnsupportedGenericException, IOException {
         final int payloadSize = 10;
 
-        final double x1 = 0;
+        final double destIp = 0;
         final double x2 = 1000;
         final double y1 = 0;
         final double y2 = 500;
         final int partitions = 100;
 
-        TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, x1, x2, y1, y2);
-        City city = new City(x1, x2, y1, y2, partitions);
+        TrajectoryGenerator generator = new TrajectoryUniformGenerator(10000, destIp, x2, y1, y2);
+        City city = new City(destIp, x2, y1, y2, partitions);
 
         int numTuples = 1024;
         Long timestamp = 0L;
