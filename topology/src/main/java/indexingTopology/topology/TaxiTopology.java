@@ -67,7 +67,7 @@ public class TaxiTopology {
         final boolean enableLoadBalance = true;
 
 //        InputStreamReceiver dataSource = new InputStreamReceiverServer(schemaWithTimestamp, 10000);
-        InputStreamReceiver dataSource = new TaxiDataGenerator(schemaWithTimestamp, city, config);
+        InputStreamReceiver dataSource = new TDriveDataSource(schemaWithTimestamp, city, config, config.dataFileDir, 150000);
 
 //        QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound, upperBound, 10001);
         QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryGenerator<>(lowerBound, upperBound,

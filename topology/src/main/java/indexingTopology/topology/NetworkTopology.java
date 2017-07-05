@@ -42,13 +42,13 @@ public class NetworkTopology {
             schemaWithTimestamp.addLongField("timestamp");
 
 
-//            final double x1 = 116.2;
+//            final double destIp = 116.2;
 //            final double x2 = 117.0;
 //            final double y1 = 39.6;
 //            final double y2 = 40.6;
 //            final int partitions = 1024;
 
-//            City city = new City(x1, x2, y1, y2, partitions);
+//            City city = new City(destIp, x2, y1, y2, partitions);
 
 
 //        Double lowerBound = 0.0;
@@ -64,7 +64,7 @@ public class NetworkTopology {
             final boolean enableLoadBalance = true;
 
 //        InputStreamReceiver dataSource = new InputStreamReceiverServer(schemaWithTimestamp, 10000);
-            InputStreamReceiver dataSource = new NetworkDataGenerator(schemaWithTimestamp, config);
+            InputStreamReceiver dataSource = new NetworkDataSource(schemaWithTimestamp, config);
 
 //        QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound, upperBound, 10001);
             QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryGenerator<>(lowerBound, upperBound,
