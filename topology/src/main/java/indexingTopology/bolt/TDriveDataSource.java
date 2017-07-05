@@ -44,10 +44,15 @@ public class TDriveDataSource extends InputStreamReceiver {
 
     private Thread generationThread;
 
+    private String inputFilePath;
 
-    public TDriveDataSource(DataSchema schema, City city, TopologyConfig config) {
+    private int maxInputRate;
+
+    public TDriveDataSource(DataSchema schema, City city, TopologyConfig config, String inputFilePath, int maxInputRate) {
         super(schema, config);
         this.city = city;
+        this.inputFilePath = inputFilePath;
+        this.maxInputRate = maxInputRate;
     }
 
     @Override
@@ -60,7 +65,7 @@ public class TDriveDataSource extends InputStreamReceiver {
 
         taskId = topologyContext.getThisTaskId();
 
-        folder = new File(config.dataFileDir);
+        folder = new File(inputFilePath);
 
         listOfFiles = folder.listFiles();
 
@@ -71,7 +76,7 @@ public class TDriveDataSource extends InputStreamReceiver {
         taxiIds = new ArrayList<>();
         zcodes = new ArrayList<>();
 
-        frequencyRestrictor = new FrequencyRestrictor(150000, 50);
+        frequencyRestrictor = new FrequencyRestrictor(maxInputRate, 50);
 
         int index = 0;
         while (true) {

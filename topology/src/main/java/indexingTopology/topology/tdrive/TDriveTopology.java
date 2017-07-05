@@ -72,8 +72,9 @@ public class TDriveTopology {
     /**
      * ingest api configuration
      */
-    @Option(name = "--ingest-server-ip", usage = "the ingestion server ip")
-    private String IngestServerIp = "localhost";
+
+    @Option(name = "--input-file-path", aliases = {"-f"}, usage = "the input file path")
+    private String InputFilePath = "";
 
     @Option(name = "--ingest-rate-limit", aliases = {"-r"}, usage = "max ingestion rate")
     private int MaxIngestRate = Integer.MAX_VALUE;
@@ -98,7 +99,7 @@ public class TDriveTopology {
     static final double x2 = 40.6;
     static final double y1 = 116.2;
     static final double y2 = 117.0;
-    final int partitions = 128;
+    final int partitions = 1024;
 
     public void executeQuery() {
 
@@ -145,7 +146,7 @@ public class TDriveTopology {
 
 
 
-//                Aggregator<Integer> aggregator = new Aggregator<>(schema, "id", new AggregateField(new Count(), "*"));
+                Aggregator<Integer> aggregator = new Aggregator<>(schema, null, new AggregateField(new Count(), "*"));
 //                Aggregator<Integer> aggregator = null;
 
 
@@ -158,7 +159,7 @@ public class TDriveTopology {
 
                 GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
                         System.currentTimeMillis() - RecentSecondsOfInterest * 1000,
-                        System.currentTimeMillis(), null, null, null, null);
+                        System.currentTimeMillis(), null, aggregator, null, null);
                 long start = System.currentTimeMillis();
                 try {
                     DateFormat dateFormat = new SimpleDateFormat("MM-dd HH:mm:ss");
@@ -166,10 +167,12 @@ public class TDriveTopology {
                     System.out.println("[" + dateFormat.format(cal.getTime()) + "]: A query will be issued.");
                     QueryResponse response = queryClient.query(queryRequest);
                     System.out.println("A query finished.");
+                    System.out.println("B1");
                     long end = System.currentTimeMillis();
                     totalQueryTime += end - start;
                     System.out.println(response);
                     System.out.println(String.format("Query time: %d ms", end - start));
+                    System.out.println("B2");
 
                     if (executed++ >= NumberOfQueries) {
                         System.out.println("Average Query Latency: " + totalQueryTime / (double)executed);
@@ -185,6 +188,8 @@ public class TDriveTopology {
                     e.printStackTrace();
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
 
             }
@@ -197,90 +202,7 @@ public class TDriveTopology {
         queryThread.start();
     }
 
-    public void executeIngestion() {
-
-        DataSchema rawSchema = getRawDataSchema();
-        TrajectoryGenerator generator = new TrajectoryMovingGenerator(x1, x2, y1, y2, 100000, 45.0);
-        IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode(IngestServerIp, 10000,
-                rawSchema, 1024);
-
-        RateTracker rateTracker = new RateTracker(1000,2);
-        FrequencyRestrictor restrictor = new FrequencyRestrictor(MaxIngestRate, 5);
-
-        Thread ingestionThread = new Thread(()->{
-            Random random = new Random();
-
-            try {
-                clientBatchMode.connectWithTimeout(10000);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            while(true) {
-                Car car = generator.generate();
-                DataTuple tuple = new DataTuple();
-                tuple.add(Integer.toString((int)car.id));
-                tuple.add(Integer.toString(random.nextInt()));
-                tuple.add(car.x);
-                tuple.add(car.y);
-                tuple.add(1);
-                tuple.add(55.3);
-                tuple.add("position 1");
-                tuple.add("2015-10-10, 11:12:34");
-                try {
-                    restrictor.getPermission();
-                    clientBatchMode.appendInBatch(tuple);
-                    rateTracker.notify(1);
-                    if(Thread.interrupted()) {
-                        break;
-                    }
-                } catch (IOException e) {
-//                    if (clientBatchMode.isClosed()) {
-                    try {
-                        System.out.println("try to reconnect....");
-                        clientBatchMode.connectWithTimeout(10000);
-                        System.out.println("connected.");
-                    } catch (IOException e1) {
-                        e1.printStackTrace();
-                    }
-//                    }
-                    e.printStackTrace();
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e1) {
-                        e1.printStackTrace();
-                        Thread.currentThread().interrupt();
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-//                try {
-////                    Thread.sleep(1);
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
-
-            }
-        });
-        ingestionThread.start();
-
-        new Thread(()->{
-            while (true) {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    break;
-                }
-                DateFormat dateFormat = new SimpleDateFormat("MM-dd HH:mm:ss");
-                Calendar cal = Calendar.getInstance();
-                System.out.println("[" + dateFormat.format(cal.getTime()) + "]: " + rateTracker.reportRate() + " tuples/s");
-            }
-        }).start();
-    }
-
     public void submitTopology() throws InvalidTopologyException, AuthorizationException, AlreadyAliveException {
-        DataSchema rawSchema = getRawDataSchema();
         DataSchema schema = getDataSchema();
         City city = new City(x1, x2, y1, y2, partitions);
 
@@ -292,7 +214,7 @@ public class TDriveTopology {
         TopologyConfig config = new TopologyConfig();
 
 //        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000, config);
-        InputStreamReceiver dataSource = new TDriveDataSource(schema, city, config);
+        InputStreamReceiver dataSource = new TDriveDataSource(schema, city, config, InputFilePath, MaxIngestRate);
 
         QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
                 upperBound, 10001, city, config, schema);
@@ -349,7 +271,6 @@ public class TDriveTopology {
 
         switch (tDriveTopology.Mode) {
             case "submit": tDriveTopology.submitTopology(); break;
-            case "ingest": tDriveTopology.executeIngestion(); break;
             case "query": tDriveTopology.executeQuery(); break;
             default: System.out.println("Invalid command!");
         }

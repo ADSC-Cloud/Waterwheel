@@ -279,7 +279,7 @@ public class NetworkTopology {
 //        });
 
         List<String> bloomFilterColumns = new ArrayList<>();
-        bloomFilterColumns.add("id");
+//        bloomFilterColumns.add("id");
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
         topologyGenerator.setNumberOfNodes(NumberOfNodes);

@@ -45,11 +45,11 @@ public class TopologyConfig implements Serializable {
 //    public static String dataDir = "/Users/Robert/Documents/data";
 //    public String dataDir = "/home/robert/data";
 
-    public String dataDir = "/home/acelzj/data";
+    public String dataDir = "/home/robert/data";
 
 //    public static String dataDir = "./";
 
-    public String dataFileDir = "/home/acelzj/Downloads/taxi-trajectory";
+    public String dataFileDir = "/home/robert/data/t";
 //    public static String dataFileDir = "/home/lzj/dataset/20150430_processed.txt";
 //    public static String dataFileDir = "/home/acelzj/Downloads/DPI/20150430_processed.txt";
 //    public static String dataFileDir = "/home/acelzj/Downloads/DPI/20150430.txt";
