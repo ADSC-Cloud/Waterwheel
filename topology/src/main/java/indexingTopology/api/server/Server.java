@@ -167,8 +167,8 @@ public class Server<T extends ServerHandle> {
         clientSkeleton.connect();
         System.out.println("started");
         clientSkeleton.temporalRangeQuery(0,0,0,0);
-        server.endDaemon();
         clientSkeleton.close();
+        server.endDaemon();
         System.out.println("end");
     }
 }

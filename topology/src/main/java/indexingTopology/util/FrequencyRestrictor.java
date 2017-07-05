@@ -14,13 +14,14 @@ public class FrequencyRestrictor {
     int frequencyPerWindow;
     int millisecondPerWindows;
     int windowsPerSecond;
+    Thread permitingThread;
     public FrequencyRestrictor(int maxFrequencyPerSecond, int windowsPerSecond) {
         this.maxFrequencyPerSecond = maxFrequencyPerSecond;
         this.windowsPerSecond = windowsPerSecond;
         verifyParameters();
         this.frequencyPerWindow = maxFrequencyPerSecond / windowsPerSecond;
         millisecondPerWindows = 1000 / windowsPerSecond;
-        new Thread(new Runnable() {
+        permitingThread = new Thread(new Runnable() {
             @Override
             public void run() {
                 long lastSleepTime = System.currentTimeMillis();
@@ -35,8 +36,8 @@ public class FrequencyRestrictor {
                     try {
                         Thread.sleep(millisecondPerWindows);
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
-                        Thread.interrupted();
+//                        e.printStackTrace();
+                        Thread.currentThread().interrupt();
                         break;
                     }
                     final long now = System.currentTimeMillis();
@@ -44,7 +45,8 @@ public class FrequencyRestrictor {
                     lastSleepTime = now;
                 }
             }
-        }).start();
+        });
+        permitingThread.start();
     }
 
     public FrequencyRestrictor(int maxFrequencyPerSecond) {
@@ -67,5 +69,8 @@ public class FrequencyRestrictor {
         windowsPerSecond = Math.min(windowsPerSecond, 500);
     }
 
+    public void close() {
+        permitingThread.interrupt();
+    }
 
 }
