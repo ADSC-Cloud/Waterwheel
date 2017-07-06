@@ -7,16 +7,10 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
+import java.net.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.*;
 
 /**
  * Created by robert on 2/3/17.
@@ -48,12 +42,36 @@ public class Server<T extends ServerHandle> {
     }
 
     public void startDaemon(){
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<ServerSocket> serverSocketFuture = executor.submit(() -> {
+            ServerSocket socket = null;
+            while (socket == null) {
+                try {
+                    socket = new ServerSocket(port);
+                } catch (IOException e) {
+//                    e.printStackTrace();
+                    System.err.println(String.format("Api Server: Cannot bind socket on port %d. Retry after 1 second.", port));
+                    Thread.sleep(1000);
+                }
+            }
+            return socket;
+        });
+
         try {
-            serverSocket = new ServerSocket(port);
-        } catch (IOException e) {
+            serverSocket = serverSocketFuture.get(30, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
             e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        } catch (TimeoutException e) {
+            e.printStackTrace();
+        }
+        executor.shutdownNow();
+        if (serverSocket == null) {
+            System.err.println("Cannot create server on port after having retried for 30 seconds.");
             return;
         }
+
         executorService = Executors.newCachedThreadPool();
 
 
@@ -167,8 +185,8 @@ public class Server<T extends ServerHandle> {
         clientSkeleton.connect();
         System.out.println("started");
         clientSkeleton.temporalRangeQuery(0,0,0,0);
-        server.endDaemon();
         clientSkeleton.close();
+        server.endDaemon();
         System.out.println("end");
     }
 }

@@ -241,8 +241,8 @@ public class TDriveTopology {
         conf.setDebug(false);
         conf.setNumWorkers(NumberOfNodes);
 
-        conf.put(Config.WORKER_CHILDOPTS, "-Xmx1024m");
-        conf.put(Config.WORKER_HEAP_MEMORY_MB, 1024);
+        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
         if (LocalMode) {
             LocalCluster localCluster = new LocalCluster();

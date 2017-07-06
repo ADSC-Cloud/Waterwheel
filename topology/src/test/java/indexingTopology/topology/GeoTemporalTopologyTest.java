@@ -14,12 +14,14 @@ import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 import indexingTopology.common.logics.DataTupleMapper;
 import indexingTopology.common.logics.DataTuplePredicate;
+import indexingTopology.util.AvailableSocketPool;
 import indexingTopology.util.TopologyGenerator;
 import indexingTopology.util.taxi.City;
 import indexingTopology.util.taxi.ZOrderCoding;
 import junit.framework.TestCase;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
+import org.apache.storm.generated.KillOptions;
 import org.apache.storm.generated.StormTopology;
 import org.junit.Test;
 
@@ -36,23 +38,41 @@ public class GeoTemporalTopologyTest extends TestCase {
 
     TopologyConfig config = new TopologyConfig();
 
+    AvailableSocketPool socketPool = new AvailableSocketPool();
+
+    LocalCluster cluster;
+
+
+
+    boolean setupDone = false;
+
+    boolean tearDownDone = false;
+
     public void setUp() {
-        try {
-            Runtime.getRuntime().exec("mkdir -p ./target/tmp");
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (!setupDone) {
+            try {
+                Runtime.getRuntime().exec("mkdir -p ./target/tmp");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            config.dataDir = "./target/tmp";
+            config.HDFSFlag = false;
+            config.CHUNK_SIZE = 1024 * 1024;
+            System.out.println("dataDir is set to " + config.dataDir);
+            cluster = new LocalCluster();
+            setupDone = true;
         }
-        config.dataDir = "./target/tmp";
-        config.HDFSFlag = false;
-        config.CHUNK_SIZE = 1024 * 1024;
-        System.out.println("dataDir is set to " + config.dataDir);
     }
 
     public void tearDown() {
-        try {
-            Runtime.getRuntime().exec("rm ./target/tmp/*");
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (!tearDownDone) {
+            try {
+                Runtime.getRuntime().exec("rm ./target/tmp/*");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            cluster.shutdown();
+            tearDownDone = true;
         }
     }
 
@@ -82,10 +102,13 @@ public class GeoTemporalTopologyTest extends TestCase {
         Integer lowerBound = 0;
         Integer upperBound = city.getMaxZCode();
 
-        QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, 10001, city, config, schema);
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000, config);
+        QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
+                upperBound, queryPort, city, config, schema);
+
+        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, ingestionPort, config);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
@@ -111,12 +134,11 @@ public class GeoTemporalTopologyTest extends TestCase {
         conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
         conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
-        LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("T0", conf, topology);
-        IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode("localhost", 10000,
+        cluster.submitTopology("testGeoRangeQuery", conf, topology);
+        IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode("localhost", ingestionPort,
                 rawSchema, 1024);
         try {
-            clientBatchMode.connectWithTimeout(10000);
+            clientBatchMode.connectWithTimeout(50000);
 
 
             final int tuples = 1000 * 1000;
@@ -152,9 +174,9 @@ public class GeoTemporalTopologyTest extends TestCase {
                 e.printStackTrace();
             }
 
-            GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient("localhost", 10001);
+            GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient("localhost", queryPort);
             try {
-                queryClient.connectWithTimeout(10000);
+                queryClient.connectWithTimeout(100000);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -194,20 +216,33 @@ public class GeoTemporalTopologyTest extends TestCase {
 
             queryClient.close();
             clientBatchMode.close();
-            cluster.killTopology("T0");
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testGeoRangeQuery", killOptions);
 
         } catch (IOException e) {
             e.printStackTrace();
         }
         assertTrue(fullyExecuted);
 
-        cluster.shutdown();
-        Thread.sleep(5000);
+//        new Thread(() -> {
+//            try {
+//                Thread.sleep(10000);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//            cluster.shutdown();
+//        }).start();
+//        cluster.shutdown();
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
     }
 
     @Test
     public void testGeoRangeQueryWithBloomFilterOnVarchar() throws InterruptedException {
         boolean fullyExecuted = false;
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
 
         DataSchema rawSchema = new DataSchema();
         rawSchema.addIntField("id");
@@ -232,9 +267,9 @@ public class GeoTemporalTopologyTest extends TestCase {
         Integer upperBound = city.getMaxZCode();
 
         QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, 10001, city, config, schema);
+                upperBound, queryPort, city, config, schema);
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000, config);
+        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, ingestionPort, config);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
@@ -257,12 +292,11 @@ public class GeoTemporalTopologyTest extends TestCase {
         conf.setDebug(false);
         conf.setNumWorkers(1);
 
-        LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("T0", conf, topology);
-        IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode("localhost", 10000,
+        cluster.submitTopology("testGeoRangeQueryWithBloomFilterOnVarchar", conf, topology);
+        IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode("localhost", ingestionPort,
                 rawSchema, 1024);
         try {
-            clientBatchMode.connectWithTimeout(10000);
+            clientBatchMode.connectWithTimeout(100000);
 
 
             final int tuples = 1000 * 1000;
@@ -302,9 +336,9 @@ public class GeoTemporalTopologyTest extends TestCase {
                 e.printStackTrace();
             }
 
-            GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient("localhost", 10001);
+            GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient("localhost", queryPort);
             try {
-                queryClient.connectWithTimeout(10000);
+                queryClient.connectWithTimeout(50000);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -356,14 +390,17 @@ public class GeoTemporalTopologyTest extends TestCase {
 
             queryClient.close();
             clientBatchMode.close();
-            cluster.killTopology("T0");
-
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testGeoRangeQueryWithBloomFilterOnVarchar", killOptions);
         } catch (IOException e) {
             e.printStackTrace();
         }
         assertTrue(fullyExecuted);
-
-        cluster.shutdown();
-        Thread.sleep(5000);
+//        cluster.shutdown();
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
+//        cluster.shutdown();
+//        Thread.sleep(5000);
     }
 }

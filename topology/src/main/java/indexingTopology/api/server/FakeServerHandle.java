@@ -34,8 +34,8 @@ public class FakeServerHandle extends ServerHandle implements QueryHandle, Appen
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    Thread.currentThread().interrupt();
+//                    e.printStackTrace();
+//                    Thread.currentThread().interrupt();
                     break;
                 }
                 System.out.println(String.format("Throughput: %4.4f", rateTracker.reportRate()));
@@ -46,17 +46,19 @@ public class FakeServerHandle extends ServerHandle implements QueryHandle, Appen
         rateFluctuationThread = new Thread(() -> {
             while (true) {
                 try {
-                    Thread.sleep(10000);
+                    Thread.sleep(100);
                     currentFrequency = (currentFrequency + 100000) % 600000;
                     synchronized (lock) {
+                        restrictor.close();
                         restrictor = new FrequencyRestrictor(Math.max(10000, currentFrequency), 5);
                     }
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+//                    e.printStackTrace();
+                    break;
                 }
             }
         });
-        rateFluctuationThread.start();
+//        rateFluctuationThread.start();
     }
 
     public void handle(final QueryRequest clientQueryRequest) throws IOException {
@@ -107,5 +109,6 @@ public class FakeServerHandle extends ServerHandle implements QueryHandle, Appen
         rateTracker.close();
         throughputDisplayThread.interrupt();
         rateFluctuationThread.interrupt();
+        restrictor.close();
     }
 }

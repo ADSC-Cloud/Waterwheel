@@ -415,7 +415,7 @@ public class IndexerCopy {
                 }
                 */
 
-                if (numTuples >= config.NUMBER_TUPLES_OF_A_CHUNK) {
+                if (numTuples >= 600000) {
                     while (!pendingQueue.isEmpty()) {
                         try {
                             Thread.sleep(1);

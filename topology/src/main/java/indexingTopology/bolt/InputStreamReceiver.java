@@ -85,7 +85,11 @@ public class InputStreamReceiver extends BaseRichBolt {
 
         backPressureDisplayThread = new Thread(() -> {
             while(true) {
-                Utils.sleep(5000);
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    break;
+                }
                 System.out.println(backPressure);
                 if (Thread.currentThread().isInterrupted()) {
                     Thread.currentThread().interrupt();

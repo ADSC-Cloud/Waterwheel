@@ -197,8 +197,6 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                     Thread.sleep(10000);
                     System.out.println(debugger.info);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    Thread.interrupted();
                     break;
                 }
             }

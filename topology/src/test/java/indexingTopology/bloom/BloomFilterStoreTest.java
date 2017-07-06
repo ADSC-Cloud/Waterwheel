@@ -17,17 +17,17 @@ public class BloomFilterStoreTest extends TestCase{
     TopologyConfig config = new TopologyConfig();
     public void setUp() {
         try {
-            Runtime.getRuntime().exec("mkdir -p ./test-tmp");
+            Runtime.getRuntime().exec("mkdir -p ./target/tmp");
         } catch (IOException e) {
             e.printStackTrace();
         }
         config.HDFSFlag = false;
-        config.dataDir = "./test-tmp";
+        config.dataDir = "./target/tmp";
     }
 
     public void tearDown() {
         try {
-            Runtime.getRuntime().exec("rm -rf ./test-tmp");
+            Runtime.getRuntime().exec("rm -rf ./target/tmp");
         } catch (IOException e) {
             e.printStackTrace();
         }
