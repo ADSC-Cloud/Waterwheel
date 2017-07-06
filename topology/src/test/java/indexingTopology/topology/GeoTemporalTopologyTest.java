@@ -215,7 +215,7 @@ public class GeoTemporalTopologyTest extends TestCase {
 //            }
 //            cluster.shutdown();
 //        }).start();
-//        Thread.sleep(5000);
+        Thread.sleep(5000);
         cluster.shutdown();
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
@@ -383,7 +383,7 @@ public class GeoTemporalTopologyTest extends TestCase {
         cluster.shutdown();
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
-//        cluster.shutdown();
+        cluster.shutdown();
 //        Thread.sleep(5000);
     }
 }
