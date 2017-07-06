@@ -138,7 +138,7 @@ public class GeoTemporalTopologyTest extends TestCase {
         IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode("localhost", ingestionPort,
                 rawSchema, 1024);
         try {
-            clientBatchMode.connectWithTimeout(10000);
+            clientBatchMode.connectWithTimeout(50000);
 
 
             final int tuples = 1000 * 1000;
@@ -338,7 +338,7 @@ public class GeoTemporalTopologyTest extends TestCase {
 
             GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient("localhost", queryPort);
             try {
-                queryClient.connectWithTimeout(10000);
+                queryClient.connectWithTimeout(50000);
             } catch (IOException e) {
                 e.printStackTrace();
             }

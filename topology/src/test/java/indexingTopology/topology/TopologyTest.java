@@ -117,13 +117,13 @@ public class TopologyTest extends TestCase {
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(10000);
+            ingestionClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
         final QueryClient queryClient = new QueryClient("localhost", queryPort);
         try {
-            queryClient.connectWithTimeout(10000);
+            queryClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -234,13 +234,13 @@ public class TopologyTest extends TestCase {
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(10000);
+            ingestionClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
         final QueryClient queryClient = new QueryClient("localhost", queryPort);
         try {
-            queryClient.connectWithTimeout(10000);
+            queryClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -352,13 +352,13 @@ public class TopologyTest extends TestCase {
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(10000);
+            ingestionClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
         final QueryClient queryClient = new QueryClient("localhost", queryPort);
         try {
-            queryClient.connectWithTimeout(10000);
+            queryClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -501,13 +501,13 @@ public class TopologyTest extends TestCase {
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(10000);
+            ingestionClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
         final QueryClient queryClient = new QueryClient("localhost", queryPort);
         try {
-            queryClient.connectWithTimeout(10000);
+            queryClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -648,13 +648,13 @@ public class TopologyTest extends TestCase {
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(10000);
+            ingestionClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
         final QueryClient queryClient = new QueryClient("localhost", queryPort);
         try {
-            queryClient.connectWithTimeout(10000);
+            queryClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -787,13 +787,13 @@ public class TopologyTest extends TestCase {
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, rawSchema, 1024);
         try {
-            ingestionClient.connectWithTimeout(10000);
+            ingestionClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
         final QueryClient queryClient = new QueryClient("localhost", queryPort);
         try {
-            queryClient.connectWithTimeout(10000);
+            queryClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -921,13 +921,13 @@ public class TopologyTest extends TestCase {
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(10000);
+            ingestionClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
         final QueryClient queryClient = new QueryClient("localhost", queryPort);
         try {
-            queryClient.connectWithTimeout(10000);
+            queryClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -1051,13 +1051,13 @@ public class TopologyTest extends TestCase {
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(10000);
+            ingestionClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
         final QueryClient queryClient = new QueryClient("localhost", queryPort);
         try {
-            queryClient.connectWithTimeout(10000);
+            queryClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
