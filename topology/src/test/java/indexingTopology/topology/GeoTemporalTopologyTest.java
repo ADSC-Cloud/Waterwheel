@@ -14,6 +14,7 @@ import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 import indexingTopology.common.logics.DataTupleMapper;
 import indexingTopology.common.logics.DataTuplePredicate;
+import indexingTopology.util.AvailableSocketPool;
 import indexingTopology.util.TopologyGenerator;
 import indexingTopology.util.taxi.City;
 import indexingTopology.util.taxi.ZOrderCoding;
@@ -35,6 +36,8 @@ import java.util.function.Function;
 public class GeoTemporalTopologyTest extends TestCase {
 
     TopologyConfig config = new TopologyConfig();
+
+    AvailableSocketPool socketPool = new AvailableSocketPool();
 
     public void setUp() {
         try {
@@ -82,10 +85,13 @@ public class GeoTemporalTopologyTest extends TestCase {
         Integer lowerBound = 0;
         Integer upperBound = city.getMaxZCode();
 
-        QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, 10001, city, config, schema);
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000, config);
+        QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
+                upperBound, queryPort, city, config, schema);
+
+        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, ingestionPort, config);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
@@ -113,7 +119,7 @@ public class GeoTemporalTopologyTest extends TestCase {
 
         LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("T0", conf, topology);
-        IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode("localhost", 10000,
+        IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode("localhost", ingestionPort,
                 rawSchema, 1024);
         try {
             clientBatchMode.connectWithTimeout(10000);
@@ -152,9 +158,9 @@ public class GeoTemporalTopologyTest extends TestCase {
                 e.printStackTrace();
             }
 
-            GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient("localhost", 10001);
+            GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient("localhost", queryPort);
             try {
-                queryClient.connectWithTimeout(10000);
+                queryClient.connectWithTimeout(100000);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -201,13 +207,25 @@ public class GeoTemporalTopologyTest extends TestCase {
         }
         assertTrue(fullyExecuted);
 
+//        new Thread(() -> {
+//            try {
+//                Thread.sleep(10000);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//            cluster.shutdown();
+//        }).start();
+//        Thread.sleep(5000);
         cluster.shutdown();
-        Thread.sleep(5000);
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
     }
 
     @Test
     public void testGeoRangeQueryWithBloomFilterOnVarchar() throws InterruptedException {
         boolean fullyExecuted = false;
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
 
         DataSchema rawSchema = new DataSchema();
         rawSchema.addIntField("id");
@@ -232,9 +250,9 @@ public class GeoTemporalTopologyTest extends TestCase {
         Integer upperBound = city.getMaxZCode();
 
         QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
-                upperBound, 10001, city, config, schema);
+                upperBound, queryPort, city, config, schema);
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000, config);
+        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, ingestionPort, config);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
@@ -259,10 +277,10 @@ public class GeoTemporalTopologyTest extends TestCase {
 
         LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("T0", conf, topology);
-        IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode("localhost", 10000,
+        IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode("localhost", ingestionPort,
                 rawSchema, 1024);
         try {
-            clientBatchMode.connectWithTimeout(10000);
+            clientBatchMode.connectWithTimeout(100000);
 
 
             final int tuples = 1000 * 1000;
@@ -302,7 +320,7 @@ public class GeoTemporalTopologyTest extends TestCase {
                 e.printStackTrace();
             }
 
-            GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient("localhost", 10001);
+            GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient("localhost", queryPort);
             try {
                 queryClient.connectWithTimeout(10000);
             } catch (IOException e) {
@@ -362,8 +380,10 @@ public class GeoTemporalTopologyTest extends TestCase {
             e.printStackTrace();
         }
         assertTrue(fullyExecuted);
-
         cluster.shutdown();
-        Thread.sleep(5000);
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
+//        cluster.shutdown();
+//        Thread.sleep(5000);
     }
 }

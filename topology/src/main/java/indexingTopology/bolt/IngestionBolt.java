@@ -103,8 +103,6 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
                 try {
                     Thread.sleep(10000);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    Thread.currentThread().interrupt();
                     break;
                 }
             }
