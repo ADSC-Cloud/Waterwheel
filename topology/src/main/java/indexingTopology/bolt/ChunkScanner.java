@@ -265,7 +265,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
             long start = System.currentTimeMillis();
 
-
+            metrics.startEvent("total-time");
             debugInfo.runningPosition = "breakpoint 2";
             if (config.HDFSFlag) {
                 if (config.HybridStorage && new File(config.dataDir, fileName).exists()) {
@@ -285,12 +285,16 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
             }
 
             debugInfo.runningPosition = "breakpoint 3";
+            metrics.startEvent("open-file");
             fileSystemHandler.openFile("/", fileName);
+            metrics.endEvent("open-file");
             debugInfo.runningPosition = "breakpoint 4";
 //        fileTime += (System.currentTimeMillis() - fileStart);
 
 //        long readTemplateStart = System.currentTimeMillis();
+            metrics.startEvent("read template");
             Pair data = getTemplateData(fileSystemHandler, fileName);
+            metrics.endEvent("read template");
 //        long temlateRead = System.currentTimeMillis() - readTemplateStart;
 
 //            fileSystemHandler.openFile("/", fileName);
@@ -334,6 +338,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
             int count = 0;
             debugInfo.runningPosition = "breakpoint 7";
+            metrics.startEvent("leaf node scanning");
             for (Integer offset : offsets) {
                 BlockId blockId = new BlockId(fileName, offset + length + 4);
 
@@ -356,7 +361,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
                 debugInfo.runningPosition = String.format("breakpoint 8.%d.4", count);
                 count++;
             }
-
+            metrics.endEvent("leaf node scanning");
             debugInfo.runningPosition = "breakpoint 9";
 //filter by timestamp range
             filterByTimestamp(dataTuplesInKeyRange, timestampLowerBound, timestampUpperBound);
@@ -368,20 +373,22 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
             //filter by predicate
 //            System.out.println("Before predicates: " + dataTuples.size());
-
+            metrics.startEvent("predicate");
             filterByPredicate(dataTuplesInKeyRange, subQuery.getPredicate());
+            metrics.endEvent("predicate");
 //            System.out.println("After predicates: " + dataTuples.size());
 
             metrics.debugInfo += " size = " + dataTuplesInKeyRange.size();
             debugInfo.runningPosition = "breakpoint 10";
 
-
+            metrics.startEvent("aggregate");
             if (subQuery.getAggregator() != null) {
                 Aggregator.IntermediateResult intermediateResult = subQuery.getAggregator().createIntermediateResult();
                 subQuery.getAggregator().aggregate(dataTuplesInKeyRange, intermediateResult);
                 dataTuplesInKeyRange.clear();
                 dataTuplesInKeyRange.addAll(subQuery.getAggregator().getResults(intermediateResult).dataTuples);
             }
+            metrics.endEvent("aggregate");
 
 
 //            aggregationTime += System.currentTimeMillis() - startTime;
@@ -394,21 +401,21 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
 
             //serialize
-
+            metrics.startEvent("serialize");
             if (subQuery.getAggregator() != null) {
                 DataSchema outputSchema = subQuery.getAggregator().getOutputDataSchema();
                 dataTuplesInKeyRange.stream().forEach(p -> serializedDataTuples.add(outputSchema.serializeTuple(p)));
             } else {fileSystemHandler.closeFile();
                 dataTuplesInKeyRange.stream().forEach(p -> serializedDataTuples.add(schema.serializeTuple(p)));
             }
-
+            metrics.endEvent("serialize");
 
 //            tuples.addAll(serializedDataTuples);
 
 
 
+            metrics.endEvent("total-time");
 
-            metrics.setTotalTime(System.currentTimeMillis() - start);
 //        metrics.setFileReadingTime(fileReadingTime);
 //        metrics.setKeyRangTime(keyRangeTime);
 //        metrics.setTimestampRangeTime(timestampRangeTime);

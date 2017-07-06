@@ -332,12 +332,12 @@ public class ResultMerger extends BaseRichBolt {
                 for (Integer taskId : taskIds) {
                     List<FileScanMetrics> records = taskIdToTimeMapping.get(taskId);
                     for (FileScanMetrics fileScanMetrics : records) {
-                        totalQueryTime += fileScanMetrics.getTotalTime();
-                        keyRangTime += fileScanMetrics.getKeyRangeTime();
-                        timestampRangTime += fileScanMetrics.getTimestampRangeTime();
-                        predicationTime += fileScanMetrics.getPredicationTime();
-                        aggregationTime += fileScanMetrics.getAggregationTime();
-                        fileReadingTime += fileScanMetrics.getFileReadingTime();
+//                        totalQueryTime += fileScanMetrics.getTotalTime();
+//                        keyRangTime += fileScanMetrics.getKeyRangeTime();
+//                        timestampRangTime += fileScanMetrics.getTimestampRangeTime();
+//                        predicationTime += fileScanMetrics.getPredicationTime();
+//                        aggregationTime += fileScanMetrics.getAggregationTime();
+//                        fileReadingTime += fileScanMetrics.getFileReadingTime();
                         ++numberOfSubqueries;
                     }
 
