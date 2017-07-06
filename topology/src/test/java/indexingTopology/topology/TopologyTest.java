@@ -95,7 +95,7 @@ public class TopologyTest extends TestCase {
 
 
         LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("T0", conf, topology);
+        cluster.submitTopology("testSimpleTopologyKeyRangeQuery", conf, topology);
 
         final int tuples = 100000;
 
@@ -166,7 +166,7 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
-            cluster.killTopology("T0");
+            cluster.killTopology("testSimpleTopologyKeyRangeQuery");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -211,7 +211,7 @@ public class TopologyTest extends TestCase {
 
 
         LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("T0", conf, topology);
+        cluster.submitTopology("testSimpleTopologyKeyRangeQueryOutOfBoundaries", conf, topology);
 
         final int tuples = 100000;
 
@@ -281,7 +281,7 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
-            cluster.killTopology("T0");
+            cluster.killTopology("testSimpleTopologyKeyRangeQueryOutOfBoundaries");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -328,7 +328,7 @@ public class TopologyTest extends TestCase {
 
 
         LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("T0", conf, topology);
+        cluster.submitTopology("testSimpleTopologyPredicateWithBloomFilterVarcharTest", conf, topology);
 
         final int tuples = 100000;
 
@@ -427,7 +427,7 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
-            cluster.killTopology("T0");
+            cluster.killTopology("testSimpleTopologyPredicateWithBloomFilterVarcharTest");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -476,7 +476,7 @@ public class TopologyTest extends TestCase {
 
 
         LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("T0", conf, topology);
+        cluster.submitTopology("testSimpleTopologyPredicateWithBloomFilterDoubleTest", conf, topology);
 
         final int tuples = 100000;
 
@@ -575,7 +575,7 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
-            cluster.killTopology("T0");
+            cluster.killTopology("testSimpleTopologyPredicateWithBloomFilterDoubleTest");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -622,7 +622,7 @@ public class TopologyTest extends TestCase {
 
 
         LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("T0", conf, topology);
+        cluster.submitTopology("testSimpleTopologyAggregation", conf, topology);
 
         final int tuples = 100000;
 
@@ -710,7 +710,7 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
-            cluster.killTopology("T0");
+            cluster.killTopology("testSimpleTopologyAggregation");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -762,7 +762,7 @@ public class TopologyTest extends TestCase {
 
 
         LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("T0", conf, topology);
+        cluster.submitTopology("testSimpleTopologyMapperAggregation", conf, topology);
 
         final int tuples = 100000;
 
@@ -850,7 +850,7 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
-            cluster.killTopology("T0");
+            cluster.killTopology("testSimpleTopologyMapperAggregation");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -895,7 +895,7 @@ public class TopologyTest extends TestCase {
 
 
         LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("T0", conf, topology);
+        cluster.submitTopology("testSimpleTopologySort", conf, topology);
 
         final int tuples = 100000;
 
@@ -979,7 +979,7 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
-            cluster.killTopology("T0");
+            cluster.killTopology("testSimpleTopologySort");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -1024,7 +1024,7 @@ public class TopologyTest extends TestCase {
 
 
         LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("T0", conf, topology);
+        cluster.submitTopology("testSimpleTopologyTemporalQuery", conf, topology);
 
         final int tuples = 100000;
 
@@ -1098,7 +1098,7 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
-            cluster.killTopology("T0");
+            cluster.killTopology("testSimpleTopologyTemporalQuery");
         } catch (IOException e) {
             e.printStackTrace();
         }

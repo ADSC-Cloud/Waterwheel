@@ -118,7 +118,7 @@ public class GeoTemporalTopologyTest extends TestCase {
         conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
         LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("T0", conf, topology);
+        cluster.submitTopology("testGeoRangeQuery", conf, topology);
         IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode("localhost", ingestionPort,
                 rawSchema, 1024);
         try {
@@ -200,7 +200,7 @@ public class GeoTemporalTopologyTest extends TestCase {
 
             queryClient.close();
             clientBatchMode.close();
-            cluster.killTopology("T0");
+            cluster.killTopology("testGeoRangeQuery");
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -276,7 +276,7 @@ public class GeoTemporalTopologyTest extends TestCase {
         conf.setNumWorkers(1);
 
         LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("T0", conf, topology);
+        cluster.submitTopology("testGeoRangeQueryWithBloomFilterOnVarchar", conf, topology);
         IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode("localhost", ingestionPort,
                 rawSchema, 1024);
         try {
@@ -374,7 +374,7 @@ public class GeoTemporalTopologyTest extends TestCase {
 
             queryClient.close();
             clientBatchMode.close();
-            cluster.killTopology("T0");
+            cluster.killTopology("testGeoRangeQueryWithBloomFilterOnVarchar");
 
         } catch (IOException e) {
             e.printStackTrace();
