@@ -21,6 +21,7 @@ import indexingTopology.util.taxi.ZOrderCoding;
 import junit.framework.TestCase;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
+import org.apache.storm.generated.KillOptions;
 import org.apache.storm.generated.StormTopology;
 import org.junit.Test;
 
@@ -39,23 +40,33 @@ public class GeoTemporalTopologyTest extends TestCase {
 
     AvailableSocketPool socketPool = new AvailableSocketPool();
 
+    boolean setupDone = false;
+
+    boolean tearDownDone = false;
+
     public void setUp() {
-        try {
-            Runtime.getRuntime().exec("mkdir -p ./target/tmp");
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (!setupDone) {
+            try {
+                Runtime.getRuntime().exec("mkdir -p ./target/tmp");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            config.dataDir = "./target/tmp";
+            config.HDFSFlag = false;
+            config.CHUNK_SIZE = 1024 * 1024;
+            System.out.println("dataDir is set to " + config.dataDir);
+            setupDone = true;
         }
-        config.dataDir = "./target/tmp";
-        config.HDFSFlag = false;
-        config.CHUNK_SIZE = 1024 * 1024;
-        System.out.println("dataDir is set to " + config.dataDir);
     }
 
     public void tearDown() {
-        try {
-            Runtime.getRuntime().exec("rm ./target/tmp/*");
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (!tearDownDone) {
+            try {
+                Runtime.getRuntime().exec("rm ./target/tmp/*");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            tearDownDone = true;
         }
     }
 
@@ -200,7 +211,9 @@ public class GeoTemporalTopologyTest extends TestCase {
 
             queryClient.close();
             clientBatchMode.close();
-            cluster.killTopology("testGeoRangeQuery");
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testGeoRangeQuery", killOptions);
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -216,7 +229,7 @@ public class GeoTemporalTopologyTest extends TestCase {
 //            cluster.shutdown();
 //        }).start();
         Thread.sleep(5000);
-        cluster.shutdown();
+//        cluster.shutdown();
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
     }
@@ -374,13 +387,14 @@ public class GeoTemporalTopologyTest extends TestCase {
 
             queryClient.close();
             clientBatchMode.close();
-            cluster.killTopology("testGeoRangeQueryWithBloomFilterOnVarchar");
-
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testGeoRangeQueryWithBloomFilterOnVarchar", killOptions);
         } catch (IOException e) {
             e.printStackTrace();
         }
         assertTrue(fullyExecuted);
-        cluster.shutdown();
+//        cluster.shutdown();
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
         cluster.shutdown();

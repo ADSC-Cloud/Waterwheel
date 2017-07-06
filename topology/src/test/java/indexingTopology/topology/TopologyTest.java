@@ -19,6 +19,7 @@ import indexingTopology.util.*;
 import junit.framework.TestCase;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
+import org.apache.storm.generated.KillOptions;
 import org.apache.storm.generated.StormTopology;
 
 import java.io.IOException;
@@ -40,24 +41,37 @@ public class TopologyTest extends TestCase {
 
     AvailableSocketPool socketPool = new AvailableSocketPool();
 
+    LocalCluster cluster;
+
+    boolean setupDone = false;
+
+    boolean tearDownDone = false;
+
     public void setUp() {
-        try {
-            Runtime.getRuntime().exec("mkdir -p ./target/tmp");
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (!setupDone) {
+            try {
+                Runtime.getRuntime().exec("mkdir -p ./target/tmp");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            config.dataDir = "./target/tmp";
+            config.CHUNK_SIZE = 2 * 1024 * 1024;
+            config.HDFSFlag = false;
+            config.HDFSFlag = false;
+            System.out.println("dataDir is set to " + config.dataDir);
+            cluster = new LocalCluster();
+            setupDone = true;
         }
-        config.dataDir = "./target/tmp";
-        config.CHUNK_SIZE = 2 * 1024 * 1024;
-        config.HDFSFlag = false;
-        config.HDFSFlag = false;
-        System.out.println("dataDir is set to " + config.dataDir);
     }
 
     public void tearDown() {
-        try {
-            Runtime.getRuntime().exec("rm ./target/tmp/*");
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (! tearDownDone) {
+            try {
+                Runtime.getRuntime().exec("rm ./target/tmp/*");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            tearDownDone = true;
         }
     }
     @Test
@@ -94,7 +108,7 @@ public class TopologyTest extends TestCase {
 //        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
-        LocalCluster cluster = new LocalCluster();
+
         cluster.submitTopology("testSimpleTopologyKeyRangeQuery", conf, topology);
 
         final int tuples = 100000;
@@ -166,13 +180,15 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
-            cluster.killTopology("testSimpleTopologyKeyRangeQuery");
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testSimpleTopologyKeyRangeQuery", killOptions);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
-        cluster.shutdown();
+//        cluster.shutdown();
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
         Thread.sleep(5000);
@@ -210,7 +226,7 @@ public class TopologyTest extends TestCase {
 //        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
-        LocalCluster cluster = new LocalCluster();
+//        LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("testSimpleTopologyKeyRangeQueryOutOfBoundaries", conf, topology);
 
         final int tuples = 100000;
@@ -281,13 +297,15 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
-            cluster.killTopology("testSimpleTopologyKeyRangeQueryOutOfBoundaries");
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testSimpleTopologyKeyRangeQueryOutOfBoundaries", killOptions);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
-        cluster.shutdown();
+//        cluster.shutdown();
         Thread.sleep(5000);
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
@@ -327,7 +345,7 @@ public class TopologyTest extends TestCase {
 //        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
-        LocalCluster cluster = new LocalCluster();
+//        LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("testSimpleTopologyPredicateWithBloomFilterVarcharTest", conf, topology);
 
         final int tuples = 100000;
@@ -427,13 +445,15 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
-            cluster.killTopology("testSimpleTopologyPredicateWithBloomFilterVarcharTest");
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testSimpleTopologyPredicateWithBloomFilterVarcharTest", killOptions);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
-        cluster.shutdown();
+//        cluster.shutdown();
         Thread.sleep(5000);
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
@@ -475,7 +495,7 @@ public class TopologyTest extends TestCase {
 //        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
-        LocalCluster cluster = new LocalCluster();
+//        LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("testSimpleTopologyPredicateWithBloomFilterDoubleTest", conf, topology);
 
         final int tuples = 100000;
@@ -575,13 +595,15 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
-            cluster.killTopology("testSimpleTopologyPredicateWithBloomFilterDoubleTest");
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testSimpleTopologyPredicateWithBloomFilterDoubleTest", killOptions);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
-        cluster.shutdown();
+//        cluster.shutdown();
         Thread.sleep(5000);
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
@@ -621,7 +643,7 @@ public class TopologyTest extends TestCase {
 //        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
-        LocalCluster cluster = new LocalCluster();
+//        LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("testSimpleTopologyAggregation", conf, topology);
 
         final int tuples = 100000;
@@ -710,13 +732,15 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
-            cluster.killTopology("testSimpleTopologyAggregation");
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testSimpleTopologyAggregation", killOptions);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
-        cluster.shutdown();
+//        cluster.shutdown();
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
         Thread.sleep(5000);
@@ -760,10 +784,8 @@ public class TopologyTest extends TestCase {
 //        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
 //        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
-
-        LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("testSimpleTopologyMapperAggregation", conf, topology);
-
+//        LocalCluster cluster = new LocalCluster();
         final int tuples = 100000;
 
 
@@ -850,13 +872,15 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
-            cluster.killTopology("testSimpleTopologyMapperAggregation");
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testSimpleTopologyMapperAggregation", killOptions);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
-        cluster.shutdown();
+//        cluster.shutdown();
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
         Thread.sleep(5000);
@@ -894,7 +918,7 @@ public class TopologyTest extends TestCase {
 //        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
-        LocalCluster cluster = new LocalCluster();
+//        LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("testSimpleTopologySort", conf, topology);
 
         final int tuples = 100000;
@@ -979,13 +1003,15 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
-            cluster.killTopology("testSimpleTopologySort");
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testSimpleTopologySort", killOptions);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
-        cluster.shutdown();
+//        cluster.shutdown();
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
         Thread.sleep(5000);
@@ -1023,7 +1049,7 @@ public class TopologyTest extends TestCase {
 //        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
-        LocalCluster cluster = new LocalCluster();
+//        LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("testSimpleTopologyTemporalQuery", conf, topology);
 
         final int tuples = 100000;
@@ -1098,13 +1124,15 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
-            cluster.killTopology("testSimpleTopologyTemporalQuery");
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testSimpleTopologyTemporalQuery", killOptions);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
-        cluster.shutdown();
+//        cluster.shutdown();
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
         Thread.sleep(5000);
