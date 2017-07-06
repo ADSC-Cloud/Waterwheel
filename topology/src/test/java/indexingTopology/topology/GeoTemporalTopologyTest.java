@@ -40,6 +40,10 @@ public class GeoTemporalTopologyTest extends TestCase {
 
     AvailableSocketPool socketPool = new AvailableSocketPool();
 
+    LocalCluster cluster;
+
+
+
     boolean setupDone = false;
 
     boolean tearDownDone = false;
@@ -55,6 +59,7 @@ public class GeoTemporalTopologyTest extends TestCase {
             config.HDFSFlag = false;
             config.CHUNK_SIZE = 1024 * 1024;
             System.out.println("dataDir is set to " + config.dataDir);
+            cluster = new LocalCluster();
             setupDone = true;
         }
     }
@@ -66,6 +71,7 @@ public class GeoTemporalTopologyTest extends TestCase {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            cluster.shutdown();
             tearDownDone = true;
         }
     }
@@ -128,7 +134,6 @@ public class GeoTemporalTopologyTest extends TestCase {
         conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
         conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
-        LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("testGeoRangeQuery", conf, topology);
         IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode("localhost", ingestionPort,
                 rawSchema, 1024);
@@ -228,7 +233,6 @@ public class GeoTemporalTopologyTest extends TestCase {
 //            }
 //            cluster.shutdown();
 //        }).start();
-        Thread.sleep(5000);
 //        cluster.shutdown();
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
@@ -288,7 +292,6 @@ public class GeoTemporalTopologyTest extends TestCase {
         conf.setDebug(false);
         conf.setNumWorkers(1);
 
-        LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("testGeoRangeQueryWithBloomFilterOnVarchar", conf, topology);
         IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode("localhost", ingestionPort,
                 rawSchema, 1024);
@@ -397,7 +400,7 @@ public class GeoTemporalTopologyTest extends TestCase {
 //        cluster.shutdown();
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
-        cluster.shutdown();
+//        cluster.shutdown();
 //        Thread.sleep(5000);
     }
 }

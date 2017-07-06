@@ -71,6 +71,7 @@ public class TopologyTest extends TestCase {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            cluster.shutdown();
             tearDownDone = true;
         }
     }
@@ -191,7 +192,6 @@ public class TopologyTest extends TestCase {
 //        cluster.shutdown();
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
-        Thread.sleep(5000);
     }
 
     @Test
@@ -306,7 +306,6 @@ public class TopologyTest extends TestCase {
 
         assertTrue(fullyExecuted);
 //        cluster.shutdown();
-        Thread.sleep(5000);
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
     }
@@ -454,7 +453,6 @@ public class TopologyTest extends TestCase {
 
         assertTrue(fullyExecuted);
 //        cluster.shutdown();
-        Thread.sleep(5000);
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
     }
@@ -604,7 +602,6 @@ public class TopologyTest extends TestCase {
 
         assertTrue(fullyExecuted);
 //        cluster.shutdown();
-        Thread.sleep(5000);
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
     }
@@ -743,7 +740,6 @@ public class TopologyTest extends TestCase {
 //        cluster.shutdown();
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
-        Thread.sleep(5000);
     }
 
     @Test
@@ -883,7 +879,6 @@ public class TopologyTest extends TestCase {
 //        cluster.shutdown();
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
-        Thread.sleep(5000);
     }
 
     @Test
@@ -1014,7 +1009,6 @@ public class TopologyTest extends TestCase {
 //        cluster.shutdown();
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
-        Thread.sleep(5000);
     }
 
     @Test
@@ -1135,6 +1129,5 @@ public class TopologyTest extends TestCase {
 //        cluster.shutdown();
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
-        Thread.sleep(5000);
     }
 }
