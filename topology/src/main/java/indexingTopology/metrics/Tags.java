@@ -1,6 +1,7 @@
-package indexingTopology.util;
+package indexingTopology.metrics;
 
 import java.io.Serializable;
+import java.text.Format;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,5 +17,9 @@ public class Tags implements Serializable {
 
     String getTag(String key) {
         return tags.get(key);
+    }
+
+    public String toString() {
+        return tags.toString();
     }
 }

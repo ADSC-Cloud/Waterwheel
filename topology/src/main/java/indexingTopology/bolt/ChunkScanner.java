@@ -11,6 +11,7 @@ import indexingTopology.common.data.DataTuple;
 import indexingTopology.filesystem.FileSystemHandler;
 import indexingTopology.filesystem.HdfsFileSystemHandler;
 import indexingTopology.filesystem.LocalFileSystemHandler;
+import indexingTopology.metrics.TaggedTimeMetrics;
 import indexingTopology.streams.Streams;
 import indexingTopology.util.*;
 import javafx.util.Pair;
@@ -196,7 +197,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
                         if (config.ChunkOrientedCaching) {
                             List<byte[]> tuples = subqueryHandler.handleSubquery(subQuery, debugInfo);
 
-                            collector.emit(Streams.FileSystemQueryStream, new Values(subQuery, tuples, new FileScanMetrics()));
+                            collector.emit(Streams.FileSystemQueryStream, new Values(subQuery, tuples, new TaggedTimeMetrics()));
 
                             if (!config.SHUFFLE_GROUPING_FLAG) {
                                 collector.emit(Streams.FileSubQueryFinishStream, new Values("finished"));
@@ -241,11 +242,11 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
     private void handleSubQuery(SubQueryOnFile subQuery) throws IOException {
 //        ArrayList<byte[]> tuples = new ArrayList<>();
         List<DataTuple> dataTuplesInKeyRange = new ArrayList<>();
-        FileScanMetrics metrics = new FileScanMetrics();
+        TaggedTimeMetrics metrics = new TaggedTimeMetrics();
         List<byte[]> serializedDataTuples = new ArrayList<>();
 
-        metrics.debugInfo += String.format("subquery on %s, executed on %s ", subQuery.getFileName(),
-                InetAddress.getLocalHost().getHostName());
+        metrics.setTag("location", InetAddress.getLocalHost().getHostName());
+        metrics.setTag("chunk", subQuery.getFileName());
         debugInfo.runningPosition = "breakpoint 1";
             FileSystemHandler fileSystemHandler = null;
         try {
@@ -272,17 +273,17 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
                 if (config.HybridStorage && new File(config.dataDir, fileName).exists()) {
                     fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
                     System.out.println("Subquery will be conducted on local file in cache.");
-                    metrics.debugInfo += " local";
+                    metrics.setTag("file system", "local");
                 } else {
                     if (config.HybridStorage)
                         System.out.println("Failed to find local file :" + config.dataDir + "/" + fileName);
                     fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
-                    metrics.debugInfo += " HDFS";
+                    metrics.setTag("file system", "HDFS");
                 }
 
             } else {
                 fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
-                metrics.debugInfo += " local";
+                metrics.setTag("file system", "local");
             }
             metrics.endEvent("create handle");
             debugInfo.runningPosition = "breakpoint 3";
@@ -382,7 +383,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
             metrics.endEvent("predicate");
 //            System.out.println("After predicates: " + dataTuples.size());
 
-            metrics.debugInfo += " size = " + dataTuplesInKeyRange.size();
             debugInfo.runningPosition = "breakpoint 10";
 
             metrics.startEvent("aggregate");

@@ -1,4 +1,4 @@
-package indexingTopology.util;
+package indexingTopology.metrics;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -13,7 +13,17 @@ public class TaggedTimeMetrics extends TimeMetrics implements Serializable {
 
     public Tags tags = new Tags();
 
+    public void setTag(String key, String value) {
+        tags.setTag(key, value);
+    }
 
+    public String getTag(String key) {
+        return tags.getTag(key);
+    }
+
+    public String toString() {
+        return String.format("tags: %s metrics: %s",tags.toString(), super.toString());
+    }
 
     static Map<String, List<TimeMetrics>> group(String groupByTag, List<TaggedTimeMetrics> taggedTimeMetricsList) {
         boolean scalar = groupByTag == null || groupByTag.equals("");
@@ -30,7 +40,7 @@ public class TaggedTimeMetrics extends TimeMetrics implements Serializable {
         return groupedTaggedTimeMetrics;
     }
 
-    static Map<String, TimeMetrics> sum(String groupByTag, List<TaggedTimeMetrics> taggedTimeMetricsList) {
+    public static Map<String, TimeMetrics> sum(String groupByTag, List<TaggedTimeMetrics> taggedTimeMetricsList) {
         Map<String, TimeMetrics> tagToAggregatedResult = new HashMap<>();
         Map<String, List<TimeMetrics>> groupedTaggedTimeMetrics = group(groupByTag, taggedTimeMetricsList);
 
@@ -38,7 +48,7 @@ public class TaggedTimeMetrics extends TimeMetrics implements Serializable {
         return tagToAggregatedResult;
     }
 
-    static Map<String, TimeMetrics> average(String groupByTag, List<TaggedTimeMetrics> taggedTimeMetricsList) {
+    public static Map<String, TimeMetrics> average(String groupByTag, List<TaggedTimeMetrics> taggedTimeMetricsList) {
         Map<String, TimeMetrics> tagToAggregatedResult = new HashMap<>();
         Map<String, List<TimeMetrics>> groupedTaggedTimeMetrics = group(groupByTag, taggedTimeMetricsList);
         groupedTaggedTimeMetrics.forEach((tag, metrics) -> {
