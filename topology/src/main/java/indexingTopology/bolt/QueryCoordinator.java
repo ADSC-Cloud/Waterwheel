@@ -724,7 +724,9 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             }
 
             for (String location: locations) {
-                candidates.addAll(locationToChunkServerIds.get(location));
+                Set<Integer> serverIds = locationToChunkServerIds.get(location);
+                if (serverIds != null)
+                    candidates.addAll(serverIds);
             }
             if (candidates.size() == 0) {
                 System.out.println("locationToChunkServerIds info is not available," +

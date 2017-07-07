@@ -266,6 +266,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
             long start = System.currentTimeMillis();
 
             metrics.startEvent("total-time");
+            metrics.startEvent("create handle");
             debugInfo.runningPosition = "breakpoint 2";
             if (config.HDFSFlag) {
                 if (config.HybridStorage && new File(config.dataDir, fileName).exists()) {
@@ -283,7 +284,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
                 fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
                 metrics.debugInfo += " local";
             }
-
+            metrics.endEvent("create handle");
             debugInfo.runningPosition = "breakpoint 3";
             metrics.startEvent("open-file");
             fileSystemHandler.openFile("/", fileName);
@@ -294,7 +295,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 //        long readTemplateStart = System.currentTimeMillis();
             metrics.startEvent("read template");
             Pair data = getTemplateData(fileSystemHandler, fileName);
-            metrics.endEvent("read template");
+
 //        long temlateRead = System.currentTimeMillis() - readTemplateStart;
 
 //            fileSystemHandler.openFile("/", fileName);
@@ -311,6 +312,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
 //        long searchOffsetsStart = System.currentTimeMillis();
             List<Integer> offsets = template.getOffsetsOfLeafNodesShouldContainKeys(leftKey, rightKey);
+            metrics.endEvent("read template");
 //        System.out.println("template");
 //        System.out.println(offsets);
 //        template.printBtree();
@@ -327,6 +329,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
 //        byte[] bytesToRead = readLeafBytesFromFile(fileSystemHandler, offsets, length);
 
+            metrics.startEvent("leaf node scanning");
             byte[] bytesToRead = readLeafBytesFromFile(fileSystemHandler, offsets, length);
             debugInfo.runningPosition = "breakpoint 6";
 //        long leafBytesReadingTime = System.currentTimeMillis() - readLeafBytesStart;
@@ -338,7 +341,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
             int count = 0;
             debugInfo.runningPosition = "breakpoint 7";
-            metrics.startEvent("leaf node scanning");
             for (Integer offset : offsets) {
                 BlockId blockId = new BlockId(fileName, offset + length + 4);
 
@@ -364,7 +366,9 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
             metrics.endEvent("leaf node scanning");
             debugInfo.runningPosition = "breakpoint 9";
 //filter by timestamp range
+            metrics.startEvent("temporal filter");
             filterByTimestamp(dataTuplesInKeyRange, timestampLowerBound, timestampUpperBound);
+            metrics.endEvent("temporal filter");
 
 
 

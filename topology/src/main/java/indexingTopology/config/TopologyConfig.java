@@ -38,7 +38,7 @@ public class TopologyConfig implements Serializable {
 
     public boolean HdfsTaskLocality = true;
 
-    public boolean ChunkOrientedCaching = true;
+    public boolean ChunkOrientedCaching = false;
 
 //    public static String dataDir = "/Users/Robert/Documents/data";
 //    public String dataDir = "/home/robert/data";

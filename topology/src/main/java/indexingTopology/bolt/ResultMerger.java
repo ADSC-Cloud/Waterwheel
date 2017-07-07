@@ -120,7 +120,7 @@ public class ResultMerger extends BaseRichBolt {
 //                        System.out.println(queryId + "has been finished");
 
                 System.out.println("Subquery on file debug: " + fileScanMetrics.debugInfo);
-
+                System.out.println(fileScanMetrics);
                 if (queryIdToTaskIdToTimeMapping.get(queryId) == null) {
                     Map<Integer, List<FileScanMetrics>> taskIdToTimeMapping = new HashMap<>();
                     List<FileScanMetrics> time = new ArrayList<>();
