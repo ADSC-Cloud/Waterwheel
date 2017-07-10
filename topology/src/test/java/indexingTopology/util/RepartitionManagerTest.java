@@ -44,7 +44,7 @@ public class RepartitionManagerTest {
         ballToWeightMapping.put(8, 200L);
         ballToWeightMapping.put(9, 100L);
 
-        Histogram histogram = new Histogram(ballToWeightMapping, config);
+        Histogram histogram = new Histogram(ballToWeightMapping, config.NUMBER_OF_INTERVALS);
 
         RepartitionManager manager = new RepartitionManager(4,ballToBinMapping, histogram, config);
 
@@ -80,7 +80,7 @@ public class RepartitionManagerTest {
         ballToWeightMapping.put(8, 200L);
         ballToWeightMapping.put(9, 100L);
 
-        Histogram histogram = new Histogram(ballToWeightMapping, config);
+        Histogram histogram = new Histogram(ballToWeightMapping, config.NUMBER_OF_INTERVALS);
 
         RepartitionManager manager = new RepartitionManager(4,ballToBinMapping, histogram, config);
 
@@ -120,7 +120,7 @@ public class RepartitionManagerTest {
         ballToWeightMapping.put(8, 200L);
         ballToWeightMapping.put(9, 100L);
 
-        Histogram histogram = new Histogram(ballToWeightMapping, config);
+        Histogram histogram = new Histogram(ballToWeightMapping, config.NUMBER_OF_INTERVALS);
 
         RepartitionManager manager = new RepartitionManager(4,ballToBinMapping, histogram, config);
 
@@ -155,7 +155,7 @@ public class RepartitionManagerTest {
         ballToWeightMapping.put(8, 200L);
         ballToWeightMapping.put(9, 100L);
 
-        Histogram histogram = new Histogram(ballToWeightMapping, config);
+        Histogram histogram = new Histogram(ballToWeightMapping, config.NUMBER_OF_INTERVALS);
 
         RepartitionManager manager = new RepartitionManager(4,ballToBinMapping, histogram, config);
 
@@ -186,7 +186,7 @@ public class RepartitionManagerTest {
             ballToWeightMapping.put(i, 4L);
         }
 
-        Histogram histogram = new Histogram(ballToWeightMapping, config);
+        Histogram histogram = new Histogram(ballToWeightMapping, config.NUMBER_OF_INTERVALS);
 
         RepartitionManager manager = new RepartitionManager(10,ballToBinMapping, histogram, config);
 

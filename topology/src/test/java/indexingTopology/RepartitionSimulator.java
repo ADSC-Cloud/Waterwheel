@@ -32,7 +32,7 @@ public class RepartitionSimulator {
         mean = 500000;
         lowerBound = (int) (mean - 3*sigma);
         upperBound = (int) (mean + 3 * sigma);
-        balancedPartition = new BalancedPartition(numberOfPartitions, lowerBound, upperBound, true, new TopologyConfig());
+        balancedPartition = new BalancedPartition<>(numberOfPartitions, 100, lowerBound, upperBound, true);
         repartitionSemaphore = new Semaphore(1);
         offset = 80000;
         random = new Random();

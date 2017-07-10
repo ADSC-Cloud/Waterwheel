@@ -102,7 +102,7 @@ public class ResultMerger extends BaseRichBolt {
 //                        System.out.println(queryId + "has been finished");
                 queryIdToTaggedTimeMetricsList.computeIfAbsent(queryId, x -> new ArrayList<>()).add(timeMetrics);
 
-                System.out.println(timeMetrics);
+//                System.out.println(timeMetrics);
 
                 collector.emitDirect(taskId, Streams.SubQueryReceivedStream, new Values("received"));
             }
@@ -206,7 +206,7 @@ public class ResultMerger extends BaseRichBolt {
     private void displaySubqueryMetrics(long queryId) {
         if (queryIdToTaggedTimeMetricsList.containsKey(queryId)) {
             System.out.println("AVG: " +
-                    TaggedTimeMetrics.average(null, queryIdToTaggedTimeMetricsList.get(queryId)));
+                    TaggedTimeMetrics.average("locality", queryIdToTaggedTimeMetricsList.get(queryId)));
         }
     }
 

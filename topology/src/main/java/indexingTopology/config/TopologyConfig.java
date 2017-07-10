@@ -26,7 +26,7 @@ public class TopologyConfig implements Serializable {
 
     public final int TASK_QUEUE_CAPACITY = 10000;
 
-    public int NUMBER_OF_INTERVALS = 100000;
+    public int NUMBER_OF_INTERVALS = 1024;
 
     public final int BTREE_ORDER = 64;
 

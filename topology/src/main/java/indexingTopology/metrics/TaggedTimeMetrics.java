@@ -54,7 +54,7 @@ public class TaggedTimeMetrics extends TimeMetrics implements Serializable {
         groupedTaggedTimeMetrics.forEach((tag, metrics) -> {
                     TimeMetrics avg = TimeMetrics.aggregate(metrics);
                     avg.metrics.keySet().forEach(k -> avg.metrics.compute(k, (k1, v) -> v / metrics.size()));
-            tagToAggregatedResult.put(tag, avg);
+            tagToAggregatedResult.put(groupByTag + "." + tag, avg);
         });
         return tagToAggregatedResult;
     }

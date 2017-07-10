@@ -12,6 +12,7 @@ import indexingTopology.filesystem.FileSystemHandler;
 import indexingTopology.filesystem.HdfsFileSystemHandler;
 import indexingTopology.filesystem.LocalFileSystemHandler;
 import indexingTopology.metrics.TaggedTimeMetrics;
+import indexingTopology.metrics.Tags;
 import indexingTopology.streams.Streams;
 import indexingTopology.util.*;
 import javafx.util.Pair;
@@ -55,7 +56,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
     private static final Logger LOG = LoggerFactory.getLogger(ChunkScanner.class);
 
-    private transient ArrayBlockingQueue<SubQuery<TKey>> pendingQueue;
+    private transient ArrayBlockingQueue<TaggedSubQueryOnFile<TKey>> pendingQueue;
 
     private transient Semaphore subQueryHandlingSemaphore;
 
@@ -69,6 +70,19 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
     public static class DebugInfo {
         public String runningPosition;
+    }
+
+    static class TaggedSubQueryOnFile<T extends Number> {
+         public SubQueryOnFile<T> subquery;
+         public Tags tags;
+         public TaggedSubQueryOnFile(SubQueryOnFile<T> subquery, Tags tags) {
+             this.subquery = subquery;
+             this.tags = tags;
+         }
+
+         public TaggedSubQueryOnFile(SubQueryOnFile<T> subquery) {
+             this(subquery, null);
+         }
     }
 
     TopologyConfig config;
@@ -167,8 +181,13 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
             SubQueryOnFile subQuery = (SubQueryOnFile) tuple.getValueByField("subquery");
 
+            Tags tags = null;
+
+            if (tuple.getValueByField("tags") != null) {
+                tags = (Tags)tuple.getValueByField("tags");
+            }
             try {
-                while (!pendingQueue.offer(subQuery, 1, TimeUnit.SECONDS)) {
+                while (!pendingQueue.offer(new TaggedSubQueryOnFile<TKey>(subQuery, tags), 1, TimeUnit.SECONDS)) {
                     System.out.println("Fail to offer a subquery to pending queue. Will retry.");
                 }
             } catch (InterruptedException e) {
@@ -189,23 +208,23 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
                 while (!Thread.currentThread().isInterrupted()) {
                     try {
                         subQueryHandlingSemaphore.acquire();
-                        SubQueryOnFile subQuery = (SubQueryOnFile) pendingQueue.take();
+                        TaggedSubQueryOnFile taggedSubQuery = (TaggedSubQueryOnFile) pendingQueue.take();
 
 //                        System.out.println("sub query " + subQuery.getQueryId() + " has been taken from queue");
 
-                        System.out.println("$$$ to process a subquery on " + subQuery.getFileName() + " for " + subQuery.queryId);
+                        System.out.println("$$$ to process a subquery on " + taggedSubQuery.subquery.getFileName() + " for " + taggedSubQuery.subquery.queryId);
                         if (config.ChunkOrientedCaching) {
-                            List<byte[]> tuples = subqueryHandler.handleSubquery(subQuery, debugInfo);
+                            List<byte[]> tuples = subqueryHandler.handleSubquery(taggedSubQuery.subquery, debugInfo);
 
-                            collector.emit(Streams.FileSystemQueryStream, new Values(subQuery, tuples, new TaggedTimeMetrics()));
+                            collector.emit(Streams.FileSystemQueryStream, new Values(taggedSubQuery, tuples, new TaggedTimeMetrics()));
 
                             if (!config.SHUFFLE_GROUPING_FLAG) {
                                 collector.emit(Streams.FileSubQueryFinishStream, new Values("finished"));
                             }
                         } else {
-                            handleSubQuery(subQuery);
+                            handleSubQuery(taggedSubQuery.subquery, taggedSubQuery.tags);
                         }
-                        System.out.println("$$$ processed a subquery on " + subQuery.getFileName() + " for " + subQuery.queryId);
+                        System.out.println("$$$ processed a subquery on " + taggedSubQuery.subquery.getFileName() + " for " + taggedSubQuery.subquery.queryId);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         System.out.println("subqueryHandlding thread is interrupted.");
@@ -239,7 +258,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
     }
 
     @SuppressWarnings("unchecked")
-    private void handleSubQuery(SubQueryOnFile subQuery) throws IOException {
+    private void handleSubQuery(SubQueryOnFile subQuery, Tags tags) throws IOException {
 //        ArrayList<byte[]> tuples = new ArrayList<>();
         List<DataTuple> dataTuplesInKeyRange = new ArrayList<>();
         TaggedTimeMetrics metrics = new TaggedTimeMetrics();
@@ -479,6 +498,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 //        System.out.println(String.format("%d tuples are found on file %s", tuples.size(), fileName));
 //            System.out.println(String.format("chunk name %s has been finished !!!", subQuery.getFileName()));
 
+            metrics.tags.merge(tags);
         } finally {
             if (fileSystemHandler != null)
                 fileSystemHandler.closeFile();

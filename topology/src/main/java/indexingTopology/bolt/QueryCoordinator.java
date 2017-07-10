@@ -8,6 +8,8 @@ import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.PartialQueryResult;
 import indexingTopology.common.logics.DataTuplePredicate;
 import indexingTopology.filesystem.HdfsFileSystemHandler;
+import indexingTopology.metrics.Tags;
+import indexingTopology.metrics.TimeMetrics;
 import indexingTopology.util.*;
 import javafx.util.Pair;
 import org.apache.hadoop.fs.BlockLocation;
@@ -150,7 +152,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
         setTimestamps();
 
         numberOfPartitions = indexServers.size();
-        balancedPartition = new BalancedPartition(numberOfPartitions, lowerBound, upperBound, config);
+        balancedPartition = new BalancedPartition(numberOfPartitions, config.NUMBER_OF_INTERVALS, lowerBound, upperBound);
 
         balancedPartitionToBeDeleted = null;
 
@@ -310,7 +312,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
-        outputFieldsDeclarer.declareStream(Streams.FileSystemQueryStream, new Fields("subquery"));
+        outputFieldsDeclarer.declareStream(Streams.FileSystemQueryStream, new Fields("subquery", "tags"));
 
         outputFieldsDeclarer.declareStream(Streams.BPlusTreeQueryStream, new Fields("subquery"));
 
@@ -336,8 +338,14 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
     }
 
     private void handleQuery(List<Query<T>> querylist) {
+        TimeMetrics metrics = new TimeMetrics();
+        metrics.startEvent("generate 1");
         generateSubQueriesOnTheInsertionServer(querylist);
+        metrics.endEvent("generate 1");
+        metrics.startEvent("generate 2");
         generateSubqueriesOnTheFileScanner(querylist);
+        metrics.endEvent("generate 2");
+        System.out.println(metrics);
     }
 
     private void generateSubqueriesOnTheFileScanner(List<Query<T>> queryList) {
@@ -766,7 +774,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
             SubQueryOnFile subQuery = taskQueue.poll();
             if (subQuery != null) {
                 unprocessedSubqueries.remove(subQuery.getFileName());
-                collector.emitDirect(taskId, Streams.FileSystemQueryStream, new Values(subQuery));
+                collector.emitDirect(taskId, Streams.FileSystemQueryStream, new Values(subQuery, new Tags()));
             }
         }
     }
@@ -779,7 +787,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
 
     private void sendSubqueriesByshuffleGrouping(SubQuery subQuery) {
-        collector.emit(Streams.FileSystemQueryStream, new Values(subQuery));
+        collector.emit(Streams.FileSystemQueryStream, new Values(subQuery, new Tags()));
     }
 
 
@@ -788,7 +796,7 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
         if (subQuery != null) {
             unprocessedSubqueries.remove(subQuery.getFileName());
-            collector.emitDirect(taskId, Streams.FileSystemQueryStream, new Values(subQuery));
+            collector.emitDirect(taskId, Streams.FileSystemQueryStream, new Values(subQuery, new Tags()));
         }
     }
 
@@ -797,13 +805,14 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
     private void sendSubquery(int taskId) {
         SubQueryOnFileWithPriority subQuery = null;
 
+        Boolean preferred = true; // indicate if the subquery is assigned to a preferred query server
         while (subQuery == null) {
 
             PriorityBlockingQueue<SubQueryOnFileWithPriority> taskQueue = taskIdToTaskQueue.get(taskId);
-
             subQuery = taskQueue.poll();
 
             if (subQuery == null) {
+                preferred = false;
                 taskQueue = getLongestQueue();
                 if (taskQueue.size() > 0)
                     subQuery = taskQueue.poll();
@@ -815,9 +824,11 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
                 subQuery = null;
         }
         if (subQuery != null) {
+            Tags tags = new Tags();
+            tags.setTag("locality", preferred.toString());
             unprocessedSubqueries.remove(subQuery.getFileName());
             collector.emitDirect(taskId, Streams.FileSystemQueryStream
-                    , new Values(subQuery));
+                    , new Values(subQuery, tags));
             System.out.println(String.format("subquery %d is sent to %s for %s", subQuery.queryId,
                     chunkServerIdToLocation.get(taskId), subQuery.getFileName()));
         }

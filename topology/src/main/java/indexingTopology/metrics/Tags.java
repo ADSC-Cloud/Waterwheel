@@ -11,15 +11,20 @@ import java.util.Map;
 public class Tags implements Serializable {
     Map<String, String> tags = new HashMap<>();
 
-    void setTag(String key, String value) {
+    public void setTag(String key, String value) {
         tags.put(key, value);
     }
 
-    String getTag(String key) {
+    public String getTag(String key) {
         return tags.get(key);
     }
 
     public String toString() {
         return tags.toString();
+    }
+
+    public void merge(Tags tags) {
+        if (tags != null)
+            this.tags.putAll(tags.tags);
     }
 }

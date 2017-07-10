@@ -12,17 +12,17 @@ public class Histogram implements Serializable{
 
     private Map<Integer, Long> histogram;
 
-    private TopologyConfig config;
+    private int numberOfIntervals;
 
-    public Histogram(TopologyConfig config) {
+    public Histogram(int numberOfIntervals) {
+        this.numberOfIntervals = numberOfIntervals;
         histogram = new HashMap<>();
-        this.config = config;
     }
 
-    public Histogram(Map<Integer, Long> histogram, TopologyConfig config) {
+    public Histogram(Map<Integer, Long> histogram, int numberOfIntervals) {
+        this.numberOfIntervals = numberOfIntervals;
         this.histogram = new HashMap<>();
         this.histogram.putAll(histogram);
-        this.config = config;
     }
 
     public void record(int intervalId) {
@@ -40,7 +40,7 @@ public class Histogram implements Serializable{
 
     public List<Long> histogramToList() {
         List<Long> ret = new ArrayList<>();
-        setDefaultValueForAbsentKey(config.NUMBER_OF_INTERVALS);
+        setDefaultValueForAbsentKey(numberOfIntervals);
         Object[] keys = histogram.keySet().toArray();
         Arrays.sort(keys);
         for (Object key : keys) {
@@ -69,6 +69,17 @@ public class Histogram implements Serializable{
 
     public void clear() {
         histogram.clear();
+    }
+
+    public String toString() {
+        TreeMap<Integer, Long> treeMap = new TreeMap<>();
+        treeMap.putAll(histogram);
+        String str = "";
+        for(Integer i: treeMap.keySet()) {
+            if (treeMap.get(i) != 0)
+                str += String.format("%d: %d, ", i, treeMap.get(i));
+        }
+        return str.substring(0, Math.max(str.length() - 2, 0));
     }
 
 }

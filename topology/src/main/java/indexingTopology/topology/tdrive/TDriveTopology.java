@@ -95,11 +95,11 @@ public class TDriveTopology {
     private int NumberOfQueries = Integer.MAX_VALUE;
 
 
-    static final double x1 = 39.6;
-    static final double x2 = 40.6;
-    static final double y1 = 116.2;
-    static final double y2 = 117.0;
-    final int partitions = 1024;
+    static final double x1 = 116.0;
+    static final double x2 = 117.0;
+    static final double y1 = 39.6;
+    static final double y2 = 40.6;
+    final int partitions = 128;
 
     public void executeQuery() {
 
@@ -208,8 +208,9 @@ public class TDriveTopology {
 
         Integer lowerBound = 0;
         Integer upperBound = city.getMaxZCode();
+        System.out.println("upperBound: " + upperBound);
 
-        final boolean enableLoadBalance = false;
+        final boolean enableLoadBalance = true;
 
         TopologyConfig config = new TopologyConfig();
 

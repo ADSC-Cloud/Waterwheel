@@ -93,7 +93,7 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
 
         numberOfPartitions = indexTasks.size();
 
-        balancedPartition = new BalancedPartition<>(numberOfPartitions, lowerBound, upperBound, config);
+        balancedPartition = new BalancedPartition<>(numberOfPartitions, config.NUMBER_OF_INTERVALS, lowerBound, upperBound);
 
         intervalToPartitionMapping = balancedPartition.getIntervalToPartitionMapping();
 
@@ -102,7 +102,7 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
 
         indexTaskToTimestampMapping = new HashMap<>();
 
-        histogram = new Histogram(config);
+        histogram = new Histogram(config.NUMBER_OF_INTERVALS);
 
         repartitionEnabled = true;
 
@@ -177,17 +177,18 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
 //                    System.out.println("skewness factor " + skewnessFactor);
                     RepartitionManager manager = new RepartitionManager(numberOfPartitions, intervalToPartitionMapping,
                             this.histogram, config);
+                    System.out.println("Histogram: " + this.histogram);
                     Double skewnessFactor = manager.getSkewnessFactor();
                     if (skewnessFactor > config.LOAD_BALANCE_THRESHOLD) {
-//                        System.out.println("skewness detected!!!");
+                        System.out.println("skewness detected!!!");
 //                        System.out.println(this.histogram.getHistogram());
 //                        List<Long> workLoads = getWorkLoads(histogram);
 //                        RepartitionManager manager = new RepartitionManager(numberOfPartitions, intervalToPartitionMapping,
 //                                histogram.getHistogram(), getTotalWorkLoad(workLoads));
                         this.intervalToPartitionMapping = manager.getRepartitionPlan();
 //                        System.out.println("after repartition " + intervalToPartitionMapping);
-                        this.balancedPartition = new BalancedPartition<>(numberOfPartitions, lowerBound, upperBound,
-                                intervalToPartitionMapping, config);
+                        this.balancedPartition = new BalancedPartition<>(numberOfPartitions, config.NUMBER_OF_INTERVALS, lowerBound, upperBound,
+                                intervalToPartitionMapping);
                         repartitionEnabled = false;
                         collector.emit(Streams.IntervalPartitionUpdateStream,
 //                                new Values(this.balancedPartition.getIntervalToPartitionMapping()));
@@ -431,7 +432,7 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
 
         @Override
         public void run() {
-            final int sleepTimeInSecond = 10;
+            final int sleepTimeInSecond = 2;
 //            while (true) {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
@@ -452,10 +453,10 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
 
                 histogram.clear();
 
-                if (repartitionEnabled) {
+//                if (repartitionEnabled) {
                     collector.emit(Streams.StaticsRequestStream,
                             new Values("Statics Request"));
-                }
+//                }
             }
         }
 
