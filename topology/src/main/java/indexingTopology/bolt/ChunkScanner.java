@@ -149,8 +149,6 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
                 try {
                     Thread.sleep(10000);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    Thread.currentThread().interrupt();
                     break;
                 }
             }

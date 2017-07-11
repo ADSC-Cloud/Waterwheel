@@ -19,6 +19,7 @@ import indexingTopology.util.*;
 import junit.framework.TestCase;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
+import org.apache.storm.generated.KillOptions;
 import org.apache.storm.generated.StormTopology;
 
 import java.io.IOException;
@@ -38,24 +39,40 @@ public class TopologyTest extends TestCase {
 
     TopologyConfig config = new TopologyConfig();
 
+    AvailableSocketPool socketPool = new AvailableSocketPool();
+
+    LocalCluster cluster;
+
+    boolean setupDone = false;
+
+    boolean tearDownDone = false;
+
     public void setUp() {
-        try {
-            Runtime.getRuntime().exec("mkdir -p ./target/tmp");
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (!setupDone) {
+            try {
+                Runtime.getRuntime().exec("mkdir -p ./target/tmp");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            config.dataDir = "./target/tmp";
+            config.CHUNK_SIZE = 2 * 1024 * 1024;
+            config.HDFSFlag = false;
+            config.HDFSFlag = false;
+            System.out.println("dataDir is set to " + config.dataDir);
+            cluster = new LocalCluster();
+            setupDone = true;
         }
-        config.dataDir = "./target/tmp";
-        config.CHUNK_SIZE = 2 * 1024 * 1024;
-        config.HDFSFlag = false;
-        config.HDFSFlag = false;
-        System.out.println("dataDir is set to " + config.dataDir);
     }
 
     public void tearDown() {
-        try {
-            Runtime.getRuntime().exec("rm ./target/tmp/*");
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (! tearDownDone) {
+            try {
+                Runtime.getRuntime().exec("rm ./target/tmp/*");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            cluster.shutdown();
+            tearDownDone = true;
         }
     }
     @Test
@@ -67,6 +84,9 @@ public class TopologyTest extends TestCase {
         schema.addVarcharField("a4", 100);
         schema.setPrimaryIndexField("a1");
 
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
+
         final int minIndex = 0;
         final int maxIndex = 100;
 
@@ -74,8 +94,8 @@ public class TopologyTest extends TestCase {
 
         assertTrue(config != null);
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001,
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, ingestionPort, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, queryPort,
                 config, schema);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
@@ -89,21 +109,21 @@ public class TopologyTest extends TestCase {
 //        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
-        LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("T0", conf, topology);
+
+        cluster.submitTopology("testSimpleTopologyKeyRangeQuery", conf, topology);
 
         final int tuples = 100000;
 
 
-        final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", 10000, schema, 1024);
+        final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(10000);
+            ingestionClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        final QueryClient queryClient = new QueryClient("localhost", 10001);
+        final QueryClient queryClient = new QueryClient("localhost", queryPort);
         try {
-            queryClient.connectWithTimeout(10000);
+            queryClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -161,15 +181,17 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
-            cluster.killTopology("T0");
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testSimpleTopologyKeyRangeQuery", killOptions);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
-        cluster.shutdown();
-
-        Thread.sleep(5000);
+//        cluster.shutdown();
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
     }
 
     @Test
@@ -184,10 +206,13 @@ public class TopologyTest extends TestCase {
         final int minIndex = 20;
         final int maxIndex = 80;
 
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
+
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001,
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, ingestionPort, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, queryPort,
                 config, schema);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
@@ -201,21 +226,21 @@ public class TopologyTest extends TestCase {
 //        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
-        LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("T0", conf, topology);
+//        LocalCluster cluster = new LocalCluster();
+        cluster.submitTopology("testSimpleTopologyKeyRangeQueryOutOfBoundaries", conf, topology);
 
         final int tuples = 100000;
 
 
-        final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", 10000, schema, 1024);
+        final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(10000);
+            ingestionClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        final QueryClient queryClient = new QueryClient("localhost", 10001);
+        final QueryClient queryClient = new QueryClient("localhost", queryPort);
         try {
-            queryClient.connectWithTimeout(10000);
+            queryClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -272,14 +297,17 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
-            cluster.killTopology("T0");
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testSimpleTopologyKeyRangeQueryOutOfBoundaries", killOptions);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
-        cluster.shutdown();
-        Thread.sleep(5000);
+//        cluster.shutdown();
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
     }
 
     @Test
@@ -294,10 +322,13 @@ public class TopologyTest extends TestCase {
         final int minIndex = 0;
         final int maxIndex = 100;
 
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
+
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001,
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, ingestionPort, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, queryPort,
                 config, schema);
 
         ArrayList<String> bloomFilterColumns = new ArrayList<>();
@@ -313,21 +344,21 @@ public class TopologyTest extends TestCase {
 //        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
-        LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("T0", conf, topology);
+//        LocalCluster cluster = new LocalCluster();
+        cluster.submitTopology("testSimpleTopologyPredicateWithBloomFilterVarcharTest", conf, topology);
 
         final int tuples = 100000;
 
 
-        final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", 10000, schema, 1024);
+        final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(10000);
+            ingestionClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        final QueryClient queryClient = new QueryClient("localhost", 10001);
+        final QueryClient queryClient = new QueryClient("localhost", queryPort);
         try {
-            queryClient.connectWithTimeout(10000);
+            queryClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -413,15 +444,19 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
-            cluster.killTopology("T0");
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testSimpleTopologyPredicateWithBloomFilterVarcharTest", killOptions);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
-        cluster.shutdown();
-        Thread.sleep(5000);
+//        cluster.shutdown();
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
     }
+
 
 
     @Test
@@ -436,10 +471,13 @@ public class TopologyTest extends TestCase {
         final int minIndex = 0;
         final int maxIndex = 100;
 
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
+
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001,
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, ingestionPort, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, queryPort,
                 config, schema);
 
         ArrayList<String> bloomFilterColumns = new ArrayList<>();
@@ -455,21 +493,21 @@ public class TopologyTest extends TestCase {
 //        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
-        LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("T0", conf, topology);
+//        LocalCluster cluster = new LocalCluster();
+        cluster.submitTopology("testSimpleTopologyPredicateWithBloomFilterDoubleTest", conf, topology);
 
         final int tuples = 100000;
 
 
-        final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", 10000, schema, 1024);
+        final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(10000);
+            ingestionClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        final QueryClient queryClient = new QueryClient("localhost", 10001);
+        final QueryClient queryClient = new QueryClient("localhost", queryPort);
         try {
-            queryClient.connectWithTimeout(10000);
+            queryClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -555,14 +593,17 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
-            cluster.killTopology("T0");
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testSimpleTopologyPredicateWithBloomFilterDoubleTest", killOptions);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
-        cluster.shutdown();
-        Thread.sleep(5000);
+//        cluster.shutdown();
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
     }
 
     @Test
@@ -577,12 +618,15 @@ public class TopologyTest extends TestCase {
         final int minIndex = 0;
         final int maxIndex = 100;
 
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
+
         assertTrue(config != null);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001,
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, ingestionPort, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, queryPort,
                 config, schema);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
@@ -596,21 +640,21 @@ public class TopologyTest extends TestCase {
 //        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
-        LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("T0", conf, topology);
+//        LocalCluster cluster = new LocalCluster();
+        cluster.submitTopology("testSimpleTopologyAggregation", conf, topology);
 
         final int tuples = 100000;
 
 
-        final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", 10000, schema, 1024);
+        final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(10000);
+            ingestionClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        final QueryClient queryClient = new QueryClient("localhost", 10001);
+        final QueryClient queryClient = new QueryClient("localhost", queryPort);
         try {
-            queryClient.connectWithTimeout(10000);
+            queryClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -685,14 +729,17 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
-            cluster.killTopology("T0");
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testSimpleTopologyAggregation", killOptions);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
-        cluster.shutdown();
-        Thread.sleep(5000);
+//        cluster.shutdown();
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
     }
 
     @Test
@@ -714,10 +761,13 @@ public class TopologyTest extends TestCase {
         final int minIndex = 0;
         final int maxIndex = 100;
 
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
+
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(rawSchema, 10000, config);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001,
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(rawSchema, ingestionPort, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, queryPort,
                 config, schema);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
@@ -730,22 +780,20 @@ public class TopologyTest extends TestCase {
 //        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
 //        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
-
-        LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("T0", conf, topology);
-
+        cluster.submitTopology("testSimpleTopologyMapperAggregation", conf, topology);
+//        LocalCluster cluster = new LocalCluster();
         final int tuples = 100000;
 
 
-        final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", 10000, rawSchema, 1024);
+        final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, rawSchema, 1024);
         try {
-            ingestionClient.connectWithTimeout(10000);
+            ingestionClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        final QueryClient queryClient = new QueryClient("localhost", 10001);
+        final QueryClient queryClient = new QueryClient("localhost", queryPort);
         try {
-            queryClient.connectWithTimeout(10000);
+            queryClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -820,14 +868,17 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
-            cluster.killTopology("T0");
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testSimpleTopologyMapperAggregation", killOptions);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
-        cluster.shutdown();
-        Thread.sleep(5000);
+//        cluster.shutdown();
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
     }
 
     @Test
@@ -842,10 +893,13 @@ public class TopologyTest extends TestCase {
         final int minIndex = 0;
         final int maxIndex = 1000;
 
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
+
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001,
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, ingestionPort, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, queryPort,
                 config, schema);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
@@ -859,21 +913,21 @@ public class TopologyTest extends TestCase {
 //        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
-        LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("T0", conf, topology);
+//        LocalCluster cluster = new LocalCluster();
+        cluster.submitTopology("testSimpleTopologySort", conf, topology);
 
         final int tuples = 100000;
 
 
-        final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", 10000, schema, 1024);
+        final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(10000);
+            ingestionClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        final QueryClient queryClient = new QueryClient("localhost", 10001);
+        final QueryClient queryClient = new QueryClient("localhost", queryPort);
         try {
-            queryClient.connectWithTimeout(10000);
+            queryClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -944,14 +998,17 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
-            cluster.killTopology("T0");
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testSimpleTopologySort", killOptions);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
-        cluster.shutdown();
-        Thread.sleep(5000);
+//        cluster.shutdown();
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
     }
 
     @Test
@@ -966,10 +1023,13 @@ public class TopologyTest extends TestCase {
         final int minIndex = 0;
         final int maxIndex = 1000;
 
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
+
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, 10000, config);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, 10001,
+        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, ingestionPort, config);
+        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, queryPort,
                 config, schema);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
@@ -983,21 +1043,21 @@ public class TopologyTest extends TestCase {
 //        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
 
 
-        LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("T0", conf, topology);
+//        LocalCluster cluster = new LocalCluster();
+        cluster.submitTopology("testSimpleTopologyTemporalQuery", conf, topology);
 
         final int tuples = 100000;
 
 
-        final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", 10000, schema, 1024);
+        final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(10000);
+            ingestionClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        final QueryClient queryClient = new QueryClient("localhost", 10001);
+        final QueryClient queryClient = new QueryClient("localhost", queryPort);
         try {
-            queryClient.connectWithTimeout(10000);
+            queryClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -1058,13 +1118,16 @@ public class TopologyTest extends TestCase {
         try {
             ingestionClient.close();
             queryClient.close();
-            cluster.killTopology("T0");
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testSimpleTopologyTemporalQuery", killOptions);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         assertTrue(fullyExecuted);
-        cluster.shutdown();
-        Thread.sleep(5000);
+//        cluster.shutdown();
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
     }
 }
