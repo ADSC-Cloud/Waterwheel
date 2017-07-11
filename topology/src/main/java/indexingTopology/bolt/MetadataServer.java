@@ -175,10 +175,11 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
                 if (numberOfStaticsReceived == numberOfDispatchers) {
 //                    Double skewnessFactor = getSkewnessFactor(this.histogram);
 //                    System.out.println("skewness factor " + skewnessFactor);
-                    RepartitionManager manager = new RepartitionManager(numberOfPartitions, intervalToPartitionMapping,
-                            this.histogram, config);
-                    System.out.println("Histogram: " + this.histogram);
+                    RepartitionManager manager = new RepartitionManager(numberOfPartitions, config.NUMBER_OF_INTERVALS, intervalToPartitionMapping,
+                            this.histogram);
+//                    System.out.println("Histogram: " + this.histogram);
                     Double skewnessFactor = manager.getSkewnessFactor();
+                    System.out.println("skewness of key partitioning: " + skewnessFactor);
                     if (skewnessFactor > config.LOAD_BALANCE_THRESHOLD) {
                         System.out.println("skewness detected!!!");
 //                        System.out.println(this.histogram.getHistogram());
@@ -189,6 +190,13 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
 //                        System.out.println("after repartition " + intervalToPartitionMapping);
                         this.balancedPartition = new BalancedPartition<>(numberOfPartitions, config.NUMBER_OF_INTERVALS, lowerBound, upperBound,
                                 intervalToPartitionMapping);
+
+                        {// print skewness
+                            manager = new RepartitionManager(numberOfPartitions, config.NUMBER_OF_INTERVALS, intervalToPartitionMapping, this.histogram);
+                            Double newSkewnessFactor = manager.getSkewnessFactor();
+                            System.out.println(String.format("Skewness: %.3f -> %.3f", skewnessFactor, newSkewnessFactor));
+                        }
+
                         repartitionEnabled = false;
                         collector.emit(Streams.IntervalPartitionUpdateStream,
 //                                new Values(this.balancedPartition.getIntervalToPartitionMapping()));

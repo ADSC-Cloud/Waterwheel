@@ -95,7 +95,7 @@ public class RepartitionSimulator {
 
                     System.out.println(balancedPartition.getIntervalDistribution().getHistogram());
 
-                    RepartitionManager repartitionManager = new RepartitionManager(numberOfPartitions, balancedPartition.getIntervalToPartitionMapping(), balancedPartition.getIntervalDistribution(), new TopologyConfig());
+                    RepartitionManager repartitionManager = new RepartitionManager(numberOfPartitions, 1024, balancedPartition.getIntervalToPartitionMapping(), balancedPartition.getIntervalDistribution());
 
                     System.out.println(repartitionManager.getRepartitionPlan());
 

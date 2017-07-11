@@ -15,14 +15,14 @@ public class RepartitionManager {
 
     private int nbins;
 
-    private TopologyConfig config;
+    private int numberOfBalls;
 
-    public RepartitionManager(int numberOfBins, Map<Integer, Integer> ballToBinMapping,
-                              Histogram histogram, TopologyConfig config) {
+    public RepartitionManager(int numberOfBins, int numberOfBalls, Map<Integer, Integer> ballToBinMapping,
+                              Histogram histogram) {
         this.ballToBinMapping.putAll(ballToBinMapping);
         this.histogram = histogram;
         nbins = numberOfBins;
-        this.config = config;
+        this.numberOfBalls = numberOfBalls;
     }
 
     public Map<Integer, Integer> getRepartitionPlan() {
@@ -132,32 +132,23 @@ public class RepartitionManager {
         Long maxWorkload = getMaxWorkLoad(workLoads);
         double averageLoad = sum / (double) nbins;
 
-        return maxWorkload / averageLoad;
+        return maxWorkload / averageLoad - 1;
     }
 
 
     public List<Long> getWorkLoads() {
-        List<Long> wordLoads = new ArrayList<>();
-
-        int partitionId = 0;
-
-        long tmpWorkload = 0;
-
-        List<Long> workLoads = histogram.histogramToList();
-
-        for (int intervalId = 0; intervalId < config.NUMBER_OF_INTERVALS; ++intervalId) {
-            if (ballToBinMapping.get(intervalId) != null && ballToBinMapping.get(intervalId) != partitionId) {
-                wordLoads.add(tmpWorkload);
-                tmpWorkload = 0;
-                partitionId = ballToBinMapping.get(intervalId);
-            }
-
-            tmpWorkload += workLoads.get(intervalId);
+        List<Long> workloads = new ArrayList<>();
+        for (int i = 0; i < nbins; i++) {
+            workloads.add(0L);
         }
 
-        wordLoads.add(tmpWorkload);
-
-        return wordLoads;
+        for (Integer ball: ballToBinMapping.keySet()) {
+            int bin = ballToBinMapping.get(ball);
+            long ballWorkload = histogram.getHistogram().get(ball);
+            long binWorkload = workloads.get(bin);
+            workloads.set(bin, binWorkload + ballWorkload);
+        }
+        return workloads;
     }
 
 //    public Long getTotalWorkLoad(Histogram histogram) {
@@ -214,5 +205,35 @@ public class RepartitionManager {
         }
 
         return ret;
+    }
+
+    public static void main(String[] args) {
+        Histogram histogram = new Histogram(6);
+        histogram.record(0);
+        histogram.record(0);
+        histogram.record(1);
+        histogram.record(1);
+        histogram.record(1);
+        histogram.record(2);
+        histogram.record(3);
+        histogram.record(4);
+        histogram.record(5);
+        Map<Integer, Integer> intervalToPartitionMapping = new HashMap<>();
+        intervalToPartitionMapping.put(0, 0);
+        intervalToPartitionMapping.put(1, 0);
+        intervalToPartitionMapping.put(2, 0);
+
+        intervalToPartitionMapping.put(3, 1);
+        intervalToPartitionMapping.put(4, 1);
+        intervalToPartitionMapping.put(5, 1);
+        RepartitionManager manager = new RepartitionManager(2, 6, intervalToPartitionMapping, histogram);
+        System.out.println(manager.getSkewnessFactor());
+        System.out.println(manager.getWorkLoads());
+
+        intervalToPartitionMapping = manager.getRepartitionPlan();
+        manager = new RepartitionManager(2, 6, intervalToPartitionMapping, histogram);
+        System.out.println(manager.getSkewnessFactor());
+        System.out.println(manager.getWorkLoads());
+
     }
 }

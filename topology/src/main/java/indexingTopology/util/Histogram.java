@@ -26,12 +26,8 @@ public class Histogram implements Serializable{
     }
 
     public void record(int intervalId) {
-        Long frequency = histogram.get(intervalId);
-        if (frequency == null) {
-            histogram.put(intervalId, 0L);
-        } else {
-            histogram.put(intervalId, frequency + 1L);
-        }
+        Long frequency = histogram.computeIfAbsent(intervalId, t -> 0L);
+        histogram.put(intervalId, frequency + 1L);
     }
 
     public Map<Integer, Long> getHistogram() {

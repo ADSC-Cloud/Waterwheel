@@ -16,15 +16,15 @@ public class BalancedPartitionTest extends TestCase{
 
     @Test
     public void testBoundary() {
-        BalancedPartition<Integer> partition = new BalancedPartition<Integer>(10, 16, 0, 100);
+        BalancedPartition<Integer> partition = new BalancedPartition<>(10, 16, 0, 100);
         assertEquals(0, partition.getIntervalId(-100));
-        assertEquals(9, partition.getIntervalId(2330));
+        assertEquals(15, partition.getIntervalId(2330));
     }
 
 
     @Test
     public void testOneToOneMapping() {
-        BalancedPartition<Integer> partition = new BalancedPartition<Integer>(100, 100, 0, 100);
+        BalancedPartition<Integer> partition = new BalancedPartition<>(100, 100, 0, 100);
         for (int i = 0; i < 100; i++) {
             assertEquals(i, partition.getPartitionId(i));
         }
@@ -33,9 +33,9 @@ public class BalancedPartitionTest extends TestCase{
 
     @Test
     public void testTenToOneMapping() {
-        BalancedPartition<Integer> partition = new BalancedPartition<Integer>(10, 100, 0, 100);
+        BalancedPartition<Integer> partition = new BalancedPartition<>(10, 100, 0, 100);
         for (int i = 0; i < 100; i++) {
-            assertEquals(i, partition.getPartitionId(i) / 10);
+            assertEquals(i / 10, partition.getPartitionId(i));
         }
     }
 }

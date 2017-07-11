@@ -46,7 +46,7 @@ public class RepartitionManagerTest {
 
         Histogram histogram = new Histogram(ballToWeightMapping, config.NUMBER_OF_INTERVALS);
 
-        RepartitionManager manager = new RepartitionManager(4,ballToBinMapping, histogram, config);
+        RepartitionManager manager = new RepartitionManager(4, config.NUMBER_OF_INTERVALS, ballToBinMapping, histogram);
 
         Double skewnessFactor = 2.2;
 
@@ -82,7 +82,7 @@ public class RepartitionManagerTest {
 
         Histogram histogram = new Histogram(ballToWeightMapping, config.NUMBER_OF_INTERVALS);
 
-        RepartitionManager manager = new RepartitionManager(4,ballToBinMapping, histogram, config);
+        RepartitionManager manager = new RepartitionManager(4, config.NUMBER_OF_INTERVALS, ballToBinMapping, histogram);
 
         List<Long> workloads = new ArrayList<>();
         workloads.add(1100L);
@@ -122,7 +122,7 @@ public class RepartitionManagerTest {
 
         Histogram histogram = new Histogram(ballToWeightMapping, config.NUMBER_OF_INTERVALS);
 
-        RepartitionManager manager = new RepartitionManager(4,ballToBinMapping, histogram, config);
+        RepartitionManager manager = new RepartitionManager(4, config.NUMBER_OF_INTERVALS, ballToBinMapping, histogram);
 
         Long totalWordload = 2000L;
         assertEquals(totalWordload, manager.getTotalWorkLoad(manager.getWorkLoads()));
@@ -157,7 +157,7 @@ public class RepartitionManagerTest {
 
         Histogram histogram = new Histogram(ballToWeightMapping, config.NUMBER_OF_INTERVALS);
 
-        RepartitionManager manager = new RepartitionManager(4,ballToBinMapping, histogram, config);
+        RepartitionManager manager = new RepartitionManager(4, config.NUMBER_OF_INTERVALS, ballToBinMapping, histogram);
 
         ballToBinMapping = manager.getRepartitionPlan();
 
@@ -188,7 +188,7 @@ public class RepartitionManagerTest {
 
         Histogram histogram = new Histogram(ballToWeightMapping, config.NUMBER_OF_INTERVALS);
 
-        RepartitionManager manager = new RepartitionManager(10,ballToBinMapping, histogram, config);
+        RepartitionManager manager = new RepartitionManager(10, config.NUMBER_OF_INTERVALS, ballToBinMapping, histogram);
 
         ballToBinMapping = manager.getRepartitionPlan();
 
