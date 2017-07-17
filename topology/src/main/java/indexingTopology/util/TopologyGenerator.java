@@ -37,7 +37,7 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
                                                   DataTupleMapper dataTupleMapper, List<String> bloomFilterColumns, TopologyConfig config) {
         TopologyBuilder builder = new TopologyBuilder();
 
-        builder.setBolt(TupleGenerator, dataSource, 1)
+        builder.setBolt(TupleGenerator, dataSource, numberOfNodes)
                 .directGrouping(IndexerBolt, Streams.AckStream);
 
         builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher<>(dataSchema, lowerBound, upperBound,

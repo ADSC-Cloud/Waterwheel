@@ -12,6 +12,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 /**
  * Created by acelzj on 15/3/17.
@@ -79,6 +80,11 @@ public class TDriveDataSource extends InputStreamReceiver {
         frequencyRestrictor = new FrequencyRestrictor(maxInputRate, 50);
 
         int index = 0;
+//        double xmin, xmax, ymin, ymax;
+//        xmin = 1000.0;
+//        xmax = -1.0;
+//        ymin = 1000.0;
+//        ymax = -1.0;
         while (true) {
             index = generatorIds.indexOf(taskId) + step * size;
             if (index >= listOfFiles.length) {
@@ -107,16 +113,35 @@ public class TDriveDataSource extends InputStreamReceiver {
                     String[] data = text.split(",");
 
                     Integer taxiId = Integer.parseInt(data[0]);
-                    taxiIds.add(taxiId);
-
                     Double longitude = Double.parseDouble(data[2]);
-                    longitudes.add(longitude);
-
                     Double latitude = Double.parseDouble(data[3]);
+//                    static final double x1 = 39.6;
+//                    static final double x2 = 40.6;
+//                    static final double y1 = 116.2;
+//                    static final double y2 = 117.0;
+                    if (longitude < 116 || longitude > 117 || latitude < 39.6 || latitude > 40.6)
+                        continue;
+                    taxiIds.add(taxiId);
+                    longitudes.add(longitude);
                     latitudes.add(latitude);
 
                     int zcode = city.getZCodeForALocation(longitude, latitude);
                     zcodes.add(zcode);
+
+//                    if (zcode == 5461) {
+//                        xmin = Math.min(longitude, xmin);
+//                        xmax = Math.max(longitude, xmax);
+//                        ymin = Math.min(latitude, ymin);
+//                        ymax = Math.max(latitude, ymax);
+//                        System.out.println(String.format("(%f, %f) --> (%f, %f)", xmin, xmax, ymin, ymax));
+//                    }
+
+//                    if (new Random().nextInt(100000) ==0) {
+//                    }
+                    if (zcode > 16384) {
+                        System.out.println("strange zCode: " + zcode);
+                        System.out.println(String.format("%f, %f", longitude, latitude));
+                    }
                 }
             }
         }

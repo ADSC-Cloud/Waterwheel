@@ -17,47 +17,48 @@ public class BalancedPartition<T extends Number> implements Serializable{
 
     private int numberOfPartitions;
 
+    private int numberOfIntervals;
+
     private Map<Integer, Integer> intervalToPartitionMapping;
 
-    private boolean enableRecord = false;
+    private boolean enableRecord = true;
 
     private Histogram histogram;
 
-    private TopologyConfig config;
 
-    public BalancedPartition(int numberOfPartitions, T lowerBound, T upperBound, TopologyConfig config) {
-        this.config = config;
+    public BalancedPartition(int numberOfPartitions, int numberOfIntervals, T lowerBound, T upperBound) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
         this.numberOfPartitions = numberOfPartitions;
+        this.numberOfIntervals = numberOfIntervals;
         intervalToPartitionMapping = getBalancedPartitionPlan();
     }
 
-    public BalancedPartition(int numberOfPartitions, T lowerBound, T upperBound, boolean enableRecord, TopologyConfig config) {
-        this(numberOfPartitions, lowerBound, upperBound, config);
-        histogram = new Histogram(config);
+    public BalancedPartition(int numberOfPartitions, int numberofIntervals, T lowerBound, T upperBound, boolean enableRecord) {
+        this(numberOfPartitions, numberofIntervals, lowerBound, upperBound);
+        histogram = new Histogram(numberofIntervals);
         if (enableRecord) {
             setEnableRecord();
         }
     }
 
 
-    public BalancedPartition(int numberOfPartitions, T lowerBound, T upperBound,
-                             Map<Integer, Integer> intervalToPartitionMapping, TopologyConfig config) {
-        this(numberOfPartitions, lowerBound, upperBound, true, config);
+    public BalancedPartition(int numberOfPartitions, int numberOfIntervals, T lowerBound, T upperBound,
+                             Map<Integer, Integer> intervalToPartitionMapping) {
+        this(numberOfPartitions, numberOfIntervals, lowerBound, upperBound, true);
         this.intervalToPartitionMapping.putAll(intervalToPartitionMapping);
     }
 
     public Map<Integer, Integer> getBalancedPartitionPlan() {
         Double distance = (upperBound.doubleValue() - lowerBound.doubleValue()) / numberOfPartitions;
-        Double miniDistance = (upperBound.doubleValue() - lowerBound.doubleValue()) / config.NUMBER_OF_INTERVALS;
+        Double miniDistance = (upperBound.doubleValue() - lowerBound.doubleValue()) / numberOfIntervals;
         Double keyRangeUpperBound = lowerBound.doubleValue() + distance;
         Double bound = lowerBound.doubleValue() + miniDistance;
 
 
         Map<Integer, Integer> intervalToPartitionMapping = new HashMap<>();
         int bin = 0;
-        for (int i = 0; i < config.NUMBER_OF_INTERVALS; ++i) {
+        for (int i = 0; i < numberOfIntervals; ++i) {
             intervalToPartitionMapping.put(i, bin);
             bound += miniDistance;
             if (bound > keyRangeUpperBound) {
@@ -75,24 +76,34 @@ public class BalancedPartition<T extends Number> implements Serializable{
     }
 
     public int getIntervalId(T key) {
-        Double distance = (upperBound.doubleValue() - lowerBound.doubleValue()) / config.NUMBER_OF_INTERVALS;
-
-        Double startLowerBound = lowerBound.doubleValue() + distance;
-        Double endUpperBound = upperBound.doubleValue() - distance;
-
-        if (key.doubleValue() <= startLowerBound) {
+//        Double distance = (upperBound.doubleValue() - lowerBound.doubleValue()) / numberOfIntervals;
+//
+//        Double startLowerBound = lowerBound.doubleValue() + distance;
+//        Double endUpperBound = upperBound.doubleValue() - distance;
+//
+//        if (key.doubleValue() <= startLowerBound) {
+//            return 0;
+//        }
+//
+//        if (key.doubleValue() > endUpperBound) {
+//            return numberOfIntervals - 1;
+//        }
+//
+//        if ((key.doubleValue() - startLowerBound) % distance == 0) {
+//            return (int) ((key.doubleValue() - startLowerBound) / distance);
+//        } else {
+//            return (int) ((key.doubleValue() - startLowerBound) / distance + 1);
+//        }
+        if (key.doubleValue() < lowerBound.doubleValue()) {
             return 0;
         }
 
-        if (key.doubleValue() > endUpperBound) {
-            return config.NUMBER_OF_INTERVALS - 1;
+        if (key.doubleValue() >= upperBound.doubleValue()) {
+            return numberOfIntervals - 1;
         }
 
-        if ((key.doubleValue() - startLowerBound) % distance == 0) {
-            return (int) ((key.doubleValue() - startLowerBound) / distance);
-        } else {
-            return (int) ((key.doubleValue() - startLowerBound) / distance + 1);
-        }
+        Double distance = (upperBound.doubleValue() - lowerBound.doubleValue()) / numberOfIntervals;
+        return (int)((key.doubleValue() - lowerBound.doubleValue()) / distance);
     }
 
     public int getPartitionId(T key) {
@@ -111,7 +122,7 @@ public class BalancedPartition<T extends Number> implements Serializable{
     }
 
     public Histogram getIntervalDistribution() {
-        histogram.setDefaultValueForAbsentKey(config.NUMBER_OF_INTERVALS);
+        histogram.setDefaultValueForAbsentKey(numberOfIntervals);
         return histogram;
     }
 
