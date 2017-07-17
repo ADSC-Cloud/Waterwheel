@@ -48,9 +48,9 @@ public class RepartitionManagerTest {
 
         RepartitionManager manager = new RepartitionManager(4, config.NUMBER_OF_INTERVALS, ballToBinMapping, histogram);
 
-        Double skewnessFactor = 2.2;
+        double skewnessFactor = 1.2;
 
-        assertEquals((Object) skewnessFactor, (Object) manager.getSkewnessFactor());
+        assertEquals(skewnessFactor, manager.getSkewnessFactor(), 0.00001);
     }
 
     @Test

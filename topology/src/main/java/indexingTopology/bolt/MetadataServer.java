@@ -440,7 +440,7 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
 
         @Override
         public void run() {
-            final int sleepTimeInSecond = 2;
+            final int sleepTimeInSecond = 10;
 //            while (true) {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
