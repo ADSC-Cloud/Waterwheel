@@ -1,10 +1,10 @@
 package indexingTopology.topology;
 
 
-import indexingTopology.bolt.InputStreamReceiver;
-import indexingTopology.bolt.InputStreamReceiverServer;
-import indexingTopology.bolt.GeoTemporalQueryCoordinatorWithQueryReceiverServer;
-import indexingTopology.bolt.QueryCoordinator;
+import indexingTopology.bolt.InputStreamReceiverBolt;
+import indexingTopology.bolt.InputStreamReceiverBoltServer;
+import indexingTopology.bolt.GeoTemporalQueryCoordinatorBoltBolt;
+import indexingTopology.bolt.QueryCoordinatorBolt;
 import indexingTopology.api.client.GeoTemporalQueryClient;
 import indexingTopology.api.client.GeoTemporalQueryRequest;
 import indexingTopology.api.client.IngestionClientBatchMode;
@@ -104,10 +104,10 @@ public class GeoTemporalTopologyTest extends TestCase {
         int ingestionPort = socketPool.getAvailablePort();
         int queryPort = socketPool.getAvailablePort();
 
-        QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
+        QueryCoordinatorBolt<Integer> queryCoordinatorBolt = new GeoTemporalQueryCoordinatorBoltBolt<>(lowerBound,
                 upperBound, queryPort, city, config, schema);
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, ingestionPort, config);
+        InputStreamReceiverBolt dataSource = new InputStreamReceiverBoltServer(rawSchema, ingestionPort, config);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
@@ -124,7 +124,7 @@ public class GeoTemporalTopologyTest extends TestCase {
         bloomFilterColumns.add("id");
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
-                false, dataSource, queryCoordinator, dataTupleMapper, bloomFilterColumns, config);
+                false, dataSource, queryCoordinatorBolt, dataTupleMapper, bloomFilterColumns, config);
 
         Config conf = new Config();
         conf.setDebug(false);
@@ -265,10 +265,10 @@ public class GeoTemporalTopologyTest extends TestCase {
         Integer lowerBound = 0;
         Integer upperBound = city.getMaxZCode();
 
-        QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
+        QueryCoordinatorBolt<Integer> queryCoordinatorBolt = new GeoTemporalQueryCoordinatorBoltBolt<>(lowerBound,
                 upperBound, queryPort, city, config, schema);
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, ingestionPort, config);
+        InputStreamReceiverBolt dataSource = new InputStreamReceiverBoltServer(rawSchema, ingestionPort, config);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
@@ -285,7 +285,7 @@ public class GeoTemporalTopologyTest extends TestCase {
         bloomFilterColumns.add("id");
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
-                false, dataSource, queryCoordinator, dataTupleMapper, bloomFilterColumns, config);
+                false, dataSource, queryCoordinatorBolt, dataTupleMapper, bloomFilterColumns, config);
 
         Config conf = new Config();
         conf.setDebug(false);

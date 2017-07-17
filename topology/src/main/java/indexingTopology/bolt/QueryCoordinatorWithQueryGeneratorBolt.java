@@ -14,7 +14,7 @@ import java.util.*;
 /**
  * Created by acelzj on 11/15/16.
  */
-public class QueryCoordinatorWithQueryGenerator<T extends Number & Comparable<T>> extends QueryCoordinator<T> {
+public class QueryCoordinatorWithQueryGeneratorBolt<T extends Number & Comparable<T>> extends QueryCoordinatorBolt<T> {
 
 
     private long queryId;
@@ -23,9 +23,9 @@ public class QueryCoordinatorWithQueryGenerator<T extends Number & Comparable<T>
 
     private int sleepTimeInSeconds = 300;
 
-    private static final Logger LOG = LoggerFactory.getLogger(QueryCoordinatorWithQueryGenerator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(QueryCoordinatorWithQueryGeneratorBolt.class);
 
-    public QueryCoordinatorWithQueryGenerator(T lowerBound, T upperBound, TopologyConfig config, DataSchema schema) {
+    public QueryCoordinatorWithQueryGeneratorBolt(T lowerBound, T upperBound, TopologyConfig config, DataSchema schema) {
         super(lowerBound, upperBound, config, schema);
     }
 

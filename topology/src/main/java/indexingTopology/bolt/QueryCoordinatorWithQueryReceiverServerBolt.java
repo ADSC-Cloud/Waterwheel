@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Created by acelzj on 11/15/16.
  */
-public class QueryCoordinatorWithQueryReceiverServer<T extends Number & Comparable<T>> extends QueryCoordinator<T> {
+public class QueryCoordinatorWithQueryReceiverServerBolt<T extends Number & Comparable<T>> extends QueryCoordinatorBolt<T> {
 
     private final int port;
 
@@ -37,9 +37,9 @@ public class QueryCoordinatorWithQueryReceiverServer<T extends Number & Comparab
 
 //    Map<Long, Semaphore> queryIdToPartialQueryResultSemphore;
 
-    private static final Logger LOG = LoggerFactory.getLogger(QueryCoordinatorWithQueryReceiverServer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(QueryCoordinatorWithQueryReceiverServerBolt.class);
 
-    public QueryCoordinatorWithQueryReceiverServer(T lowerBound, T upperBound, int port, TopologyConfig config, DataSchema schema) {
+    public QueryCoordinatorWithQueryReceiverServerBolt(T lowerBound, T upperBound, int port, TopologyConfig config, DataSchema schema) {
         super(lowerBound, upperBound, config, schema);
         this.port = port;
     }

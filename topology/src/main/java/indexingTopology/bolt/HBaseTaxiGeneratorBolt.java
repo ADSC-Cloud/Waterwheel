@@ -27,7 +27,7 @@ import java.util.Map;
 /**
  * Created by acelzj on 4/4/17.
  */
-public class HBaseTaxiGenerator extends BaseRichBolt{
+public class HBaseTaxiGeneratorBolt extends BaseRichBolt{
 
     private City city;
 
@@ -72,7 +72,7 @@ public class HBaseTaxiGenerator extends BaseRichBolt{
 
     TopologyConfig config;
 
-    public HBaseTaxiGenerator(City city, TopologyConfig config) {
+    public HBaseTaxiGeneratorBolt(City city, TopologyConfig config) {
         this.city = city;
         this.config = config;
     }

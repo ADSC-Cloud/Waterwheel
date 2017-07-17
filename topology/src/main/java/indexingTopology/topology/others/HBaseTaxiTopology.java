@@ -31,11 +31,11 @@ public class HBaseTaxiTopology {
 
         City city = new City(x1, x2, y1, y2, partitions);
 
-        builder.setBolt(Generator, new HBaseTaxiGenerator(city, config), 24)
+        builder.setBolt(Generator, new HBaseTaxiGeneratorBolt(city, config), 24)
 //                .shuffleGrouping(RangeQueryDispatcherBolt, Streams.ThroughputReportStream)
                 .allGrouping(LogWriter, Streams.ThroughputRequestStream);
 
-        builder.setBolt(LogWriter, new LogWriter(), 1)
+        builder.setBolt(LogWriter, new LoggingBolt(), 1)
 //                .shuffleGrouping(RangeQueryDispatcherBolt, Streams.ThroughputReportStream)
                 .shuffleGrouping(Generator, Streams.ThroughputReportStream);
 

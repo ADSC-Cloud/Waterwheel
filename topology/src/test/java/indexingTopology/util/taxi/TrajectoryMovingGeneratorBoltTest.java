@@ -3,7 +3,7 @@ package indexingTopology.util.taxi;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-public class TrajectoryMovingGeneratorTest {
+public class TrajectoryMovingGeneratorBoltTest {
     @Test
     public void coordinatorBoundTest() throws Exception {
         final double x1 = 0.0;

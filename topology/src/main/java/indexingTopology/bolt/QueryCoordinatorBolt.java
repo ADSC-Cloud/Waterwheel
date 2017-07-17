@@ -43,7 +43,7 @@ import java.util.regex.Pattern;
 /**
  * Created by acelzj on 11/15/16.
  */
-abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends BaseRichBolt {
+abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> extends BaseRichBolt {
 
     private OutputCollector collector;
 
@@ -99,13 +99,13 @@ abstract public class QueryCoordinator<T extends Number & Comparable<T>> extends
 
     private DataSchema schema;
 
-    private static final Logger LOG = LoggerFactory.getLogger(QueryCoordinator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(QueryCoordinatorBolt.class);
 
     private FileSystem fileSystem;
 
     private HashMap<String, String[]> chunkNameToPreferredHostsMapping;
 
-    public QueryCoordinator(T lowerBound, T upperBound, TopologyConfig config, DataSchema schema) {
+    public QueryCoordinatorBolt(T lowerBound, T upperBound, TopologyConfig config, DataSchema schema) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
         this.config = config;

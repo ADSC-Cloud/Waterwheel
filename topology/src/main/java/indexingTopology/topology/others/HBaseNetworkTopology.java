@@ -1,7 +1,7 @@
 package indexingTopology.topology.others;
 
-import indexingTopology.bolt.HBaseNetworkGenerator;
-import indexingTopology.bolt.LogWriter;
+import indexingTopology.bolt.HBaseNetworkGeneratorBolt;
+import indexingTopology.bolt.LoggingBolt;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.streams.Streams;
 import org.apache.storm.Config;
@@ -22,11 +22,11 @@ public class HBaseNetworkTopology {
         TopologyBuilder builder = new TopologyBuilder();
         TopologyConfig config = new TopologyConfig();
 
-        builder.setBolt(Generator, new HBaseNetworkGenerator(config), 24)
+        builder.setBolt(Generator, new HBaseNetworkGeneratorBolt(config), 24)
 //                .shuffleGrouping(RangeQueryDispatcherBolt, Streams.ThroughputReportStream)
                 .allGrouping(LogWriter, Streams.ThroughputRequestStream);
 
-        builder.setBolt(LogWriter, new LogWriter(), 1)
+        builder.setBolt(LogWriter, new LoggingBolt(), 1)
 //                .shuffleGrouping(RangeQueryDispatcherBolt, Streams.ThroughputReportStream)
                 .shuffleGrouping(Generator, Streams.ThroughputReportStream);
 

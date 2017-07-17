@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by acelzj on 11/15/16.
  */
-public class IngestionBolt extends BaseRichBolt implements Observer {
+public class IndexingServerBolt extends BaseRichBolt implements Observer {
     private final DataSchema schema;
 
     private OutputCollector collector;
@@ -57,13 +57,13 @@ public class IngestionBolt extends BaseRichBolt implements Observer {
 
     TopologyConfig config;
 
-    public IngestionBolt(DataSchema schema, List<String> bloomFilterColumns, TopologyConfig config) {
+    public IndexingServerBolt(DataSchema schema, List<String> bloomFilterColumns, TopologyConfig config) {
         this.schema = schema;
         this.bloomFilterColumns = bloomFilterColumns;
         this.config = config;
     }
 
-    public IngestionBolt(DataSchema schema, TopologyConfig conf) {
+    public IndexingServerBolt(DataSchema schema, TopologyConfig conf) {
         this(schema, new ArrayList<>(), conf);
     }
 

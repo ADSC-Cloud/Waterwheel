@@ -17,10 +17,7 @@ import org.apache.storm.utils.Utils;
 import java.util.Map;
 import java.util.Random;
 
-/**
- * Created by acelzj on 21/2/17.
- */
-public class Generator extends InputStreamReceiver {
+public class GeneratorBolt extends InputStreamReceiverBolt {
 
 
     private TrajectoryGenerator generator;
@@ -52,7 +49,7 @@ public class Generator extends InputStreamReceiver {
 
     private Thread generationThread;
 
-    public Generator(DataSchema schema, TrajectoryGenerator generator, int payloadSize, City city) {
+    public GeneratorBolt(DataSchema schema, TrajectoryGenerator generator, int payloadSize, City city) {
         super(schema, new TopologyConfig());
         this.generator = generator;
         this.city = city;

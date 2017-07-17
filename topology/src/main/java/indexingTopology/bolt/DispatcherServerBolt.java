@@ -21,7 +21,7 @@ import java.util.*;
 /**
  * Created by parijatmazumdar on 14/09/15.
  */
-public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt {
+public class DispatcherServerBolt<IndexType extends Number> extends BaseRichBolt {
     OutputCollector collector;
 
     private final DataSchema outputSchema;
@@ -46,8 +46,8 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
 
     private TopologyConfig config;
 
-    public IngestionDispatcher(DataSchema dataSchema, IndexType lowerBound, IndexType upperBound, boolean enableLoadBalance,
-                               boolean generateTimeStamp, DataTupleMapper tupleMapper, TopologyConfig config) {
+    public DispatcherServerBolt(DataSchema dataSchema, IndexType lowerBound, IndexType upperBound, boolean enableLoadBalance,
+                                boolean generateTimeStamp, DataTupleMapper tupleMapper, TopologyConfig config) {
         this.tupleMapper = tupleMapper;
         if (tupleMapper == null) {
             this.inputSchema = dataSchema;
@@ -64,8 +64,8 @@ public class IngestionDispatcher<IndexType extends Number> extends BaseRichBolt 
         this.config = config;
     }
 
-    public IngestionDispatcher(DataSchema outputSchema, IndexType lowerBound, IndexType upperBound, boolean enableLoadBalance,
-                                          boolean generateTimeStamp, TopologyConfig config) {
+    public DispatcherServerBolt(DataSchema outputSchema, IndexType lowerBound, IndexType upperBound, boolean enableLoadBalance,
+                                boolean generateTimeStamp, TopologyConfig config) {
         this(outputSchema, lowerBound, upperBound, enableLoadBalance, generateTimeStamp, null, config);
     }
 

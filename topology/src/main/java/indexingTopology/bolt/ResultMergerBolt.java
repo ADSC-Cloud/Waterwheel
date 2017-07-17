@@ -20,7 +20,7 @@ import java.util.*;
 /**
  * Created by acelzj on 11/9/16.
  */
-public class ResultMerger extends BaseRichBolt {
+public class ResultMergerBolt extends BaseRichBolt {
 
     Map<Long, Integer> queryIdToNumberOfTuples;
 
@@ -40,7 +40,7 @@ public class ResultMerger extends BaseRichBolt {
 
     OutputCollector collector;
 
-    public ResultMerger(DataSchema schema) {
+    public ResultMergerBolt(DataSchema schema) {
         this.schema = schema;
     }
 

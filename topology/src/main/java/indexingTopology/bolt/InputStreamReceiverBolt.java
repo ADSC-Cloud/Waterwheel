@@ -24,7 +24,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  * This bolt has backpressure mechanism.
  * Unless data tuples are inserted into the input queue, this bolt does not emit any tuple actually.
  */
-public class InputStreamReceiver extends BaseRichBolt {
+public class InputStreamReceiverBolt extends BaseRichBolt {
 
     OutputCollector collector;
 
@@ -42,7 +42,7 @@ public class InputStreamReceiver extends BaseRichBolt {
 
     Thread backPressureDisplayThread;
 
-    public InputStreamReceiver(DataSchema schema, TopologyConfig config) {
+    public InputStreamReceiverBolt(DataSchema schema, TopologyConfig config) {
         this.schema = schema;
         this.config = config;
     }

@@ -33,14 +33,14 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
     }
 
     public StormTopology generateIndexingTopology(DataSchema dataSchema, Key lowerBound, Key upperBound, boolean enableLoadBalance,
-                                                  InputStreamReceiver dataSource, QueryCoordinator<Key> queryCoordinator,
+                                                  InputStreamReceiverBolt dataSource, QueryCoordinatorBolt<Key> queryCoordinatorBolt,
                                                   DataTupleMapper dataTupleMapper, List<String> bloomFilterColumns, TopologyConfig config) {
         TopologyBuilder builder = new TopologyBuilder();
 
         builder.setBolt(TupleGenerator, dataSource, numberOfNodes)
                 .directGrouping(IndexerBolt, Streams.AckStream);
 
-        builder.setBolt(RangeQueryDispatcherBolt, new IngestionDispatcher<>(dataSchema, lowerBound, upperBound,
+        builder.setBolt(RangeQueryDispatcherBolt, new DispatcherServerBolt<>(dataSchema, lowerBound, upperBound,
                 enableLoadBalance, false, dataTupleMapper, config), 1)
 
                 .localOrShuffleGrouping(TupleGenerator, Streams.IndexStream)
@@ -48,7 +48,7 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
 //                .allGrouping(LogWriter, Streams.ThroughputRequestStream);
 
-        builder.setBolt(IndexerBolt, new IngestionBolt(dataSchema, bloomFilterColumns, config), config.INSERTION_SERVER_PER_NODE * numberOfNodes)
+        builder.setBolt(IndexerBolt, new IndexingServerBolt(dataSchema, bloomFilterColumns, config), config.INSERTION_SERVER_PER_NODE * numberOfNodes)
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream) // direct grouping should be used.
                 .directGrouping(RangeQueryDecompositionBolt, Streams.TreeCleanStream)
@@ -56,7 +56,7 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
         // And RangeQueryDecompositionBolt should emit to this stream via directEmit!!!!!
 
 //        builder.setBolt(RangeQueryDecompositionBolt, new QueryCoordinatorWithQueryGenerator<>(lowerBound, upperBound), 1)
-        builder.setBolt(RangeQueryDecompositionBolt, queryCoordinator, 1)
+        builder.setBolt(RangeQueryDecompositionBolt, queryCoordinatorBolt, 1)
                 .shuffleGrouping(ResultMergeBolt, Streams.QueryFinishedStream)
                 .shuffleGrouping(ResultMergeBolt, Streams.PartialQueryResultDeliveryStream)
                 .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSubQueryFinishStream)
@@ -67,24 +67,24 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
 
 
         if (config.SHUFFLE_GROUPING_FLAG) {
-            builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner<Key>(dataSchema, config), config.CHUNK_SCANNER_PER_NODE * numberOfNodes)
+            builder.setBolt(RangeQueryChunkScannerBolt, new QueryServerBolt<Key>(dataSchema, config), config.CHUNK_SCANNER_PER_NODE * numberOfNodes)
 //                .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream)
                     .directGrouping(ResultMergeBolt, Streams.SubQueryReceivedStream)
                     .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream); //make comparision with our method.
         } else {
-            builder.setBolt(RangeQueryChunkScannerBolt, new ChunkScanner<Key>(dataSchema, config), config.CHUNK_SCANNER_PER_NODE * numberOfNodes)
+            builder.setBolt(RangeQueryChunkScannerBolt, new QueryServerBolt<Key>(dataSchema, config), config.CHUNK_SCANNER_PER_NODE * numberOfNodes)
                     .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream)
                     .directGrouping(ResultMergeBolt, Streams.SubQueryReceivedStream);
         }
 
-        builder.setBolt(ResultMergeBolt, new ResultMerger(dataSchema), 1)
+        builder.setBolt(ResultMergeBolt, new ResultMergerBolt(dataSchema), 1)
                 .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSystemQueryStream)
                 .shuffleGrouping(IndexerBolt, Streams.BPlusTreeQueryStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryInformationStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryInformationStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.PartialQueryResultReceivedStream);
 
-        builder.setBolt(MetadataServer, new MetadataServer<>(lowerBound, upperBound, config), 1)
+        builder.setBolt(MetadataServer, new MetadataServerBolt<>(lowerBound, upperBound, config), 1)
                 .shuffleGrouping(RangeQueryDispatcherBolt, Streams.StatisticsReportStream)
                 .shuffleGrouping(IndexerBolt, Streams.TimestampUpdateStream)
                 .shuffleGrouping(IndexerBolt, Streams.FileInformationUpdateStream)
@@ -92,7 +92,7 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
                 .shuffleGrouping(IndexerBolt, Streams.LocationInfoUpdateStream)
                 .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.LocationInfoUpdateStream);
 
-        builder.setBolt(LogWriter, new LogWriter(), 1)
+        builder.setBolt(LogWriter, new LoggingBolt(), 1)
 //                .shuffleGrouping(RangeQueryDispatcherBolt, Streams.ThroughputReportStream)
                 .shuffleGrouping(IndexerBolt, Streams.ThroughputReportStream)
                 .shuffleGrouping(MetadataServer, Streams.LoadBalanceStream);
@@ -101,12 +101,12 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
     }
 
     public StormTopology generateIndexingTopology(DataSchema dataSchema, Key lowerBound, Key upperBound, boolean enableLoadBalance,
-                                                  InputStreamReceiver dataSource, QueryCoordinator<Key> queryCoordinator, TopologyConfig config) {
-        return generateIndexingTopology(dataSchema, lowerBound, upperBound, enableLoadBalance, dataSource, queryCoordinator, null, null, config);
+                                                  InputStreamReceiverBolt dataSource, QueryCoordinatorBolt<Key> queryCoordinatorBolt, TopologyConfig config) {
+        return generateIndexingTopology(dataSchema, lowerBound, upperBound, enableLoadBalance, dataSource, queryCoordinatorBolt, null, null, config);
     }
 
     public StormTopology generateIndexingTopology(DataSchema dataSchema, Key lowerBound, Key upperBound, boolean enableLoadBalance,
-                                                  InputStreamReceiver dataSource, QueryCoordinator<Key> queryCoordinator, DataTupleMapper mapper, TopologyConfig config) {
-        return generateIndexingTopology(dataSchema, lowerBound, upperBound, enableLoadBalance, dataSource, queryCoordinator, mapper, null, config);
+                                                  InputStreamReceiverBolt dataSource, QueryCoordinatorBolt<Key> queryCoordinatorBolt, DataTupleMapper mapper, TopologyConfig config) {
+        return generateIndexingTopology(dataSchema, lowerBound, upperBound, enableLoadBalance, dataSource, queryCoordinatorBolt, mapper, null, config);
     }
 }

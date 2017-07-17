@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Created by acelzj on 12/12/16.
  */
-public class MetadataServer <Key extends Number> extends BaseRichBolt {
+public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
     private OutputCollector collector;
 
@@ -79,7 +79,7 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
 
     private TopologyConfig config;
 
-    public MetadataServer(Key lowerBound, Key upperBound, TopologyConfig config) {
+    public MetadataServerBolt(Key lowerBound, Key upperBound, TopologyConfig config) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
         this.config = config;

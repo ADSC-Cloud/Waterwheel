@@ -2,7 +2,7 @@ package indexingTopology.util;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
-import indexingTopology.bolt.ChunkScanner;
+import indexingTopology.bolt.QueryServerBolt;
 import indexingTopology.common.SubQueryOnFile;
 import indexingTopology.common.aggregator.Aggregator;
 import indexingTopology.cache.LRUCache;
@@ -46,7 +46,7 @@ public class SubqueryHandler<TKey extends Number & Comparable<TKey>> {
     }
 
     @SuppressWarnings("unchecked")
-    public List<byte[]> handleSubquery(SubQueryOnFile subQuery, ChunkScanner.DebugInfo debugInfo) throws IOException {
+    public List<byte[]> handleSubquery(SubQueryOnFile subQuery, QueryServerBolt.DebugInfo debugInfo) throws IOException {
         ArrayList<byte[]> tuples = new ArrayList<byte[]>();
         Long queryId = subQuery.getQueryId();
         TKey leftKey =  (TKey) subQuery.getLeftKey();

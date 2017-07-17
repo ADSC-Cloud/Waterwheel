@@ -12,12 +12,8 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
-/**
- * Created by acelzj on 15/3/17.
- */
-public class TDriveDataSource extends InputStreamReceiver {
+public class TDriveDataSourceBolt extends InputStreamReceiverBolt {
     private City city;
 
     private BufferedReader bufferedReader = null;
@@ -49,7 +45,7 @@ public class TDriveDataSource extends InputStreamReceiver {
 
     private int maxInputRate;
 
-    public TDriveDataSource(DataSchema schema, City city, TopologyConfig config, String inputFilePath, int maxInputRate) {
+    public TDriveDataSourceBolt(DataSchema schema, City city, TopologyConfig config, String inputFilePath, int maxInputRate) {
         super(schema, config);
         this.city = city;
         this.inputFilePath = inputFilePath;

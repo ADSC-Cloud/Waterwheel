@@ -1,23 +1,18 @@
 package indexingTopology.bolt;
 
-import indexingTopology.common.aggregator.Aggregator;
-import indexingTopology.api.client.GeoTemporalQueryRequest;
+import indexingTopology.api.client.NetworkTemporalQueryRequest;
 import indexingTopology.api.client.QueryRequest;
 import indexingTopology.api.client.QueryResponse;
-import indexingTopology.api.server.GeoTemporalQueryHandle;
-import indexingTopology.api.server.QueryHandle;
-import indexingTopology.api.server.Server;
-import indexingTopology.api.server.ServerHandle;
-import indexingTopology.config.TopologyConfig;
+import indexingTopology.api.server.*;
+import indexingTopology.common.aggregator.Aggregator;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.PartialQueryResult;
 import indexingTopology.common.logics.DataTupleEquivalentPredicateHint;
 import indexingTopology.common.logics.DataTuplePredicate;
 import indexingTopology.common.logics.DataTupleSorter;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.Query;
 import indexingTopology.util.taxi.City;
-import indexingTopology.util.taxi.Interval;
-import indexingTopology.util.taxi.Intervals;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
@@ -26,15 +21,15 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Created by acelzj on 11/15/16.
+ * Created by acelzj on 6/19/17.
  */
-public class GeoTemporalQueryCoordinatorWithQueryReceiverServer<T extends Number & Comparable<T>> extends QueryCoordinator<T> {
+public class NetworkTemporalQueryCoordinatorWithQueryReceiverServerBolt<T extends Number & Comparable<T>> extends QueryCoordinatorBolt<T> {
 
     private final int port;
 
@@ -44,17 +39,15 @@ public class GeoTemporalQueryCoordinatorWithQueryReceiverServer<T extends Number
 
     Map<Long, LinkedBlockingQueue<PartialQueryResult>> queryIdToPartialQueryResults;
 
-    City city;
 
 //    Map<Long, Semaphore> queryIdToPartialQueryResultSemphore;
 
-    private static final Logger LOG = LoggerFactory.getLogger(GeoTemporalQueryCoordinatorWithQueryReceiverServer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GeoTemporalQueryCoordinatorBoltBolt.class);
 
-    public GeoTemporalQueryCoordinatorWithQueryReceiverServer(T lowerBound, T upperBound, int port, City city,
-                                                              TopologyConfig config, DataSchema schema) {
+    public NetworkTemporalQueryCoordinatorWithQueryReceiverServerBolt(T lowerBound, T upperBound, int port,
+                                                                      TopologyConfig config, DataSchema schema) {
         super(lowerBound, upperBound, config, schema);
         this.port = port;
-        this.city = city;
     }
 
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
@@ -63,7 +56,7 @@ public class GeoTemporalQueryCoordinatorWithQueryReceiverServer<T extends Number
         queryIdToPartialQueryResults = new HashMap<>();
 
 
-        server = new Server(port, QueryServerHandle.class, new Class[]{LinkedBlockingQueue.class, AtomicLong.class, Map.class, City.class}, pendingQueue, queryId, queryIdToPartialQueryResults, city);
+        server = new Server(port, GeoTemporalQueryCoordinatorBoltBolt.QueryServerHandle.class, new Class[]{LinkedBlockingQueue.class, AtomicLong.class, Map.class, City.class}, pendingQueue, queryId, queryIdToPartialQueryResults);
         server.startDaemon();
 //        queryIdToPartialQueryResultSemphore = new HashMap<>();
     }
@@ -88,18 +81,16 @@ public class GeoTemporalQueryCoordinatorWithQueryReceiverServer<T extends Number
 //        semaphore.release();
     }
 
-    static public class QueryServerHandle<T extends Number & Comparable<T>> extends ServerHandle implements QueryHandle, GeoTemporalQueryHandle {
+    static public class QueryServerHandle<T extends Number & Comparable<T>> extends ServerHandle implements QueryHandle, NetworkTemporalQueryHandle {
 
         LinkedBlockingQueue<List<Query<T>>> pendingQueryQueue;
         AtomicLong queryIdGenerator;
         AtomicLong superQueryIdGenerator;
         Map<Long, LinkedBlockingQueue<PartialQueryResult>> queryresults;
-        City city;
-        public QueryServerHandle(LinkedBlockingQueue<List<Query<T>>> pendingQueryQueue, AtomicLong queryIdGenerator, Map<Long, LinkedBlockingQueue<PartialQueryResult>> queryresults, City city) {
+        public QueryServerHandle(LinkedBlockingQueue<List<Query<T>>> pendingQueryQueue, AtomicLong queryIdGenerator, Map<Long, LinkedBlockingQueue<PartialQueryResult>> queryresults) {
             this.pendingQueryQueue = pendingQueryQueue;
             this.queryresults = queryresults;
             this.queryIdGenerator = queryIdGenerator;
-            this.city = city;
         }
 
         @Override
@@ -135,7 +126,7 @@ public class GeoTemporalQueryCoordinatorWithQueryReceiverServer<T extends Number
         }
 
         @Override
-        public void handle(GeoTemporalQueryRequest clientQueryRequest) throws IOException {
+        public void handle(NetworkTemporalQueryRequest clientQueryRequest) throws IOException {
             try {
                 final long queryid = queryIdGenerator.getAndIncrement();
 
@@ -150,17 +141,12 @@ public class GeoTemporalQueryCoordinatorWithQueryReceiverServer<T extends Number
                 final DataTupleSorter sorter = clientQueryRequest.sorter;
                 final DataTupleEquivalentPredicateHint equivalentPredicate = clientQueryRequest.equivalentPredicate;
 
-                Intervals intervals = city.getZCodeIntervalsInARectagle(clientQueryRequest.x1.doubleValue(),
-                        clientQueryRequest.x2.doubleValue(),
-                        clientQueryRequest.y1.doubleValue(),
-                        clientQueryRequest.y2.doubleValue());
 
-                for (Interval interval: intervals.intervals) {
-                    queryList.add(new Query(queryid, interval.low, interval.high, startTimeStamp, endTimeStamp,
-                            predicate, aggregator, sorter, equivalentPredicate));
-                    LOG.info("A new Query{} ({}, {}, {}, {}) is added to the pending queue.", queryid,
-                            interval.low, interval.high, startTimeStamp, endTimeStamp);
-                }
+                queryList.add(new Query(queryid, clientQueryRequest.destIpLowerBound, clientQueryRequest.destIpUpperBound, startTimeStamp, endTimeStamp,
+                        predicate, aggregator, sorter, equivalentPredicate));
+                LOG.info("A new Query{} ({}, {}, {}, {}) is added to the pending queue.", queryid,
+                        clientQueryRequest.destIpLowerBound, clientQueryRequest.destIpUpperBound, startTimeStamp, endTimeStamp);
+
 
                 pendingQueryQueue.put(queryList);
 

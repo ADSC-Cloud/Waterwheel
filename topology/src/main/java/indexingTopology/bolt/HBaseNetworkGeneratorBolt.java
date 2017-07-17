@@ -26,7 +26,7 @@ import java.util.Map;
 /**
  * Created by acelzj on 4/4/17.
  */
-public class HBaseNetworkGenerator extends BaseRichBolt {
+public class HBaseNetworkGeneratorBolt extends BaseRichBolt {
 
     OutputCollector collector;
 
@@ -51,7 +51,7 @@ public class HBaseNetworkGenerator extends BaseRichBolt {
 
     TopologyConfig config;
 
-    public HBaseNetworkGenerator(TopologyConfig config) {
+    public HBaseNetworkGeneratorBolt(TopologyConfig config) {
         this.config = config;
     }
 

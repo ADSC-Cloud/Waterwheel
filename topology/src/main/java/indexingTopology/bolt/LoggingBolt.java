@@ -16,7 +16,7 @@ import java.util.Map;
 /**
  * Created by acelzj on 22/2/17.
  */
-public class LogWriter extends BaseRichBolt {
+public class LoggingBolt extends BaseRichBolt {
 
     OutputCollector collector;
 
@@ -28,7 +28,7 @@ public class LogWriter extends BaseRichBolt {
 
     private int waitTimeInSecond = 5;
 
-    private static final Logger LOG = LoggerFactory.getLogger(LogWriter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(LoggingBolt.class);
 
     int totalReceivedMessages;
 

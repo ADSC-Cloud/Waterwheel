@@ -1,6 +1,6 @@
 package indexingTopology.util;
 
-import indexingTopology.bolt.ChunkScanner;
+import indexingTopology.bolt.QueryServerBolt;
 import indexingTopology.common.SubQuery;
 import indexingTopology.common.SubQueryOnFile;
 import indexingTopology.config.TopologyConfig;
@@ -107,7 +107,7 @@ public class SubqueryHandlerTest extends TestCase {
         SubQueryOnFile subQueryOnFile = new SubQueryOnFile(0L, 0, numTuples, chunkName, 0L, Long.MAX_VALUE, null, null, null);
 
         SubqueryHandler subqueryHandler = new SubqueryHandler(schema, config);
-        ChunkScanner.DebugInfo info = new ChunkScanner.DebugInfo();
+        QueryServerBolt.DebugInfo info = new QueryServerBolt.DebugInfo();
         List<byte[]> tuples = subqueryHandler.handleSubquery(subQueryOnFile, info);
 
         assertEquals(numTuples, tuples.size());
@@ -169,7 +169,7 @@ public class SubqueryHandlerTest extends TestCase {
         SubQueryOnFile subQueryOnFile = new SubQueryOnFile(0L, 0, numTuples, chunkName, 0L, Long.MAX_VALUE, null, null, null);
 
         SubqueryHandler subqueryHandler = new SubqueryHandler(schema, config);
-        ChunkScanner.DebugInfo info = new ChunkScanner.DebugInfo();
+        QueryServerBolt.DebugInfo info = new QueryServerBolt.DebugInfo();
         List<byte[]> tuples = subqueryHandler.handleSubquery(subQueryOnFile, info);
 
         assertEquals(numTuples, tuples.size());

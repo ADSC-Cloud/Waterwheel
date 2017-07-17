@@ -20,12 +20,12 @@ import java.util.concurrent.BlockingQueue;
 /**
  * Created by robert on 8/3/17.
  */
-public class InputStreamReceiverServer extends InputStreamReceiver {
+public class InputStreamReceiverBoltServer extends InputStreamReceiverBolt {
 
     Server server;
     int port;
 
-    public InputStreamReceiverServer(DataSchema schema, int port, TopologyConfig config) {
+    public InputStreamReceiverBoltServer(DataSchema schema, int port, TopologyConfig config) {
         super(schema, config);
         this.port = port;
     }

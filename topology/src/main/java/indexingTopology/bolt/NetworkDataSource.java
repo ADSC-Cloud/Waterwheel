@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 /**
  * Created by acelzj on 30/3/17.
  */
-public class NetworkDataSource extends InputStreamReceiver {
+public class NetworkDataSource extends InputStreamReceiverBolt {
 
     BufferedReader bufferedReader = null;
 

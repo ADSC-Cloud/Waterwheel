@@ -264,9 +264,9 @@ public class NetworkTopology {
 
         TopologyConfig config = new TopologyConfig();
 
-        InputStreamReceiver dataSource = new NetworkDataSource(schema, config);
+        InputStreamReceiverBolt dataSource = new NetworkDataSource(schema, config);
 
-        QueryCoordinator<Integer> queryCoordinator = new NetworkTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
+        QueryCoordinatorBolt<Integer> queryCoordinatorBolt = new NetworkTemporalQueryCoordinatorWithQueryReceiverServerBolt<>(lowerBound,
                 upperBound, 10001, config, schema);
 
 //        DataTupleMapper dataTupleMapper = new DataTupleMapper(rawSchema, (Serializable & Function<DataTuple, DataTuple>) t -> {
@@ -285,7 +285,7 @@ public class NetworkTopology {
         topologyGenerator.setNumberOfNodes(NumberOfNodes);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
-                enableLoadBalance, dataSource, queryCoordinator, null, bloomFilterColumns, config);
+                enableLoadBalance, dataSource, queryCoordinatorBolt, null, bloomFilterColumns, config);
 
         Config conf = new Config();
         conf.setDebug(false);

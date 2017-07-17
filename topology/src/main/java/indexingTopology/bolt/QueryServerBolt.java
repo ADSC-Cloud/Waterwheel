@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
 /**
  * Created by acelzj on 11/15/16.
  */
-public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseRichBolt {
+public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends BaseRichBolt {
 
     OutputCollector collector;
 
@@ -59,7 +59,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
     private DataSchema schema;
 
-    private static final Logger LOG = LoggerFactory.getLogger(ChunkScanner.class);
+    private static final Logger LOG = LoggerFactory.getLogger(QueryServerBolt.class);
 
     private transient ArrayBlockingQueue<TaggedSubQueryOnFile<TKey>> pendingQueue;
 
@@ -96,7 +96,7 @@ public class ChunkScanner <TKey extends Number & Comparable<TKey>> extends BaseR
 
 
 
-    public ChunkScanner(DataSchema schema, TopologyConfig config) {
+    public QueryServerBolt(DataSchema schema, TopologyConfig config) {
         this.schema = schema;
         this.config = config;
     }
