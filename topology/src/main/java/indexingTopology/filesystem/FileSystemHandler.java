@@ -1,6 +1,6 @@
 package indexingTopology.filesystem;
 
-import indexingTopology.util.MemChunk;
+import indexingTopology.common.MemChunk;
 
 import java.io.IOException;
 

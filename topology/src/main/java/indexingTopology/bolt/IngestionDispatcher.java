@@ -12,8 +12,8 @@ import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.streams.Streams;
-import indexingTopology.util.BalancedPartition;
-import indexingTopology.util.Histogram;
+import indexingTopology.util.partition.BalancedPartition;
+import indexingTopology.common.Histogram;
 
 import java.util.*;
 

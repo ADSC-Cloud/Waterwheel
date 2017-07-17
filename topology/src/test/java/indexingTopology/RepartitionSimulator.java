@@ -1,8 +1,7 @@
 package indexingTopology;
 
-import indexingTopology.config.TopologyConfig;
-import indexingTopology.util.BalancedPartition;
-import indexingTopology.util.RepartitionManager;
+import indexingTopology.util.partition.BalancedPartition;
+import indexingTopology.util.RangePartitioner;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.storm.utils.Utils;
 
@@ -95,11 +94,11 @@ public class RepartitionSimulator {
 
                     System.out.println(balancedPartition.getIntervalDistribution().getHistogram());
 
-                    RepartitionManager repartitionManager = new RepartitionManager(numberOfPartitions, 1024, balancedPartition.getIntervalToPartitionMapping(), balancedPartition.getIntervalDistribution());
+                    RangePartitioner rangePartitioner = new RangePartitioner(numberOfPartitions, 1024, balancedPartition.getIntervalToPartitionMapping(), balancedPartition.getIntervalDistribution());
 
-                    System.out.println(repartitionManager.getRepartitionPlan());
+                    System.out.println(rangePartitioner.getRepartitionPlan());
 
-                    balancedPartition.setIntervalToPartitionMapping(repartitionManager.getRepartitionPlan());
+                    balancedPartition.setIntervalToPartitionMapping(rangePartitioner.getRepartitionPlan());
 
                     repartitionSemaphore.release();
                 }

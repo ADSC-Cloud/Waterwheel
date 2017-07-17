@@ -1,6 +1,6 @@
 package indexingTopology.cache;
 
-import indexingTopology.util.BTreeLeafNode;
+import indexingTopology.index.BTreeLeafNode;
 
 /**
  * Created by acelzj on 11/29/16.

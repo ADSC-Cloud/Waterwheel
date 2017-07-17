@@ -15,7 +15,6 @@ import indexingTopology.common.data.DataTuple;
 import indexingTopology.common.logics.DataTupleMapper;
 import indexingTopology.common.logics.DataTuplePredicate;
 import indexingTopology.util.AvailableSocketPool;
-import indexingTopology.util.TopologyGenerator;
 import indexingTopology.util.taxi.City;
 import indexingTopology.util.taxi.ZOrderCoding;
 import junit.framework.TestCase;

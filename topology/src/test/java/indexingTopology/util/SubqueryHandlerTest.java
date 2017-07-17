@@ -1,15 +1,18 @@
 package indexingTopology.util;
 
 import indexingTopology.bolt.ChunkScanner;
+import indexingTopology.common.SubQuery;
+import indexingTopology.common.SubQueryOnFile;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.filesystem.*;
+import indexingTopology.index.Indexer;
+import indexingTopology.index.IndexerBuilder;
 import junit.framework.TestCase;
 import org.junit.Test;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -18,8 +21,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 /**
  * Created by acelzj on 5/25/17.

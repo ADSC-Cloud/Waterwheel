@@ -14,7 +14,7 @@ import indexingTopology.common.data.PartialQueryResult;
 import indexingTopology.common.logics.DataTupleEquivalentPredicateHint;
 import indexingTopology.common.logics.DataTuplePredicate;
 import indexingTopology.common.logics.DataTupleSorter;
-import indexingTopology.util.Query;
+import indexingTopology.common.Query;
 import indexingTopology.util.taxi.City;
 import indexingTopology.util.taxi.Interval;
 import indexingTopology.util.taxi.Intervals;

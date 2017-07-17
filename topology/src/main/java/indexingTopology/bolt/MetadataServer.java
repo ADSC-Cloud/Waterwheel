@@ -4,8 +4,12 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import indexingTopology.bloom.DataChunkBloomFilters;
 import indexingTopology.bolt.metrics.LocationInfo;
+import indexingTopology.common.Histogram;
+import indexingTopology.common.KeyDomain;
+import indexingTopology.common.TimeDomain;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.util.*;
+import indexingTopology.util.partition.BalancedPartition;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -175,7 +179,7 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
                 if (numberOfStaticsReceived == numberOfDispatchers) {
 //                    Double skewnessFactor = getSkewnessFactor(this.histogram);
 //                    System.out.println("skewness factor " + skewnessFactor);
-                    RepartitionManager manager = new RepartitionManager(numberOfPartitions, config.NUMBER_OF_INTERVALS, intervalToPartitionMapping,
+                    RangePartitioner manager = new RangePartitioner(numberOfPartitions, config.NUMBER_OF_INTERVALS, intervalToPartitionMapping,
                             this.histogram);
 //                    System.out.println("Histogram: " + this.histogram);
                     Double skewnessFactor = manager.getSkewnessFactor();
@@ -192,7 +196,7 @@ public class MetadataServer <Key extends Number> extends BaseRichBolt {
                                 intervalToPartitionMapping);
 
                         {// print skewness
-                            manager = new RepartitionManager(numberOfPartitions, config.NUMBER_OF_INTERVALS, intervalToPartitionMapping, this.histogram);
+                            manager = new RangePartitioner(numberOfPartitions, config.NUMBER_OF_INTERVALS, intervalToPartitionMapping, this.histogram);
                             Double newSkewnessFactor = manager.getSkewnessFactor();
                             System.out.println(String.format("Skewness: %.3f -> %.3f", skewnessFactor, newSkewnessFactor));
                         }

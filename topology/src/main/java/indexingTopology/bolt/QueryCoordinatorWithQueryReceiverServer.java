@@ -8,7 +8,7 @@ import indexingTopology.api.server.ServerHandle;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.PartialQueryResult;
-import indexingTopology.util.Query;
+import indexingTopology.common.Query;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;

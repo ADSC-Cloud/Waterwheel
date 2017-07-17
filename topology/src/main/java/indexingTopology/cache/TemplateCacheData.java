@@ -1,6 +1,5 @@
 package indexingTopology.cache;
 
-import indexingTopology.util.BTree;
 import javafx.util.Pair;
 
 /**

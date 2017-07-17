@@ -3,7 +3,7 @@ package indexingTopology.bolt;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.streams.Streams;
 import indexingTopology.util.FrequencyRestrictor;
-import indexingTopology.util.HBaseHandler;
+import indexingTopology.util.experiments.HBaseHandler;
 import indexingTopology.util.taxi.City;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.BufferedMutator;

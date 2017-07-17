@@ -2,9 +2,12 @@ package indexingTopology.bolt;
 
 import indexingTopology.bloom.DataChunkBloomFilters;
 import indexingTopology.bolt.metrics.LocationInfo;
+import indexingTopology.common.*;
 import indexingTopology.common.data.DataTuple;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.TrackedDataTuple;
+import indexingTopology.index.Indexer;
+import indexingTopology.index.IndexerBuilder;
 import org.apache.storm.metric.internal.RateTracker;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -14,7 +17,6 @@ import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.streams.Streams;
-import indexingTopology.util.*;
 import javafx.util.Pair;
 import org.apache.storm.tuple.Values;
 

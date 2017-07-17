@@ -14,6 +14,7 @@ import indexingTopology.common.logics.DataTuplePredicate;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
+import indexingTopology.topology.TopologyGenerator;
 import indexingTopology.util.*;
 import indexingTopology.util.taxi.*;
 import org.apache.storm.Config;

@@ -3,9 +3,6 @@ package indexingTopology.util;
 import java.io.Serializable;
 import java.util.*;
 
-/**
- * Created by acelzj on 13/2/17.
- */
 public class Permutation implements Serializable{
 
     private int keys;

@@ -2,8 +2,8 @@ package indexingTopology.bolt;
 
 import indexingTopology.common.aggregator.Aggregator;
 import indexingTopology.common.data.PartialQueryResult;
-import indexingTopology.util.Query;
-import indexingTopology.util.SubQuery;
+import indexingTopology.common.Query;
+import indexingTopology.common.SubQuery;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;

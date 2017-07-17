@@ -16,7 +16,7 @@ import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 import indexingTopology.common.logics.DataTupleMapper;
-import indexingTopology.util.TopologyGenerator;
+import indexingTopology.topology.TopologyGenerator;
 import junit.framework.TestCase;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;

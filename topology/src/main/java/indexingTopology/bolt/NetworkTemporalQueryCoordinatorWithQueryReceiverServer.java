@@ -1,12 +1,9 @@
 package indexingTopology.bolt;
 
-import indexingTopology.api.client.GeoTemporalQueryRequest;
 import indexingTopology.api.client.NetworkTemporalQueryRequest;
 import indexingTopology.api.client.QueryRequest;
 import indexingTopology.api.client.QueryResponse;
 import indexingTopology.api.server.*;
-import indexingTopology.bolt.GeoTemporalQueryCoordinatorWithQueryReceiverServer;
-import indexingTopology.bolt.QueryCoordinator;
 import indexingTopology.common.aggregator.Aggregator;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.PartialQueryResult;
@@ -14,10 +11,8 @@ import indexingTopology.common.logics.DataTupleEquivalentPredicateHint;
 import indexingTopology.common.logics.DataTuplePredicate;
 import indexingTopology.common.logics.DataTupleSorter;
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.util.Query;
+import indexingTopology.common.Query;
 import indexingTopology.util.taxi.City;
-import indexingTopology.util.taxi.Interval;
-import indexingTopology.util.taxi.Intervals;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;

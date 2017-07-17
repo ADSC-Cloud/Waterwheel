@@ -5,7 +5,7 @@ import indexingTopology.bolt.*;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.logics.DataTupleEquivalentPredicateHint;
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.util.TopologyGenerator;
+import indexingTopology.topology.TopologyGenerator;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
 import org.apache.storm.StormSubmitter;
