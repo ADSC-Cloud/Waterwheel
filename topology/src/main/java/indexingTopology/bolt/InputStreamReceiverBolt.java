@@ -3,6 +3,8 @@ package indexingTopology.bolt;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 import indexingTopology.config.TopologyConfig;
+import indexingTopology.server.StormCommunicator;
+import indexingTopology.server.TupleReceiver;
 import indexingTopology.streams.Streams;
 import indexingTopology.util.BackPressure;
 import org.apache.storm.task.OutputCollector;
@@ -42,6 +44,8 @@ public class InputStreamReceiverBolt extends BaseRichBolt {
 
     Thread backPressureDisplayThread;
 
+    TupleReceiver tupleReceiver;
+
     public InputStreamReceiverBolt(DataSchema schema, TopologyConfig config) {
         this.schema = schema;
         this.config = config;
@@ -49,6 +53,7 @@ public class InputStreamReceiverBolt extends BaseRichBolt {
 
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
+        tupleReceiver = new TupleReceiver(new StormCommunicator(outputCollector), schema, config);
         this.collector = outputCollector;
         inputQueue = new LinkedBlockingQueue<>(10000);
         backPressure = new BackPressure(config.EMIT_NUM, config.MAX_PENDING, config);
