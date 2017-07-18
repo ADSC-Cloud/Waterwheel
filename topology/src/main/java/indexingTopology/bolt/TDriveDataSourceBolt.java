@@ -217,7 +217,7 @@ public class TDriveDataSourceBolt extends InputStreamReceiverBolt {
 
                         final DataTuple dataTuple = new DataTuple(taxiId, zcode, longitude, latitude, timestamp);
                         try {
-                            inputQueue.put(dataTuple);
+                            getInputQueue().put(dataTuple);
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
 //                            e.printStackTrace();

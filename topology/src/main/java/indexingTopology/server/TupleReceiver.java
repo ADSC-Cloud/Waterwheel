@@ -30,7 +30,11 @@ public class TupleReceiver {
         this.config = config;
     }
 
-    void prepare() {
+    public LinkedBlockingQueue<DataTuple> getInputQueue() {
+        return inputQueue;
+    }
+
+    public void prepare() {
         inputQueue = new LinkedBlockingQueue<>(10000);
         backPressure = new BackPressure(config.EMIT_NUM, config.MAX_PENDING, config);
         emittingThread = new Thread(() -> {
@@ -76,16 +80,16 @@ public class TupleReceiver {
         backPressureDisplayThread.start();
     }
 
-    void acknowledge(Long tupleID) {
+    public void acknowledge(Long tupleID) {
         backPressure.ack(tupleID);
     }
 
-    void close() {
+    public void close() {
         emittingThread.interrupt();
         backPressureDisplayThread.interrupt();
     }
 
-    void setId(int id) {
+    public void setId(int id) {
         this.id = id;
     }
 }

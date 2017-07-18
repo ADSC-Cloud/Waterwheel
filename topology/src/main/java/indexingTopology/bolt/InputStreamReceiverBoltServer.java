@@ -33,7 +33,7 @@ public class InputStreamReceiverBoltServer extends InputStreamReceiverBolt {
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         super.prepare(map, topologyContext, outputCollector);
-        server = new Server(port, AppendServerHandle.class, new Class[]{BlockingQueue.class}, inputQueue);
+        server = new Server(port, AppendServerHandle.class, new Class[]{BlockingQueue.class}, getInputQueue());
         server.startDaemon();
     }
 

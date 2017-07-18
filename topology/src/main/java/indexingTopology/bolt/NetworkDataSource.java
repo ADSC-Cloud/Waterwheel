@@ -76,15 +76,9 @@ public class NetworkDataSource extends InputStreamReceiverBolt {
                         String url = data[2];
                         Long timestamp = System.currentTimeMillis();
 
-//                        try {
-//                            frequencyRestrictor.getPermission(1);
-//                        } catch (InterruptedException e) {
-//                            e.printStackTrace();
-//                        }
-
                         final DataTuple dataTuple = new DataTuple(sourceIp, destIp, url, timestamp);
                         try {
-                            inputQueue.put(dataTuple);
+                            getInputQueue().put(dataTuple);
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
 //                            e.printStackTrace();

@@ -117,7 +117,7 @@ public class GeneratorBolt extends InputStreamReceiverBolt {
                         final DataTuple dataTuple = new DataTuple(car.id, key, new String(new char[payloadSize]), timestamp);
 //                        DataTuple dataTuple = new DataTuple(car.id, key.doubleValue(), new String(new char[payloadSize]), timestamp);
 //                        System.out.println(tupleId + " has been emitted!!!");
-                        inputQueue.put(dataTuple);
+                        getInputQueue().put(dataTuple);
                         ++timestamp;
                     } catch (Exception e) {
 //                        e.printStackTrace();

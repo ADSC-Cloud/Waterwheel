@@ -6,18 +6,12 @@ import indexingTopology.config.TopologyConfig;
 import indexingTopology.server.StormCommunicator;
 import indexingTopology.server.TupleReceiver;
 import indexingTopology.streams.Streams;
-import indexingTopology.util.BackPressure;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
-import org.apache.storm.tuple.Values;
-import org.apache.storm.utils.Utils;
-
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -28,23 +22,11 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 public class InputStreamReceiverBolt extends BaseRichBolt {
 
-    OutputCollector collector;
-
-    BackPressure backPressure;
-
     private final DataSchema schema;
-
-    private int taskId;
-
-    public LinkedBlockingQueue<DataTuple> inputQueue;
-
-    private Thread emittingThread;
 
     TopologyConfig config;
 
-    Thread backPressureDisplayThread;
-
-    TupleReceiver tupleReceiver;
+    private TupleReceiver tupleReceiver;
 
     public InputStreamReceiverBolt(DataSchema schema, TopologyConfig config) {
         this.schema = schema;
@@ -54,78 +36,16 @@ public class InputStreamReceiverBolt extends BaseRichBolt {
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         tupleReceiver = new TupleReceiver(new StormCommunicator(outputCollector), schema, config);
-        this.collector = outputCollector;
-        inputQueue = new LinkedBlockingQueue<>(10000);
-        backPressure = new BackPressure(config.EMIT_NUM, config.MAX_PENDING, config);
-        taskId = topologyContext.getThisTaskId();
-        emittingThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-//                while (true) {
-                List<DataTuple> drainer = new ArrayList<>();
-                while (!Thread.currentThread().isInterrupted()) {
-                        try {
-                            //TODO: dequeue can be optimized by using drainer.
-                            final DataTuple firstTuple = inputQueue.take();
-
-                            drainer.add(firstTuple);
-
-                            inputQueue.drainTo(drainer, 1024);
-
-                            for (DataTuple tuple: drainer) {
-
-                                final long tupleId = backPressure.acquireNextTupleId();
-                                collector.emit(Streams.IndexStream, new Values(schema.serializeTuple(tuple), tupleId, taskId));
-                            }
-                            drainer.clear();
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                }
-            }
-        });
-        emittingThread.start();
-
-        backPressureDisplayThread = new Thread(() -> {
-            while(true) {
-                try {
-                    Thread.sleep(5000);
-                } catch (InterruptedException e) {
-                    break;
-                }
-                System.out.println(backPressure);
-                if (Thread.currentThread().isInterrupted()) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
-            }
-        });
-        backPressureDisplayThread.start();
-
-//        Thread capacityCheckingThread = new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                while (true) {
-//                    try {
-//                        Thread.sleep(1 * 1000);
-//                        System.out.println("Input queue size " + inputQueue.size());
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//            }
-//        });
-//        capacityCheckingThread.start();
+        tupleReceiver.setId(topologyContext.getThisTaskId());
+        tupleReceiver.prepare();
     }
 
 
     @Override
-    public void execute(Tuple tuple) {
+    final public void execute(Tuple tuple) {
         if (tuple.getSourceStreamId().equals(Streams.AckStream)) {
             Long tupleId = tuple.getLongByField("tupleId");
-            backPressure.ack(tupleId);
+            tupleReceiver.acknowledge(tupleId);
         }
     }
 
@@ -137,7 +57,10 @@ public class InputStreamReceiverBolt extends BaseRichBolt {
     @Override
     public void cleanup() {
         super.cleanup();
-        emittingThread.interrupt();
-        backPressureDisplayThread.interrupt();
+        tupleReceiver.close();
+    }
+
+    protected LinkedBlockingQueue<DataTuple> getInputQueue() {
+        return tupleReceiver.getInputQueue();
     }
 }
