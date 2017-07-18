@@ -2,24 +2,15 @@ package indexingTopology.topology.tdrive;
 
 import indexingTopology.api.client.GeoTemporalQueryClient;
 import indexingTopology.api.client.GeoTemporalQueryRequest;
-import indexingTopology.api.client.IngestionClientBatchMode;
 import indexingTopology.api.client.QueryResponse;
 import indexingTopology.bolt.*;
 import indexingTopology.common.aggregator.AggregateField;
 import indexingTopology.common.aggregator.Aggregator;
 import indexingTopology.common.aggregator.Count;
 import indexingTopology.common.data.DataSchema;
-import indexingTopology.common.data.DataTuple;
-import indexingTopology.common.logics.DataTupleEquivalentPredicateHint;
-import indexingTopology.common.logics.DataTupleMapper;
-import indexingTopology.common.logics.DataTuplePredicate;
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.util.FrequencyRestrictor;
-import indexingTopology.util.TopologyGenerator;
-import indexingTopology.util.taxi.Car;
+import indexingTopology.topology.TopologyGenerator;
 import indexingTopology.util.taxi.City;
-import indexingTopology.util.taxi.TrajectoryGenerator;
-import indexingTopology.util.taxi.TrajectoryMovingGenerator;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
 import org.apache.storm.StormSubmitter;
@@ -27,13 +18,11 @@ import org.apache.storm.generated.AlreadyAliveException;
 import org.apache.storm.generated.AuthorizationException;
 import org.apache.storm.generated.InvalidTopologyException;
 import org.apache.storm.generated.StormTopology;
-import org.apache.storm.metric.internal.RateTracker;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.net.SocketTimeoutException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -41,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Random;
-import java.util.function.Function;
 
 /**
  * Created by acelzj on 6/19/17.
@@ -215,9 +203,9 @@ public class TDriveTopology {
         TopologyConfig config = new TopologyConfig();
 
 //        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000, config);
-        InputStreamReceiver dataSource = new TDriveDataSource(schema, city, config, InputFilePath, MaxIngestRate);
+        InputStreamReceiverBolt dataSource = new TDriveDataSourceBolt(schema, city, config, InputFilePath, MaxIngestRate);
 
-        QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
+        QueryCoordinatorBolt<Integer> queryCoordinatorBolt = new GeoTemporalQueryCoordinatorBoltBolt<>(lowerBound,
                 upperBound, 10001, city, config, schema);
 
 //        DataTupleMapper dataTupleMapper = new DataTupleMapper(rawSchema, (Serializable & Function<DataTuple, DataTuple>) t -> {
@@ -236,7 +224,7 @@ public class TDriveTopology {
         topologyGenerator.setNumberOfNodes(NumberOfNodes);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
-                enableLoadBalance, dataSource, queryCoordinator, null, bloomFilterColumns, config);
+                enableLoadBalance, dataSource, queryCoordinatorBolt, null, bloomFilterColumns, config);
 
         Config conf = new Config();
         conf.setDebug(false);

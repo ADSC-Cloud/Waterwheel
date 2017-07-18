@@ -8,15 +8,15 @@ import indexingTopology.api.client.IngestionClient;
 import indexingTopology.api.client.QueryClient;
 import indexingTopology.api.client.QueryRequest;
 import indexingTopology.api.client.QueryResponse;
-import indexingTopology.bolt.InputStreamReceiver;
-import indexingTopology.bolt.InputStreamReceiverServer;
-import indexingTopology.bolt.QueryCoordinator;
-import indexingTopology.bolt.QueryCoordinatorWithQueryReceiverServer;
+import indexingTopology.bolt.InputStreamReceiverBolt;
+import indexingTopology.bolt.InputStreamReceiverBoltServer;
+import indexingTopology.bolt.QueryCoordinatorBolt;
+import indexingTopology.bolt.QueryCoordinatorWithQueryReceiverServerBolt;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 import indexingTopology.common.logics.DataTupleMapper;
-import indexingTopology.util.TopologyGenerator;
+import indexingTopology.topology.TopologyGenerator;
 import junit.framework.TestCase;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
@@ -75,14 +75,14 @@ public class TopologyOverallTest extends TestCase {
         final boolean enableLoadBalance = false;
 
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort, config);
-        QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound,
+        InputStreamReceiverBolt dataSource = new InputStreamReceiverBoltServer(schema, ingestionPort, config);
+        QueryCoordinatorBolt<Double> queryCoordinatorBolt = new QueryCoordinatorWithQueryReceiverServerBolt<>(lowerBound,
                 upperBound, queryPort, config, schema);
 
         TopologyGenerator<Double> topologyGenerator = new TopologyGenerator<>();
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
-                enableLoadBalance, dataSource, queryCoordinator, config);
+                enableLoadBalance, dataSource, queryCoordinatorBolt, config);
 
         Config conf = new Config();
         conf.setDebug(false);
@@ -148,14 +148,14 @@ public class TopologyOverallTest extends TestCase {
 
         final boolean enableLoadBalance = false;
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort, config);
-        QueryCoordinator<Integer> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound,
+        InputStreamReceiverBolt dataSource = new InputStreamReceiverBoltServer(schema, ingestionPort, config);
+        QueryCoordinatorBolt<Integer> queryCoordinatorBolt = new QueryCoordinatorWithQueryReceiverServerBolt<>(lowerBound,
                 upperBound, queryPort, config, schema);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
-                enableLoadBalance, dataSource, queryCoordinator, config);
+                enableLoadBalance, dataSource, queryCoordinatorBolt, config);
 
         Config conf = new Config();
         conf.setDebug(false);
@@ -222,14 +222,14 @@ public class TopologyOverallTest extends TestCase {
 
         final boolean enableLoadBalance = false;
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort, config);
-        QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound,
+        InputStreamReceiverBolt dataSource = new InputStreamReceiverBoltServer(schema, ingestionPort, config);
+        QueryCoordinatorBolt<Double> queryCoordinatorBolt = new QueryCoordinatorWithQueryReceiverServerBolt<>(lowerBound,
                 upperBound, queryPort, config, schema);
 
         TopologyGenerator<Double> topologyGenerator = new TopologyGenerator<>();
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
-                enableLoadBalance, dataSource, queryCoordinator, config);
+                enableLoadBalance, dataSource, queryCoordinatorBolt, config);
 
         Config conf = new Config();
         conf.setDebug(false);
@@ -294,14 +294,14 @@ public class TopologyOverallTest extends TestCase {
 
         final boolean enableLoadBalance = false;
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort, config);
-        QueryCoordinator<Double> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound,
+        InputStreamReceiverBolt dataSource = new InputStreamReceiverBoltServer(schema, ingestionPort, config);
+        QueryCoordinatorBolt<Double> queryCoordinatorBolt = new QueryCoordinatorWithQueryReceiverServerBolt<>(lowerBound,
                 upperBound, queryPort, config, schema);
 
         TopologyGenerator<Double> topologyGenerator = new TopologyGenerator<>();
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
-                enableLoadBalance, dataSource, queryCoordinator, config);
+                enableLoadBalance, dataSource, queryCoordinatorBolt, config);
 
         Config conf = new Config();
         conf.setDebug(false);
@@ -368,14 +368,14 @@ public class TopologyOverallTest extends TestCase {
 
         final boolean enableLoadBalance = false;
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort, config);
-        QueryCoordinator<Integer> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound,
+        InputStreamReceiverBolt dataSource = new InputStreamReceiverBoltServer(schema, ingestionPort, config);
+        QueryCoordinatorBolt<Integer> queryCoordinatorBolt = new QueryCoordinatorWithQueryReceiverServerBolt<>(lowerBound,
                 upperBound, queryPort, config, schema);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
-                enableLoadBalance, dataSource, queryCoordinator, config);
+                enableLoadBalance, dataSource, queryCoordinatorBolt, config);
 
         Config conf = new Config();
         conf.setDebug(false);
@@ -456,8 +456,8 @@ public class TopologyOverallTest extends TestCase {
 
         final boolean enableLoadBalance = false;
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(schema, ingestionPort, config);
-        QueryCoordinator<Integer> queryCoordinator = new QueryCoordinatorWithQueryReceiverServer<>(lowerBound,
+        InputStreamReceiverBolt dataSource = new InputStreamReceiverBoltServer(schema, ingestionPort, config);
+        QueryCoordinatorBolt<Integer> queryCoordinatorBolt = new QueryCoordinatorWithQueryReceiverServerBolt<>(lowerBound,
                 upperBound, queryPort, config, schema);
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
@@ -465,7 +465,7 @@ public class TopologyOverallTest extends TestCase {
         DataTupleMapper dataTupleMapper = new DataTupleMapper(schema, (Serializable & Function<DataTuple, DataTuple>) t -> t);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
-                enableLoadBalance, dataSource, queryCoordinator, dataTupleMapper, config);
+                enableLoadBalance, dataSource, queryCoordinatorBolt, dataTupleMapper, config);
 
         Config conf = new Config();
         conf.setDebug(false);

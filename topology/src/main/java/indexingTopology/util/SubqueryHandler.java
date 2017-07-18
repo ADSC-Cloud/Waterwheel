@@ -2,18 +2,22 @@ package indexingTopology.util;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
-import indexingTopology.bolt.ChunkScanner;
+import indexingTopology.bolt.QueryServerBolt;
+import indexingTopology.common.SubQueryOnFile;
 import indexingTopology.common.aggregator.Aggregator;
 import indexingTopology.cache.LRUCache;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 import indexingTopology.filesystem.*;
+import indexingTopology.index.BTree;
+import indexingTopology.index.BTreeLeafNode;
+import indexingTopology.index.KryoLeafNodeSerializer;
+import indexingTopology.index.KryoTemplateSerializer;
 import javafx.util.Pair;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
@@ -42,7 +46,7 @@ public class SubqueryHandler<TKey extends Number & Comparable<TKey>> {
     }
 
     @SuppressWarnings("unchecked")
-    public List<byte[]> handleSubquery(SubQueryOnFile subQuery, ChunkScanner.DebugInfo debugInfo) throws IOException {
+    public List<byte[]> handleSubquery(SubQueryOnFile subQuery, QueryServerBolt.DebugInfo debugInfo) throws IOException {
         ArrayList<byte[]> tuples = new ArrayList<byte[]>();
         Long queryId = subQuery.getQueryId();
         TKey leftKey =  (TKey) subQuery.getLeftKey();

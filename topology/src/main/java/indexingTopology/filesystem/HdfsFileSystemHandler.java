@@ -1,7 +1,7 @@
 package indexingTopology.filesystem;
 
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.util.MemChunk;
+import indexingTopology.common.MemChunk;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;

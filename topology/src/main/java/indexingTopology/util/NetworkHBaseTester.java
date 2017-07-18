@@ -1,6 +1,7 @@
 package indexingTopology.util;
 
 import indexingTopology.config.TopologyConfig;
+import indexingTopology.util.experiments.HBaseHandler;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.BufferedMutator;
 import org.apache.hadoop.hbase.client.Connection;

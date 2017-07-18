@@ -1,15 +1,18 @@
 package indexingTopology.util;
 
-import indexingTopology.bolt.ChunkScanner;
+import indexingTopology.bolt.QueryServerBolt;
+import indexingTopology.common.SubQuery;
+import indexingTopology.common.SubQueryOnFile;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.filesystem.*;
+import indexingTopology.index.Indexer;
+import indexingTopology.index.IndexerBuilder;
 import junit.framework.TestCase;
 import org.junit.Test;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -18,8 +21,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 /**
  * Created by acelzj on 5/25/17.
@@ -106,7 +107,7 @@ public class SubqueryHandlerTest extends TestCase {
         SubQueryOnFile subQueryOnFile = new SubQueryOnFile(0L, 0, numTuples, chunkName, 0L, Long.MAX_VALUE, null, null, null);
 
         SubqueryHandler subqueryHandler = new SubqueryHandler(schema, config);
-        ChunkScanner.DebugInfo info = new ChunkScanner.DebugInfo();
+        QueryServerBolt.DebugInfo info = new QueryServerBolt.DebugInfo();
         List<byte[]> tuples = subqueryHandler.handleSubquery(subQueryOnFile, info);
 
         assertEquals(numTuples, tuples.size());
@@ -168,7 +169,7 @@ public class SubqueryHandlerTest extends TestCase {
         SubQueryOnFile subQueryOnFile = new SubQueryOnFile(0L, 0, numTuples, chunkName, 0L, Long.MAX_VALUE, null, null, null);
 
         SubqueryHandler subqueryHandler = new SubqueryHandler(schema, config);
-        ChunkScanner.DebugInfo info = new ChunkScanner.DebugInfo();
+        QueryServerBolt.DebugInfo info = new QueryServerBolt.DebugInfo();
         List<byte[]> tuples = subqueryHandler.handleSubquery(subQueryOnFile, info);
 
         assertEquals(numTuples, tuples.size());

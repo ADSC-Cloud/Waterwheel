@@ -14,6 +14,7 @@ import indexingTopology.common.logics.DataTuplePredicate;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
+import indexingTopology.topology.TopologyGenerator;
 import indexingTopology.util.*;
 import indexingTopology.util.taxi.*;
 import org.apache.storm.Config;
@@ -283,9 +284,9 @@ public class KingBaseTopology {
 
         TopologyConfig config = new TopologyConfig();
 
-        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000, config);
+        InputStreamReceiverBolt dataSource = new InputStreamReceiverBoltServer(rawSchema, 10000, config);
 
-        QueryCoordinator<Integer> queryCoordinator = new GeoTemporalQueryCoordinatorWithQueryReceiverServer<>(lowerBound,
+        QueryCoordinatorBolt<Integer> queryCoordinatorBolt = new GeoTemporalQueryCoordinatorBoltBolt<>(lowerBound,
                 upperBound, 10001, city, config, schema);
 
         DataTupleMapper dataTupleMapper = new DataTupleMapper(rawSchema, (Serializable & Function<DataTuple, DataTuple>) t -> {
@@ -304,7 +305,7 @@ public class KingBaseTopology {
         topologyGenerator.setNumberOfNodes(NumberOfNodes);
 
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
-                enableLoadBalance, dataSource, queryCoordinator, dataTupleMapper, bloomFilterColumns, config);
+                enableLoadBalance, dataSource, queryCoordinatorBolt, dataTupleMapper, bloomFilterColumns, config);
 
         Config conf = new Config();
         conf.setDebug(false);

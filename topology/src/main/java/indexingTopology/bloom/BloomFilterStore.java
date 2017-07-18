@@ -6,14 +6,12 @@ import com.google.common.hash.BloomFilter;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.filesystem.FileSystemHandler;
 import indexingTopology.filesystem.LocalFileSystemHandler;
-import indexingTopology.util.MemChunk;
+import indexingTopology.common.MemChunk;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.storm.shade.org.eclipse.jetty.util.ConcurrentHashSet;
 import org.apache.storm.shade.org.jboss.netty.util.internal.ConcurrentHashMap;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.Map;
 

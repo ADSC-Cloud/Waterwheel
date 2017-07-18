@@ -1,13 +1,8 @@
 package indexingTopology.util;
 
-import indexingTopology.config.TopologyConfig;
+import indexingTopology.util.partition.BalancedPartition;
 import junit.framework.TestCase;
-import org.apache.commons.math3.distribution.ZipfDistribution;
 import org.junit.Test;
-
-import java.util.Map;
-
-import static org.junit.Assert.*;
 
 /**
  * Created by acelzj on 12/17/16.
