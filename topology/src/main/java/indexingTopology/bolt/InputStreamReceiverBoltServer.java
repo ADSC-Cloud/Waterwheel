@@ -3,10 +3,7 @@ package indexingTopology.bolt;
 import indexingTopology.api.client.AppendRequest;
 import indexingTopology.api.client.AppendRequestBatchMode;
 import indexingTopology.api.client.MessageResponse;
-import indexingTopology.api.server.AppendRequestHandle;
-import indexingTopology.api.server.IAppendRequestBatchModeHandle;
-import indexingTopology.api.server.Server;
-import indexingTopology.api.server.ServerHandle;
+import indexingTopology.api.server.*;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
@@ -22,8 +19,8 @@ import java.util.concurrent.BlockingQueue;
  */
 public class InputStreamReceiverBoltServer extends InputStreamReceiverBolt {
 
-    Server server;
-    int port;
+    private Server server;
+    private int port;
 
     public InputStreamReceiverBoltServer(DataSchema schema, int port, TopologyConfig config) {
         super(schema, config);
@@ -43,45 +40,4 @@ public class InputStreamReceiverBoltServer extends InputStreamReceiverBolt {
         server.endDaemon();
     }
 
-    public static class AppendServerHandle extends ServerHandle implements AppendRequestHandle, IAppendRequestBatchModeHandle {
-
-        BlockingQueue<DataTuple> inputQueue;
-
-        public AppendServerHandle(BlockingQueue<DataTuple> inputQueue) {
-            this.inputQueue = inputQueue;
-        }
-
-        @Override
-        public void handle(AppendRequest tuple) throws IOException {
-            DataTuple dataTuple = tuple.dataTuple;
-            try {
-                inputQueue.put(dataTuple);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                e.printStackTrace();
-                objectOutputStream.writeUnshared(new MessageResponse("Timeout!"));
-                objectOutputStream.reset();
-            }
-        }
-
-        @Override
-        public void handle(AppendRequestBatchMode tuple) throws IOException {
-//            if (tuple.requireAck) {
-//                objectOutputStream.writeUnshared("received");
-//                objectOutputStream.reset();
-//            }
-            tuple.dataTupleBlock.deserialize();
-            tuple.dataTupleBlock.tuples.forEach(t -> {
-                try {
-                    inputQueue.put(t);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-//                    e.printStackTrace();
-//                    return;
-                }
-            });
-            objectOutputStream.writeUnshared("handled the block!");
-            objectOutputStream.reset();
-        }
-    }
 }

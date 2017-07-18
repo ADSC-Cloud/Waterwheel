@@ -15,14 +15,14 @@ import java.util.concurrent.LinkedBlockingQueue;
  * Created by robert on 17/7/17.
  */
 public class TupleReceiver {
-    Communicator communicator;
-    DataSchema schema;
-    LinkedBlockingQueue<DataTuple> inputQueue;
-    BackPressure backPressure;
-    TopologyConfig config;
-    int id;
-    Thread emittingThread;
-    Thread backPressureDisplayThread;
+    private Communicator communicator;
+    private DataSchema schema;
+    private LinkedBlockingQueue<DataTuple> inputQueue;
+    private BackPressure backPressure;
+    private TopologyConfig config;
+    private int id;
+    private Thread emittingThread;
+    private Thread backPressureDisplayThread;
 
     public TupleReceiver(Communicator communicator, DataSchema schema, TopologyConfig config) {
         this.communicator = communicator;
