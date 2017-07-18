@@ -1,5 +1,6 @@
 package indexingTopology.util;
 
+import org.apache.storm.metric.internal.RateTracker;
 import org.apache.storm.utils.Utils;
 
 import java.util.concurrent.Semaphore;
@@ -41,7 +42,10 @@ public class FrequencyRestrictor {
                         break;
                     }
                     final long now = System.currentTimeMillis();
-                    semaphore.release(Math.max(0, (int)((now - lastSleepTime) / (double) millisecondPerWindows * frequencyPerWindow)));
+                    int newPermits = Math.abs((int)((now - lastSleepTime) / (double) millisecondPerWindows * frequencyPerWindow));
+                    int permitsAllow = Math.abs(frequencyPerWindow * windowsPerSecond - semaphore.availablePermits());
+                    int permits = Math.min(permitsAllow, newPermits);
+                    semaphore.release(permits);
                     lastSleepTime = now;
                 }
             }
@@ -73,4 +77,24 @@ public class FrequencyRestrictor {
         permitingThread.interrupt();
     }
 
+
+    static public void main(String[] args) throws InterruptedException {
+        FrequencyRestrictor restrictor = new FrequencyRestrictor(1000);
+        RateTracker rateTracker = new RateTracker(1000,5);
+        new Thread(() -> {
+            while (true) {
+                try {
+                    restrictor.getPermission();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                rateTracker.notify(1);
+            }
+        }).start();
+
+        while (true) {
+            Thread.sleep(1000);
+            System.out.println(rateTracker.reportRate());
+        }
+    }
 }
