@@ -5,5 +5,5 @@ if [ -z $AUTHKEY ]; then
     exit 0
 fi
 
-cat $AUTHKEY >> ~/.bash/authorized_keys
+cat $AUTHKEY >> ~/.ssh/authorized_keys
 echo "$AUTHKEY was added into ~/.bash/authorized_keys"
