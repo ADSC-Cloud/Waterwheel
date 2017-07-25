@@ -20,7 +20,8 @@
  
  nimbus.seeds: ["master-host"]
 
-
+ supervisor.slots.ports:
+   - 6700
 # 
 # 
 # ##### These may optionally be filled in:
