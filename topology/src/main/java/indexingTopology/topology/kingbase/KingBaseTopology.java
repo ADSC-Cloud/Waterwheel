@@ -287,6 +287,8 @@ public class KingBaseTopology {
 
         TopologyConfig config = new TopologyConfig();
 
+
+        System.out.println("confFile: " + confFile);
         if (! confFile.equals("none")) {
             config.override(confFile);
             System.out.println("Topology is overridden by " + confFile);
