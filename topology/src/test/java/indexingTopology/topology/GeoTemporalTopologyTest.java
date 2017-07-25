@@ -55,6 +55,7 @@ public class GeoTemporalTopologyTest extends TestCase {
                 e.printStackTrace();
             }
             config.dataChunkDir = "./target/tmp";
+            config.metadataDir = "./target/tmp";
             config.HDFSFlag = false;
             config.CHUNK_SIZE = 1024 * 1024;
             System.out.println("dataChunkDir is set to " + config.dataChunkDir);

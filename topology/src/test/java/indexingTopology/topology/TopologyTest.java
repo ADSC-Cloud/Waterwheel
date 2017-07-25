@@ -55,6 +55,7 @@ public class TopologyTest extends TestCase {
                 e.printStackTrace();
             }
             config.dataChunkDir = "./target/tmp";
+            config.metadataDir = "./target/tmp";
             config.CHUNK_SIZE = 2 * 1024 * 1024;
             config.HDFSFlag = false;
             config.HDFSFlag = false;
