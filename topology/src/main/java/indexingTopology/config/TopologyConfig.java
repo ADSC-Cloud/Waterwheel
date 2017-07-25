@@ -84,6 +84,7 @@ public class TopologyConfig implements Serializable {
         ret += String.format("dataChunkDir: %s\n", dataChunkDir);
         ret += String.format("metadataDir: %s\n", metadataDir);
         ret += String.format("HDFS host: %s\n", HDFS_HOST);
+        ret += String.format("HDFS: %s\n", HDFSFlag);
         return ret;
     }
 
@@ -103,6 +104,9 @@ public class TopologyConfig implements Serializable {
             if (result.containsKey("hdfs.host"))
                 this.HDFS_HOST = (String)result.get("hdfs.host");
 
+            if (result.containsKey("storage.file.system")) {
+                this.HDFSFlag = result.get("storage.file.system").equals("hdfs");
+            }
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();

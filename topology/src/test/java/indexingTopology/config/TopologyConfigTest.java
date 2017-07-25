@@ -20,6 +20,7 @@ public class TopologyConfigTest extends TestCase {
                 out.append(" storage.datachunk.folder: \"/datachunkfolder\"\n");
                 out.append(" metadata.local.storage.path: \"/storagepath\"\n");
                 out.append(" hdfs.host: \"/hdfshost\"\n");
+                out.append(" storage.file.system: \"local\"");
                 out.close();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -42,6 +43,7 @@ public class TopologyConfigTest extends TestCase {
         assertEquals("/hdfshost", config.HDFS_HOST);
         assertEquals("/datachunkfolder", config.dataChunkDir);
         assertEquals("/storagepath", config.metadataDir);
+        assertEquals(false, config.HDFSFlag);
     }
 
 }
