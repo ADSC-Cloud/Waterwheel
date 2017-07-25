@@ -24,7 +24,7 @@ fi
 
 
 cd ..
-#mvn clean install -DskipTests
+mvn clean install -DskipTests
 cd scripts
 
 CURRENT_PATH=`pwd`
