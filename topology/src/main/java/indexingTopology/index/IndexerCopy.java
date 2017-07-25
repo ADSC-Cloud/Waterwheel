@@ -437,9 +437,9 @@ public class IndexerCopy {
 //
                     try {
                         if (config.HDFSFlag) {
-                            fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
+                            fileSystemHandler = new HdfsFileSystemHandler(config.dataChunkDir, config);
                         } else {
-                            fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+                            fileSystemHandler = new LocalFileSystemHandler(config.dataChunkDir, config);
                         }
                         fileName =  "taskId" + taskId + "chunk" + chunkId;
                         fileSystemHandler.writeToFileSystem(chunk, "/", fileName);
@@ -704,9 +704,9 @@ public class IndexerCopy {
 
                         FileSystemHandler fileSystemHandler = null;
                         if (config.HDFSFlag) {
-                            fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
+                            fileSystemHandler = new HdfsFileSystemHandler(config.dataChunkDir, config);
                         } else {
-                            fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+                            fileSystemHandler = new LocalFileSystemHandler(config.dataChunkDir, config);
                         }
 
                         fileSystemHandler.openFile("/", fileName);

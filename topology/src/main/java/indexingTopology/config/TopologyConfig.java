@@ -1,26 +1,19 @@
 package indexingTopology.config;
 
-import java.io.Serializable;
+import org.yaml.snakeyaml.Yaml;
 
-/**
- * Created by acelzj on 7/21/16.
- */
+import java.io.*;
+import java.util.Map;
+
+
 public class TopologyConfig implements Serializable {
     public final double REBUILD_TEMPLATE_THRESHOLD = 10.0;
 
-    public static final String HDFS_HOST = "hdfs://192.168.0.237:54310/";
+    public String dataChunkDir = "/home/robert/data";
 
-//    public final String HDFS_HOST = "hdfs://10.21.25.10:54310/";
-//    public static final String HDFS_HOST = "hdfs://10.21.25.13:54310/";
+    public String metadataDir = "/home/robert/data";
 
-    /**
-     * Used for maintaining persistent meta logs in HDFS. In case reconstruction
-     * is needed such as when the system crashed, meta data stored in {@link TopologyConfig#HDFS_META_LOG_PATH}
-     * is used for reconstruction.
-     */
-    public boolean RECONSTRUCT_SCHEMA = true;
-    public final String HDFS_META_LOG_PATH = "hdfs://localhost:9000/user/john/metaLog.txt";
-    public final String HDFS_HOST_LOCAL = "hdfs://localhost:9000/";
+    public String HDFS_HOST = "hdfs://192.168.0.237:54310/";
 
     public final int CACHE_SIZE = 200;
 
@@ -40,17 +33,7 @@ public class TopologyConfig implements Serializable {
 
     public boolean ChunkOrientedCaching = false;
 
-//    public static String dataDir = "/Users/Robert/Documents/data";
-//    public String dataDir = "/home/robert/data";
 
-    public String dataDir = "/home/robert/data";
-
-//    public static String dataDir = "./";
-
-    public String dataFileDir = "/home/robert/data";
-//    public static String dataFileDir = "/home/lzj/dataset/20150430_processed.txt";
-//    public static String dataFileDir = "/home/acelzj/Downloads/DPI/20150430_processed.txt";
-//    public static String dataFileDir = "/home/acelzj/Downloads/DPI/20150430.txt";
 
     public String logDir = "/logs";
 
@@ -65,32 +48,69 @@ public class TopologyConfig implements Serializable {
     public final int OFFSET_LENGTH = 4;
 
     public int CHUNK_SIZE = 58000000 / 4;
-//    public static final int CHUNK_SIZE = 58000000 / 16;
-//    public static final int CHUNK_SIZE = 58000000 / 8;
-//    public static final int CHUNK_SIZE = 58000000 / 2;
-//    public static final int CHUNK_SIZE = 58000000;
-//    public static final int CHUNK_SIZE = 6 * 1024 * 1024;
-
-
-    public static final String ZOOKEEPER_HOST = "192.168.0.207";
-//    public static final String ZOOKEEPER_HOST = "10.21.25.14";
-
-    public final String HBASE_CONF_DIR = "/home/hduser/hbase-1.2.4/conf";
-
-    public final String HBASE_CONFIGURATION_ZOOKEEPER_QUORUM = "yy01-Precision-T1650,yy09-Precision-T1650,yy10-ADSC,yy11-T5810,yy06-Precision-T1650,yy07-Precision-T1650,yy08-Precision-T1650,yy02-ubuntu,yy03-Precision-T1650,yy04-Precision-T1650,yy05-Precision-T1650";
-
-    public final int HBASE_CONFIGURATION_ZOOKEEPER_CLIENTPORT = 2222;
-
-    public final String HBASE_MASTER = "192.168.0.237:60000";
-
-    public final boolean SHUFFLE_GROUPING_FLAG = false;
-
-    public final int AVERAGE_STRING_LENGTH = 21;
-
-    public final boolean TASK_QUEUE_MODEL = false;
 
     // parallelism configuration
     public int CHUNK_SCANNER_PER_NODE = 4;
 
     public int INSERTION_SERVER_PER_NODE = 2;
+
+
+    public static final String ZOOKEEPER_HOST = "192.168.0.207";
+
+    public final boolean SHUFFLE_GROUPING_FLAG = false;
+
+    public final boolean TASK_QUEUE_MODEL = false;
+
+    /**
+     * Used for maintaining persistent meta logs in HDFS. In case reconstruction
+     * is needed such as when the system crashed, meta data stored in {@link TopologyConfig#HDFS_META_LOG_PATH}
+     * is used for reconstruction.
+     */
+    public boolean RECONSTRUCT_SCHEMA = true;
+    public final String HDFS_META_LOG_PATH = "hdfs://localhost:9000/user/john/metaLog.txt";
+    public final String HDFS_HOST_LOCAL = "hdfs://localhost:9000/";
+
+    /**
+     * configures that should have not been put in this class
+     */
+    public final int AVERAGE_STRING_LENGTH = 21;
+    public final String HBASE_CONF_DIR = "/home/hduser/hbase-1.2.4/conf";
+    public final String HBASE_CONFIGURATION_ZOOKEEPER_QUORUM = "yy01-Precision-T1650,yy09-Precision-T1650,yy10-ADSC,yy11-T5810,yy06-Precision-T1650,yy07-Precision-T1650,yy08-Precision-T1650,yy02-ubuntu,yy03-Precision-T1650,yy04-Precision-T1650,yy05-Precision-T1650";
+    public final int HBASE_CONFIGURATION_ZOOKEEPER_CLIENTPORT = 2222;
+    public final String HBASE_MASTER = "192.168.0.237:60000";
+
+    public String getCriticalSettings() {
+        String ret = "";
+        ret += String.format("dataChunkDir: %s\n", dataChunkDir);
+        ret += String.format("metadataDir: %s\n", metadataDir);
+        ret += String.format("HDFS host: %s\n", HDFS_HOST);
+        return ret;
+    }
+
+    public void override(String filePath) {
+        File file = new File(filePath);
+        try {
+            Yaml yaml = new Yaml();
+            InputStream ios = new FileInputStream(file);
+            Map<String, Object> result = (Map< String, Object>) yaml.load(ios);
+
+            if (result.containsKey("storage.datachunk.folder"))
+                this.dataChunkDir = (String)result.get("storage.datachunk.folder");
+
+            if (result.containsKey("metadata.local.storage.path"))
+                this.metadataDir = (String)result.get("metadata.local.storage.path");
+
+            if (result.containsKey("hdfs.host"))
+                this.HDFS_HOST = (String)result.get("hdfs.host");
+
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void main(String[] args) {
+        TopologyConfig config = new TopologyConfig();
+        System.out.println(config.getCriticalSettings());
+    }
 }

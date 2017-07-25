@@ -60,7 +60,7 @@ public class HBaseNetworkGeneratorBolt extends BaseRichBolt {
         this.collector = collector;
 
         try {
-            bufferedReader = new BufferedReader(new FileReader(new File(config.dataFileDir)));
+            bufferedReader = new BufferedReader(new FileReader(new File(config.metadataDir)));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -105,7 +105,7 @@ public class HBaseNetworkGeneratorBolt extends BaseRichBolt {
                         }
 
                         try {
-                            bufferedReader = new BufferedReader(new FileReader(new File(config.dataFileDir)));
+                            bufferedReader = new BufferedReader(new FileReader(new File(config.metadataDir)));
                         } catch (FileNotFoundException e) {
                             e.printStackTrace();
                         }

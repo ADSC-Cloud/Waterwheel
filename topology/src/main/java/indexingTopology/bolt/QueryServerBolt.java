@@ -292,19 +292,19 @@ public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends Bas
             metrics.startEvent("create handle");
             debugInfo.runningPosition = "breakpoint 2";
             if (config.HDFSFlag) {
-                if (config.HybridStorage && new File(config.dataDir, fileName).exists()) {
-                    fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+                if (config.HybridStorage && new File(config.dataChunkDir, fileName).exists()) {
+                    fileSystemHandler = new LocalFileSystemHandler(config.dataChunkDir, config);
                     System.out.println("Subquery will be conducted on local file in cache.");
                     metrics.setTag("file system", "local");
                 } else {
                     if (config.HybridStorage)
-                        System.out.println("Failed to find local file :" + config.dataDir + "/" + fileName);
-                    fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
+                        System.out.println("Failed to find local file :" + config.dataChunkDir + "/" + fileName);
+                    fileSystemHandler = new HdfsFileSystemHandler(config.dataChunkDir, config);
                     metrics.setTag("file system", "HDFS");
                 }
 
             } else {
-                fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+                fileSystemHandler = new LocalFileSystemHandler(config.dataChunkDir, config);
                 metrics.setTag("file system", "local");
             }
             metrics.endEvent("create handle");

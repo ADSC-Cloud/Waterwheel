@@ -56,7 +56,7 @@ public class BloomFilterStore {
         if (!registeredBloomFilters.contains(id))
             return null;
         FileSystemHandler fileSystemHandler;
-        fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+        fileSystemHandler = new LocalFileSystemHandler(config.dataChunkDir, config);
         fileSystemHandler.openFile("/", id.toString());
 
         byte[] lengthBytes = new byte[4];
@@ -82,7 +82,7 @@ public class BloomFilterStore {
 
         memChunk.write(bytes);
         FileSystemHandler fileSystemHandler;
-        fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+        fileSystemHandler = new LocalFileSystemHandler(config.dataChunkDir, config);
         fileSystemHandler.writeToFileSystem(memChunk, "/", id.toString());
         registeredBloomFilters.add(id);
     }

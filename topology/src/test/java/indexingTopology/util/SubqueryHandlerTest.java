@@ -37,10 +37,10 @@ public class SubqueryHandlerTest extends TestCase {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        config.dataDir = "./target/tmp";
+        config.dataChunkDir = "./target/tmp";
         config.HDFSFlag = false;
         config.CHUNK_SIZE = 1024 * 1024;
-        System.out.println("dataDir is set to " + config.dataDir);
+        System.out.println("dataChunkDir is set to " + config.dataChunkDir);
     }
 
     public void tearDown() {
@@ -96,9 +96,9 @@ public class SubqueryHandlerTest extends TestCase {
 //        FileSystemHandler fileSystemHandler = null;
         WritingHandler writingHandler = null;
         if (config.HDFSFlag) {
-            writingHandler = new HdfsWritingHandler(config, config.dataDir, false);
+            writingHandler = new HdfsWritingHandler(config, config.dataChunkDir, false);
         } else {
-            writingHandler = new LocalWritingHandler(config.dataDir, false);
+            writingHandler = new LocalWritingHandler(config.dataChunkDir, false);
         }
         writingHandler.openFile(chunkName);
         writingHandler.writeToFileSystem(bytes, chunkName);
@@ -158,9 +158,9 @@ public class SubqueryHandlerTest extends TestCase {
 //        FileSystemHandler fileSystemHandler = null;
         WritingHandler writingHandler = null;
         if (config.HDFSFlag) {
-            writingHandler = new HdfsWritingHandler(config, config.dataDir, false);
+            writingHandler = new HdfsWritingHandler(config, config.dataChunkDir, false);
         } else {
-            writingHandler = new LocalWritingHandler(config.dataDir, false);
+            writingHandler = new LocalWritingHandler(config.dataChunkDir, false);
         }
         writingHandler.openFile(chunkName);
         writingHandler.writeToFileSystem(bytes, chunkName);

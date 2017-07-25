@@ -160,7 +160,7 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
         pendingQueue = new LinkedBlockingQueue<>();
 
         try {
-            fileSystem = new HdfsFileSystemHandler(config.dataDir, config).getFileSystem();
+            fileSystem = new HdfsFileSystemHandler(config.dataChunkDir, config).getFileSystem();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -710,7 +710,7 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
             } else {
 
 
-                Path path = new Path(config.dataDir + "/" + fileName);
+                Path path = new Path(config.dataChunkDir + "/" + fileName);
                 Long fileLength = 0L;
                 try {
                     fileLength = fileSystem.getFileStatus(path).getLen();

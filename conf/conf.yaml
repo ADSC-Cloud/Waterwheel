@@ -1,0 +1,10 @@
+
+
+# the path where the data chunks will be stored
+ storage.datachunk.folder: "/home/robert/data"
+
+# the absolute path where cache files are stored locally.
+ metadata.local.storage.path: "/home/robert/data"
+
+# the hdfs host. the host generally can be obtained by ./hdsf getconf --confKey fs.default.name
+ hdfs.host: "hdfs://192.168.0.237:54310/"

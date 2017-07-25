@@ -21,7 +21,7 @@ public class NetworkDataReader {
         BufferedReader bufferedReader = null;
         TopologyConfig config = new TopologyConfig();
 
-        File file = new File(config.dataFileDir);
+        File file = new File(config.metadataDir);
 
 
         bufferedReader = new BufferedReader(new FileReader(file));

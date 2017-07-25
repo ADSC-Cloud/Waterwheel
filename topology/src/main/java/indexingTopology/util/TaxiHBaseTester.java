@@ -42,7 +42,7 @@ public class TaxiHBaseTester {
     List<Double> latitudes = new ArrayList<>();
     List<Integer> zcodes = new ArrayList<>();
 
-    File folder = new File(new TopologyConfig().dataFileDir);
+    File folder = new File(new TopologyConfig().metadataDir);
     File[] listOfFiles = folder.listFiles();
 
     BufferedReader bufferedReader = null;
