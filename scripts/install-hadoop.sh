@@ -16,8 +16,9 @@ do
 done
 
 if [ -z $NAMENODE_HOST ]; then
-    NAMENODE_HOST=localhost
-    echo "No namenode host is specified. Use localhost instead."
+    echo "please specify the master node host"
+    print_help
+    exit 0
 else
     echo "namenode host is $NAMENODE_HOST"
 fi
@@ -26,7 +27,7 @@ if [ ! -f hadoop-2.7.3.tar.gz ]; then
     wget http://www-eu.apache.org/dist/hadoop/common/hadoop-2.7.3/hadoop-2.7.3.tar.gz
 fi
 
-tar xvf hadoop-2.7.3.tar.gz
+tar zxf hadoop-2.7.3.tar.gz
 
 cp default-config/core-site.xml hadoop-2.7.3/etc/hadoop/
 cp default-config/hdfs-site.xml hadoop-2.7.3/etc/hadoop/
