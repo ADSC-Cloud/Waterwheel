@@ -37,23 +37,21 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
                                                   DataTupleMapper dataTupleMapper, List<String> bloomFilterColumns, TopologyConfig config) {
         TopologyBuilder builder = new TopologyBuilder();
 
-        builder.setBolt(TupleGenerator, dataSource, numberOfNodes)
+        builder.setBolt(TupleGenerator, dataSource, 1)
                 .directGrouping(IndexerBolt, Streams.AckStream);
 
         builder.setBolt(RangeQueryDispatcherBolt, new DispatcherServerBolt<>(dataSchema, lowerBound, upperBound,
-                enableLoadBalance, false, dataTupleMapper, config), 1)
+                enableLoadBalance, false, dataTupleMapper, config), numberOfNodes)
 
                 .localOrShuffleGrouping(TupleGenerator, Streams.IndexStream)
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream);
-//                .allGrouping(LogWriter, Streams.ThroughputRequestStream);
 
         builder.setBolt(IndexerBolt, new IndexingServerBolt(dataSchema, bloomFilterColumns, config), config.INSERTION_SERVER_PER_NODE * numberOfNodes)
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
-                .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream) // direct grouping should be used.
+                .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.TreeCleanStream)
                 .allGrouping(LogWriter, Streams.ThroughputRequestStream);
-        // And RangeQueryDecompositionBolt should emit to this stream via directEmit!!!!!
 
 //        builder.setBolt(RangeQueryDecompositionBolt, new QueryCoordinatorWithQueryGenerator<>(lowerBound, upperBound), 1)
         builder.setBolt(RangeQueryDecompositionBolt, queryCoordinatorBolt, 1)
@@ -110,3 +108,4 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
         return generateIndexingTopology(dataSchema, lowerBound, upperBound, enableLoadBalance, dataSource, queryCoordinatorBolt, mapper, null, config);
     }
 }
+ // direct grouping should be used.
