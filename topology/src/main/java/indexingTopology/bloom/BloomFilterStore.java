@@ -6,14 +6,12 @@ import com.google.common.hash.BloomFilter;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.filesystem.FileSystemHandler;
 import indexingTopology.filesystem.LocalFileSystemHandler;
-import indexingTopology.util.MemChunk;
+import indexingTopology.common.MemChunk;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.storm.shade.org.eclipse.jetty.util.ConcurrentHashSet;
 import org.apache.storm.shade.org.jboss.netty.util.internal.ConcurrentHashMap;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.Map;
 
@@ -58,7 +56,7 @@ public class BloomFilterStore {
         if (!registeredBloomFilters.contains(id))
             return null;
         FileSystemHandler fileSystemHandler;
-        fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+        fileSystemHandler = new LocalFileSystemHandler(config.dataChunkDir, config);
         fileSystemHandler.openFile("/", id.toString());
 
         byte[] lengthBytes = new byte[4];
@@ -84,7 +82,7 @@ public class BloomFilterStore {
 
         memChunk.write(bytes);
         FileSystemHandler fileSystemHandler;
-        fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+        fileSystemHandler = new LocalFileSystemHandler(config.dataChunkDir, config);
         fileSystemHandler.writeToFileSystem(memChunk, "/", id.toString());
         registeredBloomFilters.add(id);
     }

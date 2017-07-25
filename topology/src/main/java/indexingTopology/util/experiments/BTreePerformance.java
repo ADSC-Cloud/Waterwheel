@@ -3,7 +3,7 @@ package indexingTopology.util.experiments;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.metrics.TimeMetrics;
-import indexingTopology.util.BTree;
+import indexingTopology.index.BTree;
 import javafx.util.Pair;
 
 import java.util.ArrayList;

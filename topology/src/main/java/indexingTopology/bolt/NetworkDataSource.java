@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 /**
  * Created by acelzj on 30/3/17.
  */
-public class NetworkDataSource extends InputStreamReceiver {
+public class NetworkDataSource extends InputStreamReceiverBolt {
 
     BufferedReader bufferedReader = null;
 
@@ -39,7 +39,7 @@ public class NetworkDataSource extends InputStreamReceiver {
 //        frequencyRestrictor = new FrequencyRestrictor(50000 / 24, 50);
 
         try {
-            bufferedReader = new BufferedReader(new FileReader(new File(config.dataFileDir)));
+            bufferedReader = new BufferedReader(new FileReader(new File(config.metadataDir)));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -64,7 +64,7 @@ public class NetworkDataSource extends InputStreamReceiver {
                         }
 
                         try {
-                            bufferedReader = new BufferedReader(new FileReader(new File(config.dataFileDir)));
+                            bufferedReader = new BufferedReader(new FileReader(new File(config.metadataDir)));
                         } catch (FileNotFoundException e) {
                             e.printStackTrace();
                         }
@@ -76,15 +76,9 @@ public class NetworkDataSource extends InputStreamReceiver {
                         String url = data[2];
                         Long timestamp = System.currentTimeMillis();
 
-//                        try {
-//                            frequencyRestrictor.getPermission(1);
-//                        } catch (InterruptedException e) {
-//                            e.printStackTrace();
-//                        }
-
                         final DataTuple dataTuple = new DataTuple(sourceIp, destIp, url, timestamp);
                         try {
-                            inputQueue.put(dataTuple);
+                            getInputQueue().put(dataTuple);
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
 //                            e.printStackTrace();

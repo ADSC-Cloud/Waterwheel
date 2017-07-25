@@ -2,18 +2,22 @@ package indexingTopology.util;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
-import indexingTopology.bolt.ChunkScanner;
+import indexingTopology.bolt.QueryServerBolt;
+import indexingTopology.common.SubQueryOnFile;
 import indexingTopology.common.aggregator.Aggregator;
 import indexingTopology.cache.LRUCache;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 import indexingTopology.filesystem.*;
+import indexingTopology.index.BTree;
+import indexingTopology.index.BTreeLeafNode;
+import indexingTopology.index.KryoLeafNodeSerializer;
+import indexingTopology.index.KryoTemplateSerializer;
 import javafx.util.Pair;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
@@ -42,7 +46,7 @@ public class SubqueryHandler<TKey extends Number & Comparable<TKey>> {
     }
 
     @SuppressWarnings("unchecked")
-    public List<byte[]> handleSubquery(SubQueryOnFile subQuery, ChunkScanner.DebugInfo debugInfo) throws IOException {
+    public List<byte[]> handleSubquery(SubQueryOnFile subQuery, QueryServerBolt.DebugInfo debugInfo) throws IOException {
         ArrayList<byte[]> tuples = new ArrayList<byte[]>();
         Long queryId = subQuery.getQueryId();
         TKey leftKey =  (TKey) subQuery.getLeftKey();
@@ -62,16 +66,16 @@ public class SubqueryHandler<TKey extends Number & Comparable<TKey>> {
 
 
 //            if (config.HDFSFlag) {
-//                if (config.HybridStorage && new File(config.dataDir, fileName).exists()) {
-//                    fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+//                if (config.HybridStorage && new File(config.dataChunkDir, fileName).exists()) {
+//                    fileSystemHandler = new LocalFileSystemHandler(config.dataChunkDir, config);
 //                    System.out.println("Subquery will be conducted on local file in cache.");
 //                } else {
 //                    if (config.HybridStorage)
-//                        System.out.println("Failed to find local file :" + config.dataDir + "/" + fileName);
-//                    fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
+//                        System.out.println("Failed to find local file :" + config.dataChunkDir + "/" + fileName);
+//                    fileSystemHandler = new HdfsFileSystemHandler(config.dataChunkDir, config);
 //                }
 //            } else {
-//                fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+//                fileSystemHandler = new LocalFileSystemHandler(config.dataChunkDir, config);
 //            }
 
 
@@ -80,16 +84,16 @@ public class SubqueryHandler<TKey extends Number & Comparable<TKey>> {
             debugInfo.runningPosition = "breakpoint 2";
 
             if (config.HDFSFlag) {
-                if (config.HybridStorage && new File(config.dataDir, fileName).exists()) {
-                    readingHandler = new LocalReadingHandler(config.dataDir);
+                if (config.HybridStorage && new File(config.dataChunkDir, fileName).exists()) {
+                    readingHandler = new LocalReadingHandler(config.dataChunkDir);
                     System.out.println("Subquery will be conducted on local file in cache.");
                 } else {
                     if (config.HybridStorage)
-                        System.out.println("Failed to find local file :" + config.dataDir + "/" + fileName);
-                    readingHandler = new HdfsReadingHandler(config.dataDir, config);
+                        System.out.println("Failed to find local file :" + config.dataChunkDir + "/" + fileName);
+                    readingHandler = new HdfsReadingHandler(config.dataChunkDir, config);
                 }
             } else {
-                readingHandler = new LocalReadingHandler(config.dataDir);
+                readingHandler = new LocalReadingHandler(config.dataChunkDir);
             }
 
 

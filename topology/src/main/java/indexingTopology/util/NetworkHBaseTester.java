@@ -1,6 +1,7 @@
 package indexingTopology.util;
 
 import indexingTopology.config.TopologyConfig;
+import indexingTopology.util.experiments.HBaseHandler;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.BufferedMutator;
 import org.apache.hadoop.hbase.client.Connection;
@@ -119,7 +120,7 @@ public class NetworkHBaseTester {
 
             Connection connection = hBaseHandler.getConnection();
             try {
-                this.bufferedReader = new BufferedReader(new FileReader(new File(config.dataFileDir)));
+                this.bufferedReader = new BufferedReader(new FileReader(new File(config.metadataDir)));
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
@@ -148,7 +149,7 @@ public class NetworkHBaseTester {
                     try {
                         bufferedReader.close();
                         try {
-                            bufferedReader = new BufferedReader(new FileReader(new File(config.dataFileDir)));
+                            bufferedReader = new BufferedReader(new FileReader(new File(config.metadataDir)));
                         } catch (FileNotFoundException e) {
                             e.printStackTrace();
                         }

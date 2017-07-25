@@ -1,14 +1,10 @@
 package indexingTopology.filesystem;
 
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.util.MemChunk;
+import indexingTopology.common.MemChunk;
 
 import java.io.*;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Created by dmir on 10/26/16.

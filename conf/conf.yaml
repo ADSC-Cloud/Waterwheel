@@ -1,0 +1,15 @@
+
+
+# the path where the data chunks will be stored
+ storage.datachunk.folder: "/home/robert/data"
+
+# default file system for storage: hdfs/local.
+ storage.file.system: "hdfs"
+
+# the absolute path where cache files are stored locally.
+ metadata.local.storage.path: "/home/robert/data"
+
+# the hdfs host. This value can be omitted when strage.file.system is local.
+# the host generally can be obtained by ./hdsf getconf --confKey fs.default.name
+ hdfs.host: "hdfs://192.168.0.237:54310/"
+

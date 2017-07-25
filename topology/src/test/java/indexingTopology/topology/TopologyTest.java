@@ -4,10 +4,10 @@ import indexingTopology.api.client.IngestionClientBatchMode;
 import indexingTopology.api.client.QueryClient;
 import indexingTopology.api.client.QueryRequest;
 import indexingTopology.api.client.QueryResponse;
-import indexingTopology.bolt.InputStreamReceiver;
-import indexingTopology.bolt.InputStreamReceiverServer;
-import indexingTopology.bolt.QueryCoordinator;
-import indexingTopology.bolt.QueryCoordinatorWithQueryReceiverServer;
+import indexingTopology.bolt.InputStreamReceiverBolt;
+import indexingTopology.bolt.InputStreamReceiverBoltServer;
+import indexingTopology.bolt.QueryCoordinatorBolt;
+import indexingTopology.bolt.QueryCoordinatorWithQueryReceiverServerBolt;
 import indexingTopology.common.logics.DataTupleEquivalentPredicateHint;
 import indexingTopology.common.logics.DataTupleMapper;
 import indexingTopology.common.logics.DataTuplePredicate;
@@ -54,11 +54,11 @@ public class TopologyTest extends TestCase {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            config.dataDir = "./target/tmp";
+            config.dataChunkDir = "./target/tmp";
             config.CHUNK_SIZE = 2 * 1024 * 1024;
             config.HDFSFlag = false;
             config.HDFSFlag = false;
-            System.out.println("dataDir is set to " + config.dataDir);
+            System.out.println("dataChunkDir is set to " + config.dataChunkDir);
             cluster = new LocalCluster();
             setupDone = true;
         }
@@ -94,11 +94,11 @@ public class TopologyTest extends TestCase {
 
         assertTrue(config != null);
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, ingestionPort, config);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, queryPort,
+        InputStreamReceiverBolt inputStreamReceiverBolt = new InputStreamReceiverBoltServer(schema, ingestionPort, config);
+        QueryCoordinatorBolt<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServerBolt<>(minIndex, maxIndex, queryPort,
                 config, schema);
 
-        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiverBolt,
                 coordinator, config);
 
         Config conf = new Config();
@@ -211,11 +211,11 @@ public class TopologyTest extends TestCase {
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, ingestionPort, config);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, queryPort,
+        InputStreamReceiverBolt inputStreamReceiverBolt = new InputStreamReceiverBoltServer(schema, ingestionPort, config);
+        QueryCoordinatorBolt<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServerBolt<>(minIndex, maxIndex, queryPort,
                 config, schema);
 
-        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiverBolt,
                 coordinator, config);
 
         Config conf = new Config();
@@ -327,13 +327,13 @@ public class TopologyTest extends TestCase {
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, ingestionPort, config);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, queryPort,
+        InputStreamReceiverBolt inputStreamReceiverBolt = new InputStreamReceiverBoltServer(schema, ingestionPort, config);
+        QueryCoordinatorBolt<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServerBolt<>(minIndex, maxIndex, queryPort,
                 config, schema);
 
         ArrayList<String> bloomFilterColumns = new ArrayList<>();
         bloomFilterColumns.add("a4");
-        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiverBolt,
                 coordinator, null, bloomFilterColumns, config);
 
         Config conf = new Config();
@@ -476,13 +476,13 @@ public class TopologyTest extends TestCase {
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, ingestionPort, config);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, queryPort,
+        InputStreamReceiverBolt inputStreamReceiverBolt = new InputStreamReceiverBoltServer(schema, ingestionPort, config);
+        QueryCoordinatorBolt<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServerBolt<>(minIndex, maxIndex, queryPort,
                 config, schema);
 
         ArrayList<String> bloomFilterColumns = new ArrayList<>();
         bloomFilterColumns.add("a2");
-        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiverBolt,
                 coordinator, null, bloomFilterColumns, config);
 
         Config conf = new Config();
@@ -625,11 +625,11 @@ public class TopologyTest extends TestCase {
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, ingestionPort, config);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, queryPort,
+        InputStreamReceiverBolt inputStreamReceiverBolt = new InputStreamReceiverBoltServer(schema, ingestionPort, config);
+        QueryCoordinatorBolt<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServerBolt<>(minIndex, maxIndex, queryPort,
                 config, schema);
 
-        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiverBolt,
                 coordinator, config);
 
         Config conf = new Config();
@@ -766,11 +766,11 @@ public class TopologyTest extends TestCase {
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(rawSchema, ingestionPort, config);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, queryPort,
+        InputStreamReceiverBolt inputStreamReceiverBolt = new InputStreamReceiverBoltServer(rawSchema, ingestionPort, config);
+        QueryCoordinatorBolt<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServerBolt<>(minIndex, maxIndex, queryPort,
                 config, schema);
 
-        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiverBolt,
                 coordinator, mapper, config);
 
         Config conf = new Config();
@@ -898,11 +898,11 @@ public class TopologyTest extends TestCase {
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, ingestionPort, config);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, queryPort,
+        InputStreamReceiverBolt inputStreamReceiverBolt = new InputStreamReceiverBoltServer(schema, ingestionPort, config);
+        QueryCoordinatorBolt<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServerBolt<>(minIndex, maxIndex, queryPort,
                 config, schema);
 
-        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiverBolt,
                 coordinator, config);
 
         Config conf = new Config();
@@ -1028,11 +1028,11 @@ public class TopologyTest extends TestCase {
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
-        InputStreamReceiver inputStreamReceiver = new InputStreamReceiverServer(schema, ingestionPort, config);
-        QueryCoordinator<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServer<>(minIndex, maxIndex, queryPort,
+        InputStreamReceiverBolt inputStreamReceiverBolt = new InputStreamReceiverBoltServer(schema, ingestionPort, config);
+        QueryCoordinatorBolt<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServerBolt<>(minIndex, maxIndex, queryPort,
                 config, schema);
 
-        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiver,
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiverBolt,
                 coordinator, config);
 
         Config conf = new Config();

@@ -1,6 +1,7 @@
 package indexingTopology.util;
 
 import indexingTopology.config.TopologyConfig;
+import indexingTopology.util.experiments.HBaseHandler;
 import indexingTopology.util.taxi.City;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
@@ -41,7 +42,7 @@ public class TaxiHBaseTester {
     List<Double> latitudes = new ArrayList<>();
     List<Integer> zcodes = new ArrayList<>();
 
-    File folder = new File(new TopologyConfig().dataFileDir);
+    File folder = new File(new TopologyConfig().metadataDir);
     File[] listOfFiles = folder.listFiles();
 
     BufferedReader bufferedReader = null;
