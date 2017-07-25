@@ -56,7 +56,7 @@ public class KingBaseTopology {
     private String Mode = "Not Given";
 
     @Option(name = "--config", aliases = {"-c"}, usage = "conf.yaml to override default configs")
-    private String confFile = null;
+    private String confFile = "none";
 
     /**
      * topology configuration
@@ -287,7 +287,7 @@ public class KingBaseTopology {
 
         TopologyConfig config = new TopologyConfig();
 
-        if (confFile != null) {
+        if (! confFile.equals("none")) {
             config.override(confFile);
             System.out.println("Topology is overridden by " + confFile);
             System.out.println(config.getCriticalSettings());
