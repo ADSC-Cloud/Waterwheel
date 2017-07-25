@@ -55,14 +55,14 @@ public class KingBaseTopology {
     @Option(name = "--mode", aliases = {"-m"}, usage = "submit|ingest|query")
     private String Mode = "Not Given";
 
-    @Option(name = "--config", aliases = {"-c"}, usage = "conf.yaml to override default configs")
-    private String confFile = "none";
-
     /**
      * topology configuration
      */
     @Option(name = "--topology-name", aliases = "-t", usage = "topology name")
     private String TopologyName = "T0";
+
+    @Option(name = "--config-file", aliases = {"-f"}, usage = "conf.yaml to override default configs")
+    private String confFile = "none";
 
     @Option(name = "--node", aliases = {"-n"}, usage = "number of nodes used in the topology")
     private int NumberOfNodes = 1;
