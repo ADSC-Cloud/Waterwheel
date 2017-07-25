@@ -55,6 +55,8 @@ sed -i "s|datanode-dir|$DATANODE_FOLDER|g" hadoop-2.7.3/etc/hadoop/hdfs-site.xml
 # set $JAVA_HOME variable in hadoop-env.sh
 sed -i "s|JAVA_HOME=.*|JAVA_HOME=$JAVA_HOME|g" hadoop-2.7.3/etc/hadoop/hadoop-env.sh
 if [ "$MODE" = "master" ]; then
-  hadoop-2.7.3/bin/hdfs namenode -format
-  hadoop-2.7.3/sbin/start-dfs.sh
+    hadoop-2.7.3/bin/hdfs namenode -format
+    hadoop-2.7.3/sbin/start-dfs.sh
+else
+    hadoop-2.7.3/sbin/hadoop-daemons.sh  --script "hadoop-2.7.3/bin/hdfs" start datanode
 fi
