@@ -55,6 +55,9 @@ public class KingBaseTopology {
     @Option(name = "--mode", aliases = {"-m"}, usage = "submit|ingest|query")
     private String Mode = "Not Given";
 
+    @Option(name = "--config", aliases = {"-c"}, usage = "conf.yaml to override default configs")
+    private String confFile = null;
+
     /**
      * topology configuration
      */
@@ -283,6 +286,12 @@ public class KingBaseTopology {
         final boolean enableLoadBalance = false;
 
         TopologyConfig config = new TopologyConfig();
+
+        if (confFile != null) {
+            config.override(confFile);
+            System.out.println("Topology is overridden by " + confFile);
+            System.out.println(config.getCriticalSettings());
+        }
 
         InputStreamReceiverBolt dataSource = new InputStreamReceiverBoltServer(rawSchema, 10000, config);
 
