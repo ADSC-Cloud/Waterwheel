@@ -21,6 +21,7 @@ public class BloomFilterStoreTest extends TestCase{
         }
         config.HDFSFlag = false;
         config.dataChunkDir = "./target/tmp";
+        config.metadataDir = "./target/tmp";
     }
 
     public void tearDown() {
