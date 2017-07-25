@@ -288,7 +288,6 @@ public class KingBaseTopology {
         TopologyConfig config = new TopologyConfig();
 
 
-        System.out.println("confFile: " + confFile);
         if (! confFile.equals("none")) {
             config.override(confFile);
             System.out.println("Topology is overridden by " + confFile);
@@ -296,10 +295,6 @@ public class KingBaseTopology {
         } else {
             System.out.println("conf.yaml is not specified, using default instead.");
         }
-
-        System.out.println(config.getCriticalSettings());
-        if (true)
-            return;
 
         InputStreamReceiverBolt dataSource = new InputStreamReceiverBoltServer(rawSchema, 10000, config);
 
