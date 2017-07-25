@@ -26,6 +26,11 @@ public class BloomFilterStore {
 
     public BloomFilterStore(TopologyConfig config) {
         this.config = config;
+        try {
+            Runtime.getRuntime().exec("mkdir -p " + config.metadataDir);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     static public class BloomFilterId {
@@ -56,7 +61,7 @@ public class BloomFilterStore {
         if (!registeredBloomFilters.contains(id))
             return null;
         FileSystemHandler fileSystemHandler;
-        fileSystemHandler = new LocalFileSystemHandler(config.dataChunkDir, config);
+        fileSystemHandler = new LocalFileSystemHandler(config.metadataDir, config);
         fileSystemHandler.openFile("/", id.toString());
 
         byte[] lengthBytes = new byte[4];
@@ -82,7 +87,7 @@ public class BloomFilterStore {
 
         memChunk.write(bytes);
         FileSystemHandler fileSystemHandler;
-        fileSystemHandler = new LocalFileSystemHandler(config.dataChunkDir, config);
+        fileSystemHandler = new LocalFileSystemHandler(config.metadataDir, config);
         fileSystemHandler.writeToFileSystem(memChunk, "/", id.toString());
         registeredBloomFilters.add(id);
     }
