@@ -330,6 +330,8 @@ public class KingBaseTopology {
             localCluster.submitTopology(TopologyName, conf, topology);
         } else {
             StormSubmitter.submitTopology(TopologyName, conf, topology);
+            System.out.println("Topology is successfully submitted to the cluster!");
+            System.out.println(config.getCriticalSettings());
         }
     }
 
