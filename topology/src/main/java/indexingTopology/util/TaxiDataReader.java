@@ -21,12 +21,12 @@ public class TaxiDataReader {
         TopologyConfig config = new TopologyConfig();
 
         BufferedReader bufferedReader = null;
-        File folder = new File(config.dataFileDir);
+        File folder = new File(config.metadataDir);
 
         File[] listOfFiles = folder.listFiles();
 
         System.out.println(listOfFiles.length);
-//        File file = new File(TopologyConfig.dataFileDir + "/" + fileNumber + ".txt");
+//        File file = new File(TopologyConfig.metadataDir + "/" + fileNumber + ".txt");
 
         Double Xmin = Double.MAX_VALUE;
         Double Xmax = Double.MIN_VALUE;

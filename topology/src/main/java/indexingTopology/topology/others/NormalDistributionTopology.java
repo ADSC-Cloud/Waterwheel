@@ -70,7 +70,7 @@ public class NormalDistributionTopology {
         boolean enableLoadBalance = false;
 
 
-        config.dataDir = "/home/acelzj";
+        config.dataChunkDir = "/home/acelzj";
         config.HDFSFlag = false;
 
         builder.setSpout(TupleGenerator, new NormalDistributionGenerator(schema), 1);

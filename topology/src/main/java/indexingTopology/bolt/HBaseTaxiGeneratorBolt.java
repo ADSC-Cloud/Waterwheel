@@ -89,7 +89,7 @@ public class HBaseTaxiGeneratorBolt extends BaseRichBolt{
 
         size = generatorIds.size();
 
-        folder = new File(config.dataFileDir);
+        folder = new File(config.metadataDir);
 
         listOfFiles = folder.listFiles();
 

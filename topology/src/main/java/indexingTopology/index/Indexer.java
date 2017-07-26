@@ -338,9 +338,9 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                     /*
                     try {
                         if (config.HDFSFlag) {
-                            fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
+                            fileSystemHandler = new HdfsFileSystemHandler(config.dataChunkDir, config);
                         } else {
-                            fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+                            fileSystemHandler = new LocalFileSystemHandler(config.dataChunkDir, config);
                         }
                         fileName = "taskId" + taskId + "chunk" + chunkId;
                         long start = System.currentTimeMillis();
@@ -350,7 +350,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                                 System.currentTimeMillis() - start));
 
                         if (config.HybridStorage && config.HDFSFlag) {
-                            FileSystemHandler localFileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+                            FileSystemHandler localFileSystemHandler = new LocalFileSystemHandler(config.dataChunkDir, config);
                             start = System.currentTimeMillis();
                             localFileSystemHandler.writeToFileSystem(chunk, "/", fileName);
                             System.out.println(String.format("File %s is written to the disk cache in %d ms", fileName,
@@ -359,9 +359,9 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                         }
 
 //                        if (config.HDFSFlag) {
-//                            fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
+//                            fileSystemHandler = new HdfsFileSystemHandler(config.dataChunkDir, config);
 //                        } else {
-//                            fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+//                            fileSystemHandler = new LocalFileSystemHandler(config.dataChunkDir, config);
 //                        }
 //                        deserilizeChunkFile(fileSystemHandler, fileName);
 
@@ -377,9 +377,9 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                         WritingHandler writingHandler  = null;
 
                         if (config.HDFSFlag) {
-                            writingHandler = new HdfsWritingHandler(config, config.dataDir, false);
+                            writingHandler = new HdfsWritingHandler(config, config.dataChunkDir, false);
                         } else {
-                            writingHandler = new LocalWritingHandler(config.dataDir, false);
+                            writingHandler = new LocalWritingHandler(config.dataChunkDir, false);
                         }
 
                         byte[] bytes = getTreeBytes();
@@ -394,7 +394,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                                 System.currentTimeMillis() - start));
 
                         if (config.HybridStorage && config.HDFSFlag) {
-                            LocalWritingHandler localWritingHandler = new LocalWritingHandler(config.dataDir, false);
+                            LocalWritingHandler localWritingHandler = new LocalWritingHandler(config.dataChunkDir, false);
                             start = System.currentTimeMillis();
                             localWritingHandler.openFile(fileName);
                             localWritingHandler.writeToFileSystem(bytes, fileName);
@@ -406,9 +406,9 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                         }
 
 //                        if (config.HDFSFlag) {
-//                            fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
+//                            fileSystemHandler = new HdfsFileSystemHandler(config.dataChunkDir, config);
 //                        } else {
-//                            fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+//                            fileSystemHandler = new LocalFileSystemHandler(config.dataChunkDir, config);
 //                        }
 //                        deserilizeChunkFile(fileSystemHandler, fileName);
 

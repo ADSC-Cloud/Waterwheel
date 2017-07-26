@@ -44,10 +44,10 @@ public class KryoTemplateSerializerTest extends TestCase {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        config.dataDir = "./target/tmp";
+        config.dataChunkDir = "./target/tmp";
         config.HDFSFlag = false;
         config.CHUNK_SIZE = 1024 * 1024;
-        System.out.println("dataDir is set to " + config.dataDir);
+        System.out.println("dataChunkDir is set to " + config.dataChunkDir);
     }
 
     public void tearDown() {
@@ -65,10 +65,10 @@ public class KryoTemplateSerializerTest extends TestCase {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        config.dataDir = "./target/tmp";
+        config.dataChunkDir = "./target/tmp";
         config.HDFSFlag = false;
         config.CHUNK_SIZE = 4 * 1000 * 1000;
-        System.out.println("dataDir is set to " + config.dataDir);
+        System.out.println("dataChunkDir is set to " + config.dataChunkDir);
     }
 
     public void tearDown() {
@@ -247,9 +247,9 @@ public class KryoTemplateSerializerTest extends TestCase {
 
             try {
                 if (config.HDFSFlag) {
-                    fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
+                    fileSystemHandler = new HdfsFileSystemHandler(config.dataChunkDir, config);
                 } else {
-                    fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+                    fileSystemHandler = new LocalFileSystemHandler(config.dataChunkDir, config);
                 }
 
                 fileName = "taskId" + 0 + "chunk" + 0;
@@ -509,9 +509,9 @@ public class KryoTemplateSerializerTest extends TestCase {
 
         try {
             if (config.HDFSFlag) {
-                fileSystemHandler = new HdfsFileSystemHandler(config.dataDir, config);
+                fileSystemHandler = new HdfsFileSystemHandler(config.dataChunkDir, config);
             } else {
-                fileSystemHandler = new LocalFileSystemHandler(config.dataDir, config);
+                fileSystemHandler = new LocalFileSystemHandler(config.dataChunkDir, config);
             }
 
             fileName = "taskId" + 0 + "chunk" + 0;
@@ -660,9 +660,9 @@ public class KryoTemplateSerializerTest extends TestCase {
             try {
                 String fileName = null;
                 if (TopologyConfig.HDFSFlag) {
-                    fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataDir);
+                    fileSystemHandler = new HdfsFileSystemHandler(TopologyConfig.dataChunkDir);
                 } else {
-                    fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataDir);
+                    fileSystemHandler = new LocalFileSystemHandler(TopologyConfig.dataChunkDir);
                 }
 
                 fileName = "taskId" + 0 + "chunk" + chunkId;

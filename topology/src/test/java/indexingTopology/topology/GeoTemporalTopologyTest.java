@@ -54,10 +54,11 @@ public class GeoTemporalTopologyTest extends TestCase {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            config.dataDir = "./target/tmp";
+            config.dataChunkDir = "./target/tmp";
+            config.metadataDir = "./target/tmp";
             config.HDFSFlag = false;
             config.CHUNK_SIZE = 1024 * 1024;
-            System.out.println("dataDir is set to " + config.dataDir);
+            System.out.println("dataChunkDir is set to " + config.dataChunkDir);
             cluster = new LocalCluster();
             setupDone = true;
         }

@@ -61,6 +61,9 @@ public class KingBaseTopology {
     @Option(name = "--topology-name", aliases = "-t", usage = "topology name")
     private String TopologyName = "T0";
 
+    @Option(name = "--config-file", aliases = {"-f"}, usage = "conf.yaml to override default configs")
+    private String confFile = "none";
+
     @Option(name = "--node", aliases = {"-n"}, usage = "number of nodes used in the topology")
     private int NumberOfNodes = 1;
 
@@ -284,6 +287,15 @@ public class KingBaseTopology {
 
         TopologyConfig config = new TopologyConfig();
 
+
+        if (! confFile.equals("none")) {
+            config.override(confFile);
+            System.out.println("Topology is overridden by " + confFile);
+            System.out.println(config.getCriticalSettings());
+        } else {
+            System.out.println("conf.yaml is not specified, using default instead.");
+        }
+
         InputStreamReceiverBolt dataSource = new InputStreamReceiverBoltServer(rawSchema, 10000, config);
 
         QueryCoordinatorBolt<Integer> queryCoordinatorBolt = new GeoTemporalQueryCoordinatorBoltBolt<>(lowerBound,
@@ -319,6 +331,8 @@ public class KingBaseTopology {
             localCluster.submitTopology(TopologyName, conf, topology);
         } else {
             StormSubmitter.submitTopology(TopologyName, conf, topology);
+            System.out.println("Topology is successfully submitted to the cluster!");
+            System.out.println(config.getCriticalSettings());
         }
     }
 
@@ -337,6 +351,7 @@ public class KingBaseTopology {
 
         if (kingBaseTopology.Help) {
             parser.printUsage(System.out);
+            return;
         }
 
         switch (kingBaseTopology.Mode) {

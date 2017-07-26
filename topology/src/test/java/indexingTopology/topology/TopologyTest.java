@@ -54,11 +54,12 @@ public class TopologyTest extends TestCase {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            config.dataDir = "./target/tmp";
+            config.dataChunkDir = "./target/tmp";
+            config.metadataDir = "./target/tmp";
             config.CHUNK_SIZE = 2 * 1024 * 1024;
             config.HDFSFlag = false;
             config.HDFSFlag = false;
-            System.out.println("dataDir is set to " + config.dataDir);
+            System.out.println("dataChunkDir is set to " + config.dataChunkDir);
             cluster = new LocalCluster();
             setupDone = true;
         }

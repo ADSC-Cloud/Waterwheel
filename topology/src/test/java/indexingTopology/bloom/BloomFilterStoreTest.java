@@ -8,8 +8,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import static org.junit.Assert.*;
-
 /**
  * Created by Robert on 6/16/17.
  */
@@ -22,7 +20,8 @@ public class BloomFilterStoreTest extends TestCase{
             e.printStackTrace();
         }
         config.HDFSFlag = false;
-        config.dataDir = "./target/tmp";
+        config.dataChunkDir = "./target/tmp";
+        config.metadataDir = "./target/tmp";
     }
 
     public void tearDown() {

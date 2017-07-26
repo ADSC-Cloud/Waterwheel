@@ -5,8 +5,6 @@ import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 import indexingTopology.common.data.TrackedDataTuple;
-import indexingTopology.index.Indexer;
-import indexingTopology.index.IndexerBuilder;
 import javafx.util.Pair;
 import junit.framework.TestCase;
 import org.apache.storm.shade.org.eclipse.jetty.util.ConcurrentHashSet;
@@ -33,9 +31,9 @@ public class IndexerTest extends TestCase implements Observer{
         } catch (IOException e) {
             e.printStackTrace();
         }
-        config.dataDir = "./target/tmp";
+        config.dataChunkDir = "./target/tmp";
         config.HDFSFlag = false;
-        System.out.println("dataDir is set to " + config.dataDir);
+        System.out.println("dataChunkDir is set to " + config.dataChunkDir);
         tupleIdToBeAcked = new ConcurrentHashSet<>();
     }
 
@@ -49,7 +47,7 @@ public class IndexerTest extends TestCase implements Observer{
 
     @Test
     public void testIndexLogic() throws InterruptedException {
-        config.dataDir = "./target/tmp";
+        config.dataChunkDir = "./target/tmp";
         config.CHUNK_SIZE = 58000000 ;
         IndexerBuilder indexerBuilder = new IndexerBuilder(config);
 
@@ -102,7 +100,7 @@ public class IndexerTest extends TestCase implements Observer{
     @Test
     public void testAck() throws InterruptedException {
         TopologyConfig config = new TopologyConfig();
-        config.dataDir = "./target/tmp";
+        config.dataChunkDir = "./target/tmp";
         config.CHUNK_SIZE = 58000000 / 16;
         IndexerBuilder indexerBuilder = new IndexerBuilder(config);
 

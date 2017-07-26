@@ -44,7 +44,8 @@ public class TopologyOverallTest extends TestCase {
             e.printStackTrace();
         }
         config.HDFSFlag = false;
-        config.dataDir = "./target/tmp";
+        config.dataChunkDir = "./target/tmp";
+        config.metadataDir = "./target/tmp";
     }
 
     public void tearDown() {

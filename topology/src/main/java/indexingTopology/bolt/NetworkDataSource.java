@@ -39,7 +39,7 @@ public class NetworkDataSource extends InputStreamReceiverBolt {
 //        frequencyRestrictor = new FrequencyRestrictor(50000 / 24, 50);
 
         try {
-            bufferedReader = new BufferedReader(new FileReader(new File(config.dataFileDir)));
+            bufferedReader = new BufferedReader(new FileReader(new File(config.metadataDir)));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -64,7 +64,7 @@ public class NetworkDataSource extends InputStreamReceiverBolt {
                         }
 
                         try {
-                            bufferedReader = new BufferedReader(new FileReader(new File(config.dataFileDir)));
+                            bufferedReader = new BufferedReader(new FileReader(new File(config.metadataDir)));
                         } catch (FileNotFoundException e) {
                             e.printStackTrace();
                         }
