@@ -100,7 +100,7 @@ public class BenchmarkTopology {
     public void executeQuery() {
 
         DataSchema schema = getDataSchema();
-        GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient(QueryServerIp, 10001);
+        QueryClient queryClient = new QueryClient(QueryServerIp, 10001);
         Thread queryThread = new Thread(() -> {
             try {
                 queryClient.connectWithTimeout(10000);
