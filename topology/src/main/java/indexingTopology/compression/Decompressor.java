@@ -5,6 +5,6 @@ import java.io.IOException;
 /**
  * Created by robert on 26/7/17.
  */
-interface Decompressor {
+public interface Decompressor {
     byte[] decompress(byte[] compressed) throws IOException;
 }

@@ -7,7 +7,7 @@ import net.jpountz.lz4.LZ4Factory;
  */
 public class CompressorFactory {
 
-    enum Algorithm {LZ4, Snappy}
+    public enum Algorithm {LZ4, Snappy}
     static public Compressor compressor(Algorithm algorithm) {
         switch (algorithm) {
             case LZ4:
