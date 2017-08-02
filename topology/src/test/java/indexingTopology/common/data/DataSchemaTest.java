@@ -75,4 +75,12 @@ public class DataSchemaTest {
         assertEquals( 16, schema.getTupleLength());
         assertEquals(8, schema.getIndexType().length);
     }
+
+    @Test
+    public void getFiledNames() {
+        DataSchema schema = new DataSchema();
+        schema.addDoubleField("f1");
+        schema.addLongField("f2");
+        assertEquals("[f1, f2]", schema.getFieldNames().toString());
+    }
 }

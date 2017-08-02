@@ -1,7 +1,9 @@
 package indexingTopology.common.data;
 
+
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by robert on 9/2/17.
@@ -45,6 +47,13 @@ public class DataTuple extends ArrayList<Object> implements Serializable {
         }
         return ret;
     }
+
+    public List<String> toValues() {
+        List<String> values = new ArrayList<String>();
+        this.forEach(t -> values.add(t.toString()));
+        return values;
+    }
+
     static public void main(String[] args) {
         DataTuple tuple = new DataTuple(10, "Hello!");
         System.out.println(tuple);
