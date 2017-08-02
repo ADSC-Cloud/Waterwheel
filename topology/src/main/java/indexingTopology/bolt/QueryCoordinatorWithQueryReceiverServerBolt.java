@@ -2,13 +2,16 @@ package indexingTopology.bolt;
 
 import indexingTopology.api.client.QueryRequest;
 import indexingTopology.api.client.QueryResponse;
+import indexingTopology.api.client.SchemaQueryRequest;
 import indexingTopology.api.server.QueryHandle;
+import indexingTopology.api.server.SchemaQueryHandle;
 import indexingTopology.api.server.Server;
 import indexingTopology.api.server.ServerHandle;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.PartialQueryResult;
 import indexingTopology.common.Query;
+import indexingTopology.metadata.SchemaManager;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
@@ -50,7 +53,7 @@ public class QueryCoordinatorWithQueryReceiverServerBolt<T extends Number & Comp
         queryIdToPartialQueryResults = new HashMap<>();
 
 
-        server = new Server(port, QueryServerHandle.class, new Class[]{LinkedBlockingQueue.class, AtomicLong.class, Map.class}, pendingQueue, queryId, queryIdToPartialQueryResults);
+        server = new Server(port, QueryServerHandle.class, new Class[]{LinkedBlockingQueue.class, AtomicLong.class, Map.class, SchemaManager.class}, pendingQueue, queryId, queryIdToPartialQueryResults, schemaManager);
         server.startDaemon();
 //        queryIdToPartialQueryResultSemphore = new HashMap<>();
     }
@@ -78,16 +81,20 @@ public class QueryCoordinatorWithQueryReceiverServerBolt<T extends Number & Comp
 //        semaphore.release();
     }
 
-    static public class QueryServerHandle<T extends Number & Comparable<T>> extends ServerHandle implements QueryHandle {
+    static public class QueryServerHandle<T extends Number & Comparable<T>> extends ServerHandle implements QueryHandle, SchemaQueryHandle {
 
         LinkedBlockingQueue<List<Query<T>>> pendingQueryQueue;
         AtomicLong queryIdGenerator;
         AtomicLong superQueryIdGenerator;
         Map<Long, LinkedBlockingQueue<PartialQueryResult>> queryresults;
-        public QueryServerHandle(LinkedBlockingQueue<List<Query<T>>> pendingQueryQueue, AtomicLong queryIdGenerator, Map<Long, LinkedBlockingQueue<PartialQueryResult>> queryresults) {
+        SchemaManager schemaManager;
+        public QueryServerHandle(LinkedBlockingQueue<List<Query<T>>> pendingQueryQueue, AtomicLong queryIdGenerator,
+                                 Map<Long, LinkedBlockingQueue<PartialQueryResult>> queryresults,
+                                 SchemaManager schemaManager) {
             this.pendingQueryQueue = pendingQueryQueue;
             this.queryresults = queryresults;
             this.queryIdGenerator = queryIdGenerator;
+            this.schemaManager = schemaManager;
         }
 
         @Override
@@ -116,6 +123,13 @@ public class QueryCoordinatorWithQueryReceiverServerBolt<T extends Number & Comp
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+        }
+
+        @Override
+        public void handle(SchemaQueryRequest request) throws IOException {
+            DataSchema schema = schemaManager.getDefaultSchema();
+            objectOutputStream.writeUnshared(schema);
+            objectOutputStream.reset();
         }
     }
 }

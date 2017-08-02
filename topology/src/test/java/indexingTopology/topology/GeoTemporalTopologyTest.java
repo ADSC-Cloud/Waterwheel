@@ -224,16 +224,6 @@ public class GeoTemporalTopologyTest extends TestCase {
             e.printStackTrace();
         }
         assertTrue(fullyExecuted);
-
-//        new Thread(() -> {
-//            try {
-//                Thread.sleep(10000);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//            cluster.shutdown();
-//        }).start();
-//        cluster.shutdown();
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
     }
@@ -397,10 +387,7 @@ public class GeoTemporalTopologyTest extends TestCase {
             e.printStackTrace();
         }
         assertTrue(fullyExecuted);
-//        cluster.shutdown();
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
-//        cluster.shutdown();
-//        Thread.sleep(5000);
     }
 }

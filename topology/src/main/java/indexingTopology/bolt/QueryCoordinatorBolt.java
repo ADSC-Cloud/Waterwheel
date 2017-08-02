@@ -9,6 +9,7 @@ import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.PartialQueryResult;
 import indexingTopology.common.logics.DataTuplePredicate;
 import indexingTopology.filesystem.HdfsFileSystemHandler;
+import indexingTopology.metadata.SchemaManager;
 import indexingTopology.metrics.Tags;
 import indexingTopology.metrics.TimeMetrics;
 import indexingTopology.util.partition.BalancedPartition;
@@ -105,6 +106,8 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
 
     private HashMap<String, String[]> chunkNameToPreferredHostsMapping;
 
+    protected SchemaManager schemaManager;
+
     public QueryCoordinatorBolt(T lowerBound, T upperBound, TopologyConfig config, DataSchema schema) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
@@ -166,6 +169,9 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
         }
 
         createQueryHandlingThread();
+
+        schemaManager = new SchemaManager();
+        schemaManager.setDefaultSchema(schema);
     }
 
     @Override

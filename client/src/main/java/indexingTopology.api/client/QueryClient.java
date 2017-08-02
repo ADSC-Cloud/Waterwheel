@@ -1,5 +1,7 @@
 package indexingTopology.api.client;
 
+import indexingTopology.common.data.DataSchema;
+
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 
@@ -65,5 +67,13 @@ public class QueryClient extends ClientSkeleton {
             e.printStackTrace();
             return null;
         }
+    }
+
+    public DataSchema querySchema() throws IOException, ClassNotFoundException {
+        SchemaQueryRequest schemaQueryRequest = new SchemaQueryRequest();
+        objectOutputStream.writeUnshared(schemaQueryRequest);
+        objectOutputStream.reset();
+        DataSchema schema = (DataSchema) objectInputStream.readUnshared();
+        return schema;
     }
 }

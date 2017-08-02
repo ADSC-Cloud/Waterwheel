@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
 
+import org.apache.storm.utils.Utils;
 import org.junit.Test;
 
 
@@ -1127,7 +1128,57 @@ public class TopologyTest extends TestCase {
         }
 
         assertTrue(fullyExecuted);
-//        cluster.shutdown();
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
+    }
+
+    @Test
+    public void testSchemaQuery() throws InterruptedException, IOException, ClassNotFoundException {
+        DataSchema schema = new DataSchema();
+        schema.addIntField("a1");
+        schema.addDoubleField("a2");
+        schema.addLongField("timestamp");
+        schema.addVarcharField("a4", 100);
+        schema.setPrimaryIndexField("a1");
+
+        final int minIndex = 0;
+        final int maxIndex = 1000;
+
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
+
+        TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
+
+        InputStreamReceiverBolt inputStreamReceiverBolt = new InputStreamReceiverBoltServer(schema, ingestionPort, config);
+        QueryCoordinatorBolt<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServerBolt<>(minIndex, maxIndex, queryPort,
+                config, schema);
+
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiverBolt,
+                coordinator, config);
+
+        Config conf = new Config();
+        conf.setDebug(false);
+        conf.setNumWorkers(1);
+
+//        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+//        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+
+
+//        LocalCluster cluster = new LocalCluster();
+        cluster.submitTopology("testSimpleTopologyTemporalQuery", conf, topology);
+
+        QueryClient client = new QueryClient("localhost", queryPort);
+        client.connectWithTimeout(50000);
+        DataSchema querySchema = client.querySchema();
+
+        assertEquals(schema.toString(), querySchema.toString());
+
+
+
+        KillOptions killOptions = new KillOptions();
+        killOptions.set_wait_secs(0);
+        cluster.killTopologyWithOpts("testSimpleTopologyTemporalQuery", killOptions);
+
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
     }
