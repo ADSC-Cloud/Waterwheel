@@ -35,6 +35,8 @@ public class TopologyConfig implements Serializable {
 
     final static public int DataChunkHeaderSectionSize = 1024;
 
+    final static public boolean compression = true;
+
     public String logDir = "/logs";
 
     public double SKEWNESS_DETECTION_THRESHOLD = 0.3;
