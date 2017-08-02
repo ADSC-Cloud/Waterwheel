@@ -4,12 +4,16 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import indexingTopology.compression.Compressor;
+import indexingTopology.compression.CompressorFactory;
+import indexingTopology.compression.Decompressor;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.index.BTree;
 import indexingTopology.index.BTreeInnerNode;
 import indexingTopology.index.BTreeNode;
 import indexingTopology.index.TreeNodeType;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -27,14 +31,34 @@ public class KryoTemplateSerializer<TKey extends Comparable<TKey>> extends Seria
 
     @Override
     public void write(Kryo kryo, Output output, BTree bTree) {
+        Output localOutput;
+        if (config.compression) {
+            localOutput = new Output(4096, 1024 * 1024 * 4);
+        } else {
+            localOutput = output;
+        }
         Queue<BTreeNode> q = new LinkedList<BTreeNode>();
         q.add(bTree.getRoot());
 
         while (!q.isEmpty()) {
             BTreeInnerNode curr = (BTreeInnerNode) q.remove();
-            output.write(serializeInnerNode(curr));
+            localOutput.write(serializeInnerNode(curr));
             if (curr.getChildren().size() > 0 && curr.getChild(0).getNodeType() == TreeNodeType.InnerNode) {
                 q.addAll(curr.getChildren());
+            }
+        }
+
+        if (config.compression) {
+            byte[] data = localOutput.toBytes();
+            Compressor compressor = CompressorFactory.compressor(CompressorFactory.Algorithm.Snappy);
+            try {
+                byte[] compressed = compressor.compress(data);
+                output.writeInt(compressed.length);
+                output.writeBytes(compressed);
+                localOutput.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+                return;
             }
         }
 
@@ -44,8 +68,28 @@ public class KryoTemplateSerializer<TKey extends Comparable<TKey>> extends Seria
     public BTree read(Kryo kryo, Input input, Class<BTree> aClass) {
         BTreeInnerNode root = null;
         Queue<BTreeNode> q = new LinkedList<BTreeNode>();
+
+        Input localInput;
+
+        if (config.compression) {
+            int compressedLength = input.readInt();
+            byte[] compressed = input.readBytes(compressedLength);
+            Decompressor decompressor = CompressorFactory.decompressor(CompressorFactory.Algorithm.Snappy);
+            try {
+                byte[] decompressed = decompressor.decompress(compressed);
+                localInput = new Input(decompressed);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return null;
+            }
+
+        } else {
+            localInput = input;
+        }
+
+
         root = new BTreeInnerNode(config.BTREE_ORDER);
-        deserialize(input, root);
+        deserialize(localInput, root);
         if (root.getOffsets().size() == 0) {
             q.add(root);
         }
@@ -56,7 +100,7 @@ public class KryoTemplateSerializer<TKey extends Comparable<TKey>> extends Seria
             BTreeInnerNode curr = (BTreeInnerNode) q.remove();
             for (int i = 0; i < curr.getKeyCount() + 1; ++i) {
                 BTreeInnerNode node = new BTreeInnerNode(config.BTREE_ORDER);
-                deserialize(input, node);
+                deserialize(localInput, node);
 
 
                 if (node.getKeyCount() != 0) {
@@ -75,6 +119,10 @@ public class KryoTemplateSerializer<TKey extends Comparable<TKey>> extends Seria
                     ++count;
                 }
             }
+        }
+
+        if (config.compression) {
+            localInput.close();
         }
 
         BTree bTree = new BTree(config.BTREE_ORDER, config);

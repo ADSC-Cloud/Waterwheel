@@ -54,7 +54,8 @@ public class KryoLeafNodeSerializer<TKey extends Comparable<TKey>> extends Seria
         if (config.compression) {
             Compressor compressor = CompressorFactory.compressor(CompressorFactory.Algorithm.Snappy);
             try {
-                byte[] compressed = compressor.compress(localOutput.toBytes());
+                byte[] data = localOutput.toBytes();
+                byte[] compressed = compressor.compress(data);
                 output.writeInt(compressed.length);
                 output.writeBytes(compressed);
                 localOutput.close();

@@ -69,7 +69,6 @@ public class QueryCoordinatorWithQueryReceiverServerBolt<T extends Number & Comp
             throw new RuntimeException("received query results for an unregistered id.");
 
         try {
-            System.out.println("received a query result for query " + queryId);
             results.put(partialQueryResult);
         } catch (InterruptedException e) {
             e.printStackTrace();
