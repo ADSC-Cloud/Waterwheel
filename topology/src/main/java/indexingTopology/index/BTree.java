@@ -2,8 +2,11 @@ package indexingTopology.index;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Output;
+import indexingTopology.compression.Compressor;
+import indexingTopology.compression.CompressorFactory;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
+import indexingTopology.metrics.TimeMetrics;
 
 import java.io.*;
 import java.util.*;
@@ -336,6 +339,66 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		templateMode = true;
 	}
 
+	public byte[] serializeLeavesWithCompressor(Compressor compressor) {
+		BTreeLeafNode leaf = getLeftMostLeaf();
+		int offset;
+		Output output = new Output(60000000, 500000000);
+		Kryo kryo = new Kryo();
+		kryo.register(BTreeLeafNode.class, new KryoLeafNodeSerializer(config));
+		int count = 0;
+
+		if (this.root == leaf) {
+			this.root = new BTreeInnerNode(config.BTREE_ORDER);
+
+			((BTreeInnerNode) root).setChild(0, leaf);
+		}
+
+
+		while (leaf != null) {
+			offset = output.position();
+
+//			TimeMetrics metrics = new TimeMetrics();
+
+//			metrics.startEvent("serialize");
+			Output leafOutput = new Output(650000, 500000000);
+			kryo.writeObject(leafOutput, leaf);
+//			metrics.endEvent("serialize");
+
+			byte[] bytesToWrite = leafOutput.toBytes();
+
+			byte[] compressed = null;
+			try {
+//				metrics.startEvent("compress");
+				compressed = compressor.compress(bytesToWrite);
+//				metrics.endEvent("compress");
+
+//				System.out.println("Ratio: " + (double)compressed.length / bytesToWrite.length);
+//				System.out.println(String.format("%.4f KB after compression", compressed.length / 1024.0));
+//				System.out.println(metrics);
+//				System.out.println("----------");
+
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
+
+
+			leafOutput.close();
+			if (!config.ChunkOrientedCaching) {
+				output.writeInt(compressed.length);
+			}
+			output.write(compressed);
+
+			((BTreeInnerNode)leaf.getParent()).putOffset(offset);
+
+			leaf = (BTreeLeafNode) leaf.rightSibling;
+		}
+
+		byte[] returnBytes = output.toBytes();
+		output.close();
+		return returnBytes;
+	}
+
 	public byte[] serializeLeaves() {
 		BTreeLeafNode leaf = getLeftMostLeaf();
 		int offset;
@@ -354,10 +417,16 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		while (leaf != null) {
 			offset = output.position();
 
+			TimeMetrics metrics = new TimeMetrics();
+
+			metrics.startEvent("serialize");
 			Output leafOutput = new Output(650000, 500000000);
             kryo.writeObject(leafOutput, leaf);
+			metrics.endEvent("serialize");
 
 			byte[] bytesToWrite = leafOutput.toBytes();
+
+
 			leafOutput.close();
 			if (!config.ChunkOrientedCaching) {
 				output.writeInt(bytesToWrite.length);

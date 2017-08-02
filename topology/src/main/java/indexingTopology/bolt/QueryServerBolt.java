@@ -65,6 +65,9 @@ public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends Bas
 
     private transient Semaphore subQueryHandlingSemaphore;
 
+    // Declare the handle as a member variable to be shared by multiple queries.
+    private transient HdfsFileSystemHandler hdfsFileSystemHandler;
+
     private Thread subQueryHandlingThread;
 
     private Thread locationReportingThread;
@@ -160,7 +163,6 @@ public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends Bas
         });
         locationReportingThread.start();
 
-
         debugInfo = new DebugInfo();
 
         debugThread = new Thread(() -> {
@@ -175,6 +177,12 @@ public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends Bas
             }
         });
         debugThread.start();
+
+        try {
+            hdfsFileSystemHandler = new HdfsFileSystemHandler(config.dataChunkDir, config);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -299,7 +307,7 @@ public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends Bas
                 } else {
                     if (config.HybridStorage)
                         System.out.println("Failed to find local file :" + config.dataChunkDir + "/" + fileName);
-                    fileSystemHandler = new HdfsFileSystemHandler(config.dataChunkDir, config);
+                    fileSystemHandler = hdfsFileSystemHandler;
                     metrics.setTag("file system", "HDFS");
                 }
 

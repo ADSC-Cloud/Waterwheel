@@ -63,7 +63,10 @@ public class QueryCoordinatorWithQueryReceiverServerBolt<T extends Number & Comp
 
     @Override
     public void handlePartialQueryResult(Long queryId, PartialQueryResult partialQueryResult) {
-        LinkedBlockingQueue<PartialQueryResult> results = queryIdToPartialQueryResults.computeIfAbsent(queryId, k -> new LinkedBlockingQueue<>());
+
+        LinkedBlockingQueue<PartialQueryResult> results = queryIdToPartialQueryResults.get(queryId);
+        if (results == null)
+            throw new RuntimeException("received query results for an unregistered id.");
 
         try {
             results.put(partialQueryResult);

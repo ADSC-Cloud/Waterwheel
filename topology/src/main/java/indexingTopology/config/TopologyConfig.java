@@ -33,7 +33,9 @@ public class TopologyConfig implements Serializable {
 
     public boolean ChunkOrientedCaching = false;
 
+    final static public int DataChunkHeaderSectionSize = 1024;
 
+    final static public boolean compression = true;
 
     public String logDir = "/logs";
 

@@ -1,22 +1,22 @@
-package indexingTopology.topology.kingbase;
+package indexingTopology.topology.benchmark;
 
+import indexingTopology.api.client.*;
 import indexingTopology.bolt.*;
 import indexingTopology.common.aggregator.AggregateField;
 import indexingTopology.common.aggregator.Aggregator;
 import indexingTopology.common.aggregator.Count;
-import indexingTopology.api.client.GeoTemporalQueryClient;
-import indexingTopology.api.client.GeoTemporalQueryRequest;
-import indexingTopology.api.client.IngestionClientBatchMode;
-import indexingTopology.api.client.QueryResponse;
+import indexingTopology.common.data.DataSchema;
+import indexingTopology.common.data.DataTuple;
 import indexingTopology.common.logics.DataTupleEquivalentPredicateHint;
 import indexingTopology.common.logics.DataTupleMapper;
 import indexingTopology.common.logics.DataTuplePredicate;
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.common.data.DataSchema;
-import indexingTopology.common.data.DataTuple;
 import indexingTopology.topology.TopologyGenerator;
-import indexingTopology.util.*;
-import indexingTopology.util.taxi.*;
+import indexingTopology.util.FrequencyRestrictor;
+import indexingTopology.util.taxi.Car;
+import indexingTopology.util.taxi.City;
+import indexingTopology.util.taxi.TrajectoryGenerator;
+import indexingTopology.util.taxi.TrajectoryMovingGenerator;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
 import org.apache.storm.StormSubmitter;
@@ -25,23 +25,25 @@ import org.apache.storm.generated.AuthorizationException;
 import org.apache.storm.generated.InvalidTopologyException;
 import org.apache.storm.generated.StormTopology;
 import org.apache.storm.metric.internal.RateTracker;
+import org.kohsuke.args4j.CmdLineException;
+import org.kohsuke.args4j.CmdLineParser;
+import org.kohsuke.args4j.Option;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.math.BigInteger;
 import java.net.SocketTimeoutException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.temporal.TemporalQuery;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Function;
-import org.kohsuke.args4j.CmdLineException;
-import org.kohsuke.args4j.CmdLineParser;
-import org.kohsuke.args4j.Option;
 
 
-public class KingBaseTopology {
+public class BenchmarkTopology {
 
     /**
      * general configuration
@@ -91,18 +93,14 @@ public class KingBaseTopology {
     @Option(name = "--queries", usage = "number of queries to perform")
     private int NumberOfQueries = Integer.MAX_VALUE;
 
-
-    static final double x1 = 40.012928;
-    static final double x2 = 40.023983;
-    static final double y1 = 116.292677;
-    static final double y2 = 116.614865;
-    static final int partitions = 128;
+    static final int keys = 1024 * 1024;
+    static final int x1 = 0, x2 = keys - 1;
+    static final int payloadSize = 100;
 
     public void executeQuery() {
 
-        double selectivityOnOneDimension = Math.sqrt(Selectivity);
         DataSchema schema = getDataSchema();
-        GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient(QueryServerIp, 10001);
+        QueryClient queryClient = new QueryClient(QueryServerIp, 10001);
         Thread queryThread = new Thread(() -> {
             try {
                 queryClient.connectWithTimeout(10000);
@@ -117,13 +115,10 @@ public class KingBaseTopology {
 
             while (true) {
 
-                double x = x1 + (x2 - x1) * (1 - selectivityOnOneDimension) * random.nextDouble();
-                double y = y1 + (y2 - y1) * (1 - selectivityOnOneDimension) * random.nextDouble();
+                int x = (int)(x1 + (x2 - x1) * (1 - Selectivity) * random.nextDouble());
 
-                final double xLow = x;
-                final double xHigh = x + selectivityOnOneDimension * (x2 - x1);
-                final double yLow = y;
-                final double yHigh = y + selectivityOnOneDimension * (y2 - y1);
+                final int xLow = x;
+                final int xHigh = (int) (x + Selectivity * (x2 - x1));
 
 //                DataTuplePredicate predicate = t ->
 //                                 (double) schema.getValue("lon", t) >= xLow &&
@@ -131,10 +126,11 @@ public class KingBaseTopology {
 //                                (double) schema.getValue("lat", t) >= yLow &&
 //                                (double) schema.getValue("lat", t) <= yHigh ;
 
-                final int id = new Random().nextInt(100000);
+                final int id = new Random().nextInt(keys);
                 final String idString = "" + id;
 //                DataTuplePredicate predicate = t -> schema.getValue("id", t).equals(Integer.toString(new Random().nextInt(100000)));
-                DataTuplePredicate predicate = t -> schema.getValue("id", t).equals(idString);
+                DataTuplePredicate predicate = null;
+//                DataTuplePredicate predicate = t -> schema.getValue("id", t).equals(idString);
 
 
 
@@ -147,9 +143,10 @@ public class KingBaseTopology {
 //                        (double) schemaAfterAggregation.getValue("count(*)", o2));
 
 
-                DataTupleEquivalentPredicateHint equivalentPredicateHint = new DataTupleEquivalentPredicateHint("id", idString);
+//                DataTupleEquivalentPredicateHint equivalentPredicateHint = new DataTupleEquivalentPredicateHint("id", idString);
+                DataTupleEquivalentPredicateHint equivalentPredicateHint = null;
 
-                GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
+                QueryRequest<Integer> queryRequest = new QueryRequest<>(xLow, xHigh,
                         System.currentTimeMillis() - RecentSecondsOfInterest * 1000,
                         System.currentTimeMillis(), predicate, aggregator, null, equivalentPredicateHint);
                 long start = System.currentTimeMillis();
@@ -162,9 +159,9 @@ public class KingBaseTopology {
                     long end = System.currentTimeMillis();
                     totalQueryTime += end - start;
                     System.out.println(response);
-                    System.out.println(String.format("Query time: %d ms", end - start));
+                    System.out.println(String.format("Query time [%d]: %d ms", executed, end - start));
 
-                    if (executed++ >= NumberOfQueries) {
+                    if (++executed >= NumberOfQueries) {
                         System.out.println("Average Query Latency: " + totalQueryTime / (double)executed);
                         break;
                     }
@@ -175,8 +172,6 @@ public class KingBaseTopology {
                     if (Thread.currentThread().interrupted()) {
                         Thread.interrupted();
                     }
-                    e.printStackTrace();
-                } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
 
@@ -192,10 +187,9 @@ public class KingBaseTopology {
 
     public void executeIngestion() {
 
-        DataSchema rawSchema = getRawDataSchema();
-        TrajectoryGenerator generator = new TrajectoryMovingGenerator(x1, x2, y1, y2, 100000, 45.0);
+        DataSchema schema = getDataSchema();
         IngestionClientBatchMode clientBatchMode = new IngestionClientBatchMode(IngestServerIp, 10000,
-                rawSchema, 1024);
+                schema, 1024);
 
         RateTracker rateTracker = new RateTracker(1000,2);
         FrequencyRestrictor restrictor = new FrequencyRestrictor(MaxIngestRate, 5);
@@ -209,16 +203,12 @@ public class KingBaseTopology {
                 e.printStackTrace();
             }
             while(true) {
-                Car car = generator.generate();
+
                 DataTuple tuple = new DataTuple();
-                tuple.add(Integer.toString((int)car.id));
-                tuple.add(Integer.toString(random.nextInt()));
-                tuple.add(car.x);
-                tuple.add(car.y);
-                tuple.add(1);
-                tuple.add(55.3);
-                tuple.add("position 1");
-                tuple.add("2015-10-10, 11:12:34");
+                tuple.add(random.nextInt(1024));
+                tuple.add(random.nextInt(keys));
+                tuple.add( new BigInteger(130, random).toString(payloadSize));
+                tuple.add(System.currentTimeMillis());
                 try {
                     restrictor.getPermission();
                     clientBatchMode.appendInBatch(tuple);
@@ -228,13 +218,13 @@ public class KingBaseTopology {
                     }
                 } catch (IOException e) {
 //                    if (clientBatchMode.isClosed()) {
-                        try {
-                            System.out.println("try to reconnect....");
-                            clientBatchMode.connectWithTimeout(10000);
-                            System.out.println("connected.");
-                        } catch (IOException e1) {
-                            e1.printStackTrace();
-                        }
+                    try {
+                        System.out.println("try to reconnect....");
+                        clientBatchMode.connectWithTimeout(10000);
+                        System.out.println("connected.");
+                    } catch (IOException e1) {
+                        e1.printStackTrace();
+                    }
 //                    }
                     e.printStackTrace();
                     try {
@@ -273,12 +263,7 @@ public class KingBaseTopology {
     }
 
     public void submitTopology() throws InvalidTopologyException, AuthorizationException, AlreadyAliveException {
-        DataSchema rawSchema = getRawDataSchema();
         DataSchema schema = getDataSchema();
-        City city = new City(x1, x2, y1, y2, partitions);
-
-        Integer lowerBound = 0;
-        Integer upperBound = city.getMaxZCode();
 
         final boolean enableLoadBalance = false;
 
@@ -293,27 +278,20 @@ public class KingBaseTopology {
             System.out.println("conf.yaml is not specified, using default instead.");
         }
 
-        InputStreamReceiverBolt dataSource = new InputStreamReceiverBoltServer(rawSchema, 10000, config);
+        InputStreamReceiverBolt dataSource = new InputStreamReceiverBoltServer(schema, 10000, config);
 
-        QueryCoordinatorBolt<Integer> queryCoordinatorBolt = new GeoTemporalQueryCoordinatorBoltBolt<>(lowerBound,
-                upperBound, 10001, city, config, schema);
+        QueryCoordinatorWithQueryReceiverServerBolt<Integer> queryCoordinatorBolt = new QueryCoordinatorWithQueryReceiverServerBolt<>(x1,
+                x2, 10001, config, schema);
 
-        DataTupleMapper dataTupleMapper = new DataTupleMapper(rawSchema, (Serializable & Function<DataTuple, DataTuple>) t -> {
-            double lon = (double)schema.getValue("lon", t);
-            double lat = (double)schema.getValue("lat", t);
-            int zcode = city.getZCodeForALocation(lon, lat);
-            t.add(zcode);
-            t.add(System.currentTimeMillis());
-            return t;
-        });
+        DataTupleMapper dataTupleMapper = null;
 
         List<String> bloomFilterColumns = new ArrayList<>();
-        bloomFilterColumns.add("id");
+//        bloomFilterColumns.add("id");
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
         topologyGenerator.setNumberOfNodes(NumberOfNodes);
 
-        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, x1, x2,
                 enableLoadBalance, dataSource, queryCoordinatorBolt, dataTupleMapper, bloomFilterColumns, config);
 
         Config conf = new Config();
@@ -335,9 +313,9 @@ public class KingBaseTopology {
 
     public static void main(String[] args) throws InvalidTopologyException, AuthorizationException, AlreadyAliveException {
 
-        KingBaseTopology kingBaseTopology = new KingBaseTopology();
+        BenchmarkTopology topology = new BenchmarkTopology();
 
-        CmdLineParser parser = new CmdLineParser(kingBaseTopology);
+        CmdLineParser parser = new CmdLineParser(topology);
 
         try {
             parser.parseArgument(args);
@@ -346,15 +324,15 @@ public class KingBaseTopology {
             parser.printUsage(System.out);
         }
 
-        if (kingBaseTopology.Help) {
+        if (topology.Help) {
             parser.printUsage(System.out);
             return;
         }
 
-        switch (kingBaseTopology.Mode) {
-            case "submit": kingBaseTopology.submitTopology(); break;
-            case "ingest": kingBaseTopology.executeIngestion(); break;
-            case "query": kingBaseTopology.executeQuery(); break;
+        switch (topology.Mode) {
+            case "submit": topology.submitTopology(); break;
+            case "ingest": topology.executeIngestion(); break;
+            case "query": topology.executeQuery(); break;
             default: System.out.println("Invalid command!");
         }
 //        if (command.equals("submit"))
@@ -366,33 +344,15 @@ public class KingBaseTopology {
 
     }
 
-
-    static private DataSchema getRawDataSchema() {
-        DataSchema rawSchema = new DataSchema();
-        rawSchema.addVarcharField("id", 32);
-        rawSchema.addVarcharField("veh_no", 10);
-        rawSchema.addDoubleField("lon");
-        rawSchema.addDoubleField("lat");
-        rawSchema.addIntField("car_status");
-        rawSchema.addDoubleField("speed");
-        rawSchema.addVarcharField("position_type", 10);
-        rawSchema.addVarcharField("update_time", 32);
-        return rawSchema;
-    }
-
     static private DataSchema getDataSchema() {
         DataSchema schema = new DataSchema();
-        schema.addVarcharField("id", 32);
-        schema.addVarcharField("veh_no", 10);
-        schema.addDoubleField("lon");
-        schema.addDoubleField("lat");
-        schema.addIntField("car_status");
-        schema.addDoubleField("speed");
-        schema.addVarcharField("position_type", 10);
-        schema.addVarcharField("update_time", 32);
-        schema.addIntField("zcode");
+
+        schema.addIntField("id");
+        schema.addIntField("key");
+        schema.addVarcharField("payload", payloadSize);
         schema.addLongField("timestamp");
-        schema.setPrimaryIndexField("zcode");
+        schema.setPrimaryIndexField("key");
+
         return schema;
     }
 

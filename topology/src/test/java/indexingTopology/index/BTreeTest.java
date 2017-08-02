@@ -103,9 +103,8 @@ public class BTreeTest {
 
     @Test
     public void serializeLeaves() throws Exception, UnsupportedGenericException {
-        int order = 32;
 
-        BTree bTree = new BTree(order, config);
+        BTree bTree = new BTree(config.BTREE_ORDER, config);
 
         int numberOfTuples = 2048;
 
