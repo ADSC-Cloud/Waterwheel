@@ -97,10 +97,11 @@ public class BenchmarkTopology {
     static final int x1 = 0, x2 = keys - 1;
     static final int payloadSize = 100;
 
-    public void executeQuery() {
+    public void executeQuery() throws IOException {
 
         DataSchema schema = getDataSchema();
         QueryClient queryClient = new QueryClient(QueryServerIp, 10001);
+        DataSchema defaultSchema = queryClient.querySchema();
         Thread queryThread = new Thread(() -> {
             try {
                 queryClient.connectWithTimeout(10000);
@@ -311,7 +312,7 @@ public class BenchmarkTopology {
         }
     }
 
-    public static void main(String[] args) throws InvalidTopologyException, AuthorizationException, AlreadyAliveException {
+    public static void main(String[] args) throws InvalidTopologyException, AuthorizationException, AlreadyAliveException, IOException {
 
         BenchmarkTopology topology = new BenchmarkTopology();
 

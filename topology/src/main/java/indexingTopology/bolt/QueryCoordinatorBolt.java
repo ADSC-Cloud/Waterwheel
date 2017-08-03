@@ -41,9 +41,6 @@ import java.util.concurrent.Semaphore;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Created by acelzj on 11/15/16.
- */
 abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> extends BaseRichBolt {
 
     private OutputCollector collector;

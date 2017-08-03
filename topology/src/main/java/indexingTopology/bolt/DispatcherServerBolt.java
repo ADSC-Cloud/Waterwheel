@@ -18,23 +18,11 @@ import indexingTopology.common.Histogram;
 import java.util.*;
 
 
-/**
- * Created by parijatmazumdar on 14/09/15.
- */
 public class DispatcherServerBolt<IndexType extends Number> extends BaseRichBolt {
+
     OutputCollector collector;
 
-    private final DataSchema outputSchema;
-
-    private final DataSchema inputSchema;
-
     private List<Integer> targetTasks;
-
-    private IndexType lowerBound;
-
-    private IndexType upperBound;
-
-    private BalancedPartition<IndexType> balancedPartition;
 
     private boolean enableLoadBalance;
 
@@ -42,9 +30,20 @@ public class DispatcherServerBolt<IndexType extends Number> extends BaseRichBolt
 
     private boolean generateTimeStamp;
 
-    private DataTupleMapper tupleMapper;
-
     private TopologyConfig config;
+
+    //table-specific
+    private final DataSchema outputSchema;
+
+    private final DataSchema inputSchema;
+
+    private IndexType lowerBound;
+
+    private IndexType upperBound;
+
+    private BalancedPartition<IndexType> balancedPartition;
+
+    private DataTupleMapper tupleMapper;
 
     public DispatcherServerBolt(DataSchema dataSchema, IndexType lowerBound, IndexType upperBound, boolean enableLoadBalance,
                                 boolean generateTimeStamp, DataTupleMapper tupleMapper, TopologyConfig config) {
