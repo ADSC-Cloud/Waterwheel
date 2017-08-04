@@ -69,11 +69,16 @@ public class QueryClient extends ClientSkeleton {
         }
     }
 
-    public DataSchema querySchema() throws IOException, ClassNotFoundException {
+    public DataSchema querySchema() throws IOException {
         SchemaQueryRequest schemaQueryRequest = new SchemaQueryRequest();
         objectOutputStream.writeUnshared(schemaQueryRequest);
         objectOutputStream.reset();
-        DataSchema schema = (DataSchema) objectInputStream.readUnshared();
+        DataSchema schema = null;
+        try {
+            schema = (DataSchema) objectInputStream.readUnshared();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
         return schema;
     }
 }
