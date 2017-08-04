@@ -1,5 +1,4 @@
 
-
 # the path where the data chunks will be stored
  storage.datachunk.folder: "/home/ubuntu/data"
 
