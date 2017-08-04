@@ -9,9 +9,9 @@ import java.util.Map;
 public class TopologyConfig implements Serializable {
     public final double REBUILD_TEMPLATE_THRESHOLD = 10.0;
 
-    public String dataChunkDir = "/home/robert/data";
+    public String dataChunkDir = "/Users/billlin/机器学习/分布式/tmp/append-only-store/dataDir";
 
-    public String metadataDir = "/home/robert/data";
+    public String metadataDir = "/Users/billlin/机器学习/分布式/tmp/append-only-store/dataDir";
 
     public String HDFS_HOST = "hdfs://192.168.0.237:54310/";
 
@@ -25,7 +25,7 @@ public class TopologyConfig implements Serializable {
 
     public final double LOAD_BALANCE_THRESHOLD = 0.2;
 
-    public boolean HDFSFlag = true;
+    public boolean HDFSFlag = false;
 
     public boolean HybridStorage = false;
 
