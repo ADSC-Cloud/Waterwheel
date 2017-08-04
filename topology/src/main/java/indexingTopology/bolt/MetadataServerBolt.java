@@ -2,10 +2,14 @@ package indexingTopology.bolt;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import indexingTopology.api.client.SystemStateQueryClient;
+import indexingTopology.api.server.Server;
+import indexingTopology.api.server.SystemStateQueryHandle;
 import indexingTopology.bloom.DataChunkBloomFilters;
 import indexingTopology.bolt.metrics.LocationInfo;
 import indexingTopology.common.Histogram;
 import indexingTopology.common.KeyDomain;
+import indexingTopology.common.SystemState;
 import indexingTopology.common.TimeDomain;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.util.*;
@@ -79,6 +83,10 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
     private TopologyConfig config;
 
+    private SystemState systemState;
+
+    private Server systemStateQueryServer;
+
     public MetadataServerBolt(Key lowerBound, Key upperBound, TopologyConfig config) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
@@ -132,6 +140,10 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
 
 //        createMetadataSendingThread();
+        systemState = new SystemState();
+        systemStateQueryServer = new Server(20000, SystemStateQueryHandle.class, new Class[]{SystemState.class}, systemState);
+        systemStateQueryServer.startDaemon();
+
     }
 
     private void createMetadataSendingThread() {
@@ -340,6 +352,7 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
     public void cleanup() {
         super.cleanup();
         staticsRequestSendingThread.interrupt();
+        systemStateQueryServer.endDaemon();
     }
 
 
@@ -446,6 +459,8 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
         public void run() {
             final int sleepTimeInSecond = 10;
 //            while (true) {
+            systemState.lastThroughput = new double[6];
+            int i = 0;//throughput计数器.
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     Thread.sleep(sleepTimeInSecond * 1000);
@@ -459,9 +474,18 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
                 for(Long count: counts) {
                     sum += count;
                 }
-
+                systemState.throughout =  sum / (double)sleepTimeInSecond;
+                systemState.lastThroughput[i++] = systemState.throughout;
+                System.out.println("i: "+i+" "+systemState.lastThroughput[i-1]);
+                if(i >= systemState.lastThroughput.length){
+                    for(int j = 0;j< systemState.lastThroughput.length-1;j++){
+                        systemState.lastThroughput[j] = systemState.lastThroughput[j+1];
+                    }
+                    systemState.lastThroughput[systemState.lastThroughput.length-1] = systemState.throughout;
+                    i--;
+                }
 //                System.out.println("statics request has been sent!!!");
-//                System.out.println(String.format("Overall Throughput: %f tuple / second", sum / (double)sleepTimeInSecond));
+                System.out.println(String.format("Overall Throughput: %f tuple / second", sum / (double)sleepTimeInSecond));
 
                 histogram.clear();
 

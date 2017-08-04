@@ -1,5 +1,8 @@
 package ui;
 
+import indexingTopology.api.client.SystemStateQueryClient;
+import indexingTopology.common.SystemState;
+
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -30,30 +33,25 @@ public class clientTest  extends HttpServlet {
     }
     public void doPost(HttpServletRequest request,HttpServletResponse response)throws IOException,ServletException{
         response.setContentType("text/html; charset=UTF-8");
-//        Server sh = new Server(10000,1);
-//        SystemStateQueryClient sys = new SystemStateQueryClient("localhost",20000);
-//        sys.connect();
-//        testAccount++;
-//        SystemState systemState = null;
+        SystemStateQueryClient sys = new SystemStateQueryClient("localhost",20000);
+        sys.connect();
+        SystemState systemState = null;
 //        QueryCoordinatorBolt systemConfig = new QueryCoordinatorBolt();
-//        try {
-//            systemState = sys.query();
-//        } catch (ClassNotFoundException e) {
-//            e.printStackTrace();
-//        }
-//        System.out.println("throughput: " + systemState.throughout);
-//        System.out.println("lastThroughput[1] = "+systemState.lastThroughput[1]);
-//        System.out.println("doPost次数: "+testAccount);
-//        double[] throughputList = systemState.lastThroughput;
-////        double[] throughputList = new double[6];
-////        throughputList[0] = systemState.throughout;
-//        sys.close();
-        double[] throughputList = new double[6];
-        for (int i = 0; i < 6; i++) {
-            throughputList[i] = new Random().nextDouble() * 1000;
+        try {
+            systemState = sys.query();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
         }
+        System.out.println("throughput: " + systemState.throughout);
+        System.out.println("lastThroughput[1] = "+systemState.lastThroughput[1]);
+        double[] throughputList = systemState.lastThroughput;
+        sys.close();
+//        double[] throughputList = new double[6];
+//        for (int i = 0; i < 6; i++) {
+//            throughputList[i] = new Random().nextDouble() * 1000;
+//        }
         request.getSession().setAttribute("tupleList", throughputList);
-//        System.out.println("tuple v/s: "+tupleList[0]);s
+//        System.out.println("tuple v/s: "+tupleList[0]);
         request.getSession().setMaxInactiveInterval(6);
         response.sendRedirect("index.jsp");
     }
