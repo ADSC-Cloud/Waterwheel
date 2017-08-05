@@ -60,7 +60,9 @@ public class GeoTemporalQueryCoordinatorBoltBolt<T extends Number & Comparable<T
         queryIdToPartialQueryResults = new HashMap<>();
 
 
-        server = new Server(port, QueryServerHandle.class, new Class[]{LinkedBlockingQueue.class, AtomicLong.class, Map.class, City.class}, pendingQueue, queryId, queryIdToPartialQueryResults, city);
+        server = new Server(port, QueryServerHandle.class, new Class[]{LinkedBlockingQueue.class, AtomicLong.class,
+                Map.class, City.class, DataSchema.class},
+                pendingQueue, queryId, queryIdToPartialQueryResults, city, schema);
         server.startDaemon();
 //        queryIdToPartialQueryResultSemphore = new HashMap<>();
     }
