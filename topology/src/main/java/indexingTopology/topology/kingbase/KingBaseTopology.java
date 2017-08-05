@@ -161,7 +161,12 @@ public class KingBaseTopology {
                     System.out.println("A query finished.");
                     long end = System.currentTimeMillis();
                     totalQueryTime += end - start;
-                    System.out.println(response);
+                    DataSchema outputSchema = response.getSchema();
+                    System.out.println(outputSchema.getFieldNames());
+                    List<DataTuple> tuples = response.getTuples();
+                    for (int i = 0; i < tuples.size(); i++) {
+                        System.out.println(tuples.get(i).toValues());
+                    }
                     System.out.println(String.format("Query time: %d ms", end - start));
 
                     if (executed++ >= NumberOfQueries) {
