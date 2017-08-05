@@ -95,7 +95,7 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
 
     private Map<Integer, String> chunkServerIdToLocation;
 
-    private DataSchema schema;
+    protected DataSchema schema;
 
     private static final Logger LOG = LoggerFactory.getLogger(QueryCoordinatorBolt.class);
 

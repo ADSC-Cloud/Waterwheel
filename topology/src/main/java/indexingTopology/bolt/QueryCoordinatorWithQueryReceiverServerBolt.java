@@ -102,6 +102,13 @@ public class QueryCoordinatorWithQueryReceiverServerBolt<T extends Number & Comp
             try {
                 final long queryid = queryIdGenerator.getAndIncrement();
 
+                DataSchema outputSchema;
+                if (request.aggregator != null) {
+                    outputSchema = request.aggregator.getOutputDataSchema();
+                } else {
+                    outputSchema = schemaManager.getDefaultSchema();
+                }
+
                 LinkedBlockingQueue<PartialQueryResult> results =
                         queryresults.computeIfAbsent(queryid, k -> new LinkedBlockingQueue<>());
 
@@ -116,7 +123,7 @@ public class QueryCoordinatorWithQueryReceiverServerBolt<T extends Number & Comp
                 while(!eof) {
                     PartialQueryResult partialQueryResult = results.take();
                     eof = partialQueryResult.getEOFFlag();
-                    objectOutputStream.writeUnshared(new QueryResponse(partialQueryResult, queryid));
+                    objectOutputStream.writeUnshared(new QueryResponse(partialQueryResult, outputSchema, queryid));
                     objectOutputStream.reset();
                 }
 

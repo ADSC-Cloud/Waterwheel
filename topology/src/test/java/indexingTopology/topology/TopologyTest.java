@@ -556,15 +556,18 @@ public class TopologyTest extends TestCase {
             {
                 // full key range query
                 QueryResponse response = queryClient.query(new QueryRequest<>(minIndex, maxIndex, Long.MIN_VALUE, Long.MAX_VALUE, predicate));
+                assertTrue(response.getSchema() != null);
                 assertEquals(tuples / 100, response.dataTuples.size());
 
 
                 //half key range query
                 response = queryClient.query(new QueryRequest<>(0, 49, Long.MIN_VALUE, Long.MAX_VALUE, predicate));
+                assertTrue(response.getSchema() != null);
                 assertEquals(tuples / 100, response.dataTuples.size());
 
                 //a key range query
                 response = queryClient.query(new QueryRequest<>(0, 0, Long.MIN_VALUE, Long.MAX_VALUE, predicate));
+                assertTrue(response.getSchema() != null);
                 assertEquals(tuples / 100, response.dataTuples.size());
             }
 
@@ -696,6 +699,7 @@ public class TopologyTest extends TestCase {
             // full key range query
             QueryResponse response = queryClient.query(new QueryRequest<>(minIndex, maxIndex, Long.MIN_VALUE,
                     Long.MAX_VALUE, aggregator));
+            assertTrue(response.getSchema() != null);
             assertEquals(100, response.dataTuples.size());
             for (DataTuple tuple: response.dataTuples) {
                 assertEquals((double)tuples/100, (double)tuple.get(1), 0.0001);
@@ -705,6 +709,7 @@ public class TopologyTest extends TestCase {
 
             //half key range query
             response = queryClient.query(new QueryRequest<>(0, 49, Long.MIN_VALUE, Long.MAX_VALUE, aggregator));
+            assertTrue(response.getSchema() != null);
             assertEquals(50, response.dataTuples.size());
             for (DataTuple tuple: response.dataTuples) {
                 assertEquals((double)tuples/100, (double)tuple.get(1), 0.0001);
@@ -714,6 +719,7 @@ public class TopologyTest extends TestCase {
 
             //a key range query
             response =  queryClient.query(new QueryRequest<>(0,0, Long.MIN_VALUE, Long.MAX_VALUE, aggregator));
+            assertTrue(response.getSchema() != null);
             assertEquals(1, response.dataTuples.size());
             for (DataTuple tuple: response.dataTuples) {
                 assertEquals((double)tuples/100, (double)tuple.get(1), 0.0001);
@@ -835,6 +841,7 @@ public class TopologyTest extends TestCase {
             // full key range query
             QueryResponse response = queryClient.query(new QueryRequest<>(minIndex, maxIndex, Long.MIN_VALUE,
                     Long.MAX_VALUE, aggregator));
+            assertTrue(response.getSchema() != null);
             assertEquals(100, response.dataTuples.size());
             for (DataTuple tuple: response.dataTuples) {
                 assertEquals((double)tuples/100, (double)tuple.get(1), 0.0001);
@@ -844,6 +851,7 @@ public class TopologyTest extends TestCase {
 
             //half key range query
             response = queryClient.query(new QueryRequest<>(0, 49, Long.MIN_VALUE, Long.MAX_VALUE, aggregator));
+            assertTrue(response.getSchema() != null);
             assertEquals(50, response.dataTuples.size());
             for (DataTuple tuple: response.dataTuples) {
                 assertEquals((double)tuples/100, (double)tuple.get(1), 0.0001);
@@ -853,6 +861,7 @@ public class TopologyTest extends TestCase {
 
             //a key range query
             response =  queryClient.query(new QueryRequest<>(0,0, Long.MIN_VALUE, Long.MAX_VALUE, aggregator));
+            assertTrue(response.getSchema() != null);
             assertEquals(1, response.dataTuples.size());
             for (DataTuple tuple: response.dataTuples) {
                 assertEquals((double)tuples/100, (double)tuple.get(1), 0.0001);
