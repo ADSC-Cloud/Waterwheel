@@ -135,13 +135,13 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 //            e.printStackTrace();
 //        }
 
+        systemState = new SystemState();
+        systemStateQueryServer = new Server(20000, SystemStateQueryHandle.class, new Class[]{SystemState.class}, systemState);
+
         staticsRequestSendingThread = new Thread(new StatisticsRequestSendingRunnable());
         staticsRequestSendingThread.start();
 
-
 //        createMetadataSendingThread();
-        systemState = new SystemState();
-        systemStateQueryServer = new Server(20000, SystemStateQueryHandle.class, new Class[]{SystemState.class}, systemState);
         systemStateQueryServer.startDaemon();
 
     }
