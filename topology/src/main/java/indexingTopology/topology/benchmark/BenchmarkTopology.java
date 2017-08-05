@@ -97,28 +97,28 @@ public class BenchmarkTopology {
     static final int x1 = 0, x2 = keys - 1;
     static final int payloadSize = 100;
 
-    public void executeQuery() {
+    public void executeQuery() throws IOException {
 
-        DataSchema schema = getDataSchema();
+        DataSchema schema = null;
         QueryClient queryClient = new QueryClient(QueryServerIp, 10001);
-        Thread queryThread = new Thread(() -> {
-            try {
-                queryClient.connectWithTimeout(10000);
-            } catch (IOException e) {
-                e.printStackTrace();
-                return;
-            }
-            Random random = new Random();
+        try {
+            queryClient.connectWithTimeout(10000);
+            schema = queryClient.querySchema();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+        Random random = new Random();
 
-            int executed = 0;
-            long totalQueryTime = 0;
+        int executed = 0;
+        long totalQueryTime = 0;
 
-            while (true) {
+        while (true) {
 
-                int x = (int)(x1 + (x2 - x1) * (1 - Selectivity) * random.nextDouble());
+            int x = (int) (x1 + (x2 - x1) * (1 - Selectivity) * random.nextDouble());
 
-                final int xLow = x;
-                final int xHigh = (int) (x + Selectivity * (x2 - x1));
+            final int xLow = x;
+            final int xHigh = (int) (x + Selectivity * (x2 - x1));
 
 //                DataTuplePredicate predicate = t ->
 //                                 (double) schema.getValue("lon", t) >= xLow &&
@@ -126,15 +126,14 @@ public class BenchmarkTopology {
 //                                (double) schema.getValue("lat", t) >= yLow &&
 //                                (double) schema.getValue("lat", t) <= yHigh ;
 
-                final int id = new Random().nextInt(keys);
-                final String idString = "" + id;
+            final int id = new Random().nextInt(keys);
+            final String idString = "" + id;
 //                DataTuplePredicate predicate = t -> schema.getValue("id", t).equals(Integer.toString(new Random().nextInt(100000)));
-                DataTuplePredicate predicate = null;
+            DataTuplePredicate predicate = null;
 //                DataTuplePredicate predicate = t -> schema.getValue("id", t).equals(idString);
 
 
-
-                Aggregator<Integer> aggregator = new Aggregator<>(schema, "id", new AggregateField(new Count(), "*"));
+            Aggregator<Integer> aggregator = new Aggregator<>(schema, "id", new AggregateField(new Count(), "*"));
 //                Aggregator<Integer> aggregator = null;
 
 
@@ -144,45 +143,46 @@ public class BenchmarkTopology {
 
 
 //                DataTupleEquivalentPredicateHint equivalentPredicateHint = new DataTupleEquivalentPredicateHint("id", idString);
-                DataTupleEquivalentPredicateHint equivalentPredicateHint = null;
+            DataTupleEquivalentPredicateHint equivalentPredicateHint = null;
 
-                QueryRequest<Integer> queryRequest = new QueryRequest<>(xLow, xHigh,
-                        System.currentTimeMillis() - RecentSecondsOfInterest * 1000,
-                        System.currentTimeMillis(), predicate, aggregator, null, equivalentPredicateHint);
-                long start = System.currentTimeMillis();
-                try {
-                    DateFormat dateFormat = new SimpleDateFormat("MM-dd HH:mm:ss");
-                    Calendar cal = Calendar.getInstance();
-                    System.out.println("[" + dateFormat.format(cal.getTime()) + "]: A query will be issued.");
-                    QueryResponse response = queryClient.query(queryRequest);
-                    System.out.println("A query finished.");
-                    long end = System.currentTimeMillis();
-                    totalQueryTime += end - start;
-                    System.out.println(response);
-                    System.out.println(String.format("Query time [%d]: %d ms", executed, end - start));
+            QueryRequest<Integer> queryRequest = new QueryRequest<>(xLow, xHigh,
+                    System.currentTimeMillis() - RecentSecondsOfInterest * 1000,
+                    System.currentTimeMillis(), predicate, aggregator, null, equivalentPredicateHint);
+            long start = System.currentTimeMillis();
+            try {
+                DateFormat dateFormat = new SimpleDateFormat("MM-dd HH:mm:ss");
+                Calendar cal = Calendar.getInstance();
+                System.out.println("[" + dateFormat.format(cal.getTime()) + "]: A query will be issued.");
+                QueryResponse response = queryClient.query(queryRequest);
+                System.out.println("A query finished.");
+                long end = System.currentTimeMillis();
+                totalQueryTime += end - start;
+                System.out.println(schema.getFieldNames());
+                System.out.println(response);
+                System.out.println(String.format("Query time [%d]: %d ms", executed, end - start));
 
-                    if (++executed >= NumberOfQueries) {
-                        System.out.println("Average Query Latency: " + totalQueryTime / (double)executed);
-                        break;
-                    }
-
-                } catch (SocketTimeoutException e) {
-                    Thread.interrupted();
-                } catch (IOException e) {
-                    if (Thread.currentThread().interrupted()) {
-                        Thread.interrupted();
-                    }
-                    e.printStackTrace();
+                if (++executed >= NumberOfQueries) {
+                    System.out.println("Average Query Latency: " + totalQueryTime / (double) executed);
+                    break;
                 }
 
-            }
-            try {
-                queryClient.close();
+            } catch (SocketTimeoutException e) {
+                Thread.interrupted();
             } catch (IOException e) {
+                if (Thread.currentThread().interrupted()) {
+                    Thread.interrupted();
+                }
                 e.printStackTrace();
             }
-        });
-        queryThread.start();
+
+        }
+        try {
+            queryClient.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
     }
 
     public void executeIngestion() {
@@ -311,7 +311,7 @@ public class BenchmarkTopology {
         }
     }
 
-    public static void main(String[] args) throws InvalidTopologyException, AuthorizationException, AlreadyAliveException {
+    public static void main(String[] args) throws InvalidTopologyException, AuthorizationException, AlreadyAliveException, IOException {
 
         BenchmarkTopology topology = new BenchmarkTopology();
 
