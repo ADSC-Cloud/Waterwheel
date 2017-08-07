@@ -141,6 +141,10 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
 //        createMetadataSendingThread();
         systemState = new SystemState();
+        System.out.println("dataChunkDir:"+config.dataChunkDir);
+        systemState.hashMap = new HashMap<>();
+        systemState.hashMap.put("dataChunkDir",config.dataChunkDir);
+        systemState.hashMap.put("metadataDir",config.metadataDir);
         systemStateQueryServer = new Server(20000, SystemStateQueryHandle.class, new Class[]{SystemState.class}, systemState);
         systemStateQueryServer.startDaemon();
 

@@ -52,7 +52,7 @@ public class BenchmarkTopology {
     private boolean Help = false;
 
     @Option(name = "--mode", aliases = {"-m"}, usage = "submit|ingest|query")
-    private String Mode = "Not Given";
+    private String Mode = "query";
 
     /**
      * topology configuration
@@ -67,7 +67,7 @@ public class BenchmarkTopology {
     private int NumberOfNodes = 1;
 
     @Option(name = "--local", usage = "run the topology in local cluster")
-    private boolean LocalMode = false;
+    private boolean LocalMode = true;
 
     /**
      * ingest api configuration
