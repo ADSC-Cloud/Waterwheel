@@ -52,7 +52,7 @@ public class BenchmarkTopology {
     private boolean Help = false;
 
     @Option(name = "--mode", aliases = {"-m"}, usage = "submit|ingest|query")
-    private String Mode = "ingest";
+    private String Mode = "Not Given";
 
     /**
      * topology configuration

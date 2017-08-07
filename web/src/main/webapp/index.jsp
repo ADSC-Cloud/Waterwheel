@@ -9,6 +9,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="indexingTopology.*" %>
 <%@ page import="javax.servlet.ServletRequest" %>
+<%@ page import="indexingTopology.common.SystemState" %>
 <%
   String path = request.getContextPath();
   String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+path+"/";
@@ -39,20 +40,30 @@
 <body>
 <script type="text/javascript">
     $(function(){
+//           $('#showDataForm').submit();
         <%
            double a = 0.0;
            double b = 0.0;
            double[] user = null;
+           SystemState sys = null;
            if (session.getAttribute("tupleList") != null) {
-           user = (double [])request.getSession().getAttribute("tupleList");
-           a = user[1];
-           b = user[2];
+             user = (double [])request.getSession().getAttribute("tupleList");
+             a = user[1];
+             b = user[2];
            }
+//           if(session.getAttribute("systemState") != null){
+//               sys = (SystemState) session.getAttribute("systemState");
+//           }
         %>
         <%--alert(<%=a%>);--%>
-
     })
-
+    function saveReport() {
+// jquery 表单提交
+        $("#showDataForm").ajax(function(message) {
+// 对于表单提交成功后处理，message为提交页面saveReport.htm的返回内容
+        });
+        return false; // 必须返回false，否则表单会自己再做一次提交操作，并且页面跳转
+    }
 </script>
 <div id="wrapper">
   <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -122,7 +133,7 @@
 
   <div id="page-wrapper">
     <div class="row">
-      <div class="col-lg-12">
+      <div class="col-lg-8">
         <h1>Waterwheel<small> -- A distributed system for high-rate data indexing and real-time querying</small></h1>
         <div class="alert alert-dismissable alert-warning">
           <button data-dismiss="alert" class="close" type="button">&times;</button>
@@ -134,19 +145,31 @@
       </div>
     </div>
     <div class="row">
-      <div class="col-md-12">
+      <div class="col-md-8">
         <div class="panel panel-primary">
           <div class="panel-heading">
               <p class="panel-title" style="float: left;"><i class="fa fa-bar-chart-o"></i> Overall Insertion Throughput</p>
-                  <form action="clientTest" >
+                  <form action="clientTest" <%--id="showDataForm" target="nm_iframe"--%> <%-- onsubmit="return saveReport();--%>>
                     <input type="submit" name="query" value="Fresh" style="border:0px;width: 60px;float: right;background-color:#2a9fd6; ">
                   </form>
+                  <iframe id="id_iframe" name="nm_iframe" style="display:none;"></iframe>
           </div>
           <div class="panel-body">
             <div id="shieldui-chart1"></div>
           </div>
         </div>
       </div>
+      <div class="col-lg-4">
+        <div class="panel panel-primary">
+          <div class="panel-heading">
+            <h3 class="panel-title"><i class="fa fa-bar-chart-o"></i> Traffic Sources One month tracking </h3>
+          </div>
+          <div class="panel-body">
+            <div id="shieldui-grid1"></div>
+          </div>
+        </div>
+      </div>
+    </div>
       <%--<div class="col-md-4">
         <div class="panel panel-primary">
           <div class="panel-heading">
@@ -245,19 +268,19 @@
         </div>
       </div>--%>
     </div>
-   <%-- <div class="row">
-      <div class="col-lg-12">
-        <div class="panel panel-primary">
-          <div class="panel-heading">
-            <h3 class="panel-title"><i class="fa fa-bar-chart-o"></i> Traffic Sources One month tracking </h3>
-          </div>
-          <div class="panel-body">
-            <div id="shieldui-grid1"></div>
-          </div>
-        </div>
-      </div>
-    </div>--%>
-    <div class="row">
+    <%--<div class="row">--%>
+      <%--<div class="col-lg-4">--%>
+        <%--<div class="panel panel-primary">--%>
+          <%--<div class="panel-heading">--%>
+            <%--<h3 class="panel-title"><i class="fa fa-bar-chart-o"></i> Traffic Sources One month tracking </h3>--%>
+          <%--</div>--%>
+          <%--<div class="panel-body">--%>
+            <%--<div id="shieldui-grid1"></div>--%>
+          <%--</div>--%>
+        <%--</div>--%>
+      <%--</div>--%>
+    <%--</div>--%>
+    <%--<div class="row">--%>
       <%--<div class="col-lg-4">
         <div class="panel panel-primary">
           <div class="panel-heading">
@@ -268,45 +291,51 @@
           </div>
         </div>
       </div>--%>
-      <div class="col-lg-12">
-        <div class="panel panel-primary">
-          <div class="panel-heading">
-            <h3 class="panel-title"><i class="fa fa-magnet"></i> Server Overview</h3>
-          </div>
-          <div class="panel-body">
-            <ul class="server-stats">
-              <li>
-                <div class="key pull-right">CPU</div>
-                <div class="stat">
-                  <div class="info">60% / 37°C / 3.3 Ghz</div>
-                  <div class="progress progress-small">
-                    <div style="width: 70%;" class="progress-bar progress-bar-danger"></div>
-                  </div>
-                </div>
-              </li>
-              <li>
-                <div class="key pull-right">Mem</div>
-                <div class="stat">
-                  <div class="info">29% / 4GB (16 GB)</div>
-                  <div class="progress progress-small">
-                    <div style="width: 29%;" class="progress-bar"></div>
-                  </div>
-                </div>
-              </li>
-              <li>
-                <div class="key pull-right">LAN</div>
-                <div class="stat">
-                  <div class="info">6 Mb/s <i class="fa fa-caret-down"></i>&nbsp; 3 Mb/s <i class="fa fa-caret-up"></i></div>
-                  <div class="progress progress-small">
-                    <div style="width: 48%;" class="progress-bar progress-bar-inverse"></div>
-                  </div>
-                </div>
-              </li>
-            </ul>
-          </div>
-        </div>
+      <%--<div class="col-lg-4">--%>
+        <%--<div class="panel panel-primary">--%>
+          <%--<div class="panel-heading">--%>
+            <%--<h3 class="panel-title"><i class="fa fa-magnet"></i> Server Overview</h3>--%>
+          <%--</div>--%>
+          <%--<div class="panel-body">--%>
+            <%--<ul class="server-stats">--%>
+              <%--<li>--%>
+                <%--<div class="key pull-right">dataChunkDir</div>--%>
+                <%--<div class="stat">--%>
+                  <%--<div class="info"><%if(sys != null){--%>
+                      <%--%><%=sys.hashMap.get("dataChunkDir")%><%--%>
+                  <%--}%></div>--%>
+                  <%--&lt;%&ndash;<div class="info">60% / 37°C / 3.3 Ghz</div>&ndash;%&gt;--%>
+                  <%--<div class="progress progress-small">--%>
+                    <%--<div style="width: 70%;" class="progress-bar progress-bar-danger"></div>--%>
+                  <%--</div>--%>
+                <%--</div>--%>
+              <%--</li>--%>
+              <%--<li>--%>
+                <%--<div class="key pull-right">metadataDir</div>--%>
+                <%--<div class="stat">--%>
+                  <%--<div class="info"><%if(sys != null){--%>
+                  <%--%><%=sys.hashMap.get("metadataDir")%><%--%>
+                    <%--}%></div>--%>
+                  <%--&lt;%&ndash;<div class="info">29% / 4GB (16 GB)</div>&ndash;%&gt;--%>
+                  <%--<div class="progress progress-small">--%>
+                    <%--<div style="width: 29%;" class="progress-bar"></div>--%>
+                  <%--</div>--%>
+                <%--</div>--%>
+              <%--</li>--%>
+              <%--<li>--%>
+                <%--<div class="key pull-right">LAN</div>--%>
+                <%--<div class="stat">--%>
+                  <%--<div class="info">6 Mb/s <i class="fa fa-caret-down"></i>&nbsp; 3 Mb/s <i class="fa fa-caret-up"></i></div>--%>
+                  <%--<div class="progress progress-small">--%>
+                    <%--<div style="width: 48%;" class="progress-bar progress-bar-inverse"></div>--%>
+                  <%--</div>--%>
+                <%--</div>--%>
+              <%--</li>--%>
+            <%--</ul>--%>
+          <%--</div>--%>
+        <%--</div>--%>
 
-      </div>
+      <%--</div>--%>
       <%--<div class="col-lg-4">
         <header>
           <ul class="nav nav-tabs">
@@ -534,34 +563,66 @@
 
 <script type="text/javascript">
     jQuery(function ($) {
+        var performance = new Array();
         <%if(user == null){%>
-            var performance = [4, 17, 22, 34, 54, 67];
+            performance = [4, 17, 22, 34, 54, 67];
+            var visits = [123, 323],
+                traffic = [
+                {
+                    Source: "dataChunkDir", Amount: 323
+                },
+                {
+                    Source: "metadataDir", Amount: 345
+                },
+                {
+                    Source: "Social", Amount: 567
+                },
+                {
+                    Source: "Search", Amount: 234
+                },
+                {
+                    Source: "Internal", Amount: 111
+                }];
+        var j = {Source: "dataChunkDir", Amount: 323};
+        traffic.push(j);
+        traffic.push(j);
         <%}
-        else{%>
-            var performance = [<%=user[0]%>, <%=user[1]%>, <%=user[2]%>, <%=user[3]%>, <%=user[4]%>, <%=user[5]%>]
-        <%}%>
-
-        var visits = [123, 323, 443, 32],
+        else{
+            for(int i=0;i<user.length;i++){
+                %>performance.unshift(<%=user[i]%>);
+           <% }
+           %>
+        <%--var performance = [<%=user[0]%>, <%=user[1]%>, <%=user[2]%>, <%=user[3]%>, <%=user[4]%>, <%=user[5]%>];--%>
+             var visits = [123, 323],
             traffic = [
                 {
-                    Source: "Direct", Amount: 323, Change: 53, Percent: 23, Target: 600
+                    <%--Source: "dataChunkDir", Amount: "<%=sys.hashMap.get("dataChunkDir")%>"--%>
                 },
                 {
-                    Source: "Refer", Amount: 345, Change: 34, Percent: 45, Target: 567
+                    <%--Source: "metadataDir", Amount: "<%=sys.hashMap.get("metadataDir")%>"--%>
                 },
                 {
-                    Source: "Social", Amount: 567, Change: 67, Percent: 23, Target: 456
+                    Source: "Social", Amount: 567
                 },
                 {
-                    Source: "Search", Amount: 234, Change: 23, Percent: 56, Target: 890
+                    Source: "Search", Amount: 234
                 },
                 {
-                    Source: "Internal", Amount: 111, Change: 78, Percent: 12, Target: 345
+                    Source: "Internal", Amount: 111
                 }];
+        var j ={Source:"caocao",Amount:"男"};
+        traffic.push(j);
+        traffic.push(j);
+        traffic.push(j);
+        traffic.push(j);
+//            traffic.Source.add("111");
+//            traffic.Amount.add("222");
+        <%}%>
+
 
 
         $("#shieldui-chart1").shieldChart({
-            theme: "dark",
+            theme: "white",
 
             primaryHeader: {
                 text: "Overall Throughput"
@@ -578,7 +639,7 @@
         });
 
         $("#shieldui-chart2").shieldChart({
-            theme: "dark",
+            theme: "white",
             primaryHeader: {
                 text: "Traffic Per week"
             },
@@ -594,6 +655,7 @@
         });
 
         $("#shieldui-grid1").shieldGrid({
+            theme: "white",
             dataSource: {
                 data: traffic
             },
@@ -605,8 +667,8 @@
             columns: [
                 { field: "Source", width: "170px", title: "Source" },
                 { field: "Amount", title: "Amount" },
-                { field: "Percent", title: "Percent", format: "{0} %" },
-                { field: "Target", title: "Target" },
+//                { field: "Percent", title: "Percent", format: "{0} %" },
+//                { field: "Target", title: "Target" },
             ]
         });
     });

@@ -14,7 +14,10 @@ public class SystemState implements Serializable{
     public double[] lastThroughput;
     public HashMap<String,String> hashMap;
 
-    public void setHashMap(HashMap<String,String> hashMap){
-        this.hashMap = hashMap;
+    public void setHashMap(String k,String v){
+        if(hashMap == null){
+            hashMap = new HashMap<>();
+        }
+        this.hashMap.put(k,v);
     }
 }
