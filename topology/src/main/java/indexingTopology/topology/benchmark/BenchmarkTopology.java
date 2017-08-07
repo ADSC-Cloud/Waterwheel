@@ -52,7 +52,7 @@ public class BenchmarkTopology {
     private boolean Help = false;
 
     @Option(name = "--mode", aliases = {"-m"}, usage = "submit|ingest|query")
-    private String Mode = "Not Given";
+    private String Mode = "ingest";
 
     /**
      * topology configuration
@@ -67,7 +67,7 @@ public class BenchmarkTopology {
     private int NumberOfNodes = 1;
 
     @Option(name = "--local", usage = "run the topology in local cluster")
-    private boolean LocalMode = false;
+    private boolean LocalMode = true;
 
     /**
      * ingest api configuration
@@ -158,7 +158,7 @@ public class BenchmarkTopology {
                 long end = System.currentTimeMillis();
                 totalQueryTime += end - start;
                 DataSchema outputSchema = response.getSchema();
-                System.out.println(outputSchema.getFieldNames());
+                System.out.println("this si FieldName:" + outputSchema.getFieldNames());
                 List<DataTuple> tuples = response.getTuples();
                 for (int i = 0; i < tuples.size(); i++) {
                     System.out.println(tuples.get(i).toValues());
@@ -286,6 +286,12 @@ public class BenchmarkTopology {
 
         QueryCoordinatorWithQueryReceiverServerBolt<Integer> queryCoordinatorBolt = new QueryCoordinatorWithQueryReceiverServerBolt<>(x1,
                 x2, 10001, config, schema);
+
+        /**
+         * hzl Test
+         */
+        QueryCoordinatorWithQueryReceiverServerBolt<Integer> queryCoordinatorBoltTest = new QueryCoordinatorWithQueryReceiverServerBolt<>(x1,
+                x2, 10050, config, schema);
 
         DataTupleMapper dataTupleMapper = null;
 
