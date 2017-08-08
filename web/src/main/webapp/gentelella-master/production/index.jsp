@@ -53,60 +53,7 @@
 </head>
 
 <body class="nav-md">
-<script type="text/javascript">
-//    var xmlhttp;
-//    if (window.XMLHttpRequest)
-//    {
-//        //  IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
-//        xmlhttp=new XMLHttpRequest();
-//    }
 
-    <%--//1. 创建ajax对象--%>
-    <%--var ajax = createAjax();--%>
-    <%--//测试--%>
-    <%--//alert(ajax!=null?"创建ajax成功！":"创建ajax失败！！");--%>
-    <%--//2. 获取定位按钮--%>
-    <%--var inputElement = document.getElementById("ajax").onclick = function() {--%>
-        <%--//3. 准备发送请求--%>
-        <%--/*--%>
-         <%--method表示发送请求的方式，例如GET或POST--%>
-         <%--url表示发送请求的目标地址--%>
-         <%--可选的boolean值--%>
-         <%-->>true：表示该请求是异步的，这是默认值，web2.0--%>
-         <%-->>false：表示该请求是同步的，web1.0--%>
-         <%--*/--%>
-        <%--var method = "GET";--%>
-        <%--var url = "${pageContext.request.contextPath}/clientTest?id="+new Date().getTime();--%>
-        <%--ajax.open(method, url, true);--%>
-        <%--//4. 真正发送异步请求--%>
-        <%--/*--%>
-         <%--content表示发送请求的内容，如果无内容的话，使用null表示--%>
-         <%--如果有内容，写成key=value形成，例如：username=jack&password=123--%>
-         <%--*/--%>
-        <%--var content = null;--%>
-        <%--ajax.send(content);--%>
-        <%--//5. ajax对象监听服务器的响应--%>
-        <%--ajax.onreadystatechange = function() {--%>
-            <%--//如果ajax对象，已经完全接收到了响应，--%>
-            <%--if (ajax.readyState == 4) {--%>
-                <%--//如果响应正确--%>
-                <%--if (ajax.status == 200) {--%>
-                    <%--var nowStr = ajax.responseText;--%>
-                    <%--//将获取到的时间放在span标签内--%>
-                    <%--//定位span标签--%>
-                    <%--var spanElement = document.getElementsByTagName("span")[0];--%>
-                    <%--//将nowStr放当span标签内--%>
-                    <%--spanElement.innerHTML = nowStr;--%>
-                <%--}--%>
-
-            <%--}--%>
-
-        <%--};--%>
-
-    <%--};--%>
-    <%JSONObject jsonStr = (JSONObject)request.getSession().getAttribute("tupleList");%>
-    <%SystemState sys = (SystemState)request.getSession().getAttribute("systemState");%>
-</script>
 <div class="container body">
     <div class="main_container">
         <div class="col-md-3 left_col">
@@ -123,12 +70,101 @@
                         <img src="images/img.jpg" alt="..." class="img-circle profile_img">
                     </div>
                     <div class="profile_info">
-                        <span>Welcome,</span><input type="button" value="获取当前时间" id="ajax">
+                        <span>Welcome,</span>
+                        <input type="button" value="获取当前时间" id="ajax">
+                        <hr>
+                        <span class="ajaxTest"></span>
                         <h2>John Doe</h2>
                     </div>
                 </div>
                 <!-- /menu profile quick info -->
+                <script type="text/javascript">
+                    //    var xmlhttp;
+                    //    if (window.XMLHttpRequest)
+                    //    {
+                    //        //  IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
+                    //        xmlhttp=new XMLHttpRequest();
+                    //    }
 
+                    //1. 创建ajax对象
+                    var ajax;// createAjax();
+                    if (window.XMLHttpRequest)
+                    {
+                        //  IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
+                        ajax=new XMLHttpRequest();
+                    }
+                    else
+                    {
+                        // IE6, IE5 浏览器执行代码
+                        ajax=new ActiveXObject("Microsoft.XMLHTTP");
+                    }
+//                    alert(ajax!=null?"创建ajax成功！":"创建ajax失败！！");
+                    //2. 获取定位按钮
+//                    var inputElement = document.getElementById("ajax").onclick = function() {
+                     function chart() {
+                        //3. 准备发送请求
+                        /*
+                         method表示发送请求的方式，例如GET或POST
+                         url表示发送请求的目标地址
+                         可选的boolean值
+                         >>true：表示该请求是异步的，这是默认值，web2.0
+                         >>false：表示该请求是同步的，web1.0
+                         */
+                        var method = "GET";
+                        var url = "<%=path%>/clientTest";
+                        ajax.open(method, url, true);
+                        //4. 真正发送异步请求
+                        /*
+                         content表示发送请求的内容，如果无内容的话，使用null表示
+                         如果有内容，写成key=value形成，例如：username=jack&password=123
+                         */
+                        var content = "111";
+                        ajax.send(content);
+                        //5. ajax对象监听服务器的响应
+                        ajax.onreadystatechange = function() {
+                            //如果ajax对象，已经完全接收到了响应，
+                            if (ajax.readyState == 4) {
+                                //如果响应正确
+                                if (ajax.status == 200) {
+                                    var nowStr = JSON.parse(ajax.responseText);
+                                    var table = document.getElementById("datatable");
+                                    var t1=document.getElementById("datatable");
+
+                                    var rowNum=t1.rows.length;
+                                    if(rowNum>0) {
+                                        for (i = 0; i < rowNum; i++) {
+                                            t1.deleteRow(i);
+                                            rowNum = rowNum - 1;
+                                            i = i - 1;
+                                        }
+                                    }
+                                    for(var k in nowStr.hashMap){
+                                        var newRow = table.insertRow(); //创建新行
+                                        var newCell1 = newRow.insertCell(0); //创建新单元格
+                                        newCell1.innerHTML = k ; //单元格内的内容
+                                        newCell1.setAttribute("align","center"); //设置位置
+                                        var newCell1 = newRow.insertCell(1); //创建新单元格
+                                        newCell1.innerHTML = nowStr.hashMap[k] ; //单元格内的内容
+                                        newCell1.setAttribute("align","center"); //设置位置
+                                    }
+                                        init_flot_chart(nowStr);
+                                    //将获取到的时间放在span标签内
+                                    //定位span标签
+//                                    var spanElement = document.getElementsByTagName("span")[0];
+                                    //将nowStr放当span标签内
+//                                    spanElement.innerHTML = nowStr;
+                                }
+
+                            }
+
+                        };
+
+                    };
+                    chart();
+                    window.setInterval(chart, 2000);
+                    <%JSONObject jsonStr = (JSONObject)request.getSession().getAttribute("tupleList");%>
+                    <%SystemState sys = (SystemState)request.getSession().getAttribute("systemState");%>
+                </script>
                 <br />
 
                 <!-- sidebar menu -->
@@ -1178,7 +1214,6 @@
     var jsonarray = document.getElementById("json").value;
     var b=JSON.parse(jsonarray);//method 1
     var jsonObject = eval("("+jsonarray+")");//method 1
-    init_flot_chart(jsonObject);
     <%--var szJsonStr = "<%=request.getSession().getAttribute("tupleList")%>";--%>
     <%--var szJsonStr2 = '<s:property escapeJavaScript="false" escape="false" value="<%=request.getSession().getAttribute("tupleList")%>" />';--%>
     <%--var addVehicleArray = eval("("+szJsonStr+")");--%>
