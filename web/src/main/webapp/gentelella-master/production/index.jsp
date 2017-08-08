@@ -12,6 +12,8 @@
 <%@ page import="net.sf.json.JSONObject" %>
 <%@ page import="net.sf.json.JSONArray" %>
 <%@ page import="ui.clientTest" %>
+<%@ page import="java.util.Iterator" %>
+<%@ page import="java.util.Map" %>
 <%
     String path = request.getContextPath();
     String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+path+"/";
@@ -52,6 +54,58 @@
 
 <body class="nav-md">
 <script type="text/javascript">
+//    var xmlhttp;
+//    if (window.XMLHttpRequest)
+//    {
+//        //  IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
+//        xmlhttp=new XMLHttpRequest();
+//    }
+
+    <%--//1. 创建ajax对象--%>
+    <%--var ajax = createAjax();--%>
+    <%--//测试--%>
+    <%--//alert(ajax!=null?"创建ajax成功！":"创建ajax失败！！");--%>
+    <%--//2. 获取定位按钮--%>
+    <%--var inputElement = document.getElementById("ajax").onclick = function() {--%>
+        <%--//3. 准备发送请求--%>
+        <%--/*--%>
+         <%--method表示发送请求的方式，例如GET或POST--%>
+         <%--url表示发送请求的目标地址--%>
+         <%--可选的boolean值--%>
+         <%-->>true：表示该请求是异步的，这是默认值，web2.0--%>
+         <%-->>false：表示该请求是同步的，web1.0--%>
+         <%--*/--%>
+        <%--var method = "GET";--%>
+        <%--var url = "${pageContext.request.contextPath}/clientTest?id="+new Date().getTime();--%>
+        <%--ajax.open(method, url, true);--%>
+        <%--//4. 真正发送异步请求--%>
+        <%--/*--%>
+         <%--content表示发送请求的内容，如果无内容的话，使用null表示--%>
+         <%--如果有内容，写成key=value形成，例如：username=jack&password=123--%>
+         <%--*/--%>
+        <%--var content = null;--%>
+        <%--ajax.send(content);--%>
+        <%--//5. ajax对象监听服务器的响应--%>
+        <%--ajax.onreadystatechange = function() {--%>
+            <%--//如果ajax对象，已经完全接收到了响应，--%>
+            <%--if (ajax.readyState == 4) {--%>
+                <%--//如果响应正确--%>
+                <%--if (ajax.status == 200) {--%>
+                    <%--var nowStr = ajax.responseText;--%>
+                    <%--//将获取到的时间放在span标签内--%>
+                    <%--//定位span标签--%>
+                    <%--var spanElement = document.getElementsByTagName("span")[0];--%>
+                    <%--//将nowStr放当span标签内--%>
+                    <%--spanElement.innerHTML = nowStr;--%>
+                <%--}--%>
+
+            <%--}--%>
+
+        <%--};--%>
+
+    <%--};--%>
+    <%JSONObject jsonStr = (JSONObject)request.getSession().getAttribute("tupleList");%>
+    <%SystemState sys = (SystemState)request.getSession().getAttribute("systemState");%>
 </script>
 <div class="container body">
     <div class="main_container">
@@ -69,7 +123,7 @@
                         <img src="images/img.jpg" alt="..." class="img-circle profile_img">
                     </div>
                     <div class="profile_info">
-                        <span>Welcome,</span>
+                        <span>Welcome,</span><input type="button" value="获取当前时间" id="ajax">
                         <h2>John Doe</h2>
                     </div>
                 </div>
@@ -340,7 +394,7 @@
 
                         <div class="row x_title">
                             <div class="col-md-8">
-                                <h3>Network Activities <small>Graph title sub-title</small></h3>
+                                <h3>Overall Insertion Throughput <small>tuple/s</small></h3>
                             </div>
                             <div class="col-md-8">
                                 <!--<div id="reportrange" class="pull-right" style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc">-->
@@ -408,7 +462,7 @@
                 <div class="col-md-4 col-sm-4 col-xs-4">
                     <div class="x_panel">
                         <div class="x_title">
-                            <h2>Default Example <small>Users</small></h2>
+                            <h2>System State <small>Users</small></h2>
                             <ul class="nav navbar-right panel_toolbox">
                                 <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
                                 </li>
@@ -437,29 +491,29 @@
                                     <th>Position</th>
                                 </tr>
                                 </thead>
-
-
                                 <tbody>
+
+
+                                <%--traverse all over the hashMap key--%>
+                                <%
+                                    if(sys != null){
+                                        Iterator iter = sys.getHashMap().entrySet().iterator();
+                                        while (iter.hasNext()) {
+                                            Map.Entry entry = (Map.Entry) iter.next();
+                                            String key = (String) entry.getKey();
+                                            String val = (String) entry.getValue();
+                                            System.out.println("key "+ key);
+                                %>
                                 <tr>
-                                    <td>Tiger Nixon</td>
-                                    <td>System Architect</td>
+                                    <th><%=key%></th>
+                                    <th><%=val%></th>
                                 </tr>
-                                <tr>
-                                    <td>Garrett Winters</td>
-                                    <td>Accountant</td>
-                                </tr>
-                                <tr>
-                                    <td>Ashton Cox</td>
-                                    <td>Junior Technical Author</td>
-                                </tr>
-                                <tr>
-                                    <td>Cedric Kelly</td>
-                                    <td>Senior Javascript Developer</td>
-                                </tr>
-                                <tr>
-                                    <td>Airi Satou</td>
-                                    <td>Accountant</td>
-                                </tr>
+                                <%--<script type="text/javascript">alert(<%=key%>);alert(<%=val%>);</script>>--%>
+                                <%
+                                        }
+
+                                    }
+                                %>
                                 </tbody>
                             </table>
                         </div>
@@ -1067,9 +1121,9 @@
 
 
         <%--<%SystemState jsonstr = (SystemState) request.getSession().getAttribute("tupleList");%>--%>
-        <%double[] jsonstr = (double[]) request.getSession().getAttribute("tupleList");%>
-        <%if(jsonstr != null){
-           %><input  id="json" value=<%=jsonstr%>
+        <%--<%String jsonStr = (String) request.getSession().getAttribute("tupleList");%>--%>
+         <%if(jsonStr != null){
+           %><input  id="json" value=<%=jsonStr%>>
         <%}%>
     </div>
 </div>
@@ -1120,10 +1174,11 @@
     //    $(function(){
     //           $('#showDataForm').submit();
 
-    var myName = new Array();
+//    var myName = new Array();
     var jsonarray = document.getElementById("json").value;
-    alert(jsonarray);
-    init_flot_chart(jsonarray);
+    var b=JSON.parse(jsonarray);//method 1
+    var jsonObject = eval("("+jsonarray+")");//method 1
+    init_flot_chart(jsonObject);
     <%--var szJsonStr = "<%=request.getSession().getAttribute("tupleList")%>";--%>
     <%--var szJsonStr2 = '<s:property escapeJavaScript="false" escape="false" value="<%=request.getSession().getAttribute("tupleList")%>" />';--%>
     <%--var addVehicleArray = eval("("+szJsonStr+")");--%>

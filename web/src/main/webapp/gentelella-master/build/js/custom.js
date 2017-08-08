@@ -386,28 +386,34 @@ if (typeof NProgress != 'undefined') {
 		];
 		
 		var chart_plot_02_data = [];
-		
-		var chart_plot_03_data = [
-			// [0, systemState[0]],
-			// [10, systemState[1]],
-			[10,10],
-			[15,15]
-			[20, 6],
-			[30, 10],
-			[40, 5],
-			[50, 17],
-			// [6, 6],
-			// [7, 10],
-			// [8, 7],
-			// [9, 11],
-			// [10, 35],
-			// [11, 9],
-			// [12, 12],
-			// [13, 5],
-			// [14, 3],
-			// [15, 4],
-			// [50, 9]
-		];
+		var i = 0;
+        var chart_plot_03_data = [];
+		while(i < systemState.lastThroughput.length){
+            chart_plot_03_data.push([i*10,systemState.lastThroughput[i]]);
+            // alert(systemState.lastThroughput[i]);
+            i++;
+        }
+		// var chart_plot_03_data = [
+		// 	[0, systemState.lastThroughput[0]],
+		// 	[10, systemState.lastThroughput[1]],
+		// 	// [10,10],
+		// 	// [15,15]
+		// 	[20, systemState.lastThroughput[2]],
+		// 	[30, systemState.lastThroughput[3]],
+		// 	[40, systemState.lastThroughput[4]],
+		// 	[50, systemState.lastThroughput[5]],
+		// 	// [6, 6],
+		// 	// [7, 10],
+		// 	// [8, 7],
+		// 	// [9, 11],
+		// 	// [10, 35],
+		// 	// [11, 9],
+		// 	// [12, 12],
+		// 	// [13, 5],
+		// 	// [14, 3],
+		// 	// [15, 4],
+		// 	// [50, 9]
+		// ];
 		
 		
 		for (var i = 0; i < 30; i++) {
@@ -529,9 +535,9 @@ if (typeof NProgress != 'undefined') {
 		var chart_plot_03_settings = {
 			series: {
 				curvedLines: {
-					apply: true,
-					active: true,
-					monotonicFit: true
+					apply: false,
+					active: false,
+					monotonicFit: false
 				}
 			},
 			colors: ["#26B99A"],
@@ -578,7 +584,7 @@ if (typeof NProgress != 'undefined') {
 			
 			
 			$.plot($("#chart_plot_03"), [{
-				label: "Registrations",
+				label: "Throughput",
 				data: chart_plot_03_data,
 				lines: {
 					fillColor: "rgba(150, 202, 89, 0.12)"

@@ -10,14 +10,33 @@ import java.util.HashMap;
  */
 public class SystemState implements Serializable{
 
-    public double throughout;
+    private double throughout;
     public double[] lastThroughput;
-    public HashMap<String,String> hashMap;
-
+    private HashMap<String,String> hashMap;
+    public double getThroughput() {
+        return throughout;
+    }
+    public void setThroughout(double throughout) {
+        this.throughout = throughout;
+    }
+    public double[] getLastThroughput() {
+        return lastThroughput;
+    }
+    public void setLastThroughput(double[] lastThroughput) {
+        this.lastThroughput = lastThroughput;
+    }
     public void setHashMap(String k,String v){
         if(hashMap == null){
             hashMap = new HashMap<>();
         }
         this.hashMap.put(k,v);
+    }
+    public HashMap<String,String> getHashMap(){
+        return hashMap;
+    }
+    @Override
+    public String toString() {
+        return "[throughput=" + throughout + ", lastThroughput=" + lastThroughput + ", hashMap="
+                + hashMap + "]";
     }
 }

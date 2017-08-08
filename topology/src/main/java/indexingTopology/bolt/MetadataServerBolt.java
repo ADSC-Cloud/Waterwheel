@@ -141,10 +141,12 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
 //        createMetadataSendingThread();
         systemState = new SystemState();
-        System.out.println("dataChunkDir:"+config.dataChunkDir);
-        systemState.hashMap = new HashMap<>();
-        systemState.hashMap.put("dataChunkDir",config.dataChunkDir);
-        systemState.hashMap.put("metadataDir",config.metadataDir);
+//        System.out.println("aaaaaaaaaaaa:"+config.dataChunkDir);
+        String a = "aa";
+//        systemState.setHashMap("11",a);
+//        systemState.setHashMap("22","bb");
+        systemState.setHashMap("dataChunkDir",config.dataChunkDir);
+        systemState.setHashMap("metadataDir",config.metadataDir);
         systemStateQueryServer = new Server(20000, SystemStateQueryHandle.class, new Class[]{SystemState.class}, systemState);
         systemStateQueryServer.startDaemon();
 
@@ -463,7 +465,7 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
         public void run() {
             final int sleepTimeInSecond = 10;
 //            while (true) {
-            systemState.lastThroughput = new double[6];
+            systemState.setLastThroughput(new double[6]);
             int i = 0;//throughput计数器.
             while (!Thread.currentThread().isInterrupted()) {
                 try {
@@ -478,15 +480,19 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
                 for(Long count: counts) {
                     sum += count;
                 }
-                systemState.throughout =  sum / (double)sleepTimeInSecond;
-                systemState.lastThroughput[i++] = systemState.throughout;
-                System.out.println("i: "+i+" "+systemState.lastThroughput[i-1]);
+                systemState.setThroughout(sum / (double)sleepTimeInSecond);
                 if(i >= systemState.lastThroughput.length){
                     for(int j = 0;j< systemState.lastThroughput.length-1;j++){
                         systemState.lastThroughput[j] = systemState.lastThroughput[j+1];
+//                            systemState.lastThroughput[j] = j+1;
                     }
-                    systemState.lastThroughput[systemState.lastThroughput.length-1] = systemState.throughout;
-                    i--;
+                    systemState.lastThroughput[systemState.lastThroughput.length-1] = systemState.getThroughput();
+//                    systemState.lastThroughput[systemState.lastThroughput.length-1] = 1;
+                }
+                else{
+//                    systemState.lastThroughput[i++] = i+1;
+                    systemState.lastThroughput[i++] = systemState.getThroughput();
+                    System.out.println("i: "+i+" "+systemState.lastThroughput[i-1]);
                 }
 //                System.out.println("statics request has been sent!!!");
                 System.out.println(String.format("Overall Throughput: %f tuple / second", sum / (double)sleepTimeInSecond));
