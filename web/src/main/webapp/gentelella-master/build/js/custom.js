@@ -336,15 +336,14 @@ if (typeof NProgress != 'undefined') {
 	function gd(year, month, day) {
 		return new Date(year, month - 1, day).getTime();
 	}
-	  
-	
-	function init_flot_chart(systemState){
+
+	function init_flot_chart(sys){
 		
-		if( typeof ($.plot) === 'undefined'){ return; }
-		
-		console.log('init_flot_chart');
-		
-		
+		// if( typeof ($.plot) === 'undefined'){ return; }
+		//
+		// console.log('init_flot_chart');
+		//
+		//
 		
 		var arr_data1 = [
 			[gd(2012, 1, 1), 17],
@@ -388,11 +387,19 @@ if (typeof NProgress != 'undefined') {
 		var chart_plot_02_data = [];
 		var i = 0;
         var chart_plot_03_data = [];
-		while(i < systemState.lastThroughput.length){
-            chart_plot_03_data.push([i*10,systemState.lastThroughput[i]]);
-            // alert(systemState.lastThroughput[i]);
-            i++;
-        }
+        // var sys = {
+        	// "throughput": 10,
+         //    "lastThroughput":[],
+		// 	"hashMap":{"dataChunkDir":"1","metadataDir":"2"},
+		// };
+		// alert("类型是："+sys+" ");
+		// if(sys){
+            while(i < sys.length){
+                chart_plot_03_data.push([i*10+1000,sys[i]]);
+                // alert(systemState.lastThroughput[i]);
+                i++;
+            }
+		// }
 		// var chart_plot_03_data = [
 		// 	[0, systemState.lastThroughput[0]],
 		// 	[10, systemState.lastThroughput[1]],
@@ -4151,7 +4158,7 @@ if (typeof NProgress != 'undefined') {
 				legend: {
 				  x: 'center',
 				  y: 'bottom',
-				  data: ['Direct Access', 'E-mail Marketing', 'Union Ad', 'Video Ads', 'Search Engine']
+				  data: ['using', 'idle']
 				},
 				toolbox: {
 				  show: true,
@@ -4203,20 +4210,11 @@ if (typeof NProgress != 'undefined') {
 					}
 				  },
 				  data: [{
-					value: 335,
-					name: 'Direct Access'
+					value: 400,
+					name: 'using'
 				  }, {
-					value: 310,
-					name: 'E-mail Marketing'
-				  }, {
-					value: 234,
-					name: 'Union Ad'
-				  }, {
-					value: 135,
-					name: 'Video Ads'
-				  }, {
-					value: 1548,
-					name: 'Search Engine'
+					value: 100,
+					name: 'idle'
 				  }]
 				}]
 			  });
@@ -5037,7 +5035,7 @@ if (typeof NProgress != 'undefined') {
 	   
 	   
 	$(document).ready(function() {
-				
+        var sys = [];
 		init_sparklines();
 		// init_flot_chart();
 		init_sidebar();

@@ -69,6 +69,25 @@ public class clientTest  extends HttpServlet {
         systemState.setLastThroughput(throughputList);
         systemState.setHashMap("dataChunkDir","/Users/billlin/机器学习/分布式/tmp/append-only-store/dataDir");
         systemState.setHashMap("metadataDir","/Users/billlin/机器学习/分布式/tmp/append-only-store/metadataDir");
+        systemState.setHashMap("dataChunkDir1","/Users/billlin/机器学习/分布式/tmp/append-only-store/dataDir");
+        systemState.setHashMap("metadataDir2","/Users/billlin/机器学习/分布式/tmp/append-only-store/metadataDir");
+        systemState.setHashMap("dataChbgunkDir3","/Users/billlin/机器学习/分布式/tmp/append-only-store/dataDir");
+        systemState.setHashMap("metadataDi4r","/Users/billlin/机器学习/分布式/tmp/append-only-store/metadataDir");
+        systemState.setHashMap("dataChbfu5nkDir","/Users/billlin/机器学习/分布式/tmp/append-only-store/dataDir");
+        systemState.setHashMap("metadata5Dir","/Users/billlin/机器学习/分布式/tmp/append-only-store/metadataDir");
+        systemState.setHashMap("dataChunkDir","/Users/billlin/机器学习/分布式/tmp/append-only-store/dataDir");
+        systemState.setHashMap("metadbgagtaDir","/Users/billlin/机器学习/分布式/tmp/append-only-store/metadataDir");
+        systemState.setHashMap("dataChtunkDir","/Users/billlin/机器学习/分布式/tmp/append-only-store/dataDir");
+        systemState.setHashMap("metadfg6yataDir","/Users/billlin/机器学习/分布式/tmp/append-only-store/metadataDir");
+        systemState.setHashMap("dataChfgunkDir","/Users/billlin/机器学习/分布式/tmp/append-only-store/dataDir");
+        systemState.setHashMap("metadbgataDir","/Users/billlin/机器学习/分布式/tmp/append-only-store/metadataDir");
+        systemState.setHashMap("datagfrCbhunkDir","/Users/billlin/机器学习/分布式/tmp/append-only-store/dataDir");
+        systemState.setHashMap("metadbataDir","/Users/billlin/机器学习/分布式/tmp/append-only-store/metadataDir");
+        systemState.setHashMap("dataChugbnkDir","/Users/billlin/机器学习/分布式/tmp/append-only-store/dataDir");
+        systemState.setHashMap("metadafghunkDir","/Users/billlin/机器学习/分布式/tmp/append-only-store/dataDir");
+        systemState.setHashMap("metadataDir","/Users/billlin/机器学习/分布式/tmp/append-only-store/metadataDir");
+        systemState.setHashMap("b","/Users/billlin/机器学习/分布式/tmp/append-only-store/dataDir");
+        systemState.setHashMap("metadataDir","/Users/billlin/机器学习/分布式/tmp/append-only-store/metadataDir");
         JSONObject json = JSONObject.fromObject(systemState); //v即对象
         String jsonStr = json.toString();
         System.out.println(json.toString());
@@ -93,6 +112,4 @@ public class clientTest  extends HttpServlet {
 //        request.getSession().setMaxInactiveInterval(6);
 //        response.sendRedirect("gentelella-master/production/index.jsp");
         }
-
-
 }

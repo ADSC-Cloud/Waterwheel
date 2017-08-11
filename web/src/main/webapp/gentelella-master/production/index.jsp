@@ -39,6 +39,14 @@
     <!-- iCheck -->
     <link href="../vendors/iCheck/skins/flat/green.css" rel="stylesheet">
 
+
+
+    <link href="../vendors/datatables.net-bs/css/dataTables.bootstrap.min.css" rel="stylesheet">
+    <link href="../vendors/datatables.net-buttons-bs/css/buttons.bootstrap.min.css" rel="stylesheet">
+    <link href="../vendors/datatables.net-fixedheader-bs/css/fixedHeader.bootstrap.min.css" rel="stylesheet">
+    <link href="../vendors/datatables.net-responsive-bs/css/responsive.bootstrap.min.css" rel="stylesheet">
+    <link href="../vendors/datatables.net-scroller-bs/css/scroller.bootstrap.min.css" rel="stylesheet">
+
     <!-- bootstrap-progressbar -->
     <link href="../vendors/bootstrap-progressbar/css/bootstrap-progressbar-3.3.4.min.css" rel="stylesheet">
     <!-- JQVMap -->
@@ -50,6 +58,9 @@
     <link href="../build/css/custom.min.css" rel="stylesheet">
 
     <%--<link rel="stylesheet" href="../../js/jquery-1.10.2.min.js">--%>
+
+    <!-- jQuery -->
+    <script src="../vendors/jquery/dist/jquery.min.js"></script>
 </head>
 
 <body class="nav-md">
@@ -59,7 +70,7 @@
         <div class="col-md-3 left_col">
             <div class="left_col scroll-view">
                 <div class="navbar nav_title" style="border: 0;">
-                    <a href="index.html" class="site_title"><i class="fa fa-paw"></i> <span>Gentelella Alela!</span></a>
+                    <a href="index.html" class="site_title"><i class="fa fa-paw"></i> <span>Waterwheel</span></a>
                 </div>
 
                 <div class="clearfix"></div>
@@ -71,9 +82,7 @@
                     </div>
                     <div class="profile_info">
                         <span>Welcome,</span>
-                        <input type="button" value="获取当前时间" id="ajax">
-                        <hr>
-                        <span class="ajaxTest"></span>
+
                         <h2>John Doe</h2>
                     </div>
                 </div>
@@ -86,22 +95,24 @@
                     //        xmlhttp=new XMLHttpRequest();
                     //    }
 
-                    //1. 创建ajax对象
-                    var ajax;// createAjax();
-                    if (window.XMLHttpRequest)
-                    {
-                        //  IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
-                        ajax=new XMLHttpRequest();
-                    }
-                    else
-                    {
-                        // IE6, IE5 浏览器执行代码
-                        ajax=new ActiveXObject("Microsoft.XMLHTTP");
-                    }
+//                    //1. 创建ajax对象
+//                    var ajax;// createAjax();
+//                    if (window.XMLHttpRequest)
+//                    {
+//                        //  IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
+//                        ajax=new XMLHttpRequest();
+//                    }
+//                    else
+//                    {
+//                        // IE6, IE5 浏览器执行代码
+//                        ajax=new ActiveXObject("Microsoft.XMLHTTP");
+//                    }
 //                    alert(ajax!=null?"创建ajax成功！":"创建ajax失败！！");
                     //2. 获取定位按钮
 //                    var inputElement = document.getElementById("ajax").onclick = function() {
                      function chart() {
+
+
                         //3. 准备发送请求
                         /*
                          method表示发送请求的方式，例如GET或POST
@@ -110,58 +121,61 @@
                          >>true：表示该请求是异步的，这是默认值，web2.0
                          >>false：表示该请求是同步的，web1.0
                          */
-                        var method = "GET";
-                        var url = "<%=path%>/clientTest";
-                        ajax.open(method, url, true);
-                        //4. 真正发送异步请求
-                        /*
-                         content表示发送请求的内容，如果无内容的话，使用null表示
-                         如果有内容，写成key=value形成，例如：username=jack&password=123
-                         */
-                        var content = "111";
-                        ajax.send(content);
-                        //5. ajax对象监听服务器的响应
-                        ajax.onreadystatechange = function() {
-                            //如果ajax对象，已经完全接收到了响应，
-                            if (ajax.readyState == 4) {
-                                //如果响应正确
-                                if (ajax.status == 200) {
-                                    var nowStr = JSON.parse(ajax.responseText);
-                                    var table = document.getElementById("datatable");
-                                    var t1=document.getElementById("datatable");
+                        <%--var method = "GET";--%>
+                        <%--var url = "<%=path%>/clientTest";--%>
+                        <%--ajax.open(method, url, true);--%>
+<%--//                        ajax.dataType("json");--%>
+                        <%--//4. 真正发送异步请求--%>
+                        <%--/*--%>
+                         <%--content表示发送请求的内容，如果无内容的话，使用null表示--%>
+                         <%--如果有内容，写成key=value形成，例如：username=jack&password=123--%>
+                         <%--*/--%>
+                        <%--var content = "111";--%>
+                        <%--ajax.send(content);--%>
+                        <%--//5. ajax对象监听服务器的响应--%>
+                        <%--ajax.onreadystatechange = function() {--%>
+                            <%--//如果ajax对象，已经完全接收到了响应，--%>
+                            <%--if (ajax.readyState == 4) {--%>
+                                <%--//如果响应正确--%>
+                                <%--if (ajax.status == 200) {--%>
+                                    <%--var nowStr = JSON.parse(ajax.responseText);--%>
+                                    <%--var table = document.getElementById("datatable");--%>
+                                    <%--var t1=document.getElementById("datatable");--%>
+<%--//                                    var a = nowStr.hashMap[0];--%>
+<%--//                                    alert(a);--%>
+<%--//                                    var rowNum=t1.rows.length;--%>
+<%--//                                    if(rowNum>0) {--%>
+<%--//                                        for (i = 0; i < rowNum; i++) {--%>
+<%--//                                            t1.deleteRow(i);--%>
+<%--//                                            rowNum = rowNum - 1;--%>
+<%--//                                            i = i - 1;--%>
+<%--//                                        }--%>
+<%--//                                    }--%>
+<%--////                                    alert(nowStr.hashMap.length);--%>
+<%--//                                    for(var k in nowStr.hashMap){--%>
+<%--//                                        var newRow = table.insertRow(); //创建新行--%>
+<%--//                                        var newCell1 = newRow.insertCell(0); //创建新单元格--%>
+<%--//                                        newCell1.innerHTML = k ; //单元格内的内容--%>
+<%--//                                        newCell1.setAttribute("align","center"); //设置位置--%>
+<%--//                                        var newCell1 = newRow.insertCell(1); //创建新单元格--%>
+<%--//                                        newCell1.innerHTML = nowStr.hashMap[k] ; //单元格内的内容--%>
+<%--//                                        newCell1.setAttribute("align","center"); //设置位置--%>
+<%--//                                    }--%>
+                                    <%--init_flot_chart(nowStr);--%>
+                                    <%--//将获取到的时间放在span标签内--%>
+                                    <%--//定位span标签--%>
+<%--//                                    var spanElement = document.getElementsByTagName("span")[0];--%>
+                                    <%--//将nowStr放当span标签内--%>
+<%--//                                    spanElement.innerHTML = nowStr;--%>
+                                <%--}--%>
 
-                                    var rowNum=t1.rows.length;
-                                    if(rowNum>0) {
-                                        for (i = 0; i < rowNum; i++) {
-                                            t1.deleteRow(i);
-                                            rowNum = rowNum - 1;
-                                            i = i - 1;
-                                        }
-                                    }
-                                    for(var k in nowStr.hashMap){
-                                        var newRow = table.insertRow(); //创建新行
-                                        var newCell1 = newRow.insertCell(0); //创建新单元格
-                                        newCell1.innerHTML = k ; //单元格内的内容
-                                        newCell1.setAttribute("align","center"); //设置位置
-                                        var newCell1 = newRow.insertCell(1); //创建新单元格
-                                        newCell1.innerHTML = nowStr.hashMap[k] ; //单元格内的内容
-                                        newCell1.setAttribute("align","center"); //设置位置
-                                    }
-                                        init_flot_chart(nowStr);
-                                    //将获取到的时间放在span标签内
-                                    //定位span标签
-//                                    var spanElement = document.getElementsByTagName("span")[0];
-                                    //将nowStr放当span标签内
-//                                    spanElement.innerHTML = nowStr;
-                                }
+                            <%--}--%>
 
-                            }
-
-                        };
+                        <%--};--%>
 
                     };
-                    chart();
-                    window.setInterval(chart, 2000);
+//                    chart();
+//                    window.setInterval(chart, 2000);
                     <%JSONObject jsonStr = (JSONObject)request.getSession().getAttribute("tupleList");%>
                     <%SystemState sys = (SystemState)request.getSession().getAttribute("systemState");%>
                 </script>
@@ -391,11 +405,11 @@
         <div class="right_col" role="main">
             <!-- top tiles -->
             <div class="row tile_count">
-                <div class="col-md-12 col-sm-12 col-xs-12 tile_stats_count">
-                    <span class="count_top"><i class="fa fa-user"></i> Total Users</span>
-                    <h1>Waterwheel  <small>A distributed system for high-rate data indexing and real-time querying</small></h1>
-                    <span class="count_bottom"><i class="green">4% </i> From last Week</span>
-                </div>
+                <%--<div class="col-md-12 col-sm-12 col-xs-12 tile_stats_count">--%>
+                    <%--<span class="count_top"><i class="fa fa-user"></i> Total Users</span>--%>
+                    <%--<h1>Waterwheel  <small>A distributed system for high-rate data indexing and real-time querying</small></h1>--%>
+                    <%--<span class="count_bottom"><i class="green">4% </i> From last Week</span>--%>
+                <%--</div>--%>
                 <!--<div class="col-md-2 col-sm-4 col-xs-6 tile_stats_count">-->
                 <!--<span class="count_top"><i class="fa fa-clock-o"></i> Average Time</span>-->
                 <!--<div class="count">123.50</div>-->
@@ -495,66 +509,297 @@
                 <!--</div>-->
                 <!--<br />-->
                 <!--<div class="row">-->
-                <div class="col-md-4 col-sm-4 col-xs-4">
-                    <div class="x_panel">
-                        <div class="x_title">
-                            <h2>System State <small>Users</small></h2>
-                            <ul class="nav navbar-right panel_toolbox">
-                                <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
-                                </li>
-                                <li class="dropdown">
-                                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><i class="fa fa-wrench"></i></a>
-                                    <ul class="dropdown-menu" role="menu">
-                                        <li><a href="#">Settings 1</a>
-                                        </li>
-                                        <li><a href="#">Settings 2</a>
-                                        </li>
-                                    </ul>
-                                </li>
-                                <li><a class="close-link"><i class="fa fa-close"></i></a>
-                                </li>
-                            </ul>
-                            <div class="clearfix"></div>
-                        </div>
-                        <div class="x_content">
-                            <p class="text-muted font-13 m-b-30">
-                                DataTables has most features enabled by default, so all you need to do to use it with your own tables is to call the construction function: <code>$().DataTable();</code>
-                            </p>
-                            <table id="datatable" class="table table-striped table-bordered">
-                                <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Position</th>
-                                </tr>
-                                </thead>
-                                <tbody>
+                <%--<div class="col-md-4 col-sm-4 col-xs-4">--%>
+                    <%--<div class="x_panel">--%>
+                        <%--<div class="x_title">--%>
+                            <%--<h2>System State <small>Users</small></h2>--%>
+                            <%--<ul class="nav navbar-right panel_toolbox">--%>
+                                <%--<li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>--%>
+                                <%--</li>--%>
+                                <%--<li class="dropdown">--%>
+                                    <%--<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><i class="fa fa-wrench"></i></a>--%>
+                                    <%--<ul class="dropdown-menu" role="menu">--%>
+                                        <%--<li><a href="#">Settings 1</a>--%>
+                                        <%--</li>--%>
+                                        <%--<li><a href="#">Settings 2</a>--%>
+                                        <%--</li>--%>
+                                    <%--</ul>--%>
+                                <%--</li>--%>
+                                <%--<li><a class="close-link"><i class="fa fa-close"></i></a>--%>
+                                <%--</li>--%>
+                            <%--</ul>--%>
+                            <%--<div class="clearfix"></div>--%>
+                        <%--</div>--%>
+                        <%--<div class="x_content">--%>
+                            <%--<p class="text-muted font-13 m-b-30">--%>
+                                <%--DataTables has most features enabled by default, so all you need to do to use it with your own tables is to call the construction function: <code>$().DataTable();</code>--%>
+                            <%--</p>--%>
+                            <%--<table id="datatable" class="table table-striped table-bordered">--%>
+                                <%--<thead>--%>
+                                <%--<tr>--%>
+                                    <%--<th>Name</th>--%>
+                                    <%--<th>Position</th>--%>
+                                <%--</tr>--%>
+                                <%--</thead>--%>
+                                <%--<tbody>--%>
 
 
-                                <%--traverse all over the hashMap key--%>
-                                <%
-                                    if(sys != null){
-                                        Iterator iter = sys.getHashMap().entrySet().iterator();
-                                        while (iter.hasNext()) {
-                                            Map.Entry entry = (Map.Entry) iter.next();
-                                            String key = (String) entry.getKey();
-                                            String val = (String) entry.getValue();
-                                            System.out.println("key "+ key);
-                                %>
-                                <tr>
-                                    <th><%=key%></th>
-                                    <th><%=val%></th>
-                                </tr>
-                                <%--<script type="text/javascript">alert(<%=key%>);alert(<%=val%>);</script>>--%>
-                                <%
-                                        }
+                                <%--&lt;%&ndash;traverse all over the hashMap key&ndash;%&gt;--%>
+                                <%--<%--%>
+                                    <%--if(sys != null){--%>
+                                        <%--Iterator iter = sys.getHashMap().entrySet().iterator();--%>
+                                        <%--while (iter.hasNext()) {--%>
+                                            <%--Map.Entry entry = (Map.Entry) iter.next();--%>
+                                            <%--String key = (String) entry.getKey();--%>
+                                            <%--String val = (String) entry.getValue();--%>
+                                            <%--System.out.println("key "+ key);--%>
+                                <%--%>--%>
+                                <%--<tr>--%>
+                                    <%--<th><%=key%></th>--%>
+                                    <%--<th><%=val%></th>--%>
+                                <%--</tr>--%>
+                                <%--&lt;%&ndash;<script type="text/javascript">alert(<%=key%>);alert(<%=val%>);</script>>&ndash;%&gt;--%>
+                                <%--<%--%>
+                                        <%--}--%>
 
-                                    }
-                                %>
-                                </tbody>
-                            </table>
+                                    <%--}--%>
+                                <%--%>--%>
+                                <%--</tbody>--%>
+                            <%--</table>--%>
+                        <%--</div>--%>
+                    <%--</div>--%>
+                <%--</div>--%>
+            </div>
+            <div class="clearfix"></div>
+            <br>
+            <%--<div class="row">--%>
+                <%--&lt;%&ndash;<jsp:include page="tables_dynamic.html" flush="true"/><!--动态包含-->&ndash;%&gt;--%>
+                <%--<%@include file="tables_dynamic.html"%><!--静态包含-->--%>
+            <%--</div>--%>
+            <div class="row">
+                    <div class="col-md-12 col-sm-12 col-xs-12">
+                        <div class="x_panel">
+                            <div class="x_title">
+                                <h2>System Status <small>Users</small></h2>
+                                <ul class="nav navbar-right panel_toolbox">
+                                    <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                                    </li>
+                                    <li class="dropdown">
+                                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><i class="fa fa-wrench"></i></a>
+                                        <ul class="dropdown-menu" role="menu">
+                                            <li><a href="#">Settings 1</a>
+                                            </li>
+                                            <li><a href="#">Settings 2</a>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                    <li><a class="close-link"><i class="fa fa-close"></i></a>
+                                    </li>
+                                </ul>
+                                <div class="clearfix"></div>
+                            </div>
+                            <div class="x_content">
+                                <%--<p class="text-muted font-13 m-b-30">--%>
+                                    <%--DataTables has most features enabled by default, so all you need to do to use it with your own tables is to call the construction function: <code>$().DataTable();</code>--%>
+                                <%--</p>--%>
+                                <table id="datatable" class="table table-striped table-bordered">
+                                    <thead>
+                                    <tr>
+                                        <th>Name </th>
+                                        <th>Status</th>
+                                        <%--<th>Office</th>--%>
+                                        <%--<th>Age</th>--%>
+                                        <%--<th>Start date</th>--%>
+                                        <%--<th>Salary</th>--%>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="tableTbody">
+
+                                    <script type="text/javascript">
+
+                                        function b(){
+//        init_flot_chart(arr);
+                                            $.ajax({
+                                                type: 'GET',
+                                                url:  "<%=path%>/clientTest",
+                                                data: null ,
+                                                dataType: "json",
+                                                async: false,
+                                                success:function(data) {
+//                alert("success");
+                                                    var nowStr = data;
+//                alert(nowStr.throughput);
+//                var nowStr = JSON.parse(ajax.responseText);
+                                                    var table = document.getElementById("tableTbody");
+                                                    var rowNum=table.rows.length;
+                                                    if(rowNum>0) {
+                                                        for (i = 0; i < rowNum; i++) {
+                                                            table.deleteRow(i);
+                                                        }
+                                                    }
+//              alert(nowStr.hashMap.length);
+                                                    for(var k in nowStr.hashMap){
+                                                        var newRow = table.insertRow(); //创建新行
+                                                        var newCell1 = newRow.insertCell(0); //创建新单元格
+                                                        newCell1.innerHTML = "<td>"+k+"</td>" ; //单元格内的内容
+                                                        newCell1.setAttribute("align","center"); //设置位置
+                                                        var newCell1 = newRow.insertCell(1); //创建新单元格
+                                                        newCell1.innerHTML =" <td>"+nowStr.hashMap[k]+"</td> "; //单元格内的内容
+//                    alert(nowStr.hashMap[k]);
+                                                        newCell1.setAttribute("align","center"); //设置位置
+                                                    }
+//                var arr = [1,2,3,4,5];
+                                                },
+                                                error : function() {
+                                                    // view("异常！");
+                                                    alert("failed！");
+                                                }
+                                            });
+
+                                        };
+                                        b();
+//                                        const myFunction = async function() {
+//                                            await b();
+//                                            const x = await ajax1()
+//                                            const y = await ajax2()
+//                                            //等待两个异步ajax请求同时执行完毕后打印出数据
+//                                            console.log(x, y)
+//                                        };
+//                                        myFunction();
+                                    </script>
+                                    <%--<tr>--%>
+                                        <%--<td>Tiger Nixon</td>--%>
+                                        <%--<td>System Architect</td>--%>
+                                        <%--<td>Edinburgh</td>--%>
+                                        <%--<td>61</td>--%>
+                                        <%--<td>2011/04/25</td>--%>
+                                        <%--<td>$320,800</td>--%>
+                                    <%--</tr>--%>
+                                    <%--<tr>--%>
+                                        <%--<td>Garrett Winters</td>--%>
+                                        <%--<td>Accountant</td>--%>
+                                        <%--<td>Tokyo</td>--%>
+                                        <%--<td>63</td>--%>
+                                        <%--<td>2011/07/25</td>--%>
+                                        <%--<td>$170,750</td>--%>
+                                    <%--</tr>--%>
+                                    <%--<tr>--%>
+                                        <%--<td>Ashton Cox</td>--%>
+                                        <%--<td>Junior Technical Author</td>--%>
+                                        <%--<td>San Francisco</td>--%>
+                                        <%--<td>66</td>--%>
+                                        <%--<td>2009/01/12</td>--%>
+                                        <%--<td>$86,000</td>--%>
+                                    <%--</tr>--%>
+                                    <%--<tr>--%>
+                                        <%--<td>Cedric Kelly</td>--%>
+                                        <%--<td>Senior Javascript Developer</td>--%>
+                                        <%--<td>Edinburgh</td>--%>
+                                        <%--<td>22</td>--%>
+                                        <%--<td>2012/03/29</td>--%>
+                                        <%--<td>$433,060</td>--%>
+                                    <%--</tr>--%>
+                                    <%--<tr>--%>
+                                        <%--<td>Airi Satou</td>--%>
+                                        <%--<td>Accountant</td>--%>
+                                        <%--<td>Tokyo</td>--%>
+                                        <%--<td>33</td>--%>
+                                        <%--<td>2008/11/28</td>--%>
+                                        <%--<td>$162,700</td>--%>
+                                    <%--</tr>--%>
+                                    <%--<tr>--%>
+                                        <%--<td>Brielle Williamson</td>--%>
+                                        <%--<td>Integration Specialist</td>--%>
+                                        <%--<td>New York</td>--%>
+                                        <%--<td>61</td>--%>
+                                        <%--<td>2012/12/02</td>--%>
+                                        <%--<td>$372,000</td>--%>
+                                    <%--</tr>--%>
+                                    <%--<tr>--%>
+                                        <%--<td>Herrod Chandler</td>--%>
+                                        <%--<td>Sales Assistant</td>--%>
+                                        <%--<td>San Francisco</td>--%>
+                                        <%--<td>59</td>--%>
+                                        <%--<td>2012/08/06</td>--%>
+                                        <%--<td>$137,500</td>--%>
+                                    <%--</tr>--%>
+                                    <%--<tr>--%>
+                                        <%--<td>Rhona Davidson</td>--%>
+                                        <%--<td>Integration Specialist</td>--%>
+                                        <%--<td>Tokyo</td>--%>
+                                        <%--<td>55</td>--%>
+                                        <%--<td>2010/10/14</td>--%>
+                                        <%--<td>$327,900</td>--%>
+                                    <%--</tr>--%>
+                                    <%--<tr>--%>
+                                        <%--<td>Colleen Hurst</td>--%>
+                                        <%--<td>Javascript Developer</td>--%>
+                                        <%--<td>San Francisco</td>--%>
+                                        <%--<td>39</td>--%>
+                                        <%--<td>2009/09/15</td>--%>
+                                        <%--<td>$205,500</td>--%>
+                                    <%--</tr>--%>
+                                    <%--<tr>--%>
+                                        <%--<td>Sonya Frost</td>--%>
+                                        <%--<td>Software Engineer</td>--%>
+                                        <%--<td>Edinburgh</td>--%>
+                                        <%--<td>23</td>--%>
+                                        <%--<td>2008/12/13</td>--%>
+                                        <%--<td>$103,600</td>--%>
+                                    <%--</tr>--%>
+                                    <%--<tr>--%>
+                                        <%--<td>Sonya Frost</td>--%>
+                                        <%--<td>Software Engineer</td>--%>
+                                        <%--<td>Edinburgh</td>--%>
+                                        <%--<td>23</td>--%>
+                                        <%--<td>2008/12/13</td>--%>
+                                        <%--<td>$103,600</td>--%>
+                                    <%--</tr>--%>
+                                    <%--<tr>--%>
+                                        <%--<td>Sonya Frost</td>--%>
+                                        <%--<td>Software Engineer</td>--%>
+                                        <%--<td>Edinburgh</td>--%>
+                                        <%--<td>23</td>--%>
+                                        <%--<td>2008/12/13</td>--%>
+                                        <%--<td>$103,600</td>--%>
+                                    <%--</tr>--%>
+                                    <%--<tr>--%>
+                                        <%--<td>Sonya Frost</td>--%>
+                                        <%--<td>Software Engineer</td>--%>
+                                        <%--<td>Edinburgh</td>--%>
+                                        <%--<td>23</td>--%>
+                                        <%--<td>2008/12/13</td>--%>
+                                        <%--<td>$103,600</td>--%>
+                                    <%--</tr>--%>
+                                    <%--<tr>--%>
+                                        <%--<td>Sonya Frost</td>--%>
+                                        <%--<td>Software Engineer</td>--%>
+                                        <%--<td>Edinburgh</td>--%>
+                                        <%--<td>23</td>--%>
+                                        <%--<td>2008/12/13</td>--%>
+                                        <%--<td>$103,600</td>--%>
+                                    <%--</tr>--%>
+                                    <%--<tr>--%>
+                                        <%--<td>Sonya Frost</td>--%>
+                                        <%--<td>Software Engineer</td>--%>
+                                        <%--<td>Edinburgh</td>--%>
+                                        <%--<td>23</td>--%>
+                                        <%--<td>2008/12/13</td>--%>
+                                        <%--<td>$103,600</td>--%>
+                                    <%--</tr>--%>
+                                    <%--<tr>--%>
+                                        <%--<td>Sonya Frost</td>--%>
+                                        <%--<td>Software Engineer</td>--%>
+                                        <%--<td>Edinburgh</td>--%>
+                                        <%--<td>23</td>--%>
+                                        <%--<td>2008/12/13</td>--%>
+                                        <%--<td>$103,600</td>--%>
+                                    <%--</tr>--%>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
-                </div>
             </div>
             <!--<div class="row">-->
 
@@ -1164,16 +1409,36 @@
     </div>
 </div>
 
-<!-- jQuery -->
-<script src="../vendors/jquery/dist/jquery.min.js"></script>
 <!-- Bootstrap -->
 <script src="../vendors/bootstrap/dist/js/bootstrap.min.js"></script>
 <!-- FastClick -->
 <script src="../vendors/fastclick/lib/fastclick.js"></script>
 <!-- NProgress -->
 <script src="../vendors/nprogress/nprogress.js"></script>
+<!-- iCheck -->
+<script src="../vendors/iCheck/icheck.min.js"></script>
+
 <!-- Chart.js -->
 <script src="../vendors/Chart.js/dist/Chart.min.js"></script>
+<!-- Datatables -->
+<script src="../vendors/datatables.net/js/jquery.dataTables.min.js"></script>
+<script src="../vendors/datatables.net-bs/js/dataTables.bootstrap.min.js"></script>
+<script src="../vendors/datatables.net-buttons/js/dataTables.buttons.min.js"></script>
+<script src="../vendors/datatables.net-buttons-bs/js/buttons.bootstrap.min.js"></script>
+<script src="../vendors/datatables.net-buttons/js/buttons.flash.min.js"></script>
+<script src="../vendors/datatables.net-buttons/js/buttons.html5.min.js"></script>
+<script src="../vendors/datatables.net-buttons/js/buttons.print.min.js"></script>
+<script src="../vendors/datatables.net-fixedheader/js/dataTables.fixedHeader.min.js"></script>
+<script src="../vendors/datatables.net-keytable/js/dataTables.keyTable.min.js"></script>
+<script src="../vendors/datatables.net-responsive/js/dataTables.responsive.min.js"></script>
+<script src="../vendors/datatables.net-responsive-bs/js/responsive.bootstrap.js"></script>
+<script src="../vendors/datatables.net-scroller/js/dataTables.scroller.min.js"></script>
+<script src="../vendors/jszip/dist/jszip.min.js"></script>
+<script src="../vendors/pdfmake/build/pdfmake.min.js"></script>
+<script src="../vendors/pdfmake/build/vfs_fonts.js"></script>
+<%--<!-- Custom Theme Scripts -->--%>
+<%--<script src="../build/js/custom.min.js"></script>--%>
+
 <!-- gauge.js -->
 <script src="../vendors/gauge.js/dist/gauge.min.js"></script>
 <!-- bootstrap-progressbar -->
@@ -1203,17 +1468,59 @@
 <script src="../vendors/bootstrap-daterangepicker/daterangepicker.js"></script>
 
 <!-- Custom Theme Scripts -->
-<script src="../build/js/custom.js"></script>
+<script src="../build/js/custom.js?ver=1"></script>
 <script type="text/javascript">
 
+    function a(){
+        var arr = [1,2,3,2,1];
+//        init_flot_chart(arr);
+        $.ajax({
+            type: 'GET',
+            url:  "<%=path%>/clientTest",
+            data: null ,
+            dataType: "json",
+            success:function(data) {
+//                alert("success");
+                var nowStr = data;
+//                alert(nowStr.throughput);
+//                var nowStr = JSON.parse(ajax.responseText);
+//                var table = document.getElementById("tableTbody");
+//                var rowNum=table.rows.length;
+//                if(rowNum>0) {
+//                    for (i = 0; i < rowNum; i++) {
+//                        table.deleteRow(i);
+//                    }
+//                }
+////              alert(nowStr.hashMap.length);
+//                for(var k in nowStr.hashMap){
+//                    var newRow = table.insertRow(); //创建新行
+//                    var newCell1 = newRow.insertCell(0); //创建新单元格
+//                    newCell1.innerHTML = "<td>"+k+"</td>" ; //单元格内的内容
+//                    newCell1.setAttribute("align","center"); //设置位置
+//                    var newCell1 = newRow.insertCell(1); //创建新单元格
+//                    newCell1.innerHTML =" <td>"+nowStr.hashMap[k]+"</td> "; //单元格内的内容
+////                    alert(nowStr.hashMap[k]);
+//                    newCell1.setAttribute("align","center"); //设置位置
+//                }
+//                var arr = [1,2,3,4,5];
+                init_flot_chart(nowStr.lastThroughput);
+            },
+            error : function() {
+                // view("异常！");
+                alert("failed！");
+            }
+        });
 
+    }
+    a();
+//    window.setInterval(a, 2000);
     //    $(function(){
     //           $('#showDataForm').submit();
 
 //    var myName = new Array();
-    var jsonarray = document.getElementById("json").value;
-    var b=JSON.parse(jsonarray);//method 1
-    var jsonObject = eval("("+jsonarray+")");//method 1
+//    var jsonarray = document.getElementById("json").value;
+//    var b=JSON.parse(jsonarray);//method 1
+//    var jsonObject = eval("("+jsonarray+")");//method 1
     <%--var szJsonStr = "<%=request.getSession().getAttribute("tupleList")%>";--%>
     <%--var szJsonStr2 = '<s:property escapeJavaScript="false" escape="false" value="<%=request.getSession().getAttribute("tupleList")%>" />';--%>
     <%--var addVehicleArray = eval("("+szJsonStr+")");--%>
