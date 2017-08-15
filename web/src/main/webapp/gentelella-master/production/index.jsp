@@ -27,7 +27,6 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
     <title>Gentelella Alela! | </title>
 
     <!-- Bootstrap -->
@@ -61,6 +60,74 @@
 
     <!-- jQuery -->
     <script src="../vendors/jquery/dist/jquery.min.js"></script>
+
+    <!-- Bootstrap -->
+    <script src="../vendors/bootstrap/dist/js/bootstrap.min.js"></script>
+    <!-- FastClick -->
+    <script src="../vendors/fastclick/lib/fastclick.js"></script>
+    <!-- NProgress -->
+    <script src="../vendors/nprogress/nprogress.js"></script>
+    <!-- iCheck -->
+    <script src="../vendors/iCheck/icheck.min.js"></script>
+
+    <!-- ECharts -->
+    <script src="../vendors/echarts/dist/echarts.min.js"></script>
+    <script src="../vendors/echarts/map/js/world.js"></script>
+    <!-- Chart.js -->
+    <script src="../vendors/Chart.js/dist/Chart.min.js"></script>
+    <!-- Datatables -->
+    <%--<script src="../vendors/datatables.net/js/jquery.dataTables.min.js"></script>--%>
+    <%--<script src="../vendors/datatables.net-bs/js/dataTables.bootstrap.min.js"></script>--%>
+    <%--<script src="../vendors/datatables.net-buttons/js/dataTables.buttons.min.js"></script>--%>
+    <%--<script src="../vendors/datatables.net-buttons-bs/js/buttons.bootstrap.min.js"></script>--%>
+    <%--<script src="../vendors/datatables.net-buttons/js/buttons.flash.min.js"></script>--%>
+    <%--<script src="../vendors/datatables.net-buttons/js/buttons.html5.min.js"></script>--%>
+    <%--<script src="../vendors/datatables.net-buttons/js/buttons.print.min.js"></script>--%>
+    <%--<script src="../vendors/datatables.net-fixedheader/js/dataTables.fixedHeader.min.js"></script>--%>
+    <%--<script src="../vendors/datatables.net-keytable/js/dataTables.keyTable.min.js"></script>--%>
+    <%--<script src="../vendors/datatables.net-responsive/js/dataTables.responsive.min.js"></script>--%>
+    <%--<script src="../vendors/datatables.net-responsive-bs/js/responsive.bootstrap.js"></script>--%>
+    <%--<script src="../vendors/datatables.net-scroller/js/dataTables.scroller.min.js"></script>--%>
+    <%--<script src="../vendors/jszip/dist/jszip.min.js"></script>--%>
+    <%--<script src="../vendors/pdfmake/build/pdfmake.min.js"></script>--%>
+    <%--<script src="../vendors/pdfmake/build/vfs_fonts.js"></script>--%>
+    <!-- Custom Theme Scripts -->
+    <%--<script src="../build/js/custom.min.js"></script>--%>
+
+    <!-- gauge.js -->
+    <script src="../vendors/gauge.js/dist/gauge.min.js"></script>
+    <!-- bootstrap-progressbar -->
+    <script src="../vendors/bootstrap-progressbar/bootstrap-progressbar.min.js"></script>
+    <!-- iCheck -->
+    <script src="../vendors/iCheck/icheck.min.js"></script>
+    <!-- Skycons -->
+    <script src="../vendors/skycons/skycons.js"></script>
+    <!-- Flot -->
+    <script src="../vendors/Flot/jquery.flot.js"></script>
+    <script src="../vendors/Flot/jquery.flot.pie.js"></script>
+    <script src="../vendors/Flot/jquery.flot.time.js"></script>
+    <script src="../vendors/Flot/jquery.flot.stack.js"></script>
+    <script src="../vendors/Flot/jquery.flot.resize.js"></script>
+    <!-- Flot plugins -->
+    <script src="../vendors/flot.orderbars/js/jquery.flot.orderBars.js"></script>
+    <script src="../vendors/flot-spline/js/jquery.flot.spline.min.js"></script>
+    <script src="../vendors/flot.curvedlines/curvedLines.js"></script>
+    <!-- DateJS -->
+    <script src="../vendors/DateJS/build/date.js"></script>
+    <!-- JQVMap -->
+    <script src="../vendors/jqvmap/dist/jquery.vmap.js"></script>
+    <script src="../vendors/jqvmap/dist/maps/jquery.vmap.world.js"></script>
+    <script src="../vendors/jqvmap/examples/js/jquery.vmap.sampledata.js"></script>
+    <!-- bootstrap-daterangepicker -->
+    <script src="../vendors/moment/min/moment.min.js"></script>
+    <script src="../vendors/bootstrap-daterangepicker/daterangepicker.js"></script>
+
+    <!-- jQuery Sparklines -->
+    <script src="../vendors/jquery-sparkline/dist/jquery.sparkline.min.js"></script>
+    <!-- easy-pie-chart -->
+    <script src="../vendors/jquery.easy-pie-chart/dist/jquery.easypiechart.min.js"></script>
+    <!-- bootstrap-progressbar -->
+    <script src="../vendors/bootstrap-progressbar/bootstrap-progressbar.min.js"></script>
 </head>
 
 <body class="nav-md">
@@ -455,7 +522,7 @@
                         </div>
 
                         <div class="col-md-12 col-sm-12 col-xs-12">
-                            <div id="chart_plot_03" class="demo-placeholder"></div>
+                            <div id="echart_line" class="demo-placeholder"></div>
                         </div>
                         <!--<div class="col-md-3 col-sm-3 col-xs-12 bg-white">-->
                         <!--<div class="x_title">-->
@@ -505,6 +572,37 @@
                         <div class="clearfix"></div>
                     </div>
                 </div>
+
+                <div class="col-md-4 col-xs-12 widget widget_tally_box">
+                    <div class="x_panel ui-ribbon-container fixed_height_320" style="height:350px;border: 0px;">
+                        <div class="ui-ribbon-wrapper">
+                            <!--<div class="ui-ribbon">-->
+                            <!--30% Off-->
+                            <!--</div>-->
+                        </div>
+                        <div class="x_title">
+                            <h2>The system state</h2>
+                            <div class="clearfix"></div>
+                        </div>
+                        <div class="x_content">
+
+                            <div style="text-align: center; margin-bottom: 17px">
+                              <span class="chart" data-percent="50" id="dataper" >
+                                  <span class="percent" ></span>
+                              </span>
+                            </div>
+
+                            <h3 class="name_title">CPU</h3>
+                            <p>Used ratio</p>
+
+                            <div class="divider"></div>
+                            <br/>
+                            <p>The status is refreshed after 5 seconds</p>
+
+                        </div>
+                    </div>
+                </div>
+
 
                 <!--</div>-->
                 <!--<br />-->
@@ -576,11 +674,11 @@
                 <%--&lt;%&ndash;<jsp:include page="tables_dynamic.html" flush="true"/><!--动态包含-->&ndash;%&gt;--%>
                 <%--<%@include file="tables_dynamic.html"%><!--静态包含-->--%>
             <%--</div>--%>
-            <div class="row">
+            <div class="row" id="btnAll">
                     <div class="col-md-12 col-sm-12 col-xs-12">
                         <div class="x_panel">
                             <div class="x_title">
-                                <h2>System Status <small>Users</small></h2>
+                                <h2>System Parameter<small>Users</small></h2>
                                 <ul class="nav navbar-right panel_toolbox">
                                     <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
                                     </li>
@@ -615,58 +713,7 @@
                                     </thead>
                                     <tbody id="tableTbody">
 
-                                    <script type="text/javascript">
 
-                                        function b(){
-//        init_flot_chart(arr);
-                                            $.ajax({
-                                                type: 'GET',
-                                                url:  "<%=path%>/clientTest",
-                                                data: null ,
-                                                dataType: "json",
-                                                async: false,
-                                                success:function(data) {
-//                alert("success");
-                                                    var nowStr = data;
-//                alert(nowStr.throughput);
-//                var nowStr = JSON.parse(ajax.responseText);
-                                                    var table = document.getElementById("tableTbody");
-                                                    var rowNum=table.rows.length;
-                                                    if(rowNum>0) {
-                                                        for (i = 0; i < rowNum; i++) {
-                                                            table.deleteRow(i);
-                                                        }
-                                                    }
-//              alert(nowStr.hashMap.length);
-                                                    for(var k in nowStr.hashMap){
-                                                        var newRow = table.insertRow(); //创建新行
-                                                        var newCell1 = newRow.insertCell(0); //创建新单元格
-                                                        newCell1.innerHTML = "<td>"+k+"</td>" ; //单元格内的内容
-                                                        newCell1.setAttribute("align","center"); //设置位置
-                                                        var newCell1 = newRow.insertCell(1); //创建新单元格
-                                                        newCell1.innerHTML =" <td>"+nowStr.hashMap[k]+"</td> "; //单元格内的内容
-//                    alert(nowStr.hashMap[k]);
-                                                        newCell1.setAttribute("align","center"); //设置位置
-                                                    }
-//                var arr = [1,2,3,4,5];
-                                                },
-                                                error : function() {
-                                                    // view("异常！");
-                                                    alert("failed！");
-                                                }
-                                            });
-
-                                        };
-                                        b();
-//                                        const myFunction = async function() {
-//                                            await b();
-//                                            const x = await ajax1()
-//                                            const y = await ajax2()
-//                                            //等待两个异步ajax请求同时执行完毕后打印出数据
-//                                            console.log(x, y)
-//                                        };
-//                                        myFunction();
-                                    </script>
                                     <%--<tr>--%>
                                         <%--<td>Tiger Nixon</td>--%>
                                         <%--<td>System Architect</td>--%>
@@ -797,6 +844,20 @@
                                     <%--</tr>--%>
                                     </tbody>
                                 </table>
+                                <a id="sjzl"></a>&nbsp;
+                                <div style="float: right">
+                                    <a id="btn0"></a>
+                                    <input id="pageSize" type="hidden" size="1" maxlength="2" value="getDefaultValue()" style="width:25px;" />
+                                    <%--<a> 条 </a> <a href="#" id="pageSizeSet">设置</a>&nbsp;--%>
+                                    <a  href="#btnAll" id="btn1">首页</a>
+                                    <a  href="#btnAll" id="btn2">上一页</a>
+                                    <a  href="#btnAll" id="btn3">下一页</a>
+                                    <a  href="#btnAll" id="btn4">尾页</a>&nbsp;
+                                    <a>转到&nbsp;</a>
+                                    <input id="changePage" type="text" size="1" maxlength="4"/>
+                                    <a>页&nbsp;</a>
+                                    <a  href="#btn1" id="btn5">跳转</a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1390,15 +1451,16 @@
         <!-- footer content -->
         <footer>
             <div class="pull-right">
-                Gentelella - Bootstrap Admin Template by <a href="https://colorlib.com">Colorlib</a>
+                <%--Gentelella - Bootstrap Admin Template by <a href="https://colorlib.com">Colorlib</a>--%>
+                Waterwheel by ADSC
             </div>
             <div class="clearfix"></div>
         </footer>
         <!-- /footer content -->
 
-        <form action="../../clientTest" <%--id="showDataForm" target="nm_iframe"--%> <%-- onsubmit="return saveReport();--%>>
-            <input type="submit" name="query" value="Fresh" style="border:0px;width: 60px;float: right;background-color:#2a9fd6; ">
-        </form>
+        <%--<form action="../../clientTest" &lt;%&ndash;id="showDataForm" target="nm_iframe"&ndash;%&gt; &lt;%&ndash; onsubmit="return saveReport();&ndash;%&gt;>--%>
+            <%--<input type="submit" name="query" value="Fresh" style="border:0px;width: 60px;float: right;background-color:#2a9fd6; ">--%>
+        <%--</form>--%>
 
 
         <%--<%SystemState jsonstr = (SystemState) request.getSession().getAttribute("tupleList");%>--%>
@@ -1409,66 +1471,7 @@
     </div>
 </div>
 
-<!-- Bootstrap -->
-<script src="../vendors/bootstrap/dist/js/bootstrap.min.js"></script>
-<!-- FastClick -->
-<script src="../vendors/fastclick/lib/fastclick.js"></script>
-<!-- NProgress -->
-<script src="../vendors/nprogress/nprogress.js"></script>
-<!-- iCheck -->
-<script src="../vendors/iCheck/icheck.min.js"></script>
-
-<!-- Chart.js -->
-<script src="../vendors/Chart.js/dist/Chart.min.js"></script>
-<!-- Datatables -->
-<script src="../vendors/datatables.net/js/jquery.dataTables.min.js"></script>
-<script src="../vendors/datatables.net-bs/js/dataTables.bootstrap.min.js"></script>
-<script src="../vendors/datatables.net-buttons/js/dataTables.buttons.min.js"></script>
-<script src="../vendors/datatables.net-buttons-bs/js/buttons.bootstrap.min.js"></script>
-<script src="../vendors/datatables.net-buttons/js/buttons.flash.min.js"></script>
-<script src="../vendors/datatables.net-buttons/js/buttons.html5.min.js"></script>
-<script src="../vendors/datatables.net-buttons/js/buttons.print.min.js"></script>
-<script src="../vendors/datatables.net-fixedheader/js/dataTables.fixedHeader.min.js"></script>
-<script src="../vendors/datatables.net-keytable/js/dataTables.keyTable.min.js"></script>
-<script src="../vendors/datatables.net-responsive/js/dataTables.responsive.min.js"></script>
-<script src="../vendors/datatables.net-responsive-bs/js/responsive.bootstrap.js"></script>
-<script src="../vendors/datatables.net-scroller/js/dataTables.scroller.min.js"></script>
-<script src="../vendors/jszip/dist/jszip.min.js"></script>
-<script src="../vendors/pdfmake/build/pdfmake.min.js"></script>
-<script src="../vendors/pdfmake/build/vfs_fonts.js"></script>
-<%--<!-- Custom Theme Scripts -->--%>
-<%--<script src="../build/js/custom.min.js"></script>--%>
-
-<!-- gauge.js -->
-<script src="../vendors/gauge.js/dist/gauge.min.js"></script>
-<!-- bootstrap-progressbar -->
-<script src="../vendors/bootstrap-progressbar/bootstrap-progressbar.min.js"></script>
-<!-- iCheck -->
-<script src="../vendors/iCheck/icheck.min.js"></script>
-<!-- Skycons -->
-<script src="../vendors/skycons/skycons.js"></script>
-<!-- Flot -->
-<script src="../vendors/Flot/jquery.flot.js"></script>
-<script src="../vendors/Flot/jquery.flot.pie.js"></script>
-<script src="../vendors/Flot/jquery.flot.time.js"></script>
-<script src="../vendors/Flot/jquery.flot.stack.js"></script>
-<script src="../vendors/Flot/jquery.flot.resize.js"></script>
-<!-- Flot plugins -->
-<script src="../vendors/flot.orderbars/js/jquery.flot.orderBars.js"></script>
-<script src="../vendors/flot-spline/js/jquery.flot.spline.min.js"></script>
-<script src="../vendors/flot.curvedlines/curvedLines.js"></script>
-<!-- DateJS -->
-<script src="../vendors/DateJS/build/date.js"></script>
-<!-- JQVMap -->
-<script src="../vendors/jqvmap/dist/jquery.vmap.js"></script>
-<script src="../vendors/jqvmap/dist/maps/jquery.vmap.world.js"></script>
-<script src="../vendors/jqvmap/examples/js/jquery.vmap.sampledata.js"></script>
-<!-- bootstrap-daterangepicker -->
-<script src="../vendors/moment/min/moment.min.js"></script>
-<script src="../vendors/bootstrap-daterangepicker/daterangepicker.js"></script>
-
 <!-- Custom Theme Scripts -->
-<script src="../build/js/custom.js?ver=1"></script>
 <script type="text/javascript">
 
     function a(){
@@ -1482,6 +1485,11 @@
             success:function(data) {
 //                alert("success");
                 var nowStr = data;
+                var dataPercent = 80;
+                var per = document.getElementById("dataper");
+                $("#dataper").attr("data-percent",nowStr.ratio);
+//                $.per.setAttribute("data-percent","123");
+//                per.dataset.percent= "11
 //                alert(nowStr.throughput);
 //                var nowStr = JSON.parse(ajax.responseText);
 //                var table = document.getElementById("tableTbody");
@@ -1503,7 +1511,9 @@
 //                    newCell1.setAttribute("align","center"); //设置位置
 //                }
 //                var arr = [1,2,3,4,5];
-                init_flot_chart(nowStr.lastThroughput);
+//                init_flot_chart(nowStr.lastThroughput);
+                init_EasyPieChart();
+                init_echarts(nowStr.lastThroughput);
             },
             error : function() {
                 // view("异常！");
@@ -1513,7 +1523,7 @@
 
     }
     a();
-//    window.setInterval(a, 2000);
+    window.setInterval(a, 2000);
     //    $(function(){
     //           $('#showDataForm').submit();
 
@@ -1569,6 +1579,207 @@
        <%--<%--%>
     <%--}--%>
     <%--%>--%>
+</script>
+<script src="../build/js/custom.js"></script>
+<script type="text/javascript">
+    var num = 0;//tableNum
+    function b(){
+//        init_flot_chart(arr);
+        $.ajax({
+            type: 'GET',
+            url:  "<%=path%>/clientTest",
+            data: null ,
+            dataType: "json",
+            async: false,
+            success:function(data) {
+//                alert("success");
+                var nowStr = data;
+//                alert(nowStr.throughput);
+//                var nowStr = JSON.parse(ajax.responseText);
+//                                                    document.getElementsByClassName("chart").getAttribute('data-percent').innerHTML = dataPercent;
+                var table = document.getElementById("tableTbody");
+                var rowNum=table.rows.length;
+                num = table.rows.length;
+//                if(rowNum == 0){
+//                    for(var k in nowStr.hashMap){
+//                        var newRow = table.insertRow(); //创建新行
+//                        var newCell1 = newRow.insertCell(0); //创建新单元格
+//                        newCell1.innerHTML = "<td>"+k+"</td>" ; //单元格内的内容
+//                        newCell1.setAttribute("align","center"); //设置位置
+//                        var newCell1 = newRow.insertCell(1); //创建新单元格
+//                        newCell1.innerHTML =" <td>"+nowStr.hashMap[k]+"</td> "; //单元格内的内容
+////                    alert(nowStr.hashMap[k]);
+//                        newCell1.setAttribute("align","center"); //设置位置
+//                    }
+//                }
+//                else{
+//                    var j = 0;
+//                    for(var k in nowStr.hashMap){
+////                        document.getElementById("tableTbody").rows[0].cells[0].innerText= "<td>"+k+"</td>" ;
+////                        document.getElementById("tableTbody").rows[0].cells[0].innerText= "<td>"+nowStr.hashMap[k]+"</td>" ;
+//                        if(document.getElementById("tableTbody").rows[j] == undefined){
+////                            alert(rowNum);
+//                            break;
+//                        }
+//                        document.getElementById("tableTbody").rows[j].cells[0].innerText= k;
+//                        document.getElementById("tableTbody").rows[j].cells[1].innerText= nowStr.hashMap[k];
+//                        document.write("<script src='../vendors/datatables.net/js/jquery.dataTables.min.js'><\/script>");
+//                        j++;
+//
+////                        if(j >= rowNum){
+////                            alert("length: "+j);
+////                            break;
+////                        }
+//                    }
+//
+//                }
+                for(var i=0;i<rowNum;i++)
+                {
+                    table.deleteRow(i);
+                    rowNum=rowNum-1;
+                    i=i-1;
+                }
+               for(var k in nowStr.treeMap){
+                    var newRow = table.insertRow(); //创建新行
+                    var newCell1 = newRow.insertCell(0); //创建新单元格
+                    newCell1.innerHTML = "<td>"+k+"</td>" ; //单元格内的内容
+                    newCell1.setAttribute("align","center"); //设置位置
+                    var newCell1 = newRow.insertCell(1); //创建新单元格
+                    newCell1.innerHTML =" <td>"+nowStr.treeMap[k]+"</td> "; //单元格内的内容
+//                    alert(nowStr.hashMap[k]);
+                    newCell1.setAttribute("align","center"); //设置位置
+                }
+
+                var pageSize = 10;    //每页显示的记录条数
+                var curPage=0;        //当前页
+                var lastPage;        //最后页
+                var direct=0;        //方向
+                var len;            //总行数
+                var page;            //总页数
+                var begin;
+                var end;
+
+
+                $(document).ready(function display(){
+                    len =$("#datatable tr").length -1;    // 求这个表的总行数，剔除第一行介绍
+                    page=len % pageSize==0 ? len/pageSize : Math.floor(len/pageSize)+1;//根据记录条数，计算页数
+                    // alert("page==="+page);
+                    curPage=1;    // 设置当前为第一页
+                    displayPage(1);//显示第一页
+
+                    document.getElementById("btn0").innerHTML="当前 " + curPage + "/" + page + " 页    每页 ";    // 显示当前多少页
+                    document.getElementById("sjzl").innerHTML="数据总量 " + len + "";        // 显示数据量
+                    document.getElementById("pageSize").value = pageSize;
+
+
+
+                    $("#btn1").click(function firstPage(){    // 首页
+                        curPage=1;
+                        direct = 0;
+                        displayPage();
+                    });
+                    $("#btn2").click(function frontPage(){    // 上一页
+                        direct=-1;
+                        displayPage();
+                    });
+                    $("#btn3").click(function nextPage(){    // 下一页
+                        direct=1;
+                        displayPage();
+                    });
+                    $("#btn4").click(function lastPage(){    // 尾页
+                        curPage=page;
+                        direct = 0;
+                        displayPage();
+                    });
+                    $("#btn5").click(function changePage(){    // 转页
+                        curPage=document.getElementById("changePage").value * 1;
+                        if (!/^[1-9]\d*$/.test(curPage)) {
+                            alert("请输入正整数");
+                            return ;
+                        }
+                        if (curPage > page) {
+                            alert("超出数据页面");
+                            return ;
+                        }
+                        direct = 0;
+                        displayPage();
+                    });
+
+
+                    $("#pageSizeSet").click(function setPageSize(){    // 设置每页显示多少条记录
+                        pageSize = document.getElementById("pageSize").value;    //每页显示的记录条数
+                        if (!/^[1-9]\d*$/.test(pageSize)) {
+                            alert("请输入正整数");
+                            return ;
+                        }
+                        len =$("#datatable tr").length - 1;
+                        page=len % pageSize==0 ? len/pageSize : Math.floor(len/pageSize)+1;//根据记录条数，计算页数
+                        curPage=1;        //当前页
+                        direct=0;        //方向
+//                        firstPage();
+                    });
+                });
+
+                function displayPage(){
+                    if(curPage <=1 && direct==-1){
+                        direct=0;
+//                        alert("已经是第一页了");
+                        return;
+                    } else if (curPage >= page && direct==1) {
+                        direct=0;
+//                        alert("已经是最后一页了");
+                        return ;
+                    }
+
+                    lastPage = curPage;
+
+                    // 修复当len=1时，curPage计算得0的bug
+                    if (len > pageSize) {
+                        curPage = ((curPage + direct + len) % len);
+                    } else {
+                        curPage = 1;
+                    }
+
+
+                    document.getElementById("btn0").innerHTML="当前 " + curPage + "/" + page + " 页";        // 显示当前多少页
+
+                    begin=(curPage-1)*pageSize + 1;// 起始记录号
+                    end = begin + 1*pageSize - 1;    // 末尾记录号
+
+
+                    if(end > len ) end=len;
+                    $("#datatable tr").hide();    // 首先，设置这行为隐藏
+                    $("#datatable tr").each(function(i){    // 然后，通过条件判断决定本行是否恢复显示
+                        if((i>=begin && i<=end) || i==0 )//显示begin<=x<=end的记录
+                            $(this).show();
+                    });
+
+                }
+
+//                init_DataTables();
+                <%--document.write("<script language=javascript src='/js/import.js'></script>");--%>
+//            document.write("<script src='../vendors/datatables.net/js/jquery.dataTables.min.js?ver=1'><\/script>");
+//            alert("hello");
+//                var arr = [1,2,3,4,5];
+            },
+            error : function() {
+                // view("异常！");
+                alert("failed！");
+            }
+        });
+
+    };
+    b();
+    window.setInterval(b, 6000);
+//    alert("success");
+    //                                        const myFunction = async function() {
+    //                                            await b();
+    //                                            const x = await ajax1()
+    //                                            const y = await ajax2()
+    //                                            //等待两个异步ajax请求同时执行完毕后打印出数据
+    //                                            console.log(x, y)
+    //                                        };
+    //                                        myFunction();
 </script>
 </div>
 </body>

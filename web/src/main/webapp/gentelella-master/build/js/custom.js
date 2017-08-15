@@ -395,7 +395,7 @@ if (typeof NProgress != 'undefined') {
 		// alert("类型是："+sys+" ");
 		// if(sys){
             while(i < sys.length){
-                chart_plot_03_data.push([i*10+1000,sys[i]]);
+                chart_plot_03_data.push([i+"s ago",sys[i]]);
                 // alert(systemState.lastThroughput[i]);
                 i++;
             }
@@ -559,7 +559,40 @@ if (typeof NProgress != 'undefined') {
 					bottom: "#7F8790",
 					left: "#7F8790"
 				}
-			}
+			},
+            yaxis: {
+                ticks: 8,
+                tickColor: "rgba(51, 51, 51, 0.06)",
+            },
+
+			xAxis: [{
+				type: 'category',
+				boundaryGap: false,
+				data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+			}],
+                // mode: "time",
+                // minTickSize: [1, "seconds"],
+                // timeformat: "%d",
+                // mode: 'time' ,
+                // data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+                //  min: 10,
+                //  max: 30,
+
+                        // data: ['1000', '2000', '3000','4000', '5000', '6000' ],
+				// mode: 'category',
+				// data: ['1', '2', '3','4', '5', '6' ],
+            // xaxis :
+            //     {
+            //         ticks: 8,
+            //         tickColor: "rgba(51, 51, 51, 0.06)",
+            //     }
+            // ,
+            // yAxis : [
+            //     {
+            //         type: 'category',
+            //         data: ['1000', '2000', '3000','4000', '5000', '6000' ],
+            //     }
+            // ]
 		};
         
 		
@@ -1946,7 +1979,6 @@ if (typeof NProgress != 'undefined') {
 				
 				if( typeof ($.fn.easyPieChart) === 'undefined'){ return; }
 				console.log('init_EasyPieChart');
-				
 				$('.chart').easyPieChart({
 				  easing: 'easeOutElastic',
 				  delay: 3000,
@@ -1960,42 +1992,42 @@ if (typeof NProgress != 'undefined') {
 					$(this.el).find('.percent').text(Math.round(percent));
 				  }
 				});
-				var chart = window.chart = $('.chart').data('easyPieChart');
-				$('.js_update').on('click', function() {
-				  chart.update(Math.random() * 200 - 100);
-				});
-
-				//hover and retain popover when on popover content
-				var originalLeave = $.fn.popover.Constructor.prototype.leave;
-				$.fn.popover.Constructor.prototype.leave = function(obj) {
-				  var self = obj instanceof this.constructor ?
-					obj : $(obj.currentTarget)[this.type](this.getDelegateOptions()).data('bs.' + this.type);
-				  var container, timeout;
-
-				  originalLeave.call(this, obj);
-
-				  if (obj.currentTarget) {
-					container = $(obj.currentTarget).siblings('.popover');
-					timeout = self.timeout;
-					container.one('mouseenter', function() {
-					  //We entered the actual popover – call off the dogs
-					  clearTimeout(timeout);
-					  //Let's monitor popover content instead
-					  container.one('mouseleave', function() {
-						$.fn.popover.Constructor.prototype.leave.call(self, self);
-					  });
-					});
-				  }
-				};
-
-				$('body').popover({
-				  selector: '[data-popover]',
-				  trigger: 'click hover',
-				  delay: {
-					show: 50,
-					hide: 400
-				  }
-				});
+				// var chart = window.chart = $('.chart').data('easyPieChart');
+				// $('.js_update').on('click', function() {
+				//   chart.update(Math.random() * 200 - 100);
+				// });
+                //
+				// //hover and retain popover when on popover content
+				// var originalLeave = $.fn.popover.Constructor.prototype.leave;
+				// $.fn.popover.Constructor.prototype.leave = function(obj) {
+				//   var self = obj instanceof this.constructor ?
+				// 	obj : $(obj.currentTarget)[this.type](this.getDelegateOptions()).data('bs.' + this.type);
+				//   var container, timeout;
+                //
+				//   originalLeave.call(this, obj);
+                //
+				//   if (obj.currentTarget) {
+				// 	container = $(obj.currentTarget).siblings('.popover');
+				// 	timeout = self.timeout;
+				// 	container.one('mouseenter', function() {
+				// 	  //We entered the actual popover – call off the dogs
+				// 	  clearTimeout(timeout);
+				// 	  //Let's monitor popover content instead
+				// 	  container.one('mouseleave', function() {
+				// 		$.fn.popover.Constructor.prototype.leave.call(self, self);
+				// 	  });
+				// 	});
+				//   }
+				// };
+                //
+				// $('body').popover({
+				//   selector: '[data-popover]',
+				//   trigger: 'click hover',
+				//   delay: {
+				// 	show: 50,
+				// 	hide: 400
+				//   }
+				// });
 				
 			};
 	   
@@ -2768,7 +2800,7 @@ if (typeof NProgress != 'undefined') {
 		/* ECHRTS */
 	
 		
-		function init_echarts() {
+		function init_echarts(sys) {
 		
 				if( typeof (echarts) === 'undefined'){ return; }
 				console.log('init_echarts');
@@ -3320,56 +3352,81 @@ if (typeof NProgress != 'undefined') {
 			if ($('#echart_line').length ){ 
 			  
 			  var echartLine = echarts.init(document.getElementById('echart_line'), theme);
-
+				var lineDatax = [];
+				var lineDatay = [];
+			  var i = 0;
+                while(i < sys.length){
+                	// alert(sys.length+"  "+sys[i]);
+                    lineDatax.push(sys[i]);
+                    if(i == 0){
+                        lineDatay.push("now");
+                    }
+                    else{
+                        lineDatay.push(i*5+"s ago");
+                    }
+                    // alert(systemState.lastThroughput[i]);in
+                    i++;
+                }
 			  echartLine.setOption({
-				title: {
-				  text: 'Line Graph',
-				  subtext: 'Subtitle'
-				},
+				// title: {
+				//   text: 'Line Graph',
+				//   subtext: 'Subtitle'
+				// },
+				  animation:false,
 				tooltip: {
 				  trigger: 'axis'
 				},
-				legend: {
-				  x: 220,
-				  y: 40,
-				  data: ['Intent', 'Pre-order', 'Deal']
-				},
-				toolbox: {
-				  show: true,
-				  feature: {
-					magicType: {
-					  show: true,
-					  title: {
-						line: 'Line',
-						bar: 'Bar',
-						stack: 'Stack',
-						tiled: 'Tiled'
-					  },
-					  type: ['line', 'bar', 'stack', 'tiled']
-					},
-					restore: {
-					  show: true,
-					  title: "Restore"
-					},
-					saveAsImage: {
-					  show: true,
-					  title: "Save Image"
-					}
-				  }
-				},
+				  grid:{
+				  	top:'5%',
+					  right:'5%',
+					  bottom:'10%',
+					left:'5%',
+				  },
+				// legend: {
+				//   x: 400,
+				//   y: 40,
+				//   data: ['Intent', 'Pre-order', 'Deal']
+				// },
+				// toolbox: {
+				//   show: true,
+				//   feature: {
+				// 	magicType: {
+				// 	  show: true,
+				// 	  title: {
+				// 		line: 'Line',
+				// 		bar: 'Bar',
+				// 		stack: 'Stack',
+				// 		tiled: 'Tiled'
+				// 	  },
+				// 	  type: ['line', 'bar', 'stack', 'tiled']
+				// 	},
+				// 	restore: {
+				// 	  show: true,
+				// 	  title: "Restore"
+				// 	},
+				// 	saveAsImage: {
+				// 	  show: false,
+				// 	  title: "Save Image"
+				// 	}
+				//   }
+				// },
 				calculable: true,
 				xAxis: [{
 				  type: 'category',
 				  boundaryGap: false,
-				  data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+				  data: lineDatay,
+					// data:[1,2,3,4,5],
+					// min:0,
+					// max:100
+				  // data: ['60s ago','50s ago','40s ago','30s ago','20s ago','10s ago','now','60s ago','50s ago','40s ago','30s ago','20s ago','10s ago','now']
 				}],
 				yAxis: [{
 				  type: 'value'
 				}],
-				series: [{
-				  name: 'Deal',
+				series: {
+				  name: 'Throughput',
 				  type: 'line',
-				  smooth: true,
+				  smooth: false,
 				  itemStyle: {
 					normal: {
 					  areaStyle: {
@@ -3377,32 +3434,8 @@ if (typeof NProgress != 'undefined') {
 					  }
 					}
 				  },
-				  data: [10, 12, 21, 54, 260, 830, 710]
-				}, {
-				  name: 'Pre-order',
-				  type: 'line',
-				  smooth: true,
-				  itemStyle: {
-					normal: {
-					  areaStyle: {
-						type: 'default'
-					  }
-					}
-				  },
-				  data: [30, 182, 434, 791, 390, 30, 10]
-				}, {
-				  name: 'Intent',
-				  type: 'line',
-				  smooth: true,
-				  itemStyle: {
-					normal: {
-					  areaStyle: {
-						type: 'default'
-					  }
-					}
-				  },
-				  data: [1320, 1132, 601, 234, 120, 90, 20]
-				}]
+				  data: lineDatax
+				},
 			  });
 
 			} 
@@ -5053,9 +5086,9 @@ if (typeof NProgress != 'undefined') {
 		init_daterangepicker_single_call();
 		init_daterangepicker_reservation();
 		init_SmartWizard();
-		init_EasyPieChart();
+		// init_EasyPieChart();
 		init_charts();
-		init_echarts();
+		// init_echarts();
 		init_morris_charts();
 		init_skycons();
 		init_select2();

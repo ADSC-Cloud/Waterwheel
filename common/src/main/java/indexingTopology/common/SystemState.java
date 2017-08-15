@@ -4,6 +4,7 @@ import java.util.Map;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.TreeMap;
 
 /**
  * Created by billlin on 2017/7/31.
@@ -11,8 +12,16 @@ import java.util.HashMap;
 public class SystemState implements Serializable{
 
     private double throughout;
+    private double cpuRatio;
     public double[] lastThroughput;
     private HashMap<String,String> hashMap;
+    private TreeMap<String,String> treeMap;
+    public void setCpuRatio(double cpuRatio) {
+        this.cpuRatio = cpuRatio;
+    }
+    public double getRatio() {
+        return cpuRatio;
+    }
     public double getThroughput() {
         return throughout;
     }
@@ -34,9 +43,23 @@ public class SystemState implements Serializable{
     public HashMap<String,String> getHashMap(){
         return hashMap;
     }
+    public void changeHashMap(HashMap<String,String> map){
+        this.hashMap = map;
+    }
+
+
+    public void setTreeMap(String k,String v){
+        if(treeMap == null){
+            treeMap = new TreeMap<>();
+        }
+        this.treeMap.put(k,v);
+    }
+    public TreeMap<String,String> getTreeMap(){
+        return treeMap;
+    }
     @Override
     public String toString() {
         return "[throughput=" + throughout + ", lastThroughput=" + lastThroughput + ", hashMap="
-                + hashMap + "]";
+                + hashMap + ", cpuRatio="+ cpuRatio + " ,treeMap="+treeMap + "]";
     }
 }

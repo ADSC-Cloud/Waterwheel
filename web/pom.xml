@@ -105,6 +105,12 @@
             <artifactId>tomcat-jasper</artifactId>
             <version>${tomcat.version}</version>
             <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>tomcat-servlet-api</artifactId>
+                    <groupId>org.apache.tomcat</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat</groupId>
@@ -123,6 +129,20 @@
             <artifactId>tomcat-catalina</artifactId>
             <version>7.0.47</version>
             <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>tomcat-servlet-api</artifactId>
+                    <groupId>org.apache.tomcat</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tomcat-servlet-api</artifactId>
+                    <groupId>org.apache.tomcat</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tomcat-servlet-api</artifactId>
+                    <groupId>org.apache.tomcat</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>jstl</groupId>
