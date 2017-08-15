@@ -42,20 +42,20 @@
             %>
 
         }
-
-        function checkForm() {
-            var x = Number(document.getElementById("xLow").value);
-            var y = Number(document.getElementById("xHigh").value);
-            var time = Number(document.getElementById("time").value);
-            alert(x + " " + y + " " + time);
-        }
-        if ((x && y && time && (x == 0 && y == 0 && time == 0) == false)) {
-            alert("just Full or null");
-            return false;
-        } else {
-            alert(x + " " + y + " " + time);
-            return true;
-        }
+//
+//        function checkForm() {
+//            var x = Number(document.getElementById("xLow").value);
+//            var y = Number(document.getElementById("xHigh").value);
+//            var time = Number(document.getElementById("time").value);
+//            alert(x + " " + y + " " + time);
+//        }
+//        if ((x && y && time && (x == 0 && y == 0 && time == 0) == false)) {
+//            alert("just Full or null");
+//            return false;
+//        } else {
+//            alert(x + " " + y + " " + time);
+//            return true;
+//        }
     </script>
     <style>
       .text{
