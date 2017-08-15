@@ -62,12 +62,12 @@ public class clientTest  extends HttpServlet {
         SystemState systemState = new SystemState();
         systemState.throughout = 100;
         systemState.lastThroughput = new double[]{1,2,3,4,5,6};
-        jsonTest jsontest = new jsonTest();
+/*        jsonTest jsontest = new jsonTest();
         jsontest.name = "Rolf";
-        jsontest.throughout = 15;
-        JSONObject json = JSONObject.fromObject(jsontest); //v即对象
-        System.out.println("json: "+json);
-        System.out.println("systemState: "+jsontest.throughout);
+        jsontest.throughout = 15;*/
+        JSONObject json = JSONObject.fromObject(systemState); //v即对象
+/*        System.out.println("json: "+json);
+        System.out.println("systemState: "+jsontest.throughout);*/
 //        jsonArray.add(json);
         //System.out.println(jsonArray.toString());
 

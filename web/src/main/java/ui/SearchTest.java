@@ -39,7 +39,21 @@ public class SearchTest {
 
     private int NumberOfQueries = Integer.MAX_VALUE;
 
+    private int get_xLow = 0,
+                get_xHigh = 0;
+
+    private int xLow,xHigh;
+
     DataBean dataBean = new DataBean();
+
+    public SearchTest(int xLow,int xHigh,int time) {
+        this.get_xLow = xLow;
+        this.get_xHigh = xHigh;
+        this.RecentSecondsOfInterest = time;
+    }
+
+    public SearchTest() {
+    }
 
     public DataBean executeQuery() throws IOException {
 
@@ -57,11 +71,21 @@ public class SearchTest {
         int executed = 0;
         long totalQueryTime = 0;
 
-
             int x = (int) (x1 + (x2 - x1) * (1 - Selectivity) * random.nextDouble());
 
-            final int xLow = x;
-            final int xHigh = (int) (x + Selectivity * (x2 - x1));
+            xLow = x;
+            xHigh = (int) (x + Selectivity * (x2 - x1));
+            //RecentSecondsOfInterest = 5;
+
+            if(get_xLow != 0)
+                xLow = get_xLow;
+            if(get_xHigh != 0)
+                xHigh = get_xHigh;
+            if(RecentSecondsOfInterest == 0)
+                RecentSecondsOfInterest = 5;
+
+
+
 
 //                DataTuplePredicate predicate = t ->
 //                                 (double) schema.getValue("lon", t) >= xLow &&
@@ -105,9 +129,9 @@ public class SearchTest {
                 List<DataTuple> tuples = response.getTuples();
                 dataBean.setTuples(tuples);
                 dataBean.setFieldNames(outputSchema.getFieldNames());
-                for (int i = 0; i < tuples.size(); i++) {
+                /*for (int i = 0; i < tuples.size(); i++) {
                     System.out.println(tuples.get(i).toValues());
-                }
+                }*/
                 System.out.println(String.format("Query time [%d]: %d ms", executed, end - start));
 
                 if (++executed >= NumberOfQueries) {
