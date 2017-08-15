@@ -136,18 +136,32 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 //        }
 
         systemState = new SystemState();
+<<<<<<< HEAD
+=======
+        systemStateQueryServer = new Server(20000, SystemStateQueryHandle.class, new Class[]{SystemState.class}, systemState);
+
+>>>>>>> zlin/master
         staticsRequestSendingThread = new Thread(new StatisticsRequestSendingRunnable());
         staticsRequestSendingThread.start();
 
-
 //        createMetadataSendingThread();
+<<<<<<< HEAD
 //        System.out.println("aaaaaaaaaaaa:"+config.dataChunkDir);
         String a = "aa";
 //        systemState.setHashMap("11",a);
 //        systemState.setHashMap("22","bb");
         systemState.setTreeMap("dataChunkDir",config.dataChunkDir);
         systemState.setTreeMap("metadataDir",config.metadataDir);
+=======
+
+        systemState = new SystemState();
+        System.out.println("dataChunkDir:"+config.dataChunkDir);
+        systemState.hashMap = new HashMap<>();
+        systemState.hashMap.put("dataChunkDir",config.dataChunkDir);
+        systemState.hashMap.put("metadataDir",config.metadataDir);
+>>>>>>> zlin/master
         systemStateQueryServer = new Server(20000, SystemStateQueryHandle.class, new Class[]{SystemState.class}, systemState);
+
         systemStateQueryServer.startDaemon();
 
     }

@@ -1,6 +1,7 @@
 package indexingTopology.api.server;
 
 import indexingTopology.api.client.*;
+import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 import indexingTopology.common.data.PartialQueryResult;
 import indexingTopology.util.FrequencyRestrictor;
@@ -62,6 +63,10 @@ public class FakeServerHandle extends ServerHandle implements QueryHandle, Appen
     }
 
     public void handle(final QueryRequest clientQueryRequest) throws IOException {
+        DataSchema schema = new DataSchema();
+        schema.addVarcharField("a1", 100);
+        schema.addIntField("a2");
+        schema.addDoubleField("a3");
         DataTuple dataTuple = new DataTuple();
         dataTuple.add("ID 1");
         dataTuple.add(100);
@@ -81,7 +86,7 @@ public class FakeServerHandle extends ServerHandle implements QueryHandle, Appen
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        objectOutputStream.writeObject(new QueryResponse(particalQueryResult, 1L));
+        objectOutputStream.writeObject(new QueryResponse(particalQueryResult, schema, 1L));
 
     }
 

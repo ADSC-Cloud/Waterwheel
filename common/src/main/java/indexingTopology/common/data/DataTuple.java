@@ -57,5 +57,6 @@ public class DataTuple extends ArrayList<Object> implements Serializable {
     static public void main(String[] args) {
         DataTuple tuple = new DataTuple(10, "Hello!");
         System.out.println(tuple);
+        System.out.println(tuple.get(1));
     }
 }

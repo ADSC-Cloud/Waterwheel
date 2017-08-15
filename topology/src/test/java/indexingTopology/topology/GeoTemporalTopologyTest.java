@@ -41,8 +41,6 @@ public class GeoTemporalTopologyTest extends TestCase {
 
     LocalCluster cluster;
 
-
-
     boolean setupDone = false;
 
     boolean tearDownDone = false;

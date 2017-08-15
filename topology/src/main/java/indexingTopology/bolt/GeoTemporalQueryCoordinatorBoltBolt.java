@@ -60,7 +60,9 @@ public class GeoTemporalQueryCoordinatorBoltBolt<T extends Number & Comparable<T
         queryIdToPartialQueryResults = new HashMap<>();
 
 
-        server = new Server(port, QueryServerHandle.class, new Class[]{LinkedBlockingQueue.class, AtomicLong.class, Map.class, City.class}, pendingQueue, queryId, queryIdToPartialQueryResults, city);
+        server = new Server(port, QueryServerHandle.class, new Class[]{LinkedBlockingQueue.class, AtomicLong.class,
+                Map.class, City.class, DataSchema.class},
+                pendingQueue, queryId, queryIdToPartialQueryResults, city, schema);
         server.startDaemon();
 //        queryIdToPartialQueryResultSemphore = new HashMap<>();
     }
@@ -92,17 +94,28 @@ public class GeoTemporalQueryCoordinatorBoltBolt<T extends Number & Comparable<T
         AtomicLong superQueryIdGenerator;
         Map<Long, LinkedBlockingQueue<PartialQueryResult>> queryresults;
         City city;
-        public QueryServerHandle(LinkedBlockingQueue<List<Query<T>>> pendingQueryQueue, AtomicLong queryIdGenerator, Map<Long, LinkedBlockingQueue<PartialQueryResult>> queryresults, City city) {
+        DataSchema schema;
+        public QueryServerHandle(LinkedBlockingQueue<List<Query<T>>> pendingQueryQueue, AtomicLong queryIdGenerator,
+                                 Map<Long, LinkedBlockingQueue<PartialQueryResult>> queryresults, City city,
+                                 DataSchema schema) {
             this.pendingQueryQueue = pendingQueryQueue;
             this.queryresults = queryresults;
             this.queryIdGenerator = queryIdGenerator;
             this.city = city;
+            this.schema = schema;
         }
 
         @Override
         public void handle(QueryRequest request) throws IOException {
             try {
                 final long queryid = queryIdGenerator.getAndIncrement();
+
+                DataSchema outputSchema;
+                if (request.aggregator != null) {
+                    outputSchema = request.aggregator.getOutputDataSchema();
+                } else {
+                    outputSchema = schema;
+                }
 
                 LinkedBlockingQueue<PartialQueryResult> results =
                         queryresults.computeIfAbsent(queryid, k -> new LinkedBlockingQueue<>());
@@ -121,7 +134,7 @@ public class GeoTemporalQueryCoordinatorBoltBolt<T extends Number & Comparable<T
                     PartialQueryResult partialQueryResult = results.take();
 //                    System.out.println("Received PartialQueryResult!");
                     eof = partialQueryResult.getEOFFlag();
-                    objectOutputStream.writeUnshared(new QueryResponse(partialQueryResult, queryid));
+                    objectOutputStream.writeUnshared(new QueryResponse(partialQueryResult, outputSchema, queryid));
                     objectOutputStream.reset();
                 }
 
@@ -135,6 +148,13 @@ public class GeoTemporalQueryCoordinatorBoltBolt<T extends Number & Comparable<T
         public void handle(GeoTemporalQueryRequest clientQueryRequest) throws IOException {
             try {
                 final long queryid = queryIdGenerator.getAndIncrement();
+
+                DataSchema outputSchema;
+                if (clientQueryRequest.aggregator != null) {
+                    outputSchema = clientQueryRequest.aggregator.getOutputDataSchema();
+                } else {
+                    outputSchema = schema;
+                }
 
                 LinkedBlockingQueue<PartialQueryResult> results =
                         queryresults.computeIfAbsent(queryid, k -> new LinkedBlockingQueue<>());
@@ -168,7 +188,7 @@ public class GeoTemporalQueryCoordinatorBoltBolt<T extends Number & Comparable<T
                     PartialQueryResult partialQueryResult = results.take();
 //                    System.out.println("Received PartialQueryResult!");
                     eof = partialQueryResult.getEOFFlag();
-                    objectOutputStream.writeUnshared(new QueryResponse(partialQueryResult, queryid));
+                    objectOutputStream.writeUnshared(new QueryResponse(partialQueryResult, outputSchema, queryid));
                     objectOutputStream.reset();
                 }
 

@@ -98,8 +98,8 @@ public class Server<T extends ServerHandle> {
                     servcerHandleArgsCount = serverHandleArgs.length;
                 }
 
-                if (servcerHandleArgsCount> 4) {
-                    throw new RuntimeException("ServerHandle parameters cannot exceed 4.");
+                if (servcerHandleArgsCount> 6) {
+                    throw new RuntimeException("ServerHandle parameters cannot exceed 6.");
                 }
                 switch (servcerHandleArgsCount) {
                     case 0: handle = (ServerHandle) constructor.invoke(); break;
@@ -107,7 +107,9 @@ public class Server<T extends ServerHandle> {
                     case 2: handle = (ServerHandle) constructor.invoke(serverHandleArgs[0], serverHandleArgs[1]);break;
                     case 3: handle = (ServerHandle) constructor.invoke(serverHandleArgs[0], serverHandleArgs[1], serverHandleArgs[2]);break;
                     case 4: handle = (ServerHandle) constructor.invoke(serverHandleArgs[0], serverHandleArgs[1], serverHandleArgs[2], serverHandleArgs[3]);break;
-                    default:                    throw new RuntimeException("ServerHandle parameters cannot exceed 4.");
+                    case 5: handle = (ServerHandle) constructor.invoke(serverHandleArgs[0], serverHandleArgs[1], serverHandleArgs[2], serverHandleArgs[3], serverHandleArgs[4]);break;
+                    case 6: handle = (ServerHandle) constructor.invoke(serverHandleArgs[0], serverHandleArgs[1], serverHandleArgs[2], serverHandleArgs[3], serverHandleArgs[4], serverHandleArgs[5]);break;
+                    default:                    throw new RuntimeException("ServerHandle parameters cannot exceed 6.");
                 }
                 handle.setClientSocket(client);
                 futureList.add(executorService.submit(handle));

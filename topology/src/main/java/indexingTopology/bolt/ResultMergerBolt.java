@@ -242,6 +242,11 @@ public class ResultMergerBolt extends BaseRichBolt {
 
         // compact results into groups with bounded size.
         compactedResults = PartialQueryResult.Compact(allResults, unitSize);
+
+        if (compactedResults.isEmpty()) {
+            compactedResults.add(new PartialQueryResult(unitSize));
+        }
+
         queryIdToPartialQueryResults.put(queryId, compactedResults);
 
     }
