@@ -17,7 +17,7 @@ import model.DataBean;
 import model.PageBean;
 import util.StringUtil;
 
-@WebServlet(name="mainServlet",urlPatterns = {"/main"})
+@WebServlet("/main")
 public class MainServlet extends HttpServlet{
 
     /**
@@ -26,6 +26,14 @@ public class MainServlet extends HttpServlet{
     private static final long serialVersionUID = 1L;
 
     private DataBean dataBean;
+
+    private int xLow = 0;
+
+    private int xHigh = 0;
+
+    private int time = 0;
+
+    SearchTest searchTest;
 
     int rows;
     @Override
@@ -43,42 +51,48 @@ public class MainServlet extends HttpServlet{
          */
 
 
-        String page=request.getParameter("page");
+//        String page=request.getParameter("page");
         DataBean oldDataBean = (DataBean) request.getSession().getAttribute("oldDataBean");
-        if(StringUtil.isEmpty(page)) {
-            page = "1";
-        }
-        if(null == oldDataBean){
-            SearchTest searchTest = new SearchTest();
-            dataBean = searchTest.executeQuery();
-        }else{
-            dataBean = oldDataBean;
-        }
-        System.out.println(oldDataBean);
-        System.out.println(dataBean);
-        rows = dataBean.getTuples().size();
-        PageBean pageBean=new PageBean(Integer.parseInt(page),4);
+        xLow = Integer.parseInt(request.getParameter("xLow"));
+        xHigh = Integer.parseInt(request.getParameter("xHigh"));
+        time = Integer.parseInt(request.getParameter("time"));
+        System.out.println(xLow+ " " + xHigh + " " + time);
+//        if(StringUtil.isEmpty(page)) {
+//            page = "1";
+//        }
+//        if(null == oldDataBean){
+        searchTest = new SearchTest(xLow, xHigh, time);
+        dataBean = searchTest.executeQuery();
+//        }else{
+//            dataBean = oldDataBean;
+//        }
+//        System.out.println(oldDataBean);
+//        System.out.println(dataBean);
+//        rows = dataBean.getTuples().size();
+//        PageBean pageBean=new PageBean(Integer.parseInt(page),4);
             List<DataTuple> diaryList = dataBean.getTuples();
             List<String> fieldNames = dataBean.getFieldNames();
+            String size = String.valueOf(fieldNames.size());
 /*            for(int i=0;i<rows;i++){
                 diaryList.add(""+i);
             }*/
-            int total=rows;
-            String pageCode=this.genPagation(total, Integer.parseInt(page), 4);
+//            int total=rows;
+//            String pageCode=this.genPagation(total, Integer.parseInt(page), 4);
             request.getSession().setAttribute("dataBean", dataBean);
-            request.setAttribute("pageCode", pageCode);
+//            request.setAttribute("pageCode", pageCode);
+            request.setAttribute("listSize",size);
             request.setAttribute("diaryList", diaryList);
             request.setAttribute("fieldNames", fieldNames);
-            request.setAttribute("mainPage", "diaryList.jsp");
-            int nowPage = Integer.parseInt(request.getParameter("page"));
-            int beginPage = (nowPage-1)*4;
-            int endPage = nowPage*4;
-            request.setAttribute("beginPage",beginPage);
-            request.setAttribute("endPage",endPage);
-            request.getRequestDispatcher("mainTemp.jsp").forward(request, response);
+//            int nowPage = Integer.parseInt(request.getParameter("page"));
+//            int beginPage = (nowPage-1)*4;
+//            int endPage = nowPage*4;
+//            request.setAttribute("beginPage",beginPage);
+//            request.setAttribute("endPage",endPage);
+            request.getRequestDispatcher("tables_dynamic.jsp").forward(request,response);
 
     }
 
+/*
     private String genPagation(int totalNum,int currentPage,int pageSize){
         int totalPage=totalNum%pageSize==0?totalNum/pageSize:totalNum/pageSize+1;
         StringBuffer pageCode=new StringBuffer();
@@ -106,6 +120,7 @@ public class MainServlet extends HttpServlet{
         pageCode.append("<li><a href='main?page="+totalPage+"'>尾页</a></li>");
         return pageCode.toString();
     }
+*/
 
 
 

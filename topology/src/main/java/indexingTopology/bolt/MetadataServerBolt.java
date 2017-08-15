@@ -135,6 +135,7 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 //            e.printStackTrace();
 //        }
 
+//<<<<<<< HEAD
 //        systemState = new SystemState();
 //<<<<<<< HEAD
 //=======
@@ -164,6 +165,8 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 //
 //        systemStateQueryServer.startDaemon();
 
+//=======
+//>>>>>>> zlin/master
         systemState = new SystemState();
         staticsRequestSendingThread = new Thread(new StatisticsRequestSendingRunnable());
         staticsRequestSendingThread.start();
@@ -459,7 +462,7 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 //
 //        int partitionId = 0;
 
-//        long tmpWorkload = 0;
+    //        long tmpWorkload = 0;
 //
 //        List<Long> workLoads = histogram.histogramToList();
 //
@@ -491,7 +494,7 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
         @Override
         public void run() {
-            final int sleepTimeInSecond = 10;
+            final int sleepTimeInSecond = 5;
 //            while (true) {
             systemState.setLastThroughput(new double[6]);
             int i = 0;//throughput计数器.
@@ -540,8 +543,8 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
                 histogram.clear();
 
 //                if (repartitionEnabled) {
-                    collector.emit(Streams.StaticsRequestStream,
-                            new Values("Statics Request"));
+                collector.emit(Streams.StaticsRequestStream,
+                        new Values("Statics Request"));
 //                }
             }
         }
