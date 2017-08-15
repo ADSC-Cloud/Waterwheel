@@ -163,7 +163,6 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
         systemStateQueryServer = new Server(20000, SystemStateQueryHandle.class, new Class[]{SystemState.class}, systemState);
 
         systemStateQueryServer.startDaemon();
-
     }
 
     private void createMetadataSendingThread() {
