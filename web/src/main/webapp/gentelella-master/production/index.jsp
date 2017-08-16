@@ -1340,7 +1340,7 @@
 
     }
     a();
-//    window.setInterval(a, 2000);
+    window.setInterval(a, 2000);
     //    $(function(){
     //           $('#showDataForm').submit();
 
@@ -1587,7 +1587,7 @@
 
     };
     b();
-//    window.setInterval(b, 6000);
+    window.setInterval(b, 6000);
 //    alert("success");
     //                                        const myFunction = async function() {
     //                                            await b();
