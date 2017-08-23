@@ -68,21 +68,7 @@ public class clientTest  extends HttpServlet {
 //        SystemState systemState = new SystemState();
 //        systemState.setThroughout(20.0);
 //        systemState.setLastThroughput(throughputList);
-        systemState.setTreeMap("1","/Users/billlin/机器学习asd/分布式/tmp/append-only-store/dataDir");
 
-        systemState.setTreeMap("10","10");
-        systemState.setTreeMap("11","11");
-        systemState.setTreeMap("12","12");
-        systemState.setTreeMap("14","14");
-        systemState.setTreeMap("17","17");
-        systemState.setTreeMap("23","23");
-        systemState.setTreeMap("b12","23");
-        systemState.setTreeMap("b21","23");
-        systemState.setTreeMap("a12","23");
-        systemState.setTreeMap("a21","23");
-        systemState.setTreeMap("18","18");
-        systemState.setTreeMap("13","13");
-        systemState.setTreeMap("21","21");
 //        List<Map.Entry<String,String>> list222 = new ArrayList<Map.Entry<String,String>>(systemState.getHashMap().entrySet());
 //        //然后通过比较器来实现排序
 //        Collections.sort(list222,new Comparator<Map.Entry<String,String>>() {
@@ -120,30 +106,6 @@ public class clientTest  extends HttpServlet {
 //        String source[] = { "dad", "bood", "bada", "Admin", "Aa ", "A ", "Good", "aete", "cc", "Ko", "Beta", "Could" };
 //        List<String> list = Arrays.asList(source);
 
-//<<<<<<< HEAD
-
-
-//        System.out.println(list);
-//        systemState.setHashMap("3","/Users/billlin/机器学习/分布sa式/tmp/append-only-store/dataDir");
-//        systemState.setHashMap("4","/Users/billlin/机器学习/分布式qwd/tmp/append-only-store/metadataDir");
-//        systemState.setHashMap("5","/Users/billlin/机器学习/分布d式/tmp/append-only-store/dataDir");
-//        systemState.setHashMap("6","/Users/billlin/机器学习/分布式/qwdtmp/append-only-store/metadataDir");
-//        systemState.setHashMap("7","/Users/billlin/机器学习/分布式/wtmp/append-only-store/dataDir");
-//        systemState.setHashMap("8","/Users/billlin/机器学习/分布式/tmpqrweew/append-only-store/metadataDir");
-//        systemState.setHashMap("9","/Users/billlin/机器学习/分布式/tmp/appeqeqwwnd-only-store/dataDir");
-//        systemState.setHashMap("10","/Users/billlin/机器学习/分布式/tmp/appendd-oadswnly-store/metadataDir");
-//        systemState.setHashMap("11","/Users/billlin/机器学习/分布式/tmp/append-edaonlyd-store/dataDir");
-//        systemState.setHashMap("12","/Users/billlin/机器学习/分布式/tmp/append-only-sqwetore/metadataDir");
-//        systemState.setHashMap("13","/Users/billlin/机器学习/分布式/tmp/append-only-stordeade/dataDir");
-//        systemState.setHashMap("14","/Users/billlin/机器学习/分布式/tmp/append-only-store/meeqdtadataDir");
-//        systemState.setHashMap("15","/Users/billlin/机器学习/分布式/tmp/append-only-storede/asdqdataDir");
-//        systemState.setHashMap("16","/Users/billlin/机器学习/分布式/tmp/append-only-store/metadadssdfataDir");
-//        systemState.setHashMap("17","/Users/billlin/机器学习/分布式/tmp/append-only-store/datsdccaDir");
-//        systemState.setHashMap("18","/Users/billlin/机器学习/分布式/tmp/append-only-store/dadctaDir");
-//        systemState.setHashMap("19","/Users/billlin/机器学习/分布式/tmp/append-only-store/metadasddsctaDir");
-//        systemState.setHashMap("20","/Users/billlin/机器学习/分布式/tmp/append-only-store/dataDdqwir");
-//        systemState.setHashMap("21","/Users/billlin/机器学习/分布式/tmp/append-only-stcsdffore/metadataDir");
-//        systemState.setCpuRatio(20);
         JSONObject json = JSONObject.fromObject(systemState); //v即对象
         String jsonStr = json.toString();
         System.out.println(json.toString());

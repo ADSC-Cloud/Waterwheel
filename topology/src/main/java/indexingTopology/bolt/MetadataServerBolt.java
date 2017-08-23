@@ -513,7 +513,6 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
                 }
                 systemState.setThroughout(sum / (double)sleepTimeInSecond);
                 systemState.setCpuRatio(60);
-                System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!throughput:  "+systemState.getThroughput()+"----------------------");
                 int throughputSite = systemState.lastThroughput.length-1;
                 while(throughputSite > 0){
                     systemState.lastThroughput[throughputSite] = systemState.lastThroughput[throughputSite-1];
@@ -535,7 +534,6 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 //                    }
 ////                    systemState.lastThroughput[i++] = i+1;
 //                }
-                System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!lastThroughput:  "+systemState.lastThroughput[0]+" "+systemState.lastThroughput[1]+" "+systemState.lastThroughput[2]+" "+systemState.lastThroughput[3]+" "+systemState.lastThroughput[4]+" "+systemState.lastThroughput[5]+"----------------------");
 
 //                System.out.println("statics request has been sent!!!");
                 System.out.println(String.format("Overall Throughput: %f tuple / second", sum / (double)sleepTimeInSecond));

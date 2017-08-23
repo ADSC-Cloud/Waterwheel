@@ -31,6 +31,10 @@ public class MainServlet extends HttpServlet{
 
     private int xHigh = 0;
 
+    private int yLow = 0;
+
+    private int yHigh = 0;
+
     private int time = 0;
 
     SearchTest searchTest;
@@ -55,13 +59,15 @@ public class MainServlet extends HttpServlet{
         DataBean oldDataBean = (DataBean) request.getSession().getAttribute("oldDataBean");
         xLow = Integer.parseInt(request.getParameter("xLow"));
         xHigh = Integer.parseInt(request.getParameter("xHigh"));
+        yLow = Integer.parseInt(request.getParameter("yLow"));
+        yHigh = Integer.parseInt(request.getParameter("yHigh"));
         time = Integer.parseInt(request.getParameter("time"));
-        System.out.println(xLow+ " " + xHigh + " " + time);
+        System.out.println(xLow+ " " + yLow + " " + xHigh + " " + yHigh + " " + time);
 //        if(StringUtil.isEmpty(page)) {
 //            page = "1";
 //        }
 //        if(null == oldDataBean){
-        searchTest = new SearchTest(xLow, xHigh, time);
+        searchTest = new SearchTest(xLow, xHigh, yLow, yHigh, time);
         dataBean = searchTest.executeQuery();
 //        }else{
 //            dataBean = oldDataBean;
@@ -70,25 +76,28 @@ public class MainServlet extends HttpServlet{
 //        System.out.println(dataBean);
 //        rows = dataBean.getTuples().size();
 //        PageBean pageBean=new PageBean(Integer.parseInt(page),4);
-            List<DataTuple> diaryList = dataBean.getTuples();
-            List<String> fieldNames = dataBean.getFieldNames();
-            String size = String.valueOf(fieldNames.size());
+        List<DataTuple> diaryList = dataBean.getTuples();
+        List<String> fieldNames = dataBean.getFieldNames();
+        long queryTime = dataBean.getTime();
+        String time = String.valueOf(queryTime);
+        String size = String.valueOf(fieldNames.size());
 /*            for(int i=0;i<rows;i++){
                 diaryList.add(""+i);
             }*/
 //            int total=rows;
 //            String pageCode=this.genPagation(total, Integer.parseInt(page), 4);
-            request.getSession().setAttribute("dataBean", dataBean);
+        request.getSession().setAttribute("dataBean", dataBean);
 //            request.setAttribute("pageCode", pageCode);
-            request.setAttribute("listSize",size);
-            request.setAttribute("diaryList", diaryList);
-            request.setAttribute("fieldNames", fieldNames);
+        request.setAttribute("listSize",size);
+        request.setAttribute("diaryList", diaryList);
+        request.setAttribute("fieldNames", fieldNames);
+        request.setAttribute("queryTime",time);
 //            int nowPage = Integer.parseInt(request.getParameter("page"));
 //            int beginPage = (nowPage-1)*4;
 //            int endPage = nowPage*4;
 //            request.setAttribute("beginPage",beginPage);
 //            request.setAttribute("endPage",endPage);
-            request.getRequestDispatcher("tables_dynamic.jsp").forward(request,response);
+        request.getRequestDispatcher("tables_dynamic.jsp").forward(request,response);
 
     }
 
