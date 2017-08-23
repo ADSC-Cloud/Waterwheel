@@ -17,6 +17,7 @@ import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 import indexingTopology.common.logics.DataTupleMapper;
 import indexingTopology.topology.TopologyGenerator;
+import indexingTopology.util.AvailableSocketPool;
 import junit.framework.TestCase;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
@@ -34,8 +35,7 @@ import java.util.function.Function;
 public class TopologyOverallTest extends TestCase {
 
     TopologyConfig config = new TopologyConfig();
-    final int ingestionPort = 10000;
-    final int queryPort = 10001;
+    AvailableSocketPool socketPool = new AvailableSocketPool();
 
     public void setUp() {
         try {
@@ -69,6 +69,8 @@ public class TopologyOverallTest extends TestCase {
         schema.addLongField("timestamp");
         schema.setPrimaryIndexField("f1");
 
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
 
         Double lowerBound = 0.0;
         Double upperBound = 5000.0;
@@ -128,6 +130,8 @@ public class TopologyOverallTest extends TestCase {
             e.printStackTrace();
         }
         assertTrue(fullyTested);
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
     }
 
     @Test
@@ -143,6 +147,8 @@ public class TopologyOverallTest extends TestCase {
         schema.addLongField("timestamp");
         schema.setPrimaryIndexField("f1");
 
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
 
         Integer lowerBound = 0;
         Integer upperBound = 5000;
@@ -200,6 +206,8 @@ public class TopologyOverallTest extends TestCase {
             e.printStackTrace();
         }
         assertTrue(fullyTested);
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
     }
 
 
@@ -217,6 +225,8 @@ public class TopologyOverallTest extends TestCase {
         schema.addLongField("timestamp");
         schema.setPrimaryIndexField("f1");
 
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
 
         Double lowerBound = 0.0;
         Double upperBound = 5000.0;
@@ -273,6 +283,8 @@ public class TopologyOverallTest extends TestCase {
             e.printStackTrace();
         }
         assertTrue(fullyTested);
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
     }
 
     @Test
@@ -289,6 +301,8 @@ public class TopologyOverallTest extends TestCase {
         schema.addLongField("timestamp");
         schema.setPrimaryIndexField("f1");
 
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
 
         Double lowerBound = 0.0;
         Double upperBound = 5000.0;
@@ -347,6 +361,8 @@ public class TopologyOverallTest extends TestCase {
             e.printStackTrace();
         }
         assertTrue(fullyTested);
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
     }
 
     @Test
@@ -363,6 +379,8 @@ public class TopologyOverallTest extends TestCase {
         schema.addLongField("timestamp");
         schema.setPrimaryIndexField("f1");
 
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
 
         Integer lowerBound = 0;
         Integer upperBound = 5000;
@@ -434,8 +452,9 @@ public class TopologyOverallTest extends TestCase {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         assertTrue(fullyTested);
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
     }
 
     @Test
@@ -451,6 +470,8 @@ public class TopologyOverallTest extends TestCase {
         schema.addLongField("timestamp");
         schema.setPrimaryIndexField("f1");
 
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
 
         Integer lowerBound = 0;
         Integer upperBound = 5000;
@@ -510,5 +531,7 @@ public class TopologyOverallTest extends TestCase {
             e.printStackTrace();
         }
         assertTrue(fullyTested);
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
     }
 }
