@@ -3354,8 +3354,8 @@ if (typeof NProgress != 'undefined') {
 			  var echartLine = echarts.init(document.getElementById('echart_line'), theme);
 				var lineDatax = [];
 				var lineDatay = [];
-			  var i = sys.length-1;
-                while(i >= 0){
+			  var i = 0;
+                while(i < sys.length){
                 	// alert(sys.length+"  "+sys[i]);
                     lineDatax.push(sys[i]);
                     if(i == 0){
@@ -3365,7 +3365,7 @@ if (typeof NProgress != 'undefined') {
                         lineDatay.push(i*5+"s ago");
                     }
                     // alert(systemState.lastThroughput[i]);in
-                    i--;
+                    i++;
                 }
 			  echartLine.setOption({
 				// title: {
