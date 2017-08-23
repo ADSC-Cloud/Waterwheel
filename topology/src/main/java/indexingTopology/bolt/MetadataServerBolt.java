@@ -135,15 +135,52 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 //            e.printStackTrace();
 //        }
 
-        systemState = new SystemState();
-        systemStateQueryServer = new Server(20000, SystemStateQueryHandle.class, new Class[]{SystemState.class}, systemState);
+//<<<<<<< HEAD
+//        systemState = new SystemState();
+//<<<<<<< HEAD
+//=======
+//        systemStateQueryServer = new Server(20000, SystemStateQueryHandle.class, new Class[]{SystemState.class}, systemState);
+//
+//>>>>>>> zlin/master
+//        staticsRequestSendingThread = new Thread(new StatisticsRequestSendingRunnable());
+//        staticsRequestSendingThread.start();
+//
+////        createMetadataSendingThread();
+//<<<<<<< HEAD
+////        System.out.println("aaaaaaaaaaaa:"+config.dataChunkDir);
+//        String a = "aa";
+////        systemState.setHashMap("11",a);
+////        systemState.setHashMap("22","bb");
+//        systemState.setTreeMap("dataChunkDir",config.dataChunkDir);
+//        systemState.setTreeMap("metadataDir",config.metadataDir);
+//=======
+//
+//        systemState = new SystemState();
+//        System.out.println("dataChunkDir:"+config.dataChunkDir);
+//        systemState.hashMap = new HashMap<>();
+//        systemState.hashMap.put("dataChunkDir",config.dataChunkDir);
+//        systemState.hashMap.put("metadataDir",config.metadataDir);
+//>>>>>>> zlin/master
+//        systemStateQueryServer = new Server(20000, SystemStateQueryHandle.class, new Class[]{SystemState.class}, systemState);
+//
+//        systemStateQueryServer.startDaemon();
 
+//=======
+//>>>>>>> zlin/master
+        systemState = new SystemState();
         staticsRequestSendingThread = new Thread(new StatisticsRequestSendingRunnable());
         staticsRequestSendingThread.start();
 
-//        createMetadataSendingThread();
-        systemStateQueryServer.startDaemon();
 
+//        createMetadataSendingThread();
+//        System.out.println("aaaaaaaaaaaa:"+config.dataChunkDir);
+        String a = "aa";
+//        systemState.setHashMap("11",a);
+//        systemState.setHashMap("22","bb");
+        systemState.setTreeMap("dataChunkDir",config.dataChunkDir);
+        systemState.setTreeMap("metadataDir",config.metadataDir);
+        systemStateQueryServer = new Server(20000, SystemStateQueryHandle.class, new Class[]{SystemState.class}, systemState);
+        systemStateQueryServer.startDaemon();
     }
 
     private void createMetadataSendingThread() {
@@ -425,7 +462,7 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 //
 //        int partitionId = 0;
 
-//        long tmpWorkload = 0;
+    //        long tmpWorkload = 0;
 //
 //        List<Long> workLoads = histogram.histogramToList();
 //
@@ -457,9 +494,9 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
         @Override
         public void run() {
-            final int sleepTimeInSecond = 10;
+            final int sleepTimeInSecond = 5;
 //            while (true) {
-            systemState.lastThroughput = new double[6];
+            systemState.setLastThroughput(new double[6]);
             int i = 0;//throughput计数器.
             while (!Thread.currentThread().isInterrupted()) {
                 try {
@@ -474,24 +511,38 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
                 for(Long count: counts) {
                     sum += count;
                 }
-                systemState.throughout =  sum / (double)sleepTimeInSecond;
-                systemState.lastThroughput[i++] = systemState.throughout;
-                System.out.println("i: "+i+" "+systemState.lastThroughput[i-1]);
-                if(i >= systemState.lastThroughput.length){
-                    for(int j = 0;j< systemState.lastThroughput.length-1;j++){
-                        systemState.lastThroughput[j] = systemState.lastThroughput[j+1];
-                    }
-                    systemState.lastThroughput[systemState.lastThroughput.length-1] = systemState.throughout;
-                    i--;
+                systemState.setThroughout(sum / (double)sleepTimeInSecond);
+                systemState.setCpuRatio(60);
+                int throughputSite = systemState.lastThroughput.length-1;
+                while(throughputSite > 0){
+                    systemState.lastThroughput[throughputSite] = systemState.lastThroughput[throughputSite-1];
+                    throughputSite--;
                 }
+                systemState.lastThroughput[0] = systemState.getThroughput();
+//                if(i >= systemState.lastThroughput.length){
+//                    for(int j = 0;j< systemState.lastThroughput.length-1;j++){
+//                        systemState.lastThroughput[j] = systemState.lastThroughput[j+1];
+////                            systemState.lastThroughput[j] = j+1;
+//                    }
+//                    systemState.lastThroughput[systemState.lastThroughput.length-1] = systemState.getThroughput();
+////                    systemState.lastThroughput[systemState.lastThroughput.length-1] = 1;
+//                }
+//                else{
+//                    if(systemState.getThroughput() != 0){
+//                        systemState.lastThroughput[i++] = systemState.getThroughput();
+//                        System.out.println("i: "+i+" "+systemState.lastThroughput[i-1]);
+//                    }
+////                    systemState.lastThroughput[i++] = i+1;
+//                }
+
 //                System.out.println("statics request has been sent!!!");
                 System.out.println(String.format("Overall Throughput: %f tuple / second", sum / (double)sleepTimeInSecond));
 
                 histogram.clear();
 
 //                if (repartitionEnabled) {
-                    collector.emit(Streams.StaticsRequestStream,
-                            new Values("Statics Request"));
+                collector.emit(Streams.StaticsRequestStream,
+                        new Values("Statics Request"));
 //                }
             }
         }

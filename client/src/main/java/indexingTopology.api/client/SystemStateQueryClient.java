@@ -25,7 +25,7 @@ public class SystemStateQueryClient extends ClientSkeleton{
         SystemStateQueryClient sys2 = new SystemStateQueryClient("localhost",20001);
         Thread.sleep(3000);
         SystemState systemState = sys.query();
-        System.out.println("throughput: " + systemState.throughout);
+//        System.out.println("throughput: " + systemState.throughout);
         sys.close();
     }
 }

@@ -34,7 +34,7 @@ public abstract class ServerHandle implements Runnable{
     @Override
     public void run() {
         try {
-            client.setSoTimeout(1000);
+            client.setSoTimeout(100000);
             objectInputStream = new ObjectInputStream(client.getInputStream());
             objectOutputStream = new ObjectOutputStream(client.getOutputStream());
 

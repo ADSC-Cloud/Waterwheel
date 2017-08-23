@@ -8,7 +8,9 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-
+    <!--<Host name="localhost" appBase="webapps" unpackWARs="true" autoDeploy="true">-->
+        <!--<Context path="web" docBase="web" crossContext="true" trusted="true"></Context>-->
+    <!--</Host>-->
     <artifactId>web</artifactId>
     <packaging>war</packaging>
 
@@ -17,7 +19,40 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>net.sf.json-lib</groupId>
+            <artifactId>json-lib</artifactId>
+            <version>2.4</version>
+            <classifier>jdk15</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.1</version>
+        </dependency>
 
+        <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+            <version>1.7.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+            <version>1.1.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-collections</groupId>
+            <artifactId>commons-collections</artifactId>
+            <version>3.2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>net.sf.ezmorph</groupId>
+            <artifactId>ezmorph</artifactId>
+            <version>1.0.4</version>
+        </dependency>
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
@@ -72,6 +107,12 @@
             <artifactId>tomcat-jasper</artifactId>
             <version>${tomcat.version}</version>
             <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>tomcat-servlet-api</artifactId>
+                    <groupId>org.apache.tomcat</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat</groupId>
@@ -90,6 +131,20 @@
             <artifactId>tomcat-catalina</artifactId>
             <version>7.0.47</version>
             <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>tomcat-servlet-api</artifactId>
+                    <groupId>org.apache.tomcat</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tomcat-servlet-api</artifactId>
+                    <groupId>org.apache.tomcat</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tomcat-servlet-api</artifactId>
+                    <groupId>org.apache.tomcat</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>jstl</groupId>
@@ -106,6 +161,11 @@
             <artifactId>client</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+            <version>1.7.0</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -117,7 +177,8 @@
                 <version>2.2</version>
                 <configuration>
                     <!--<path>/${project.build.finalName}</path>-->
-                        <!--<url>http://localhost:8080/mymanager</url>-->
+                        <!--<url>http://localhost:8080/</url>-->
+                    <path>/</path>
                 </configuration>
             </plugin>
             <!--<plugin>-->
