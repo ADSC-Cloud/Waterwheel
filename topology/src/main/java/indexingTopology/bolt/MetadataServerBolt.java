@@ -513,6 +513,7 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
                 }
                 systemState.setThroughout(sum / (double)sleepTimeInSecond);
                 systemState.setCpuRatio(60);
+                systemState.setDiskRatio(40);
                 int throughputSite = systemState.lastThroughput.length-1;
                 while(throughputSite > 0){
                     systemState.lastThroughput[throughputSite] = systemState.lastThroughput[throughputSite-1];

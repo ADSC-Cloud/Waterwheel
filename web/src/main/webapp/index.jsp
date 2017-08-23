@@ -125,7 +125,7 @@
     <!-- jQuery Sparklines -->
     <script src="gentelella-master/vendors/jquery-sparkline/dist/jquery.sparkline.min.js"></script>
     <!-- easy-pie-chart -->
-    <script src="gentelella-master/vendors/jquery.easy-pie-chart/dist/jquery.easypiechart.min.js"></script>
+    <script src="gentelella-master/vendors/jquery.easy-pie-chart/dist/jquery.easypiechart.js"></script>
     <!-- bootstrap-progressbar -->
     <script src="gentelella-master/vendors/bootstrap-progressbar/bootstrap-progressbar.min.js"></script>
 </head>
@@ -323,12 +323,12 @@
             <!-- /top tiles -->
 
             <div class="row">
-                <div class="col-md-8 col-sm-8 col-xs-8">
+                <div class="col-md-7 col-sm-7 col-xs-7">
                     <div class="dashboard_graph">
 
                         <div class="row x_title">
                             <div class="col-md-8">
-                                <h3>Overall Insertion Throughput <small>tuple/s</small></h3>
+                                <h3>Overall Insertion Throughput </h3>
                             </div>
                             <div class="col-md-8">
                                 <!--<div id="reportrange" class="pull-right" style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc">-->
@@ -338,7 +338,7 @@
                             </div>
                         </div>
 
-                        <div class="col-md-12 col-sm-12 col-xs-12">
+                        <div class="col-md-13 col-sm-12 col-xs-12">
                             <div id="echart_line" class="demo-placeholder"></div>
                         </div>
                         <!--<div class="col-md-3 col-sm-3 col-xs-12 bg-white">-->
@@ -390,7 +390,7 @@
                     </div>
                 </div>
 
-                <div class="col-md-4 col-xs-12 widget widget_tally_box">
+                <div class="col-md-1 col-xs-12 widget widget_tally_box" style="min-width: 480px">
                     <div class="x_panel ui-ribbon-container fixed_height_320" style="height:350px;border: 0px;">
                         <div class="ui-ribbon-wrapper">
                             <!--<div class="ui-ribbon">-->
@@ -398,27 +398,71 @@
                             <!--</div>-->
                         </div>
                         <div class="x_title">
-                            <h2>The system state</h2>
+                            <h3>The system state</h3>
                             <div class="clearfix"></div>
                         </div>
-                        <div class="x_content">
+                        <div class="x_content ">
+                            <div class="col-md-6 col-sm-6 col-xs-6">
+                                <div style="text-align: center; margin-bottom: 17px">
+                                  <span class="chart" data-percent="50" id="dataper" >
+                                      <span class="percent" ></span>
+                                  </span>
+                                </div>
 
-                            <div style="text-align: center; margin-bottom: 17px">
-                              <span class="chart" data-percent="50" id="dataper" >
-                                  <span class="percent" ></span>
-                              </span>
+                                <h3 class="name_title">CPU</h3>
+                            </div>
+                            <div class="col-md-6 col-sm-6 col-xs-6">
+                                <div style="text-align: center; margin-bottom: 17px">
+                                  <span class="chart" data-percent="50" id="dataper2" >
+                                      <span class="percent" ></span>
+                                  </span>
+                                </div>
+
+                                <h3 class="name_title">Disk</h3>
+                                <%--<p>Used ratio</p>--%>
+
+                                <%--<div class="divider"></div>--%>
+                                <%--<br/>--%>
+                                <%--<p>The status is refreshed after 5 seconds</p>--%>
                             </div>
 
-                            <h3 class="name_title">CPU</h3>
                             <p>Used ratio</p>
 
                             <div class="divider"></div>
                             <br/>
                             <p>The status is refreshed after 5 seconds</p>
-
                         </div>
                     </div>
                 </div>
+                <%--<div class="col-md-1 col-xs-12 widget widget_tally_box" style="min-width: 240px">--%>
+                    <%--<div class="x_panel ui-ribbon-container fixed_height_320" style="height:350px;border: 0px;">--%>
+                        <%--<div class="ui-ribbon-wrapper">--%>
+                            <%--<!--<div class="ui-ribbon">-->--%>
+                            <%--<!--30% Off-->--%>
+                            <%--<!--</div>-->--%>
+                        <%--</div>--%>
+                        <%--<div class="x_title">--%>
+                            <%--<h2>The system state</h2>--%>
+                            <%--<div class="clearfix"></div>--%>
+                        <%--</div>--%>
+                        <%--<div class="x_content">--%>
+
+                            <%--<div style="text-align: center; margin-bottom: 17px">--%>
+                              <%--<span class="chart" data-percent="50" id="dataper2" >--%>
+                                  <%--<span class="percent" ></span>--%>
+                              <%--</span>--%>
+                            <%--</div>--%>
+
+                            <%--<h3 class="name_title">Disk</h3>--%>
+                            <%--<p>Used ratio</p>--%>
+
+                            <%--<div class="divider"></div>--%>
+                            <%--<br/>--%>
+                            <%--<p>The status is refreshed after 5 seconds</p>--%>
+
+                        <%--</div>--%>
+                    <%--</div>--%>
+                <%--</div>--%>
 
 
                 <!--</div>-->
@@ -495,7 +539,7 @@
                     <div class="col-md-12 col-sm-12 col-xs-12">
                         <div class="x_panel">
                             <div class="x_title">
-                                <h2>System Parameter<small>Users</small></h2>
+                                <h2>System Parameters</h2>
                                 <ul class="nav navbar-right panel_toolbox">
                                     <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
                                     </li>
@@ -1303,9 +1347,14 @@
 //                alert("success");
                 var nowStr = data;
                 var dataPercent = 80;
+                var dataPercent2 = 60;
                 var per = document.getElementById("dataper");
                 $("#dataper").attr("data-percent",nowStr.ratio);
-//                $.per.setAttribute("data-percent","123");
+                $("#dataper").remove("data-percent");
+//                alert(nowStr.ratio);
+                var per2 = document.getElementById("dataper2");
+                $("#dataper2").attr("data-percent",nowStr.diskRatio);
+//                $.per.setAttribute("data-percent","1");
 //                per.dataset.percent= "11
 //                alert(nowStr.throughput);
 //                var nowStr = JSON.parse(ajax.responseText);
@@ -1329,6 +1378,7 @@
 //                }
 //                var arr = [1,2,3,4,5];
 //                init_flot_chart(nowStr.lastThroughput);
+                $('canvas').remove();
                 init_EasyPieChart();
                 init_echarts(nowStr.lastThroughput);
             },
@@ -1340,7 +1390,7 @@
 
     }
     a();
-    window.setInterval(a, 2000);
+    window.setInterval(a, 5000);
     //    $(function(){
     //           $('#showDataForm').submit();
 
@@ -1485,7 +1535,7 @@
                     displayPage(1);//显示第一页
 
                     document.getElementById("btn0").innerHTML="当前 " + curPage + "/" + page + " 页    每页 ";    // 显示当前多少页
-                    document.getElementById("sjzl").innerHTML="数据总量 " + len + "";        // 显示数据量
+//                    document.getElementById("sjzl").innerHTML="数据总量 " + len + "";        // 显示数据量
                     document.getElementById("pageSize").value = pageSize;
 
 

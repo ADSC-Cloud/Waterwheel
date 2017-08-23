@@ -213,16 +213,16 @@ var CanvasRenderer = function(el, options) {
 var EasyPieChart = function(el, opts) {
 	var defaultOptions = {
 		barColor: '#ef1e25',
-		trackColor: '#f9f9f9',
-		scaleColor: '#dfe0e0',
-		scaleLength: 5,
+		trackColor: '#ffffff',
+		scaleColor: '#ffffff',
+		scaleLength: 20,
 		lineCap: 'round',
 		lineWidth: 3,
-		trackWidth: undefined,
+		// trackWidth: undefined,
 		size: 110,
 		rotate: 0,
 		animate: {
-			duration: 1000,
+			duration: 1,
 			enabled: true
 		},
 		easing: function (x, t, b, c, d) { // more can be found here: http://gsgd.co.uk/sandbox/jquery/easing/
@@ -349,10 +349,10 @@ $.fn.easyPieChart = function(options) {
 	return this.each(function() {
 		var instanceOptions;
 
-		if (!$.data(this, 'easyPieChart')) {
+		// if (!$.data(this, 'easyPieChart')) {
 			instanceOptions = $.extend({}, options, $(this).data());
 			$.data(this, 'easyPieChart', new EasyPieChart(this, instanceOptions));
-		}
+		// }
 	});
 };
 

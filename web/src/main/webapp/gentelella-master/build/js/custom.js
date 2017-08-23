@@ -3354,7 +3354,8 @@ if (typeof NProgress != 'undefined') {
 			  var echartLine = echarts.init(document.getElementById('echart_line'), theme);
 				var lineDatax = [];
 				var lineDatay = [];
-			  var i = sys.length-1;
+			  // var i = sys.length-1;
+				var i = 24;
                 while(i >= 0){
                 	// alert(sys.length+"  "+sys[i]);
                     lineDatax.push(sys[i]);
@@ -3362,7 +3363,7 @@ if (typeof NProgress != 'undefined') {
                         lineDatay.push("now");
                     }
                     else{
-                        lineDatay.push(i*5+"s ago");
+                        lineDatay.push(i*2+"s ago");
                     }
                     // alert(systemState.lastThroughput[i]);in
                     i--;
@@ -3378,9 +3379,9 @@ if (typeof NProgress != 'undefined') {
 				},
 				  grid:{
 				  	top:'5%',
-					  right:'2%',
-					  bottom:'10%',
-					left:'10%',
+					  right:'5%',
+					  bottom:'15%',
+					  left:'10%',
 				  },
 				// legend: {
 				//   x: 400,
@@ -3415,7 +3416,9 @@ if (typeof NProgress != 'undefined') {
                     name:'time(s ago)',
                     nameTextStyle:{'fontsize':15,'color':'black'},
                     nameLocation:'middle',
-				  type: 'category',
+					nameGap:20,
+                    axisLabel:{'showMaxLabel':'true'},
+				  	type: 'category',
 				  boundaryGap: false,
 				  data: lineDatay,
 					// data:[1,2,3,4,5],
@@ -3427,8 +3430,9 @@ if (typeof NProgress != 'undefined') {
 				  	name:'Throughput(tuple/s)',
 					nameTextStyle:{'fontsize':15,'color':'black'},
 					nameLocation:'middle',
-					nameGap:40,
-					type: 'value'
+					nameGap:50,
+					type: 'value',
+                    // min:lineDatax.min-4000,
 				}],
 				series: {
 				  name: 'Throughput',
