@@ -772,7 +772,7 @@
                 $("#dataper").remove("data-percent");
 //                alert(nowStr.ratio);
                 var per2 = document.getElementById("dataper2");
-                $("#dataper2").attr("data-percent",(1-nowStr.availableDiskSpaceInGB/nowStr.totalDiskSpaceInGB)*100);
+                $("#dataper2").attr("data-percent", (1 - nowStr.availableDiskSpaceInGB / nowStr.totalDiskSpaceInGB) * 100);
 //                $.per.setAttribute("data-percent","1");
 //                per.dataset.percent= "11
 //                alert(nowStr.throughput);
@@ -798,28 +798,25 @@
 //                var arr = [1,2,3,4,5];
 //                init_flot_chart(nowStr.lastThroughput);
                 $('canvas').remove();
-                var a = parseFloat(nowStr.ratio*100).toFixed(3);
-                var cpu = a.substring(0,a.toString().length - 2);
-                var b = parseFloat(nowStr.availableDiskSpaceInGB).toFixed(3);
-                var result = b.substring(0,b.toString().length - 2);
-                var c = parseFloat(nowStr.totalDiskSpaceInGB).toFixed(3);
-                var result2 = c.substring(0,c.toString().length - 2);
+                var cpu = parseFloat(nowStr.ratio * 100).toFixed(1);
+                var idle = (100 - nowStr.ratio * 100).toFixed(1);
+                var result = parseFloat(nowStr.availableDiskSpaceInGB).toFixed(1);
+                var result2 = parseFloat(nowStr.totalDiskSpaceInGB).toFixed(1);
 //                if( typeof ($.fn.easyPieChart) === 'undefined'){ return; }
 //                console.log('init_EasyPieChart');
                 $('.chart').easyPieChart({
                     easing: 'easeOutElastic',
                     delay: 3000,
-                    barColor: '#feb4c1',
-                    trackColor: '#26B99A',
+                    barColor: '#26B99A',
+                    trackColor: '#E6E9ED',
                     scaleColor: false,
                     lineWidth: 20,
-                    trackWidth: 1,
+                    trackWidth: 2,
                     lineCap: 'butt',
                     onStep: function(from, to, percent) {
-                        var showPer = parseFloat(percent).toFixed(3);
-                        var show = showPer.substring(0,showPer.toString().length - 2);
-                        $(this.el).find('.percent').text(show);
-                        $('.show_per1').text(cpu + "% idle");
+                        var showPer = parseFloat(percent).toFixed(1);
+                        $(this.el).find('.percent').text(showPer);
+                        $('.show_per1').text(idle + "% idle");
                         $('.show_per2').text(result + "GB / " + result2 + "GB");
                     }
                 });
