@@ -565,8 +565,8 @@
                                 <table id="datatable" class="table table-striped table-bordered">
                                     <thead>
                                     <tr>
-                                        <th style="text-align: center">Name </th>
-                                        <th style="text-align: center">Status</th>
+                                        <th style="text-align: left">Name </th>
+                                        <th style="text-align: left">Status</th>
                                         <%--<th>Office</th>--%>
                                         <%--<th>Age</th>--%>
                                         <%--<th>Start date</th>--%>
@@ -718,7 +718,7 @@
                                     <%--<a>转到&nbsp;</a>--%>
                                     <%--<input id="changePage" type="text" size="1" maxlength="4"/>--%>
                                     <%--<a>页&nbsp;</a>--%>
-                                    <%--<a  href="#btn1" id="btn5">跳转</a>--%>
+                                    <%--<a  href="#btn1" id="btn5">Jump</a>--%>
                                 </div>
                             </div>
                         </div>
@@ -789,11 +789,11 @@
 //                    var newRow = table.insertRow(); //创建新行
 //                    var newCell1 = newRow.insertCell(0); //创建新单元格
 //                    newCell1.innerHTML = "<td>"+k+"</td>" ; //单元格内的内容
-//                    newCell1.setAttribute("align","center"); //设置位置
+//                    newCell1.setAttribute("align","left"); //设置位置
 //                    var newCell1 = newRow.insertCell(1); //创建新单元格
 //                    newCell1.innerHTML =" <td>"+nowStr.hashMap[k]+"</td> "; //单元格内的内容
 ////                    alert(nowStr.hashMap[k]);
-//                    newCell1.setAttribute("align","center"); //设置位置
+//                    newCell1.setAttribute("align","left"); //设置位置
 //                }
 //                var arr = [1,2,3,4,5];
 //                init_flot_chart(nowStr.lastThroughput);
@@ -819,8 +819,8 @@
                         var showPer = parseFloat(percent).toFixed(3);
                         var show = showPer.substring(0,showPer.toString().length - 2);
                         $(this.el).find('.percent').text(show);
-                        $('.show_per1').text(cpu +"% idle");
-                        $('.show_per2').text(result+" GB / "+result2+"GB");
+                        $('.show_per1').text(cpu + "% idle");
+                        $('.show_per2').text(result + "GB / " + result2 + "GB");
                     }
                 });
 
@@ -955,11 +955,11 @@
                     var newRow = table.insertRow(); //创建新行
                     var newCell1 = newRow.insertCell(0); //创建新单元格
                     newCell1.innerHTML = "<td>"+k+"</td>" ; //单元格内的内容
-                    newCell1.setAttribute("align","center"); //设置位置
+                    newCell1.setAttribute("align","left"); //设置位置
                     var newCell1 = newRow.insertCell(1); //创建新单元格
                     newCell1.innerHTML =" <td>"+nowStr.treeMap[k]+"</td> "; //单元格内的内容
 //                    alert(nowStr.hashMap[k]);
-                    newCell1.setAttribute("align","center"); //设置位置
+                    newCell1.setAttribute("align","left"); //设置位置
                 }
 
                 var pageSize = 10;    //每页显示的记录条数

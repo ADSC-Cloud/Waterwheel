@@ -68,8 +68,8 @@ public class clientTest  extends HttpServlet {
 //        SystemState systemState = new SystemState();
 //        systemState.setThroughout(20.0);
 //        systemState.setLastThroughput(throughputList);
-//        systemState.setTreeMap("dataChunkDir","123");
-//        systemState.setTreeMap("metadataDir","234");
+//        systemState.addConfig("dataChunkDir","123");
+//        systemState.addConfig("metadataDir","234");
 //        systemState.setAvailableDiskSpaceInGB(new Random().nextDouble()*100);
 //        systemState.setTotalDiskSpaceInGB(new Random().nextDouble()*100);
 //        systemState.setCpuRatio(new Random().nextDouble()*100);

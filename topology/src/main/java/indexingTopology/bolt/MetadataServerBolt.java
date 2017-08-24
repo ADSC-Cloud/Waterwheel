@@ -27,7 +27,6 @@ import indexingTopology.streams.Streams;
 import org.apache.zookeeper.KeeperException;
 
 import java.util.*;
-import java.util.stream.DoubleStream;
 
 /**
  * Created by acelzj on 12/12/16.
@@ -153,8 +152,12 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
 
         String a = "aa";
-        systemState.setTreeMap("dataChunkDir",config.dataChunkDir);
-        systemState.setTreeMap("metadataDir",config.metadataDir);
+        systemState.addConfig("DataChunk Dir",config.dataChunkDir);
+        systemState.addConfig("Metadata Dir",config.metadataDir);
+        systemState.addConfig("Load Balance Threshold", config.LOAD_BALANCE_THRESHOLD);
+        systemState.addConfig("Query Servers per Node", config.CHUNK_SCANNER_PER_NODE);
+        systemState.addConfig("HDFS", config.HDFSFlag);
+        systemState.addConfig("Dispatchers per Node", config.DISPATCHER_PER_NODE);
         systemStateQueryServer = new Server(20000, SystemStateQueryHandle.class, new Class[]{SystemState.class}, systemState);
         systemStateQueryServer.startDaemon();
     }
