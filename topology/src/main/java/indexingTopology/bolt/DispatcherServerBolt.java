@@ -3,6 +3,8 @@ package indexingTopology.bolt;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.DataTuple;
 import indexingTopology.common.logics.DataTupleMapper;
+import indexingTopology.metrics.PerNodeMetrics;
+import indexingTopology.util.MonitorUtils;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -109,8 +111,15 @@ public class DispatcherServerBolt<IndexType extends Number> extends BaseRichBolt
         } else if (tuple.getSourceStreamId().equals(Streams.IntervalPartitionUpdateStream)){
             balancedPartition.setIntervalToPartitionMapping(((BalancedPartition) tuple.getValueByField("newIntervalPartition")).getIntervalToPartitionMapping());
         } else if (tuple.getSourceStreamId().equals(Streams.StaticsRequestStream)){
+            final Histogram histogram = new Histogram(balancedPartition.getIntervalDistribution().getHistogram(), config.NUMBER_OF_INTERVALS);
+            double CPUload = MonitorUtils.getProcessCpuLoad();
+            double freeDiskSpace = MonitorUtils.getFreeDiskSpaceInGB(config.dataChunkDir);
+            double totalDiskSpace = MonitorUtils.getTotalDiskSpaceInGB(config.dataChunkDir);
+
+
+            PerNodeMetrics perNodeMetrics = new PerNodeMetrics(histogram, CPUload, totalDiskSpace, freeDiskSpace);
             collector.emit(Streams.StatisticsReportStream,
-                    new Values(new Histogram(balancedPartition.getIntervalDistribution().getHistogram(), config.NUMBER_OF_INTERVALS)));
+                    new Values(perNodeMetrics));
             balancedPartition.clearHistogram();
         }
     }

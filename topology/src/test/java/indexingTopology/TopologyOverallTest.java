@@ -17,9 +17,11 @@ import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 import indexingTopology.common.logics.DataTupleMapper;
 import indexingTopology.topology.TopologyGenerator;
+import indexingTopology.util.AvailableSocketPool;
 import junit.framework.TestCase;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
+import org.apache.storm.generated.KillOptions;
 import org.apache.storm.generated.StormTopology;
 import org.junit.Test;
 
@@ -34,8 +36,8 @@ import java.util.function.Function;
 public class TopologyOverallTest extends TestCase {
 
     TopologyConfig config = new TopologyConfig();
-    final int ingestionPort = 10000;
-    final int queryPort = 10001;
+    AvailableSocketPool socketPool = new AvailableSocketPool();
+    LocalCluster cluster;
 
     public void setUp() {
         try {
@@ -43,6 +45,7 @@ public class TopologyOverallTest extends TestCase {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        cluster = new LocalCluster();
         config.HDFSFlag = false;
         config.dataChunkDir = "./target/tmp";
         config.metadataDir = "./target/tmp";
@@ -51,6 +54,7 @@ public class TopologyOverallTest extends TestCase {
     public void tearDown() {
         try {
             Runtime.getRuntime().exec("rm ./target/tmp/*");
+            cluster.shutdown();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -60,7 +64,7 @@ public class TopologyOverallTest extends TestCase {
     public void testTopologyDouble() {
         boolean fullyTested = false;
 
-        final String topologyName = "test_1";
+        final String topologyName = "testTopologyDouble";
 
         DataSchema schema = new DataSchema();
         schema.addDoubleField("f1");
@@ -69,6 +73,8 @@ public class TopologyOverallTest extends TestCase {
         schema.addLongField("timestamp");
         schema.setPrimaryIndexField("f1");
 
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
 
         Double lowerBound = 0.0;
         Double upperBound = 5000.0;
@@ -118,9 +124,11 @@ public class TopologyOverallTest extends TestCase {
             assertEquals(numberOfTuples, response.dataTuples.size());
             oneTuplePerTransferIngestionClient.close();
             queryClient.close();
-            cluster.killTopology(topologyName);
-            cluster.shutdown();
-            Thread.sleep(1000);
+
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testTopologyDouble", killOptions);
+
             fullyTested = true;
 //            Thread.sleep(5000);
 
@@ -128,13 +136,15 @@ public class TopologyOverallTest extends TestCase {
             e.printStackTrace();
         }
         assertTrue(fullyTested);
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
     }
 
     @Test
     public void testTopologyIntegerFilter() {
 
         boolean fullyTested = false;
-        final String topologyName = "test_2";
+        final String topologyName = "testTopologyIntegerFilter";
 
         DataSchema schema = new DataSchema();
         schema.addIntField("f1");
@@ -143,6 +153,8 @@ public class TopologyOverallTest extends TestCase {
         schema.addLongField("timestamp");
         schema.setPrimaryIndexField("f1");
 
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
 
         Integer lowerBound = 0;
         Integer upperBound = 5000;
@@ -191,15 +203,17 @@ public class TopologyOverallTest extends TestCase {
             assertEquals(41, response.dataTuples.size());
             oneTuplePerTransferIngestionClient.close();
             queryClient.close();
-            cluster.killTopology(topologyName);
-            cluster.shutdown();
-            Thread.sleep(1000);
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testTopologyIntegerFilter", killOptions);
             fullyTested = true;
 
         } catch (Exception e) {
             e.printStackTrace();
         }
         assertTrue(fullyTested);
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
     }
 
 
@@ -208,7 +222,7 @@ public class TopologyOverallTest extends TestCase {
 
         boolean fullyTested = false;
 
-        final String topologyName = "test_3";
+        final String topologyName = "testTopologyDoubleFilter";
 
         DataSchema schema = new DataSchema();
         schema.addDoubleField("f1");
@@ -217,6 +231,8 @@ public class TopologyOverallTest extends TestCase {
         schema.addLongField("timestamp");
         schema.setPrimaryIndexField("f1");
 
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
 
         Double lowerBound = 0.0;
         Double upperBound = 5000.0;
@@ -265,14 +281,16 @@ public class TopologyOverallTest extends TestCase {
             assertEquals(5, response.dataTuples.size());
             oneTuplePerTransferIngestionClient.close();
             queryClient.close();
-            cluster.killTopology(topologyName);
-            cluster.shutdown();
-            Thread.sleep(1000);
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testTopologyDoubleFilter", killOptions);
             fullyTested = true;
         } catch (Exception e) {
             e.printStackTrace();
         }
         assertTrue(fullyTested);
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
     }
 
     @Test
@@ -280,7 +298,7 @@ public class TopologyOverallTest extends TestCase {
 
         boolean fullyTested = false;
 
-        final String topologyName = "test_4";
+        final String topologyName = "testTopologyDoubleFilterWithPredicate";
 
         DataSchema schema = new DataSchema();
         schema.addDoubleField("f1");
@@ -289,6 +307,8 @@ public class TopologyOverallTest extends TestCase {
         schema.addLongField("timestamp");
         schema.setPrimaryIndexField("f1");
 
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
 
         Double lowerBound = 0.0;
         Double upperBound = 5000.0;
@@ -339,14 +359,16 @@ public class TopologyOverallTest extends TestCase {
 
             oneTuplePerTransferIngestionClient.close();
             queryClient.close();
-            cluster.killTopology(topologyName);
-            cluster.shutdown();
-            Thread.sleep(1000);
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testTopologyDoubleFilterWithPredicate", killOptions);
             fullyTested = true;
         } catch (Exception e) {
             e.printStackTrace();
         }
         assertTrue(fullyTested);
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
     }
 
     @Test
@@ -354,7 +376,7 @@ public class TopologyOverallTest extends TestCase {
 
         boolean fullyTested = false;
 
-        final String topologyName = "test_4";
+        final String topologyName = "testTopologyAggregation";
 
         DataSchema schema = new DataSchema();
         schema.addIntField("f1");
@@ -363,6 +385,8 @@ public class TopologyOverallTest extends TestCase {
         schema.addLongField("timestamp");
         schema.setPrimaryIndexField("f1");
 
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
 
         Integer lowerBound = 0;
         Integer upperBound = 5000;
@@ -427,22 +451,23 @@ public class TopologyOverallTest extends TestCase {
 
             oneTuplePerTransferIngestionClient.close();
             queryClient.close();
-            cluster.killTopology(topologyName);
-            cluster.shutdown();
-            Thread.sleep(1000);
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testTopologyAggregation", killOptions);
             fullyTested = true;
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         assertTrue(fullyTested);
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
     }
 
     @Test
     public void testTopologyIntegerFilterWithTrivialMapper() {
 
         boolean fullyTested = false;
-        final String topologyName = "test_5";
+        final String topologyName = "testTopologyIntegerFilterWithTrivialMapper";
 
         DataSchema schema = new DataSchema();
         schema.addIntField("f1");
@@ -451,6 +476,8 @@ public class TopologyOverallTest extends TestCase {
         schema.addLongField("timestamp");
         schema.setPrimaryIndexField("f1");
 
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
 
         Integer lowerBound = 0;
         Integer upperBound = 5000;
@@ -501,14 +528,16 @@ public class TopologyOverallTest extends TestCase {
             assertEquals(41, response.dataTuples.size());
             oneTuplePerTransferIngestionClient.close();
             queryClient.close();
-            cluster.killTopology(topologyName);
-            cluster.shutdown();
-            Thread.sleep(1000);
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testTopologyIntegerFilterWithTrivialMapper", killOptions);
             fullyTested = true;
 
         } catch (Exception e) {
             e.printStackTrace();
         }
         assertTrue(fullyTested);
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
     }
 }
