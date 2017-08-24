@@ -125,7 +125,7 @@
     <!-- jQuery Sparklines -->
     <script src="gentelella-master/vendors/jquery-sparkline/dist/jquery.sparkline.min.js"></script>
     <!-- easy-pie-chart -->
-    <script src="gentelella-master/vendors/jquery.easy-pie-chart/dist/jquery.easypiechart.js"></script>
+    <script src="gentelella-master/vendors/jquery.easy-pie-chart/dist/jquery.easypiechart.js?ver=1"></script>
     <!-- bootstrap-progressbar -->
     <script src="gentelella-master/vendors/bootstrap-progressbar/bootstrap-progressbar.min.js"></script>
 </head>
@@ -398,15 +398,17 @@
                             <!--</div>-->
                         </div>
                         <div class="x_title">
-                            <h3>The system state</h3>
+                            <h2>Cluster Resource Utlization</h2>
                             <div class="clearfix"></div>
                         </div>
-                        <div class="x_content ">
+                        <div class="x_content " style="height: 300px;">
                             <div class="col-md-6 col-sm-6 col-xs-6">
                                 <div style="text-align: center; margin-bottom: 17px">
                                   <span class="chart" data-percent="50" id="dataper" >
                                       <span class="percent" ></span>
                                   </span>
+
+                                    <div class="show_per1" style="margin-top: 20px"></div>
                                 </div>
 
                                 <h3 class="name_title">CPU</h3>
@@ -416,21 +418,21 @@
                                   <span class="chart" data-percent="50" id="dataper2" >
                                       <span class="percent" ></span>
                                   </span>
+                                    <div class="show_per2" style="margin-top: 20px"></div>
                                 </div>
 
                                 <h3 class="name_title">Disk</h3>
                                 <%--<p>Used ratio</p>--%>
 
                                 <%--<div class="divider"></div>--%>
-                                <%--<br/>--%>
                                 <%--<p>The status is refreshed after 5 seconds</p>--%>
                             </div>
 
-                            <p>Used ratio</p>
+                            <%--<p style="width: 100px;"></p>--%>
 
-                            <div class="divider"></div>
                             <br/>
-                            <p>The status is refreshed after 5 seconds</p>
+                            <div class="divider" style="margin-top: 200px;"></div>
+                            <p >The status is refreshed after 5 seconds</p>
                         </div>
                     </div>
                 </div>
@@ -706,18 +708,18 @@
                                     </tbody>
                                 </table>
                                 <a id="sjzl"></a>&nbsp;
-                                <div style="float: right">
                                     <a id="btn0"></a>
                                     <input id="pageSize" type="hidden" size="1" maxlength="2" value="getDefaultValue()" style="width:25px;" />
+                                    <div style="float: right">
                                     <%--<a> 条 </a> <a href="#" id="pageSizeSet">设置</a>&nbsp;--%>
-                                    <a  href="#btnAll" id="btn1">首页</a>
-                                    <a  href="#btnAll" id="btn2">上一页</a>
-                                    <a  href="#btnAll" id="btn3">下一页</a>
-                                    <a  href="#btnAll" id="btn4">尾页</a>&nbsp;
-                                    <a>转到&nbsp;</a>
-                                    <input id="changePage" type="text" size="1" maxlength="4"/>
-                                    <a>页&nbsp;</a>
-                                    <a  href="#btn1" id="btn5">跳转</a>
+                                    <a  href="#btnAll" id="btn1" style="margin-right: 20px;">Home</a>
+                                    <a  href="#btnAll" id="btn2" >Previous</a>
+                                    <a  href="#btnAll" id="btn3" style="margin-right: 20px;">Next</a>
+                                    <a  href="#btnAll" id="btn4">Last</a>&nbsp;
+                                    <%--<a>转到&nbsp;</a>--%>
+                                    <%--<input id="changePage" type="text" size="1" maxlength="4"/>--%>
+                                    <%--<a>页&nbsp;</a>--%>
+                                    <%--<a  href="#btn1" id="btn5">跳转</a>--%>
                                 </div>
                             </div>
                         </div>
@@ -1353,7 +1355,7 @@
                 $("#dataper").remove("data-percent");
 //                alert(nowStr.ratio);
                 var per2 = document.getElementById("dataper2");
-                $("#dataper2").attr("data-percent",nowStr.diskRatio);
+                $("#dataper2").attr("data-percent",nowStr.availableDiskSpaceInGB/nowStr.totalDiskSpaceInGB*100);
 //                $.per.setAttribute("data-percent","1");
 //                per.dataset.percent= "11
 //                alert(nowStr.throughput);
@@ -1379,12 +1381,38 @@
 //                var arr = [1,2,3,4,5];
 //                init_flot_chart(nowStr.lastThroughput);
                 $('canvas').remove();
-                init_EasyPieChart();
+                var a = parseFloat(nowStr.ratio).toFixed(3);
+                var cpu = a.substring(0,a.toString().length - 2);
+                var b = parseFloat(nowStr.availableDiskSpaceInGB).toFixed(3);
+                var result = b.substring(0,b.toString().length - 2);
+                var c = parseFloat(nowStr.totalDiskSpaceInGB).toFixed(3);
+                var result2 = c.substring(0,c.toString().length - 2);
+//                if( typeof ($.fn.easyPieChart) === 'undefined'){ return; }
+//                console.log('init_EasyPieChart');
+                $('.chart').easyPieChart({
+                    easing: 'easeOutElastic',
+                    delay: 3000,
+                    barColor: '#dd74d3',
+                    trackColor: '#26B99A',
+                    scaleColor: false,
+                    lineWidth: 20,
+                    trackWidth: 1,
+                    lineCap: 'butt',
+                    onStep: function(from, to, percent) {
+                        var showPer = parseFloat(percent).toFixed(3);
+                        var show = showPer.substring(0,showPer.toString().length - 2);
+                        $(this.el).find('.percent').text(show);
+                        $('.show_per1').text(cpu +"% idle");
+                        $('.show_per2').text(result+" GB / "+result2+"GB");
+                    }
+                });
+
+//                init_EasyPieChart(result,result2);
                 init_echarts(nowStr.lastThroughput);
             },
             error : function() {
                 // view("异常！");
-                alert("failed！");
+                // alert("failed！");
             }
         });
 
@@ -1447,7 +1475,7 @@
     <%--}--%>
     <%--%>--%>
 </script>
-<script src="gentelella-master/build/js/custom.js"></script>
+<script src="gentelella-master/build/js/custom.js?ver=1"></script>
 <script type="text/javascript">
     var num = 0;//tableNum
     function b(){
@@ -1534,7 +1562,7 @@
                     curPage=1;    // 设置当前为第一页
                     displayPage(1);//显示第一页
 
-                    document.getElementById("btn0").innerHTML="当前 " + curPage + "/" + page + " 页    每页 ";    // 显示当前多少页
+                    document.getElementById("btn0").innerHTML="current " + curPage + "/" + page + " page ";    // 显示当前多少页
 //                    document.getElementById("sjzl").innerHTML="数据总量 " + len + "";        // 显示数据量
                     document.getElementById("pageSize").value = pageSize;
 
@@ -1608,7 +1636,7 @@
                     }
 
 
-                    document.getElementById("btn0").innerHTML="当前 " + curPage + "/" + page + " 页";        // 显示当前多少页
+                    document.getElementById("btn0").innerHTML="current " + curPage + "/" + page + " page";        // 显示当前多少页
 
                     begin=(curPage-1)*pageSize + 1;// 起始记录号
                     end = begin + 1*pageSize - 1;    // 末尾记录号
@@ -1637,7 +1665,7 @@
 
     };
     b();
-    window.setInterval(b, 6000);
+    window.setInterval(b, 5000);
 //    alert("success");
     //                                        const myFunction = async function() {
     //                                            await b();

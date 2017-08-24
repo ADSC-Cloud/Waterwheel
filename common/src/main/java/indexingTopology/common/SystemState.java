@@ -13,22 +13,18 @@ public class SystemState implements Serializable{
 
     private double throughout;
     private double cpuRatio;
-    private double diskRatio;
+    private double totalDiskSpaceInGB;
+    private double availableDiskSpaceInGB;
+
     public double[] lastThroughput;
     private HashMap<String,String> hashMap;
     private TreeMap<String,String> treeMap;
+    static public int NumberOfHistoricThroughputs = 26;
     public void setCpuRatio(double cpuRatio) {
         this.cpuRatio = cpuRatio;
     }
     public double getRatio() {
         return cpuRatio;
-    }
-
-    public void setDiskRatio(double diskRatio) {
-        this.diskRatio = diskRatio;
-    }
-    public double getDiskRatio() {
-        return diskRatio;
     }
 
     public double getThroughput() {
@@ -69,6 +65,22 @@ public class SystemState implements Serializable{
     @Override
     public String toString() {
         return "[throughput=" + throughout + ", lastThroughput=" + lastThroughput + ", hashMap="
-                + hashMap + ", cpuRatio="+ cpuRatio + ",diskRatio=" + diskRatio +" ,treeMap="+treeMap + "]";
+                + hashMap + ", cpuRatio="+ cpuRatio + ",diskRatio=" + totalDiskSpaceInGB +" ,treeMap="+treeMap + "]";
+    }
+
+    public double getTotalDiskSpaceInGB() {
+        return totalDiskSpaceInGB;
+    }
+
+    public void setTotalDiskSpaceInGB(double totalDiskSpaceInGB) {
+        this.totalDiskSpaceInGB = totalDiskSpaceInGB;
+    }
+
+    public double getAvailableDiskSpaceInGB() {
+        return availableDiskSpaceInGB;
+    }
+
+    public void setAvailableDiskSpaceInGB(double availableDiskSpaceInGB) {
+        this.availableDiskSpaceInGB = availableDiskSpaceInGB;
     }
 }

@@ -1972,11 +1972,15 @@ if (typeof NProgress != 'undefined') {
 			});
 			
 		};
+
+
+
+
 		
 			/* EASYPIECHART */
 			
 			function init_EasyPieChart() {
-				
+				// alert("hello");
 				if( typeof ($.fn.easyPieChart) === 'undefined'){ return; }
 				console.log('init_EasyPieChart');
 				$('.chart').easyPieChart({
@@ -3354,19 +3358,21 @@ if (typeof NProgress != 'undefined') {
 			  var echartLine = echarts.init(document.getElementById('echart_line'), theme);
 				var lineDatax = [];
 				var lineDatay = [];
-			  // var i = sys.length-1;
-				var i = 24;
-                while(i >= 0){
+
+			  var i = 0;
+			  var j = sys.length-1;
+                while(i < sys.length){
                 	// alert(sys.length+"  "+sys[i]);
                     lineDatax.push(sys[i]);
-                    if(i == 0){
+                    if(j == 0){
                         lineDatay.push("now");
                     }
                     else{
-                        lineDatay.push(i*2+"s ago");
+                        lineDatay.push(j*5+"s ago");
                     }
+                    j--;
                     // alert(systemState.lastThroughput[i]);in
-                    i--;
+                    i++;
                 }
 			  echartLine.setOption({
 				// title: {
@@ -3416,9 +3422,11 @@ if (typeof NProgress != 'undefined') {
                     name:'time(s ago)',
                     nameTextStyle:{'fontsize':15,'color':'black'},
                     nameLocation:'middle',
+					max_interval:4,
 					nameGap:20,
-                    axisLabel:{'showMaxLabel':'true'},
+                    axisLabel:{'showMinLabel':false,interval:4},
 				  	type: 'category',
+					max:'now',
 				  boundaryGap: false,
 				  data: lineDatay,
 					// data:[1,2,3,4,5],
