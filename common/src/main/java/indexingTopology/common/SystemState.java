@@ -53,11 +53,11 @@ public class SystemState implements Serializable{
     }
 
 
-    public void setTreeMap(String k,String v){
+    public void addConfig(String k, Object v){
         if(treeMap == null){
             treeMap = new TreeMap<>();
         }
-        this.treeMap.put(k,v);
+        this.treeMap.put(k, String.valueOf(v));
     }
     public TreeMap<String,String> getTreeMap(){
         return treeMap;
