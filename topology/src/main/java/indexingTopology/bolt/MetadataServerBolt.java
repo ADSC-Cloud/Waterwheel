@@ -152,11 +152,7 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
         staticsRequestSendingThread.start();
 
 
-//        createMetadataSendingThread();
-//        System.out.println("aaaaaaaaaaaa:"+config.dataChunkDir);
         String a = "aa";
-//        systemState.setHashMap("11",a);
-//        systemState.setHashMap("22","bb");
         systemState.setTreeMap("dataChunkDir",config.dataChunkDir);
         systemState.setTreeMap("metadataDir",config.metadataDir);
         systemStateQueryServer = new Server(20000, SystemStateQueryHandle.class, new Class[]{SystemState.class}, systemState);
@@ -530,6 +526,21 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 //                    e.printStackTrace();
                     Thread.currentThread().interrupt();
                 }
+
+//                List<Long> counts = histogram.histogramToList();
+//                long sum = 0;
+//                for(Long count: counts) {
+//                    sum += count;
+//                }
+//                systemState.setThroughout(sum / (double)sleepTimeInSecond);
+//                systemState.setCpuRatio(60);
+//                systemState.setDiskRatio(40);
+//                int throughputSite = systemState.lastThroughput.length-1;
+//                while(throughputSite > 0){
+//                    systemState.lastThroughput[throughputSite] = systemState.lastThroughput[throughputSite-1];
+//                    throughputSite--;
+//                }
+//                   System.out.println("statics request has been sent!!!");
 
                 histogram.clear();
 

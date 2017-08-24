@@ -114,7 +114,7 @@ public class SearchTest {
 
         GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
                 System.currentTimeMillis() - RecentSecondsOfInterest * 1000,
-                System.currentTimeMillis(), null, aggregator, null, equivalentPredicateHint);
+                System.currentTimeMillis(), null,null, null, equivalentPredicateHint);
         long start = System.currentTimeMillis();
         try {
             DateFormat dateFormat = new SimpleDateFormat("MM-dd HH:mm:ss");
@@ -131,10 +131,10 @@ public class SearchTest {
             dataBean.setFieldNames(outputSchema.getFieldNames());
             dataBean.setTime(totalQueryTime);
             System.out.println(outputSchema.getFieldNames().size());
-            for (int i = 0; i < tuples.size(); i++) {
-                System.out.println(tuples.get(i).toValues());
-            }
-
+                    /*for (int i = 0; i < tuples.size(); i++) {
+                        System.out.println(tuples.get(i).toValues());
+                    }
+*/
             System.out.println(String.format("Query time: %d ms", end - start));
 
             if (executed++ >= NumberOfQueries) {

@@ -42,7 +42,7 @@ public class clientTest  extends HttpServlet {
     public void doPost(HttpServletRequest request,HttpServletResponse response)throws IOException,ServletException{
         response.setContentType("text/html; charset=UTF-8");
 
-////        response.setContentType("application/json; charset=utf-8");
+        response.setContentType("application/json; charset=utf-8");
         SystemStateQueryClient sys = new SystemStateQueryClient("localhost",20000);
         sys.connect();
         SystemState systemState = null;
@@ -56,8 +56,8 @@ public class clientTest  extends HttpServlet {
         double[] throughputList = systemState.lastThroughput;
         sys.close();
         System.out.println("tests");
-//        double[] throughputList = new double[6];
-//        for (int i = 0; i < 6; i++) {
+//        double[] throughputList = new double[26];
+//        for (int i = 0; i < 26; i++) {
 //            throughputList[i] = new Random().nextDouble() * 1000;
 //        }
 ////        //获取输出流对象
@@ -68,6 +68,11 @@ public class clientTest  extends HttpServlet {
 //        SystemState systemState = new SystemState();
 //        systemState.setThroughout(20.0);
 //        systemState.setLastThroughput(throughputList);
+//        systemState.setTreeMap("dataChunkDir","123");
+//        systemState.setTreeMap("metadataDir","234");
+//        systemState.setAvailableDiskSpaceInGB(new Random().nextDouble()*100);
+//        systemState.setTotalDiskSpaceInGB(new Random().nextDouble()*100);
+//        systemState.setCpuRatio(new Random().nextDouble()*100);
 
 //        List<Map.Entry<String,String>> list222 = new ArrayList<Map.Entry<String,String>>(systemState.getHashMap().entrySet());
 //        //然后通过比较器来实现排序
@@ -116,7 +121,7 @@ public class clientTest  extends HttpServlet {
 //=======
 //        //将每个vehicle对象拼接为json格式的对象,用于命令下发
 //        SystemState systemState = new SystemState();
-//        systemState.throughout = 100;
+//        systemStamvn clean te.throughout = 100;
 //        systemState.lastThroughput = new double[]{1,2,3,4,5,6};
 ///*        jsonTest jsontest = new jsonTest();
 //        jsontest.name = "Rolf";

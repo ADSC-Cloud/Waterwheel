@@ -1972,11 +1972,15 @@ if (typeof NProgress != 'undefined') {
 			});
 			
 		};
+
+
+
+
 		
 			/* EASYPIECHART */
 			
 			function init_EasyPieChart() {
-				
+				// alert("hello");
 				if( typeof ($.fn.easyPieChart) === 'undefined'){ return; }
 				console.log('init_EasyPieChart');
 				$('.chart').easyPieChart({
@@ -3354,16 +3358,19 @@ if (typeof NProgress != 'undefined') {
 			  var echartLine = echarts.init(document.getElementById('echart_line'), theme);
 				var lineDatax = [];
 				var lineDatay = [];
+
 			  var i = 0;
+			  var j = sys.length-1;
                 while(i < sys.length){
                 	// alert(sys.length+"  "+sys[i]);
-                    lineDatax.push(sys[i]);
-                    if(i == 0){
+                    lineDatax.push(sys[i]*10);
+                    if(j == 0){
                         lineDatay.push("now");
                     }
                     else{
-                        lineDatay.push(i*5+"s ago");
+                        lineDatay.push(j*5+"s ago");
                     }
+                    j--;
                     // alert(systemState.lastThroughput[i]);in
                     i++;
                 }
@@ -3378,9 +3385,9 @@ if (typeof NProgress != 'undefined') {
 				},
 				  grid:{
 				  	top:'5%',
-					  right:'2%',
-					  bottom:'10%',
-					left:'10%',
+					  right:'3%',
+					  bottom:'15%',
+					  left:'18%',
 				  },
 				// legend: {
 				//   x: 400,
@@ -3415,7 +3422,13 @@ if (typeof NProgress != 'undefined') {
                     name:'time(s ago)',
                     nameTextStyle:{'fontsize':15,'color':'black'},
                     nameLocation:'middle',
-				  type: 'category',
+					max_interval:4,
+					nameGap:20,
+                    axisLabel:{'showMinLabel':false,interval:4, textStyle: {color: '#000'}},
+                    axisLine:{lineStyle:{color:'#000'}},
+				  	type: 'category',
+                    nameGap:25,
+					max:'now',
 				  boundaryGap: false,
 				  data: lineDatay,
 					// data:[1,2,3,4,5],
@@ -3427,8 +3440,11 @@ if (typeof NProgress != 'undefined') {
 				  	name:'Throughput(tuple/s)',
 					nameTextStyle:{'fontsize':15,'color':'black'},
 					nameLocation:'middle',
-					nameGap:40,
-					type: 'value'
+					nameGap:70,
+                    axisLabel:{'show':true,'textStyle': {'color': '#000'}},
+                    axisLine:{lineStyle:{color:'#000'}},
+					type: 'value',
+                    // min:lineDatax.min-4000,
 				}],
 				series: {
 				  name: 'Throughput',

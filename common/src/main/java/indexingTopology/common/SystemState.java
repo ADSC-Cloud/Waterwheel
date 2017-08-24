@@ -13,20 +13,20 @@ public class SystemState implements Serializable{
 
     private double throughout;
     private double cpuRatio;
-
     private double totalDiskSpaceInGB;
     private double availableDiskSpaceInGB;
 
     public double[] lastThroughput;
     private HashMap<String,String> hashMap;
     private TreeMap<String,String> treeMap;
-    static public int NumberOfHistoricThroughputs = 6;
+    static public int NumberOfHistoricThroughputs = 26;
     public void setCpuRatio(double cpuRatio) {
         this.cpuRatio = cpuRatio;
     }
     public double getRatio() {
         return cpuRatio;
     }
+
     public double getThroughput() {
         return throughout;
     }
@@ -65,7 +65,7 @@ public class SystemState implements Serializable{
     @Override
     public String toString() {
         return "[throughput=" + throughout + ", lastThroughput=" + lastThroughput + ", hashMap="
-                + hashMap + ", cpuRatio="+ cpuRatio + " ,treeMap="+treeMap + "]";
+                + hashMap + ", cpuRatio="+ cpuRatio + ",diskRatio=" + totalDiskSpaceInGB +" ,treeMap="+treeMap + "]";
     }
 
     public double getTotalDiskSpaceInGB() {
