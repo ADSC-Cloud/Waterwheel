@@ -27,7 +27,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Gentelella Alela! | </title>
+    <title>Waterwheel Web UI</title>
 
     <!-- Bootstrap -->
     <link href="gentelella-master/vendors/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -137,7 +137,7 @@
         <div class="col-md-3 left_col">
             <div class="left_col scroll-view">
                 <div class="navbar nav_title" style="border: 0;">
-                    <a href="/web/gentelella-master/production/index.jsp" class="site_title" style="text-align: center"><span>Waterwheel</span></a>
+                    <a href="index.jsp" class="site_title" style="padding-left: 50px;"><span>Waterwheel</span></a>
                 </div>
 
                 <div class="clearfix"></div>
@@ -251,14 +251,13 @@
                 <!-- sidebar menu -->
                 <div id="sidebar-menu" class="main_menu_side hidden-print main_menu">
                     <div class="menu_section">
-                        <h3>General</h3>
                         <ul class="nav side-menu">
                             <li><a href="index.jsp"><i class="fa fa-home"></i> Dashboard </a>
                                 <%--<ul class="nav child_menu">--%>
                                     <%--<li><a href="/web/gentelella-master/production/index.jsp">Dashboard</a></li>--%>
                                 <%--</ul>--%>
                             </li>
-                            <li><a href="tables_dynamic.jsp"><i class="fa fa-table"></i> Table Dynamic </a>
+                            <li><a href="tables_dynamic.jsp"><i class="fa fa-table"></i> Try Query </a>
                                 <%--<ul class="nav child_menu">--%>
                                     <%--<li><a href="/web/tables_dynamic.jsp">Table Dynamic</a></li>--%>
                                 <%--</ul>--%>
@@ -286,7 +285,7 @@
         <!-- /top navigation -->
 
         <!-- page content -->
-        <div class="right_col" role="main">
+        <div class="right_col" role="main" style="min-height: 650px">
             <!-- top tiles -->
             <div class="row tile_count">
                 <%--<div class="col-md-12 col-sm-12 col-xs-12 tile_stats_count">--%>
@@ -323,8 +322,8 @@
             <!-- /top tiles -->
 
             <div class="row">
-                <div class="col-md-7 col-sm-7 col-xs-7">
-                    <div class="dashboard_graph">
+                <div class="col-md-6 col-sm-6 col-xs-6">
+                    <div class="dashboard_graph" style="padding-right: 25px;padding-left: 25px;">
 
                         <div class="row x_title">
                             <div class="col-md-8">
@@ -338,7 +337,7 @@
                             </div>
                         </div>
 
-                        <div class="col-md-13 col-sm-12 col-xs-12">
+                        <div class="col-md-12 col-sm-12 col-xs-12" style="padding-left: 0px;padding-right: 0px;">
                             <div id="echart_line" class="demo-placeholder"></div>
                         </div>
                         <!--<div class="col-md-3 col-sm-3 col-xs-12 bg-white">-->
@@ -390,7 +389,7 @@
                     </div>
                 </div>
 
-                <div class="col-md-1 col-xs-12 widget widget_tally_box" style="min-width: 480px">
+                <div class="col-md-12 col-xs-12 widget widget_tally_box" style="min-width: 50%">
                     <div class="x_panel ui-ribbon-container fixed_height_320" style="height:350px;border: 0px;">
                         <div class="ui-ribbon-wrapper">
                             <!--<div class="ui-ribbon">-->
@@ -432,7 +431,7 @@
 
                             <br/>
                             <div class="divider" style="margin-top: 200px;"></div>
-                            <p >The status is refreshed after 5 seconds</p>
+                            <p >The status is refreshed every 5 seconds.</p>
                         </div>
                     </div>
                 </div>
@@ -542,21 +541,21 @@
                         <div class="x_panel">
                             <div class="x_title">
                                 <h2>System Parameters</h2>
-                                <ul class="nav navbar-right panel_toolbox">
-                                    <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
-                                    </li>
-                                    <li class="dropdown">
-                                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><i class="fa fa-wrench"></i></a>
-                                        <ul class="dropdown-menu" role="menu">
-                                            <li><a href="#">Settings 1</a>
-                                            </li>
-                                            <li><a href="#">Settings 2</a>
-                                            </li>
-                                        </ul>
-                                    </li>
-                                    <li><a class="close-link"><i class="fa fa-close"></i></a>
-                                    </li>
-                                </ul>
+                                <%--<ul class="nav navbar-right panel_toolbox">--%>
+                                    <%--<li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>--%>
+                                    <%--</li>--%>
+                                    <%--<li class="dropdown">--%>
+                                        <%--<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><i class="fa fa-wrench"></i></a>--%>
+                                        <%--<ul class="dropdown-menu" role="menu">--%>
+                                            <%--<li><a href="#">Settings 1</a>--%>
+                                            <%--</li>--%>
+                                            <%--<li><a href="#">Settings 2</a>--%>
+                                            <%--</li>--%>
+                                        <%--</ul>--%>
+                                    <%--</li>--%>
+                                    <%--<li><a class="close-link"><i class="fa fa-close"></i></a>--%>
+                                    <%--</li>--%>
+                                <%--</ul>--%>
                                 <div class="clearfix"></div>
                             </div>
                             <div class="x_content">
@@ -566,8 +565,8 @@
                                 <table id="datatable" class="table table-striped table-bordered">
                                     <thead>
                                     <tr>
-                                        <th>Name </th>
-                                        <th>Status</th>
+                                        <th style="text-align: center">Name </th>
+                                        <th style="text-align: center">Status</th>
                                         <%--<th>Office</th>--%>
                                         <%--<th>Age</th>--%>
                                         <%--<th>Start date</th>--%>
@@ -725,589 +724,7 @@
                         </div>
                     </div>
             </div>
-            <!--<div class="row">-->
 
-
-            <!--<div class="col-md-4 col-sm-4 col-xs-12">-->
-            <!--<div class="x_panel tile fixed_height_320">-->
-            <!--<div class="x_title">-->
-            <!--<h2>App Versions</h2>-->
-            <!--<ul class="nav navbar-right panel_toolbox">-->
-            <!--<li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>-->
-            <!--</li>-->
-            <!--<li class="dropdown">-->
-            <!--<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><i class="fa fa-wrench"></i></a>-->
-            <!--<ul class="dropdown-menu" role="menu">-->
-            <!--<li><a href="#">Settings 1</a>-->
-            <!--</li>-->
-            <!--<li><a href="#">Settings 2</a>-->
-            <!--</li>-->
-            <!--</ul>-->
-            <!--</li>-->
-            <!--<li><a class="close-link"><i class="fa fa-close"></i></a>-->
-            <!--</li>-->
-            <!--</ul>-->
-            <!--<div class="clearfix"></div>-->
-            <!--</div>-->
-            <!--<div class="x_content">-->
-            <!--<h4>App Usage across versions</h4>-->
-            <!--<div class="widget_summary">-->
-            <!--<div class="w_left w_25">-->
-            <!--<span>0.1.5.2</span>-->
-            <!--</div>-->
-            <!--<div class="w_center w_55">-->
-            <!--<div class="progress">-->
-            <!--<div class="progress-bar bg-green" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: 66%;">-->
-            <!--<span class="sr-only">60% Complete</span>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--<div class="w_right w_20">-->
-            <!--<span>123k</span>-->
-            <!--</div>-->
-            <!--<div class="clearfix"></div>-->
-            <!--</div>-->
-
-            <!--<div class="widget_summary">-->
-            <!--<div class="w_left w_25">-->
-            <!--<span>0.1.5.3</span>-->
-            <!--</div>-->
-            <!--<div class="w_center w_55">-->
-            <!--<div class="progress">-->
-            <!--<div class="progress-bar bg-green" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: 45%;">-->
-            <!--<span class="sr-only">60% Complete</span>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--<div class="w_right w_20">-->
-            <!--<span>53k</span>-->
-            <!--</div>-->
-            <!--<div class="clearfix"></div>-->
-            <!--</div>-->
-            <!--<div class="widget_summary">-->
-            <!--<div class="w_left w_25">-->
-            <!--<span>0.1.5.4</span>-->
-            <!--</div>-->
-            <!--<div class="w_center w_55">-->
-            <!--<div class="progress">-->
-            <!--<div class="progress-bar bg-green" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: 25%;">-->
-            <!--<span class="sr-only">60% Complete</span>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--<div class="w_right w_20">-->
-            <!--<span>23k</span>-->
-            <!--</div>-->
-            <!--<div class="clearfix"></div>-->
-            <!--</div>-->
-            <!--<div class="widget_summary">-->
-            <!--<div class="w_left w_25">-->
-            <!--<span>0.1.5.5</span>-->
-            <!--</div>-->
-            <!--<div class="w_center w_55">-->
-            <!--<div class="progress">-->
-            <!--<div class="progress-bar bg-green" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: 5%;">-->
-            <!--<span class="sr-only">60% Complete</span>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--<div class="w_right w_20">-->
-            <!--<span>3k</span>-->
-            <!--</div>-->
-            <!--<div class="clearfix"></div>-->
-            <!--</div>-->
-            <!--<div class="widget_summary">-->
-            <!--<div class="w_left w_25">-->
-            <!--<span>0.1.5.6</span>-->
-            <!--</div>-->
-            <!--<div class="w_center w_55">-->
-            <!--<div class="progress">-->
-            <!--<div class="progress-bar bg-green" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: 2%;">-->
-            <!--<span class="sr-only">60% Complete</span>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--<div class="w_right w_20">-->
-            <!--<span>1k</span>-->
-            <!--</div>-->
-            <!--<div class="clearfix"></div>-->
-            <!--</div>-->
-
-            <!--</div>-->
-            <!--</div>-->
-            <!--</div>-->
-
-            <!--<div class="col-md-4 col-sm-4 col-xs-12">-->
-            <!--<div class="x_panel tile fixed_height_320 overflow_hidden">-->
-            <!--<div class="x_title">-->
-            <!--<h2>Device Usage</h2>-->
-            <!--<ul class="nav navbar-right panel_toolbox">-->
-            <!--<li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>-->
-            <!--</li>-->
-            <!--<li class="dropdown">-->
-            <!--<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><i class="fa fa-wrench"></i></a>-->
-            <!--<ul class="dropdown-menu" role="menu">-->
-            <!--<li><a href="#">Settings 1</a>-->
-            <!--</li>-->
-            <!--<li><a href="#">Settings 2</a>-->
-            <!--</li>-->
-            <!--</ul>-->
-            <!--</li>-->
-            <!--<li><a class="close-link"><i class="fa fa-close"></i></a>-->
-            <!--</li>-->
-            <!--</ul>-->
-            <!--<div class="clearfix"></div>-->
-            <!--</div>-->
-            <!--<div class="x_content">-->
-            <!--<table class="" style="width:100%">-->
-            <!--<tr>-->
-            <!--<th style="width:37%;">-->
-            <!--<p>Top 5</p>-->
-            <!--</th>-->
-            <!--<th>-->
-            <!--<div class="col-lg-7 col-md-7 col-sm-7 col-xs-7">-->
-            <!--<p class="">Device</p>-->
-            <!--</div>-->
-            <!--<div class="col-lg-5 col-md-5 col-sm-5 col-xs-5">-->
-            <!--<p class="">Progress</p>-->
-            <!--</div>-->
-            <!--</th>-->
-            <!--</tr>-->
-            <!--<tr>-->
-            <!--<td>-->
-            <!--<canvas class="canvasDoughnut" height="140" width="140" style="margin: 15px 10px 10px 0"></canvas>-->
-            <!--</td>-->
-            <!--<td>-->
-            <!--<table class="tile_info">-->
-            <!--<tr>-->
-            <!--<td>-->
-            <!--<p><i class="fa fa-square blue"></i>IOS </p>-->
-            <!--</td>-->
-            <!--<td>30%</td>-->
-            <!--</tr>-->
-            <!--<tr>-->
-            <!--<td>-->
-            <!--<p><i class="fa fa-square green"></i>Android </p>-->
-            <!--</td>-->
-            <!--<td>10%</td>-->
-            <!--</tr>-->
-            <!--<tr>-->
-            <!--<td>-->
-            <!--<p><i class="fa fa-square purple"></i>Blackberry </p>-->
-            <!--</td>-->
-            <!--<td>20%</td>-->
-            <!--</tr>-->
-            <!--<tr>-->
-            <!--<td>-->
-            <!--<p><i class="fa fa-square aero"></i>Symbian </p>-->
-            <!--</td>-->
-            <!--<td>15%</td>-->
-            <!--</tr>-->
-            <!--<tr>-->
-            <!--<td>-->
-            <!--<p><i class="fa fa-square red"></i>Others </p>-->
-            <!--</td>-->
-            <!--<td>30%</td>-->
-            <!--</tr>-->
-            <!--</table>-->
-            <!--</td>-->
-            <!--</tr>-->
-            <!--</table>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--</div>-->
-
-
-            <!--<div class="col-md-4 col-sm-4 col-xs-12">-->
-            <!--<div class="x_panel tile fixed_height_320">-->
-            <!--<div class="x_title">-->
-            <!--<h2>Quick Settings</h2>-->
-            <!--<ul class="nav navbar-right panel_toolbox">-->
-            <!--<li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>-->
-            <!--</li>-->
-            <!--<li class="dropdown">-->
-            <!--<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><i class="fa fa-wrench"></i></a>-->
-            <!--<ul class="dropdown-menu" role="menu">-->
-            <!--<li><a href="#">Settings 1</a>-->
-            <!--</li>-->
-            <!--<li><a href="#">Settings 2</a>-->
-            <!--</li>-->
-            <!--</ul>-->
-            <!--</li>-->
-            <!--<li><a class="close-link"><i class="fa fa-close"></i></a>-->
-            <!--</li>-->
-            <!--</ul>-->
-            <!--<div class="clearfix"></div>-->
-            <!--</div>-->
-            <!--<div class="x_content">-->
-            <!--<div class="dashboard-widget-content">-->
-            <!--<ul class="quick-list">-->
-            <!--<li><i class="fa fa-calendar-o"></i><a href="#">Settings</a>-->
-            <!--</li>-->
-            <!--<li><i class="fa fa-bars"></i><a href="#">Subscription</a>-->
-            <!--</li>-->
-            <!--<li><i class="fa fa-bar-chart"></i><a href="#">Auto Renewal</a> </li>-->
-            <!--<li><i class="fa fa-line-chart"></i><a href="#">Achievements</a>-->
-            <!--</li>-->
-            <!--<li><i class="fa fa-bar-chart"></i><a href="#">Auto Renewal</a> </li>-->
-            <!--<li><i class="fa fa-line-chart"></i><a href="#">Achievements</a>-->
-            <!--</li>-->
-            <!--<li><i class="fa fa-area-chart"></i><a href="#">Logout</a>-->
-            <!--</li>-->
-            <!--</ul>-->
-
-            <!--<div class="sidebar-widget">-->
-            <!--<h4>Profile Completion</h4>-->
-            <!--<canvas width="150" height="80" id="chart_gauge_01" class="" style="width: 160px; height: 100px;"></canvas>-->
-            <!--<div class="goal-wrapper">-->
-            <!--<span id="gauge-text" class="gauge-value pull-left">0</span>-->
-            <!--<span class="gauge-value pull-left">%</span>-->
-            <!--<span id="goal-text" class="goal-value pull-right">100%</span>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--</div>-->
-
-            <!--</div>-->
-
-
-            <!--<div class="row">-->
-            <!--<div class="col-md-4 col-sm-4 col-xs-12">-->
-            <!--<div class="x_panel">-->
-            <!--<div class="x_title">-->
-            <!--<h2>Recent Activities <small>Sessions</small></h2>-->
-            <!--<ul class="nav navbar-right panel_toolbox">-->
-            <!--<li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>-->
-            <!--</li>-->
-            <!--<li class="dropdown">-->
-            <!--<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><i class="fa fa-wrench"></i></a>-->
-            <!--<ul class="dropdown-menu" role="menu">-->
-            <!--<li><a href="#">Settings 1</a>-->
-            <!--</li>-->
-            <!--<li><a href="#">Settings 2</a>-->
-            <!--</li>-->
-            <!--</ul>-->
-            <!--</li>-->
-            <!--<li><a class="close-link"><i class="fa fa-close"></i></a>-->
-            <!--</li>-->
-            <!--</ul>-->
-            <!--<div class="clearfix"></div>-->
-            <!--</div>-->
-            <!--<div class="x_content">-->
-            <!--<div class="dashboard-widget-content">-->
-
-            <!--<ul class="list-unstyled timeline widget">-->
-            <!--<li>-->
-            <!--<div class="block">-->
-            <!--<div class="block_content">-->
-            <!--<h2 class="title">-->
-            <!--<a>Who Needs Sundance When You’ve Got&nbsp;Crowdfunding?</a>-->
-            <!--</h2>-->
-            <!--<div class="byline">-->
-            <!--<span>13 hours ago</span> by <a>Jane Smith</a>-->
-            <!--</div>-->
-            <!--<p class="excerpt">Film festivals used to be do-or-die moments for movie makers. They were where you met the producers that could fund your project, and if the buyers liked your flick, they’d pay to Fast-forward and… <a>Read&nbsp;More</a>-->
-            <!--</p>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--</li>-->
-            <!--<li>-->
-            <!--<div class="block">-->
-            <!--<div class="block_content">-->
-            <!--<h2 class="title">-->
-            <!--<a>Who Needs Sundance When You’ve Got&nbsp;Crowdfunding?</a>-->
-            <!--</h2>-->
-            <!--<div class="byline">-->
-            <!--<span>13 hours ago</span> by <a>Jane Smith</a>-->
-            <!--</div>-->
-            <!--<p class="excerpt">Film festivals used to be do-or-die moments for movie makers. They were where you met the producers that could fund your project, and if the buyers liked your flick, they’d pay to Fast-forward and… <a>Read&nbsp;More</a>-->
-            <!--</p>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--</li>-->
-            <!--<li>-->
-            <!--<div class="block">-->
-            <!--<div class="block_content">-->
-            <!--<h2 class="title">-->
-            <!--<a>Who Needs Sundance When You’ve Got&nbsp;Crowdfunding?</a>-->
-            <!--</h2>-->
-            <!--<div class="byline">-->
-            <!--<span>13 hours ago</span> by <a>Jane Smith</a>-->
-            <!--</div>-->
-            <!--<p class="excerpt">Film festivals used to be do-or-die moments for movie makers. They were where you met the producers that could fund your project, and if the buyers liked your flick, they’d pay to Fast-forward and… <a>Read&nbsp;More</a>-->
-            <!--</p>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--</li>-->
-            <!--<li>-->
-            <!--<div class="block">-->
-            <!--<div class="block_content">-->
-            <!--<h2 class="title">-->
-            <!--<a>Who Needs Sundance When You’ve Got&nbsp;Crowdfunding?</a>-->
-            <!--</h2>-->
-            <!--<div class="byline">-->
-            <!--<span>13 hours ago</span> by <a>Jane Smith</a>-->
-            <!--</div>-->
-            <!--<p class="excerpt">Film festivals used to be do-or-die moments for movie makers. They were where you met the producers that could fund your project, and if the buyers liked your flick, they’d pay to Fast-forward and… <a>Read&nbsp;More</a>-->
-            <!--</p>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--</li>-->
-            <!--</ul>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--</div>-->
-
-
-            <!--<div class="col-md-8 col-sm-8 col-xs-12">-->
-
-
-
-            <!--<div class="row">-->
-
-            <!--<div class="col-md-12 col-sm-12 col-xs-12">-->
-            <!--<div class="x_panel">-->
-            <!--<div class="x_title">-->
-            <!--<h2>Visitors location <small>geo-presentation</small></h2>-->
-            <!--<ul class="nav navbar-right panel_toolbox">-->
-            <!--<li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>-->
-            <!--</li>-->
-            <!--<li class="dropdown">-->
-            <!--<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><i class="fa fa-wrench"></i></a>-->
-            <!--<ul class="dropdown-menu" role="menu">-->
-            <!--<li><a href="#">Settings 1</a>-->
-            <!--</li>-->
-            <!--<li><a href="#">Settings 2</a>-->
-            <!--</li>-->
-            <!--</ul>-->
-            <!--</li>-->
-            <!--<li><a class="close-link"><i class="fa fa-close"></i></a>-->
-            <!--</li>-->
-            <!--</ul>-->
-            <!--<div class="clearfix"></div>-->
-            <!--</div>-->
-            <!--<div class="x_content">-->
-            <!--<div class="dashboard-widget-content">-->
-            <!--<div class="col-md-4 hidden-small">-->
-            <!--<h2 class="line_30">125.7k Views from 60 countries</h2>-->
-
-            <!--<table class="countries_list">-->
-            <!--<tbody>-->
-            <!--<tr>-->
-            <!--<td>United States</td>-->
-            <!--<td class="fs15 fw700 text-right">33%</td>-->
-            <!--</tr>-->
-            <!--<tr>-->
-            <!--<td>France</td>-->
-            <!--<td class="fs15 fw700 text-right">27%</td>-->
-            <!--</tr>-->
-            <!--<tr>-->
-            <!--<td>Germany</td>-->
-            <!--<td class="fs15 fw700 text-right">16%</td>-->
-            <!--</tr>-->
-            <!--<tr>-->
-            <!--<td>Spain</td>-->
-            <!--<td class="fs15 fw700 text-right">11%</td>-->
-            <!--</tr>-->
-            <!--<tr>-->
-            <!--<td>Britain</td>-->
-            <!--<td class="fs15 fw700 text-right">10%</td>-->
-            <!--</tr>-->
-            <!--</tbody>-->
-            <!--</table>-->
-            <!--</div>-->
-            <!--<div id="world-map-gdp" class="col-md-8 col-sm-12 col-xs-12" style="height:230px;"></div>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--</div>-->
-
-            <!--</div>-->
-            <!--<div class="row">-->
-
-
-            <!--&lt;!&ndash; Start to do list &ndash;&gt;-->
-            <!--<div class="col-md-6 col-sm-6 col-xs-12">-->
-            <!--<div class="x_panel">-->
-            <!--<div class="x_title">-->
-            <!--<h2>To Do List <small>Sample tasks</small></h2>-->
-            <!--<ul class="nav navbar-right panel_toolbox">-->
-            <!--<li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>-->
-            <!--</li>-->
-            <!--<li class="dropdown">-->
-            <!--<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><i class="fa fa-wrench"></i></a>-->
-            <!--<ul class="dropdown-menu" role="menu">-->
-            <!--<li><a href="#">Settings 1</a>-->
-            <!--</li>-->
-            <!--<li><a href="#">Settings 2</a>-->
-            <!--</li>-->
-            <!--</ul>-->
-            <!--</li>-->
-            <!--<li><a class="close-link"><i class="fa fa-close"></i></a>-->
-            <!--</li>-->
-            <!--</ul>-->
-            <!--<div class="clearfix"></div>-->
-            <!--</div>-->
-            <!--<div class="x_content">-->
-
-            <!--<div class="">-->
-            <!--<ul class="to_do">-->
-            <!--<li>-->
-            <!--<p>-->
-            <!--<input type="checkbox" class="flat"> Schedule meeting with new client </p>-->
-            <!--</li>-->
-            <!--<li>-->
-            <!--<p>-->
-            <!--<input type="checkbox" class="flat"> Create email address for new intern</p>-->
-            <!--</li>-->
-            <!--<li>-->
-            <!--<p>-->
-            <!--<input type="checkbox" class="flat"> Have IT fix the network printer</p>-->
-            <!--</li>-->
-            <!--<li>-->
-            <!--<p>-->
-            <!--<input type="checkbox" class="flat"> Copy backups to offsite location</p>-->
-            <!--</li>-->
-            <!--<li>-->
-            <!--<p>-->
-            <!--<input type="checkbox" class="flat"> Food truck fixie locavors mcsweeney</p>-->
-            <!--</li>-->
-            <!--<li>-->
-            <!--<p>-->
-            <!--<input type="checkbox" class="flat"> Food truck fixie locavors mcsweeney</p>-->
-            <!--</li>-->
-            <!--<li>-->
-            <!--<p>-->
-            <!--<input type="checkbox" class="flat"> Create email address for new intern</p>-->
-            <!--</li>-->
-            <!--<li>-->
-            <!--<p>-->
-            <!--<input type="checkbox" class="flat"> Have IT fix the network printer</p>-->
-            <!--</li>-->
-            <!--<li>-->
-            <!--<p>-->
-            <!--<input type="checkbox" class="flat"> Copy backups to offsite location</p>-->
-            <!--</li>-->
-            <!--</ul>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--&lt;!&ndash; End to do list &ndash;&gt;-->
-            <!---->
-            <!--&lt;!&ndash; start of weather widget &ndash;&gt;-->
-            <!--<div class="col-md-6 col-sm-6 col-xs-12">-->
-            <!--<div class="x_panel">-->
-            <!--<div class="x_title">-->
-            <!--<h2>Daily active users <small>Sessions</small></h2>-->
-            <!--<ul class="nav navbar-right panel_toolbox">-->
-            <!--<li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>-->
-            <!--</li>-->
-            <!--<li class="dropdown">-->
-            <!--<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><i class="fa fa-wrench"></i></a>-->
-            <!--<ul class="dropdown-menu" role="menu">-->
-            <!--<li><a href="#">Settings 1</a>-->
-            <!--</li>-->
-            <!--<li><a href="#">Settings 2</a>-->
-            <!--</li>-->
-            <!--</ul>-->
-            <!--</li>-->
-            <!--<li><a class="close-link"><i class="fa fa-close"></i></a>-->
-            <!--</li>-->
-            <!--</ul>-->
-            <!--<div class="clearfix"></div>-->
-            <!--</div>-->
-            <!--<div class="x_content">-->
-            <!--<div class="row">-->
-            <!--<div class="col-sm-12">-->
-            <!--<div class="temperature"><b>Monday</b>, 07:30 AM-->
-            <!--<span>F</span>-->
-            <!--<span><b>C</b></span>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--<div class="row">-->
-            <!--<div class="col-sm-4">-->
-            <!--<div class="weather-icon">-->
-            <!--<canvas height="84" width="84" id="partly-cloudy-day"></canvas>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--<div class="col-sm-8">-->
-            <!--<div class="weather-text">-->
-            <!--<h2>Texas <br><i>Partly Cloudy Day</i></h2>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--<div class="col-sm-12">-->
-            <!--<div class="weather-text pull-right">-->
-            <!--<h3 class="degrees">23</h3>-->
-            <!--</div>-->
-            <!--</div>-->
-
-            <!--<div class="clearfix"></div>-->
-
-            <!--<div class="row weather-days">-->
-            <!--<div class="col-sm-2">-->
-            <!--<div class="daily-weather">-->
-            <!--<h2 class="day">Mon</h2>-->
-            <!--<h3 class="degrees">25</h3>-->
-            <!--<canvas id="clear-day" width="32" height="32"></canvas>-->
-            <!--<h5>15 <i>km/h</i></h5>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--<div class="col-sm-2">-->
-            <!--<div class="daily-weather">-->
-            <!--<h2 class="day">Tue</h2>-->
-            <!--<h3 class="degrees">25</h3>-->
-            <!--<canvas height="32" width="32" id="rain"></canvas>-->
-            <!--<h5>12 <i>km/h</i></h5>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--<div class="col-sm-2">-->
-            <!--<div class="daily-weather">-->
-            <!--<h2 class="day">Wed</h2>-->
-            <!--<h3 class="degrees">27</h3>-->
-            <!--<canvas height="32" width="32" id="snow"></canvas>-->
-            <!--<h5>14 <i>km/h</i></h5>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--<div class="col-sm-2">-->
-            <!--<div class="daily-weather">-->
-            <!--<h2 class="day">Thu</h2>-->
-            <!--<h3 class="degrees">28</h3>-->
-            <!--<canvas height="32" width="32" id="sleet"></canvas>-->
-            <!--<h5>15 <i>km/h</i></h5>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--<div class="col-sm-2">-->
-            <!--<div class="daily-weather">-->
-            <!--<h2 class="day">Fri</h2>-->
-            <!--<h3 class="degrees">28</h3>-->
-            <!--<canvas height="32" width="32" id="wind"></canvas>-->
-            <!--<h5>11 <i>km/h</i></h5>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--<div class="col-sm-2">-->
-            <!--<div class="daily-weather">-->
-            <!--<h2 class="day">Sat</h2>-->
-            <!--<h3 class="degrees">26</h3>-->
-            <!--<canvas height="32" width="32" id="cloudy"></canvas>-->
-            <!--<h5>10 <i>km/h</i></h5>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--<div class="clearfix"></div>-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--</div>-->
-
-            <!--</div>-->
-            <!--&lt;!&ndash; end of weather widget &ndash;&gt;-->
-            <!--</div>-->
-            <!--</div>-->
-            <!--</div>-->
         </div>
         <!-- /page content -->
 
@@ -1351,11 +768,11 @@
                 var dataPercent = 80;
                 var dataPercent2 = 60;
                 var per = document.getElementById("dataper");
-                $("#dataper").attr("data-percent",nowStr.ratio);
+                $("#dataper").attr("data-percent",nowStr.ratio*100);
                 $("#dataper").remove("data-percent");
 //                alert(nowStr.ratio);
                 var per2 = document.getElementById("dataper2");
-                $("#dataper2").attr("data-percent",nowStr.availableDiskSpaceInGB/nowStr.totalDiskSpaceInGB*100);
+                $("#dataper2").attr("data-percent",(1-nowStr.availableDiskSpaceInGB/nowStr.totalDiskSpaceInGB)*100);
 //                $.per.setAttribute("data-percent","1");
 //                per.dataset.percent= "11
 //                alert(nowStr.throughput);
@@ -1381,7 +798,7 @@
 //                var arr = [1,2,3,4,5];
 //                init_flot_chart(nowStr.lastThroughput);
                 $('canvas').remove();
-                var a = parseFloat(nowStr.ratio).toFixed(3);
+                var a = parseFloat(nowStr.ratio*100).toFixed(3);
                 var cpu = a.substring(0,a.toString().length - 2);
                 var b = parseFloat(nowStr.availableDiskSpaceInGB).toFixed(3);
                 var result = b.substring(0,b.toString().length - 2);
@@ -1392,7 +809,7 @@
                 $('.chart').easyPieChart({
                     easing: 'easeOutElastic',
                     delay: 3000,
-                    barColor: '#dd74d3',
+                    barColor: '#feb4c1',
                     trackColor: '#26B99A',
                     scaleColor: false,
                     lineWidth: 20,
@@ -1475,7 +892,7 @@
     <%--}--%>
     <%--%>--%>
 </script>
-<script src="gentelella-master/build/js/custom.js?ver=1"></script>
+<script src="gentelella-master/build/js/custom.js"></script>
 <script type="text/javascript">
     var num = 0;//tableNum
     function b(){

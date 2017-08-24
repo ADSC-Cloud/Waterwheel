@@ -120,7 +120,7 @@
       <div class="col-md-3 left_col">
         <div class="left_col scroll-view">
           <div class="navbar nav_title" style="border: 0;">
-            <a href="index.html" class="site_title" style="padding-left: 50px;"> <span>Waterwheel</span></a>
+            <a href="index.jsp" class="site_title" style="padding-left: 50px;"> <span>Waterwheel</span></a>
           </div>
 
           <div class="clearfix"></div>
@@ -141,21 +141,20 @@
 
           <!-- sidebar menu -->
           <div id="sidebar-menu" class="main_menu_side hidden-print main_menu">
-            <div class="menu_section">
-              <h3>General</h3>
-              <ul class="nav side-menu">
-                <li><a href="index.jsp"><i class="fa fa-home"></i> Dashboard </a>
-                  <%--<ul class="nav child_menu">--%>
-                  <%--<li><a href="/web/gentelella-master/production/index.jsp">Dashboard</a></li>--%>
-                  <%--</ul>--%>
-                </li>
-                <li><a href="tables_dynamic.jsp"><i class="fa fa-table"></i> Table Dynamic </a>
-                  <%--<ul class="nav child_menu">--%>
-                  <%--<li><a href="/web/tables_dynamic.jsp">Table Dynamic</a></li>--%>
-                  <%--</ul>--%>
-                </li>
-              </ul>
-            </div>
+              <div class="menu_section">
+                  <ul class="nav side-menu">
+                      <li><a href="index.jsp"><i class="fa fa-home"></i> Dashboard </a>
+                          <%--<ul class="nav child_menu">--%>
+                          <%--<li><a href="/web/gentelella-master/production/index.jsp">Dashboard</a></li>--%>
+                          <%--</ul>--%>
+                      </li>
+                      <li><a href="tables_dynamic.jsp"><i class="fa fa-table"></i> Try Query </a>
+                          <%--<ul class="nav child_menu">--%>
+                          <%--<li><a href="/web/tables_dynamic.jsp">Table Dynamic</a></li>--%>
+                          <%--</ul>--%>
+                      </li>
+                  </ul>
+              </div>
 
           </div>
           <!-- /sidebar menu -->
@@ -180,8 +179,8 @@
       <div class="right_col" role="main">
         <div class="">
           <div class="page-title">
-            <div class="title_left" style="width: 30%;">
-              <h3>Tables <small>To get query result</small></h3>
+            <div class="title_left" style="width:30%">
+              <h3>Query Parameters</h3>
             </div>
 
             <div class="input-group">
@@ -228,15 +227,14 @@
                     </select>
                   </div>
                   <!-- Single button -->
-                  <small style="padding: 10px">Time :</small>
-                  <select class="text" id="time" name="time" style="color: #1f6377">
-                    <option value="0"></option>
+                  <small style="padding: 10px; float: left">Time :</small>
+                  <select class="text" id="time" name="time" style="color: #1f6377; float: left; margin-right: 10px">
                     <option value="5">5s</option>
                     <option value="10">10s</option>
                     <option value="15">15s</option>
                   </select>
                   <span>
-                      <input class="btn btn-info" type="submit" value="Query!" />
+                      <input style="float: left" class="btn btn-info" type="submit" value="Query!" />
                     </span>
                 </div>
               </div>

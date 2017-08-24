@@ -3363,7 +3363,7 @@ if (typeof NProgress != 'undefined') {
 			  var j = sys.length-1;
                 while(i < sys.length){
                 	// alert(sys.length+"  "+sys[i]);
-                    lineDatax.push(sys[i]);
+                    lineDatax.push(sys[i]*10);
                     if(j == 0){
                         lineDatay.push("now");
                     }
@@ -3385,9 +3385,9 @@ if (typeof NProgress != 'undefined') {
 				},
 				  grid:{
 				  	top:'5%',
-					  right:'5%',
+					  right:'3%',
 					  bottom:'15%',
-					  left:'10%',
+					  left:'18%',
 				  },
 				// legend: {
 				//   x: 400,
@@ -3424,8 +3424,10 @@ if (typeof NProgress != 'undefined') {
                     nameLocation:'middle',
 					max_interval:4,
 					nameGap:20,
-                    axisLabel:{'showMinLabel':false,interval:4},
+                    axisLabel:{'showMinLabel':false,interval:4, textStyle: {color: '#000'}},
+                    axisLine:{lineStyle:{color:'#000'}},
 				  	type: 'category',
+                    nameGap:25,
 					max:'now',
 				  boundaryGap: false,
 				  data: lineDatay,
@@ -3438,7 +3440,9 @@ if (typeof NProgress != 'undefined') {
 				  	name:'Throughput(tuple/s)',
 					nameTextStyle:{'fontsize':15,'color':'black'},
 					nameLocation:'middle',
-					nameGap:50,
+					nameGap:70,
+                    axisLabel:{'show':true,'textStyle': {'color': '#000'}},
+                    axisLine:{lineStyle:{color:'#000'}},
 					type: 'value',
                     // min:lineDatax.min-4000,
 				}],
