@@ -30,6 +30,7 @@ public class ClientSkeleton {
     public void connect() throws IOException{
         client = new Socket(serverHost, port);
         client.setSoTimeout(1000);
+        client.setTcpNoDelay(true);
         objectOutputStream = new ObjectOutputStream((client.getOutputStream()));
         objectInputStream = new ObjectInputStream(client.getInputStream());
         System.out.println("Connected with " + serverHost);

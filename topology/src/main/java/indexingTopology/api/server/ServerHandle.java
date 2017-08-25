@@ -35,6 +35,7 @@ public abstract class ServerHandle implements Runnable{
     public void run() {
         try {
             client.setSoTimeout(100000);
+            client.setTcpNoDelay(true);
             objectInputStream = new ObjectInputStream(client.getInputStream());
             objectOutputStream = new ObjectOutputStream(client.getOutputStream());
 
@@ -47,11 +48,8 @@ public abstract class ServerHandle implements Runnable{
 
         while (true) {
             try {
-//                        System.out.println("try to read");
                 Object newObject = objectInputStream.readUnshared();
-//                        System.out.println("Received: " + newObject);
                 handleInputObject(newObject);
-//                        System.out.println("Handled: " + newObject);
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             } catch (SocketTimeoutException e) {

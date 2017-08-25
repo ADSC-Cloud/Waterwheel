@@ -1,5 +1,6 @@
 package indexingTopology.bolt;
 
+import indexingTopology.common.SystemState;
 import indexingTopology.common.aggregator.Aggregator;
 import indexingTopology.api.client.GeoTemporalQueryRequest;
 import indexingTopology.api.client.QueryRequest;
@@ -147,6 +148,8 @@ public class GeoTemporalQueryCoordinatorBoltBolt<T extends Number & Comparable<T
         @Override
         public void handle(GeoTemporalQueryRequest clientQueryRequest) throws IOException {
             try {
+
+                long prepareTimeStart = System.currentTimeMillis();
                 final long queryid = queryIdGenerator.getAndIncrement();
 
                 DataSchema outputSchema;
