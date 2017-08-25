@@ -125,7 +125,7 @@
     <!-- jQuery Sparklines -->
     <script src="gentelella-master/vendors/jquery-sparkline/dist/jquery.sparkline.min.js"></script>
     <!-- easy-pie-chart -->
-    <script src="gentelella-master/vendors/jquery.easy-pie-chart/dist/jquery.easypiechart.js?ver=1"></script>
+    <script src="gentelella-master/vendors/jquery.easy-pie-chart/dist/jquery.easypiechart.js"></script>
     <!-- bootstrap-progressbar -->
     <script src="gentelella-master/vendors/bootstrap-progressbar/bootstrap-progressbar.min.js"></script>
 </head>
@@ -808,13 +808,12 @@
 //                console.log('init_EasyPieChart');
                 $('.chart').easyPieChart({
                     easing: 'easeOutElastic',
-                    delay: 3000,
-                    barColor: '#feb4c1',
-                    trackColor: '#26B99A',
+                    barColor: '#26B99A',
+                    trackColor: '#b1deee',
                     scaleColor: false,
                     lineWidth: 20,
-                    trackWidth: 1,
-                    lineCap: 'butt',
+                    trackWidth: 15,
+//                    lineCap: 'butt',
                     onStep: function(from, to, percent) {
                         var showPer = parseFloat(percent).toFixed(3);
                         var show = showPer.substring(0,showPer.toString().length - 2);

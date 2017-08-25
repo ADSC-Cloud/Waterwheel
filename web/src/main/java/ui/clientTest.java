@@ -42,37 +42,37 @@ public class clientTest  extends HttpServlet {
     public void doPost(HttpServletRequest request,HttpServletResponse response)throws IOException,ServletException{
         response.setContentType("text/html; charset=UTF-8");
 
-        response.setContentType("application/json; charset=utf-8");
-        SystemStateQueryClient sys = new SystemStateQueryClient("localhost",20000);
-        sys.connect();
-        SystemState systemState = null;
-//        QueryCoordinatorBolt systemConfig = new QueryCoordinatorBolt();
-        try {
-            systemState = sys.query();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        System.out.println(systemState.lastThroughput[0]+" "+systemState.lastThroughput[1]+" "+systemState.lastThroughput[2]+" "+systemState.lastThroughput[3]+" "+systemState.lastThroughput[4]+" "+systemState.lastThroughput[5]);
-        double[] throughputList = systemState.lastThroughput;
-        sys.close();
-        System.out.println("tests");
-//        double[] throughputList = new double[26];
-//        for (int i = 0; i < 26; i++) {
-//            throughputList[i] = new Random().nextDouble() * 1000;
+//        response.setContentType("application/json; charset=utf-8");
+//        SystemStateQueryClient sys = new SystemStateQueryClient("localhost",20000);
+//        sys.connect();
+//        SystemState systemState = null;
+////        QueryCoordinatorBolt systemConfig = new QueryCoordinatorBolt();
+//        try {
+//            systemState = sys.query();
+//        } catch (ClassNotFoundException e) {
+//            e.printStackTrace();
 //        }
+//        System.out.println(systemState.lastThroughput[0]+" "+systemState.lastThroughput[1]+" "+systemState.lastThroughput[2]+" "+systemState.lastThroughput[3]+" "+systemState.lastThroughput[4]+" "+systemState.lastThroughput[5]);
+//        double[] throughputList = systemState.lastThroughput;
+//        sys.close();
+//        System.out.println("tests");
+        double[] throughputList = new double[26];
+        for (int i = 0; i < 26; i++) {
+            throughputList[i] = new Random().nextDouble() * 1000;
+        }
 ////        //获取输出流对象
 ////        PrintWriter pw = response.getWriter();
 ////        //通过流对象，将信息输出到AJAX对象
 ////        pw.write(String.valueOf(throughputList));
 //////        将每个vehicle对象拼接为json格式的对象,用于命令下发
-//        SystemState systemState = new SystemState();
-//        systemState.setThroughout(20.0);
-//        systemState.setLastThroughput(throughputList);
-//        systemState.setTreeMap("dataChunkDir","123");
-//        systemState.setTreeMap("metadataDir","234");
-//        systemState.setAvailableDiskSpaceInGB(new Random().nextDouble()*100);
-//        systemState.setTotalDiskSpaceInGB(new Random().nextDouble()*100);
-//        systemState.setCpuRatio(new Random().nextDouble()*100);
+        SystemState systemState = new SystemState();
+        systemState.setThroughout(20.0);
+        systemState.setLastThroughput(throughputList);
+        systemState.setTreeMap("dataChunkDir","123");
+        systemState.setTreeMap("metadataDir","234");
+        systemState.setAvailableDiskSpaceInGB(new Random().nextDouble()*100);
+        systemState.setTotalDiskSpaceInGB(new Random().nextDouble()*100);
+        systemState.setCpuRatio(new Random().nextDouble());
 
 //        List<Map.Entry<String,String>> list222 = new ArrayList<Map.Entry<String,String>>(systemState.getHashMap().entrySet());
 //        //然后通过比较器来实现排序
