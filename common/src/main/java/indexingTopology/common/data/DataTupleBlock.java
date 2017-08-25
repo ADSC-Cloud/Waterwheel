@@ -35,7 +35,7 @@ public class DataTupleBlock implements Serializable {
 
         tuples.forEach(t -> {
             byte[] bytes = scheme.serializeTuple(t);
-            output.writeShort(bytes.length);
+            output.writeShort((short)bytes.length);
             output.writeBytes(bytes);
         });
 

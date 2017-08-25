@@ -53,6 +53,8 @@ public class ClientSkeleton {
 
     public void close() throws IOException {
         closed = true;
+        objectOutputStream.writeUnshared(new EOF());
+        objectOutputStream.flush();
         objectOutputStream.close();
         objectInputStream.close();
         client.close();

@@ -1,5 +1,7 @@
 package indexingTopology.api.server;
 
+import indexingTopology.api.client.EOF;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -49,6 +51,10 @@ public abstract class ServerHandle implements Runnable{
         while (true) {
             try {
                 Object newObject = objectInputStream.readUnshared();
+                if (newObject instanceof EOF) {
+                    client.close();
+                    break;
+                }
                 handleInputObject(newObject);
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
