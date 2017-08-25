@@ -16,7 +16,8 @@ public class QueryClient extends ClientSkeleton {
     public QueryResponse temporalRangeQuery(Number lowKey, Number highKey, long startTime, long endTime) throws IOException,
             ClassNotFoundException {
         objectOutputStream.writeUnshared(new QueryRequest<>(lowKey, highKey, startTime, endTime));
-        objectOutputStream.reset();
+//        objectOutputStream.reset();
+//        objectOutputStream.flush();
         try {
             boolean eof = false;
             QueryResponse response = null;

@@ -327,6 +327,7 @@ public class KingBaseTopology {
 
         conf.put(Config.WORKER_CHILDOPTS, "-Xmx1024m");
         conf.put(Config.WORKER_HEAP_MEMORY_MB, 1024);
+        conf.put(Config.STORM_MESSAGING_NETTY_MAX_SLEEP_MS, 1);
 
         if (LocalMode) {
             LocalCluster localCluster = new LocalCluster();

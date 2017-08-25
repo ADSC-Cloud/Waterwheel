@@ -30,9 +30,9 @@ public class FilePartitionSchemaManagerTest {
     @Test
     public void searchNotInTimestampRangeButKeyRange() throws Exception {
         FilePartitionSchemaManager partitionSchemaManager = new FilePartitionSchemaManager();
-        partitionSchemaManager.add(new FileMetaData("file 1", 50, 100, 20000, 30000));
-        partitionSchemaManager.add(new FileMetaData("file 2", 20, 100, 22000, 28000));
-        assertEquals(0, partitionSchemaManager.search(0, 100, 0, 10000).size());
+        partitionSchemaManager.add(new FileMetaData("file 1", 50, 100, 0, 300));
+        partitionSchemaManager.add(new FileMetaData("file 2", 20, 100, 20, 400));
+        assertEquals(0, partitionSchemaManager.search(0, 200, 500, 10000).size());
     }
 
     @Test

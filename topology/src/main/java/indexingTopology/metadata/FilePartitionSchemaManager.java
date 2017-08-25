@@ -21,6 +21,7 @@ public class FilePartitionSchemaManager {
     public void add(FileMetaData fileMetaData) {
         tree = tree.add(fileMetaData, Geometries.rectangle(fileMetaData.keyRangeLowerBound, fileMetaData.startTime,
                 fileMetaData.keyRangeUpperBound, fileMetaData.endTime));
+//        System.out.println(fileMetaData.startTime + "---->" + fileMetaData.endTime + "###########");
     }
 
     // Retrieve the set of files for a given key range and time duration
