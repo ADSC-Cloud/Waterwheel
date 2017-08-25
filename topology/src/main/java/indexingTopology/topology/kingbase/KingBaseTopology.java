@@ -104,12 +104,6 @@ public class KingBaseTopology {
         DataSchema schema = getDataSchema();
         GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient(QueryServerIp, 10001);
         Thread queryThread = new Thread(() -> {
-            try {
-                queryClient.connectWithTimeout(10000);
-            } catch (IOException e) {
-                e.printStackTrace();
-                return;
-            }
             Random random = new Random();
 
             int executed = 0;
@@ -117,6 +111,12 @@ public class KingBaseTopology {
 
             while (true) {
 
+                try {
+                    queryClient.connectWithTimeout(10000);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return;
+                }
                 double x = x1 + (x2 - x1) * (1 - selectivityOnOneDimension) * random.nextDouble();
                 double y = y1 + (y2 - y1) * (1 - selectivityOnOneDimension) * random.nextDouble();
 
@@ -184,7 +184,11 @@ public class KingBaseTopology {
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
-
+                try {
+                    queryClient.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
             try {
                 queryClient.close();

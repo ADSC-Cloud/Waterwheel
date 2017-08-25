@@ -87,8 +87,8 @@ public class FakeServerHandle extends ServerHandle implements QueryHandle, Appen
 //            e.printStackTrace();
 //        }
         objectOutputStream.writeObject(new QueryResponse(particalQueryResult, schema, 1L));
-//        objectOutputStream.reset();
 //        objectOutputStream.flush();
+        objectOutputStream.reset();
 
     }
 
