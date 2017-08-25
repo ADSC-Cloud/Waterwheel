@@ -748,7 +748,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                     Thread.currentThread().interrupt();
 //                    e.printStackTrace();
                 }
-                System.out.println(timeMetrics.toString());
+//                System.out.println(timeMetrics.toString());
                 debugger.info = "Indexer: B10";
                 setChanged();
                 notifyObservers("query result");
