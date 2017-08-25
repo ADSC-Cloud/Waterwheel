@@ -3419,11 +3419,11 @@ if (typeof NProgress != 'undefined') {
 				// },
 				calculable: true,
 				xAxis: [{
-                    name:'time(s ago)',
+                    name:'time',
                     nameTextStyle:{'fontsize':15,'color':'black'},
                     nameLocation:'middle',
 					max_interval:4,
-					nameGap:20,
+					nameGap:30,
                     axisLabel:{'showMinLabel':false,interval:4, textStyle: {color: '#000'}},
                     axisLine:{lineStyle:{color:'#000'}},
 				  	type: 'category',
@@ -3437,7 +3437,7 @@ if (typeof NProgress != 'undefined') {
 				  // data: ['60s ago','50s ago','40s ago','30s ago','20s ago','10s ago','now','60s ago','50s ago','40s ago','30s ago','20s ago','10s ago','now']
 				}],
 				yAxis: [{
-				  	name:'Throughput(tuple/s)',
+				  	name:'Throughput (tuples/s)',
 					nameTextStyle:{'fontsize':15,'color':'black'},
 					nameLocation:'middle',
 					nameGap:70,

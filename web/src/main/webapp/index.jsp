@@ -565,8 +565,8 @@
                                 <table id="datatable" class="table table-striped table-bordered">
                                     <thead>
                                     <tr>
-                                        <th style="text-align: center">Name </th>
-                                        <th style="text-align: center">Status</th>
+                                        <th style="text-align: left">Name </th>
+                                        <th style="text-align: left">Status</th>
                                         <%--<th>Office</th>--%>
                                         <%--<th>Age</th>--%>
                                         <%--<th>Start date</th>--%>
@@ -718,7 +718,7 @@
                                     <%--<a>转到&nbsp;</a>--%>
                                     <%--<input id="changePage" type="text" size="1" maxlength="4"/>--%>
                                     <%--<a>页&nbsp;</a>--%>
-                                    <%--<a  href="#btn1" id="btn5">跳转</a>--%>
+                                    <%--<a  href="#btn1" id="btn5">Jump</a>--%>
                                 </div>
                             </div>
                         </div>
@@ -772,7 +772,7 @@
                 $("#dataper").remove("data-percent");
 //                alert(nowStr.ratio);
                 var per2 = document.getElementById("dataper2");
-                $("#dataper2").attr("data-percent",(1-nowStr.availableDiskSpaceInGB/nowStr.totalDiskSpaceInGB)*100);
+                $("#dataper2").attr("data-percent", (1 - nowStr.availableDiskSpaceInGB / nowStr.totalDiskSpaceInGB) * 100);
 //                $.per.setAttribute("data-percent","1");
 //                per.dataset.percent= "11
 //                alert(nowStr.throughput);
@@ -789,37 +789,35 @@
 //                    var newRow = table.insertRow(); //创建新行
 //                    var newCell1 = newRow.insertCell(0); //创建新单元格
 //                    newCell1.innerHTML = "<td>"+k+"</td>" ; //单元格内的内容
-//                    newCell1.setAttribute("align","center"); //设置位置
+//                    newCell1.setAttribute("align","left"); //设置位置
 //                    var newCell1 = newRow.insertCell(1); //创建新单元格
 //                    newCell1.innerHTML =" <td>"+nowStr.hashMap[k]+"</td> "; //单元格内的内容
 ////                    alert(nowStr.hashMap[k]);
-//                    newCell1.setAttribute("align","center"); //设置位置
+//                    newCell1.setAttribute("align","left"); //设置位置
 //                }
 //                var arr = [1,2,3,4,5];
 //                init_flot_chart(nowStr.lastThroughput);
                 $('canvas').remove();
-                var a = parseFloat(nowStr.ratio*100).toFixed(3);
-                var cpu = a.substring(0,a.toString().length - 2);
-                var b = parseFloat(nowStr.availableDiskSpaceInGB).toFixed(3);
-                var result = b.substring(0,b.toString().length - 2);
-                var c = parseFloat(nowStr.totalDiskSpaceInGB).toFixed(3);
-                var result2 = c.substring(0,c.toString().length - 2);
+                var cpu = parseFloat(nowStr.ratio * 100).toFixed(1);
+                var idle = (100 - nowStr.ratio * 100).toFixed(1);
+                var result = parseFloat(nowStr.availableDiskSpaceInGB).toFixed(1);
+                var result2 = parseFloat(nowStr.totalDiskSpaceInGB).toFixed(1);
 //                if( typeof ($.fn.easyPieChart) === 'undefined'){ return; }
 //                console.log('init_EasyPieChart');
                 $('.chart').easyPieChart({
                     easing: 'easeOutElastic',
+                    delay: 3000,
                     barColor: '#26B99A',
-                    trackColor: '#b1deee',
+                    trackColor: '#E6E9ED',
                     scaleColor: false,
                     lineWidth: 20,
-                    trackWidth: 15,
-//                    lineCap: 'butt',
+                    trackWidth: 2,
+                    lineCap: 'butt',
                     onStep: function(from, to, percent) {
-                        var showPer = parseFloat(percent).toFixed(3);
-                        var show = showPer.substring(0,showPer.toString().length - 2);
-                        $(this.el).find('.percent').text(show);
-                        $('.show_per1').text(cpu +"% idle");
-                        $('.show_per2').text(result+" GB / "+result2+"GB");
+                        var showPer = parseFloat(percent).toFixed(1);
+                        $(this.el).find('.percent').text(showPer);
+                        $('.show_per1').text(idle + "% idle");
+                        $('.show_per2').text(result + "GB / " + result2 + "GB");
                     }
                 });
 
@@ -954,11 +952,11 @@
                     var newRow = table.insertRow(); //创建新行
                     var newCell1 = newRow.insertCell(0); //创建新单元格
                     newCell1.innerHTML = "<td>"+k+"</td>" ; //单元格内的内容
-                    newCell1.setAttribute("align","center"); //设置位置
+                    newCell1.setAttribute("align","left"); //设置位置
                     var newCell1 = newRow.insertCell(1); //创建新单元格
                     newCell1.innerHTML =" <td>"+nowStr.treeMap[k]+"</td> "; //单元格内的内容
 //                    alert(nowStr.hashMap[k]);
-                    newCell1.setAttribute("align","center"); //设置位置
+                    newCell1.setAttribute("align","left"); //设置位置
                 }
 
                 var pageSize = 10;    //每页显示的记录条数
