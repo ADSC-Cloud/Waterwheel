@@ -27,7 +27,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Waterwheel Web UI</title>
+    <title>DITIR Web UI</title>
 
     <!-- Bootstrap -->
     <link href="gentelella-master/vendors/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -137,7 +137,7 @@
         <div class="col-md-3 left_col">
             <div class="left_col scroll-view">
                 <div class="navbar nav_title" style="border: 0;">
-                    <a href="index.jsp" class="site_title" style="padding-left: 50px;"><span>Waterwheel</span></a>
+                    <a href="index.jsp" class="site_title" style="padding-left: 50px;"><span>DITIR</span></a>
                 </div>
 
                 <div class="clearfix"></div>
@@ -290,7 +290,7 @@
             <div class="row tile_count">
                 <%--<div class="col-md-12 col-sm-12 col-xs-12 tile_stats_count">--%>
                     <%--<span class="count_top"><i class="fa fa-user"></i> Total Users</span>--%>
-                    <%--<h1>Waterwheel  <small>A distributed system for high-rate data indexing and real-time querying</small></h1>--%>
+                    <%--<h1>DITIR  <small>A distributed system for high-rate data indexing and real-time querying</small></h1>--%>
                     <%--<span class="count_bottom"><i class="green">4% </i> From last Week</span>--%>
                 <%--</div>--%>
                 <!--<div class="col-md-2 col-sm-4 col-xs-6 tile_stats_count">-->
@@ -732,7 +732,7 @@
         <footer>
             <div class="pull-right">
                 <%--Gentelella - Bootstrap Admin Template by <a href="https://colorlib.com">Colorlib</a>--%>
-                Waterwheel by ADSC
+                DITIR by ADSC
             </div>
             <div class="clearfix"></div>
         </footer>
