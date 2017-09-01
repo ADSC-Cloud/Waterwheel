@@ -27,7 +27,8 @@ public class PerformanceTester {
             if (count % 1000 == 0) {
                 System.out.println("Server: received " + count);
             }
-//            objectOutputStream.writeObject(new MessageResponse("received!"));
+            objectOutputStream.writeUnshared(new MessageResponse("received!"));
+            objectOutputStream.reset();
         }
 
         @Override
@@ -40,6 +41,8 @@ public class PerformanceTester {
             request.dataTupleBlock.deserialize();
             count += request.dataTupleBlock.tuples.size();
             System.out.println(String.format("Received %d tuples.", count));
+            objectOutputStream.writeUnshared(new MessageResponse("received!"));
+            objectOutputStream.reset();
         }
     }
 
@@ -77,7 +80,7 @@ public class PerformanceTester {
         return testAppendThroughput("localhost", tuples, payload);
     }
 
-    static double testAppendBatchModeThroughput(String host, int tuples, int payload) throws IOException, ClassNotFoundException,
+    static double testAppendBatchModeThroughput(String host, long tuples, int payload) throws IOException, ClassNotFoundException,
             InterruptedException {
 
         DataSchema schema = new DataSchema();
@@ -90,10 +93,10 @@ public class PerformanceTester {
         char[] charArray = new char[payload];
         Arrays.fill(charArray, ' ');
         long start = System.currentTimeMillis();
-        int count = 0;
+        long count = 0;
         String str =  RandomStringUtils.random(payload);
         while(count < tuples) {
-            client.appendInBatch(new DataTuple(count, 3.0, str));
+            client.appendInBatch(new DataTuple((int)count, 3.0, str));
             count ++;
             if (count % 1000 == 0) {
                 System.out.println("ClientSkeleton: append " + count);
@@ -105,19 +108,23 @@ public class PerformanceTester {
         return ret;
     }
 
-    static double testAppendBatchModeThroughput(int tuples, int payload) throws IOException, ClassNotFoundException,
+    static double testAppendBatchModeThroughput(long tuples, int payload) throws IOException, ClassNotFoundException,
             InterruptedException {
         return testAppendBatchModeThroughput("localhost", tuples, payload);
     }
 
     static public void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
-        String option = args[0];
+        String option;
+        if (args.length == 0)
+            option = "both";
+        else
+            option = args[0];
         System.out.println("args: " + option);
         Server server = null;
-        if(option.equals("both")) {
+        if (option.equals("both")) {
             System.out.println("both!");
             server = launchServerDaemon(1024);
-            double throughput = testAppendBatchModeThroughput(1000000,64);
+            double throughput = testAppendBatchModeThroughput(Long.MAX_VALUE, 64);
             System.out.println("Throughput: " + throughput);
         } else if (option.equals("server")) {
             System.out.println("Server!");

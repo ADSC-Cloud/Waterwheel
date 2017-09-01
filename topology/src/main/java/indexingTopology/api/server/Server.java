@@ -186,7 +186,13 @@ public class Server<T extends ServerHandle> {
         server.startDaemon();
         clientSkeleton.connect();
         System.out.println("started");
-        clientSkeleton.temporalRangeQuery(0,0,0,0);
+        int runs = 10;
+        for (int i = 0; i < runs; i++) {
+            long start = System.currentTimeMillis();
+            clientSkeleton.temporalRangeQuery(0, 0, 0, 0);
+            long end = System.currentTimeMillis();
+            System.out.println(String.format("%d ms.", end - start));
+        }
         clientSkeleton.close();
         server.endDaemon();
         System.out.println("end");

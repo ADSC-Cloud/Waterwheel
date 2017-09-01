@@ -58,6 +58,13 @@ $ mvn exec:java -pl topology -Dexec.mainClass=indexingTopology.topology.kingbase
 
 Use ```-h``` to print the detailed usage of the arguments.
 
+Deploy Web-UI daemon
+
+```
+$ mvn tomcat7:run -pl web
+```
+Now you can get access to the web ui via [http://localhost:8080](http://localhost:8080)
+
 #### 2. Cluster model
 
 1. Deploy Apache Storm and make sure that the nimbus and supervisors are running properly.
