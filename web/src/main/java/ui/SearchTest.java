@@ -66,8 +66,6 @@ public class SearchTest {
         Random random = new Random();
 
         int executed = 0;
-        long totalQueryTime = 0;
-
 
         double x = x1 + (x2 - x1) * (1 - selectivityOnOneDimension) * random.nextDouble();
         double y = y1 + (y2 - y1) * (1 - selectivityOnOneDimension) * random.nextDouble();
@@ -96,25 +94,18 @@ public class SearchTest {
 
         final int id = new Random().nextInt(100000);
         final String idString = "" + id;
-//                DataTuplePredicate predicate = t -> schema.getValue("id", t).equals(Integer.toString(new Random().nextInt(100000)));
         DataTuplePredicate predicate = t -> schema.getValue("id", t).equals(idString);
 
 
 
         Aggregator<Integer> aggregator = new Aggregator<>(schema, "id", new AggregateField(new Count(), "*"));
-//                Aggregator<Integer> aggregator = null;
-
-
-//                DataSchema schemaAfterAggregation = aggregator.getOutputDataSchema();
-//                DataTupleSorter sorter = (DataTuple o1, DataTuple o2) -> Double.compare((double) schemaAfterAggregation.getValue("count(*)", o1),
-//                        (double) schemaAfterAggregation.getValue("count(*)", o2));
 
 
         DataTupleEquivalentPredicateHint equivalentPredicateHint = new DataTupleEquivalentPredicateHint("id", idString);
 
         GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
                 System.currentTimeMillis() - RecentSecondsOfInterest * 1000,
-                System.currentTimeMillis(), null,null, null, equivalentPredicateHint);
+                System.currentTimeMillis(), null,null, null, null);
         long start = System.currentTimeMillis();
         try {
             DateFormat dateFormat = new SimpleDateFormat("MM-dd HH:mm:ss");
@@ -123,24 +114,18 @@ public class SearchTest {
             QueryResponse response = queryClient.query(queryRequest);
             System.out.println("A query finished.");
             long end = System.currentTimeMillis();
-            totalQueryTime += end - start;
+
             DataSchema outputSchema = response.getSchema();
             System.out.println("this is fieldNames" + outputSchema.getFieldNames());
             List<DataTuple> tuples = response.getTuples();
             dataBean.setTuples(tuples);
             dataBean.setFieldNames(outputSchema.getFieldNames());
-            dataBean.setTime(totalQueryTime);
+            dataBean.setTime(end - start);
             System.out.println(outputSchema.getFieldNames().size());
-                    /*for (int i = 0; i < tuples.size(); i++) {
-                        System.out.println(tuples.get(i).toValues());
-                    }
-*/
+
             System.out.println(String.format("Query time: %d ms", end - start));
 
-            if (executed++ >= NumberOfQueries) {
-                System.out.println("Average Query Latency: " + totalQueryTime / (double)executed);
 
-            }
 
         } catch (SocketTimeoutException e) {
             Thread.interrupted();

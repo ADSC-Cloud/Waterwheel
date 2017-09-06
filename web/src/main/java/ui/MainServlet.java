@@ -88,16 +88,16 @@ public class MainServlet extends HttpServlet{
 //            String pageCode=this.genPagation(total, Integer.parseInt(page), 4);
         request.getSession().setAttribute("dataBean", dataBean);
 //            request.setAttribute("pageCode", pageCode);
-        request.setAttribute("listSize",size);
-        request.setAttribute("diaryList", diaryList);
-        request.setAttribute("fieldNames", fieldNames);
-        request.setAttribute("queryTime",time);
+        request.getSession().setAttribute("listSize",size);
+        request.getSession().setAttribute("diaryList", diaryList);
+        request.getSession().setAttribute("fieldNames", fieldNames);
+        request.getSession().setAttribute("queryTime",time);
 //            int nowPage = Integer.parseInt(request.getParameter("page"));
 //            int beginPage = (nowPage-1)*4;
 //            int endPage = nowPage*4;
 //            request.setAttribute("beginPage",beginPage);
 //            request.setAttribute("endPage",endPage);
-        request.getRequestDispatcher("tables_dynamic.jsp").forward(request,response);
+        response.sendRedirect("tables_dynamic.jsp");
 
     }
 

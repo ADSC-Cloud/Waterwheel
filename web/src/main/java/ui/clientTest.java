@@ -65,6 +65,7 @@ public class clientTest  extends HttpServlet {
 ////        //通过流对象，将信息输出到AJAX对象
 ////        pw.write(String.valueOf(throughputList));
 //////        将每个vehicle对象拼接为json格式的对象,用于命令下发
+
 //        SystemState systemState = new SystemState();
 //        systemState.setThroughout(20.0);
 //        systemState.setLastThroughput(throughputList);

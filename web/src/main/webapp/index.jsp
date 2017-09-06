@@ -125,7 +125,7 @@
     <!-- jQuery Sparklines -->
     <script src="gentelella-master/vendors/jquery-sparkline/dist/jquery.sparkline.min.js"></script>
     <!-- easy-pie-chart -->
-    <script src="gentelella-master/vendors/jquery.easy-pie-chart/dist/jquery.easypiechart.js?ver=1"></script>
+    <script src="gentelella-master/vendors/jquery.easy-pie-chart/dist/jquery.easypiechart.js"></script>
     <!-- bootstrap-progressbar -->
     <script src="gentelella-master/vendors/bootstrap-progressbar/bootstrap-progressbar.min.js"></script>
 </head>
