@@ -100,4 +100,6 @@ $ mvn clean install -DskipTests
 $ storm jar SOURCE_CODE_PATH/target/IndexingTopology-1.0-SNAPSHOT.jar indexingTopologyNormalDistributionTopology append-only-store
 ```
 
+#### Acknowledgement
 
+This work was partially supported by SingAREN/AWS Cloud Credit for Research Program 2016.
