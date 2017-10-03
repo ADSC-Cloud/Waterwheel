@@ -77,7 +77,7 @@ Now you can get access to the web ui via [http://localhost:8080](http://localhos
 3. Download the source codes
 
 ```
-$ git clone https://github.com/ADSC-Cloud/append-only-store
+$ git clone https://github.com/ADSC-Cloud/Waterwheel
 ```
 
 4. Make sure that ```<scope>provided</scope>``` is uncommented in pom.xml file.
