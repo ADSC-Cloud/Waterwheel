@@ -26,6 +26,7 @@ import indexingTopology.metadata.FilePartitionSchemaManager;
 import indexingTopology.streams.Streams;
 import org.apache.zookeeper.KeeperException;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -102,6 +103,8 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
+
+        initializeMetadataFolder();
 
         filePartitionSchemaManager = new FilePartitionSchemaManager();
 
@@ -513,6 +516,15 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
         }
 
         return ret;
+    }
+
+    private void initializeMetadataFolder() {
+        Runtime runtime = Runtime.getRuntime();
+        try {
+            runtime.exec("mkdir -p " + config.metadataDir);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 
