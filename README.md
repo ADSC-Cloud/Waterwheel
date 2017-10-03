@@ -57,7 +57,9 @@ $ mvn exec:java -pl topology -Dexec.mainClass=indexingTopology.topology.kingbase
 $ mvn tomcat7:run -pl web
 ```
 Now you can get access to the web ui via [http://localhost:8080](http://localhost:8080)
-![alt text](https://github.com/adsc-cloud/waterwheel/web/resources/web-ui-screenshot.png)
+
+![alt tag](http://raw.githubusercontent.com/adsc-cloud/waterwheel/master/web/resources/web-ui-screenshot.png "Description")
+
 On the dashboard, you can see the instantenaous insertion throughput and the resource utilization.
 Also, you can run some demo queries.
 
