@@ -62,7 +62,7 @@ Now you can get access to the web ui via [http://localhost:8080](http://localhos
 
 On the dashboard, you can see the instantenaous insertion throughput and the resource utilization, as well as a table showing system parameters.
 
-6 Run queries
+6. Run queries
 
 You can try to run some demo queries either on the web ui or via terminal commandline.
 
