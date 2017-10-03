@@ -68,6 +68,8 @@ public class IndexingServerBolt extends BaseRichBolt implements Observer {
     }
 
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
+
+
         collector = outputCollector;
 
         this.inputQueue = new LinkedBlockingQueue<>();

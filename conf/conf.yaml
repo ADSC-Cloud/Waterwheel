@@ -1,12 +1,12 @@
 
 # the path where the data chunks will be stored
- storage.datachunk.folder: "/Users/Robert/Documents/code/append-only-store"
+ storage.datachunk.folder: "data"
+
+# the path where the metadata will be stored
+ metadata.local.storage.path: "metadata"
 
 # default file system for storage: hdfs/local.
  storage.file.system: "local"
-
-# the absolute path where cache files are stored locally.
- metadata.local.storage.path: "/Users/Robert/Documents/code/append-only-store"
 
 # the hdfs host. This value can be omitted when strage.file.system is local.
 # the host generally can be obtained by ./hdsf getconf --confKey fs.default.name

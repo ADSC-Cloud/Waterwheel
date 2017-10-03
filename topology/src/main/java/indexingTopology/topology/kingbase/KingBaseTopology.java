@@ -59,7 +59,7 @@ public class KingBaseTopology {
     private String TopologyName = "T0";
 
     @Option(name = "--config-file", aliases = {"-f"}, usage = "conf.yaml to override default configs")
-    private String confFile = "none";
+    private String confFile = "conf/conf.yaml";
 
     @Option(name = "--node", aliases = {"-n"}, usage = "number of nodes used in the topology")
     private int NumberOfNodes = 1;

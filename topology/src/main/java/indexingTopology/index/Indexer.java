@@ -122,6 +122,8 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
         debugger = new QueryDebugger();
         this.config = config;
 
+        initializeDataFolder();
+
         pendingQueue = new ArrayBlockingQueue<>(1024);
 
         queryResultQueue = new ArrayBlockingQueue<>(100);
@@ -972,5 +974,18 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
         }
 
         System.out.println("Deserialization for " + fileName + " has been finished!!!");
+    }
+    private void initializeDataFolder() {
+        if (config.HDFSFlag) {
+
+        }
+        if (!config.HDFSFlag || config.HybridStorage) {
+            Runtime runtime = Runtime.getRuntime();
+            try {
+                runtime.exec("mkdir -p " + config.dataChunkDir);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

@@ -115,7 +115,7 @@ public class TopologyConfig implements Serializable {
             }
 
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            System.err.println("The configure file " + filePath + " is not found. Use default conf instead.");
         }
     }
 
