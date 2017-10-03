@@ -56,19 +56,17 @@ $ mvn exec:java -pl topology -Dexec.mainClass=indexingTopology.topology.kingbase
 ```
 $ mvn tomcat7:run -pl web
 ```
-Now you can get access to the web ui via [http://localhost:8080](http://localhost:8080)
+Now you can get access to the web ui via [http://localhost:8080](http://localhost:8080). It looks like this:
+![screenshot](web/resources/web-ui-screenshot.png)
 
-![alt tag](http://raw.githubusercontent.com/adsc-cloud/waterwheel/master/web/resources/web-ui-screenshot.png "Description")
 
-On the dashboard, you can see the instantenaous insertion throughput and the resource utilization.
-Also, you can run some demo queries.
-
+On the dashboard, you can see the instantenaous insertion throughput and the resource utilization, as well as a table showing system parameters.
 
 6 Run queries
 
 You can try to run some demo queries either on the web ui or via terminal commandline.
 
-On the web ui, you can goto the query demo interface by clicking the ```Try Queries``` bottom of the left of the dashboard. In the demo interface, you can specify the kay ranges and the temporal ranges and run the query by clicking the ```Query``` bottom.
+On the web ui, you can goto the query demo interface by clicking the ```Try Query``` bottom of the left of the dashboard. In the demo interface, you can specify the kay ranges and the temporal ranges and run the query by clicking the ```Query!``` bottom.
 
 Or alternatively, you can open a new terminal and run the following command to issue generated queries:
 ```
