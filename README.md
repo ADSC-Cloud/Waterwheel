@@ -44,28 +44,37 @@ Run the following command to launch the system
 $ mvn exec:java -pl topology -Dexec.mainClass=indexingTopology.topology.kingbase.KingBaseTopology -Dexec.args="-m submit --local"
 ```
 
-Open a new terminal and run the following command to ingest tuples to the system:
+4. Open a new terminal and run the following command to ingest tuples to the system:
 
 ```
 $ mvn exec:java -pl topology -Dexec.mainClass=indexingTopology.topology.kingbase.KingBaseTopology -Dexec.args="-m ingest -r 10000 --ingest-server-ip localhost"
 ```
 
 
-
-Open a new terminal and run the following command to issue generated queries:
-
-```
-$ mvn exec:java -pl topology -Dexec.mainClass=indexingTopology.topology.kingbase.KingBaseTopology -Dexec.args="-m query --query-server-ip localhost"
-```
-
-Use ```-h``` to print the detailed usage of the arguments.
-
-Deploy Web-UI daemon
+5. Deploy Web-UI daemon
 
 ```
 $ mvn tomcat7:run -pl web
 ```
 Now you can get access to the web ui via [http://localhost:8080](http://localhost:8080)
+
+On the dashboard, you can see the instantenaous insertion throughput and the resource utilization.
+Also, you can run some demo queries.
+
+
+6 Run queries
+
+You can try to run some demo queries either on the web ui or via terminal commandline.
+
+On the web ui, you can goto the query demo interface by clicking the ```Try Queries``` bottom of the left of the dashboard. In the demo interface, you can specify the kay ranges and the temporal ranges and run the query by clicking the ```Query``` bottom.
+
+Or alternatively, you can open a new terminal and run the following command to issue generated queries:
+```
+$ mvn exec:java -pl topology -Dexec.mainClass=indexingTopology.topology.kingbase.KingBaseTopology -Dexec.args="-m query --query-server-ip localhost"
+```
+Use ```-h``` to print the detailed usage of the arguments.
+
+
 
 #### 2. Cluster model
 
