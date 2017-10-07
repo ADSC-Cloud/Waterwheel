@@ -3,7 +3,14 @@
 Waterwheel is a distributed append-only store designed for high-throughput data ingestion and real-time temporal range queries. Waterwheel supports over 1 million insertions per seconds and millisecond queries simultaneously.
 
 ### Data & Query Model
-Data tuples continuouly arrive at the system. Each tuple consists of a key, a timestamp and a payload. A payload is a collection of primitives and/or user-defined objects. We assume the timestamps of the tuples are roughly in increasing order. 
+Data tuples continuouly arrive at the system. 
+
+A tuple consists of
+- An indexing key;
+- A timstamp;
+- Any number of attributes;
+
+We assume the timestamps of the tuples are roughly in increasing order. 
 
 A user query contains:
 - A key range constraint (e.g.,100 < key < 250)
@@ -56,8 +63,10 @@ $ mvn exec:java -pl topology -Dexec.mainClass=indexingTopology.topology.kingbase
 ```
 $ mvn tomcat7:run -pl web
 ```
-Now you can get access to the web ui via [http://localhost:8080](http://localhost:8080). It looks like this:
-![screenshot](web/resources/web-ui-screenshot.png)
+Now you can get access to the web ui via [http://localhost:8080](http://localhost:8080). 
+
+It looks like this:
+![screenshot](../web/resources/web-ui-screenshot.png)
 
 
 On the dashboard, you can see the instantenaous insertion throughput and the resource utilization, as well as a table showing system parameters.
