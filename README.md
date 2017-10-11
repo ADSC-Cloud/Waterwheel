@@ -71,7 +71,7 @@ It looks like this:
 
 On the dashboard, you can see the instantenaous insertion throughput and the resource utilization, as well as a table showing system parameters.
 
-6 Run queries
+6. Run queries
 
 You can try to run some demo queries either on the web ui or via terminal commandline.
 
