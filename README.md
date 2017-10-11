@@ -41,7 +41,7 @@ $ git clone https://github.com/ADSC-Cloud/Waterwheel
 Run the following command to launch the system
 
 ```
-$ mvn exec:java -pl topology -Dexec.mainClass=indexingTopology.topology.kingbase.KingBaseTopology -Dexec.args="-m submit --local"
+$ mvn exec:java -pl topology -Dexec.mainClass=indexingTopology.topology.kingbase.KingBaseTopology -Dexec.args="-m submit --local -f conf/conf.yaml"
 ```
 
 4. Open a new terminal and run the following command to ingest tuples to the system:
