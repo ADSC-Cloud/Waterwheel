@@ -120,7 +120,7 @@
       <div class="col-md-3 left_col">
         <div class="left_col scroll-view">
           <div class="navbar nav_title" style="border: 0;">
-            <a href="index.jsp" class="site_title" style="padding-left: 50px;"> <span>DITIR</span></a>
+            <a href="index.jsp" class="site_title" style="padding-left: 50px;"> <span>Waterwheel</span></a>
           </div>
 
           <div class="clearfix"></div>
