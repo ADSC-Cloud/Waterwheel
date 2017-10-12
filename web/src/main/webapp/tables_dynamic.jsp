@@ -120,7 +120,7 @@
       <div class="col-md-3 left_col">
         <div class="left_col scroll-view">
           <div class="navbar nav_title" style="border: 0;">
-            <a href="index.jsp" class="site_title" style="padding-left: 50px;"> <span>Waterwheel</span></a>
+            <a href="index.jsp" class="site_title" style="padding-left: 50px;"> <span>DITIR</span></a>
           </div>
 
           <div class="clearfix"></div>
@@ -190,40 +190,44 @@
                   <div class="dropdown" style="float: left">
                     <input type="text" class="text" value="0" name="xLow" id="xLow" placeholder="xLow">
                     <select  onchange="this.previousElementSibling.value=this.value; this.previousElementSibling.focus()">
-                      <option>50</option>
-                      <option>150</option>
-                      <option>250</option>
-                      <option>350</option>
+                      <option>0</option>
+                      <option>200</option>
+                      <option>400</option>
+                      <option>600</option>
+                      <option>800</option>
                     </select>
                   </div>
                   <small style="float: left; padding: 10px"> to </small>
                   <div class="dropdown" style="float: left">
-                    <input type="text" class="text" value="0" name="xHigh" id="xHigh" placeholder="xHigh">
+                    <input type="text" class="text" value="200" name="xHigh" id="xHigh" placeholder="xHigh">
                     <select  onchange="this.previousElementSibling.value=this.value; this.previousElementSibling.focus()">
-                      <option>250</option>
-                      <option>350</option>
-                      <option>450</option>
-                      <option>550</option>
+                      <option>200</option>
+                      <option>400</option>
+                      <option>600</option>
+                      <option>800</option>
+                      <option>1000</option>
                     </select>
                   </div>
-                  <small style="float: left; padding: 10px">Longtitude :</small>
+                  <small style="float: left; padding: 10px">Longitude :</small>
                   <div class="dropdown" style="float: left">
-                    <input type="text" class="text" value="0" name="yLow" id="yLow" placeholder="yLow">
+                    <input type="text" class="text" value = "0" name="yLow" id="yLow" placeholder="yLow">
                     <select  onchange="this.previousElementSibling.value=this.value; this.previousElementSibling.focus()">
-                      <option>50</option>
-                      <option>150</option>
-                      <option>250</option>
-                      <option>350</option>
+                      <option>0</option>
+                      <option>200</option>
+                      <option>400</option>
+                      <option>600</option>
+                      <option>800</option>
                     </select>
                   </div>
                   <small style="float: left; padding: 10px"> to </small>
                   <div class="dropdown" style="float: left">
-                    <input type="text" class="text" value="0" name="yHigh" id="yHigh" placeholder="yHigh">
+                    <input type="text" class="text" value = "200"name="yHigh" id="yHigh" placeholder="yHigh">
                     <select  onchange="this.previousElementSibling.value=this.value; this.previousElementSibling.focus()">
-                      <option>250</option>
-                      <option>350</option>
-                      <option>450</option>
-                      <option>550</option>
+                       <option>200</option>
+                      <option>400</option>
+                      <option>600</option>
+                      <option>800</option>
+                      <option>1000</option>
                     </select>
                   </div>
                   <!-- Single button -->
@@ -231,7 +235,7 @@
                   <select class="text" id="time" name="time" style="color: #1f6377; float: left; margin-right: 10px">
                     <option value="5">5s</option>
                     <option value="10">10s</option>
-                    <option value="15">15s</option>
+                    <option value="30">30s</option>
                   </select>
                   <span>
                       <input style="float: left" class="btn btn-info" type="submit" value="Query!" />

@@ -48,7 +48,7 @@ $ git clone https://github.com/ADSC-Cloud/Waterwheel
 Run the following command to launch the system
 
 ```
-$ mvn exec:java -pl topology -Dexec.mainClass=indexingTopology.topology.kingbase.KingBaseTopology -Dexec.args="-m submit --local -f conf/conf.yaml"
+$ mvn exec:java -pl topology -Dexec.mainClass=indexingTopology.topology.kingbase.KingBaseTopology -Dexec.args="-m submit --local"
 ```
 
 4. Open a new terminal and run the following command to ingest tuples to the system:
@@ -71,7 +71,7 @@ It looks like this:
 
 On the dashboard, you can see the instantenaous insertion throughput and the resource utilization, as well as a table showing system parameters.
 
-6. Run queries
+6 Run queries
 
 You can try to run some demo queries either on the web ui or via terminal commandline.
 
