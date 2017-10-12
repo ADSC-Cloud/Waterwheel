@@ -217,17 +217,23 @@ public class KingBaseTopology {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+
+            DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+
             while(true) {
                 Car car = generator.generate();
                 DataTuple tuple = new DataTuple();
                 tuple.add(Integer.toString((int)car.id));
-                tuple.add(Integer.toString(random.nextInt()));
+                tuple.add((char)((int)'A'+Math.random()*((int)'Z'-(int)'A'+1))
+                        + (char)((int)'A'+Math.random()*((int)'Z'-(int)'A'+1))
+                        + Integer.toString(Math.abs(random.nextInt()) + 1000000).substring(0, 5));
                 tuple.add(car.x);
                 tuple.add(car.y);
-                tuple.add(1);
-                tuple.add(55.3);
-                tuple.add("position 1");
-                tuple.add("2015-10-10, 11:12:34");
+                tuple.add((int)(Math.random() * 3));
+                tuple.add(Math.random() * 70.0);
+                tuple.add(Integer.toString((int)(Math.random() * 15)));
+                Calendar cal = Calendar.getInstance();
+                tuple.add(dateFormat.format(cal.getTime()));
                 try {
                     restrictor.getPermission();
                     clientBatchMode.appendInBatch(tuple);
