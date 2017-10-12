@@ -224,7 +224,7 @@ public class KingBaseTopology {
                 Car car = generator.generate();
                 DataTuple tuple = new DataTuple();
                 tuple.add(Integer.toString((int)car.id));
-                tuple.add((char)((int)'A'+Math.random()*((int)'Z'-(int)'A'+1))
+                tuple.add("" + (char)((int)'A'+Math.random()*((int)'Z'-(int)'A'+1))
                         + (char)((int)'A'+Math.random()*((int)'Z'-(int)'A'+1))
                         + Integer.toString(Math.abs(random.nextInt()) + 1000000).substring(0, 5));
                 tuple.add(car.x);

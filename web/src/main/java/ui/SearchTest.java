@@ -67,22 +67,10 @@ public class SearchTest {
 
         int executed = 0;
 
-        double x = x1 + (x2 - x1) * (1 - selectivityOnOneDimension) * random.nextDouble();
-        double y = y1 + (y2 - y1) * (1 - selectivityOnOneDimension) * random.nextDouble();
-
-        double xLow = x;
-        double xHigh = x + selectivityOnOneDimension * (x2 - x1);
-        double yLow = y;
-        double yHigh = y + selectivityOnOneDimension * (y2 - y1);
-
-        if(get_xLow != 0)
-            xLow = get_xLow;
-        if(get_xHigh != 0)
-            xHigh = get_xHigh;
-        if(get_yLow != 0)
-            yLow = get_yLow;
-        if(get_yHigh != 0)
-            yHigh = get_yHigh;
+        double xLow = x1 + (x2 - x1) * get_xLow / 1000.0;
+        double xHigh = x1 + (x2 - x1) * get_xHigh / 1000.0;
+        double yLow = y1 + (y2 - y1) * get_yLow / 1000.0;
+        double yHigh = y1 + (y2 - y1) * get_yHigh / 1000.0;
         if(RecentSecondsOfInterest == 0)
             RecentSecondsOfInterest = 5;
 

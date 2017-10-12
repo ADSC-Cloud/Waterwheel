@@ -120,7 +120,7 @@
       <div class="col-md-3 left_col">
         <div class="left_col scroll-view">
           <div class="navbar nav_title" style="border: 0;">
-            <a href="index.jsp" class="site_title" style="padding-left: 50px;"> <span>Waterwheel</span></a>
+            <a href="index.jsp" class="site_title" style="padding-left: 50px;"> <span>DITIR</span></a>
           </div>
 
           <div class="clearfix"></div>
@@ -208,7 +208,7 @@
                       <option>1000</option>
                     </select>
                   </div>
-                  <small style="float: left; padding: 10px">Longtitude :</small>
+                  <small style="float: left; padding: 10px">Longitude :</small>
                   <div class="dropdown" style="float: left">
                     <input type="text" class="text" value = "0" name="yLow" id="yLow" placeholder="yLow">
                     <select  onchange="this.previousElementSibling.value=this.value; this.previousElementSibling.focus()">
@@ -235,7 +235,7 @@
                   <select class="text" id="time" name="time" style="color: #1f6377; float: left; margin-right: 10px">
                     <option value="5">5s</option>
                     <option value="10">10s</option>
-                    <option value="15">15s</option>
+                    <option value="30">30s</option>
                   </select>
                   <span>
                       <input style="float: left" class="btn btn-info" type="submit" value="Query!" />
