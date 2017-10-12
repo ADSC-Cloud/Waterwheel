@@ -46,9 +46,9 @@ public class SearchTest {
 
     public SearchTest(int get_xLow, int get_xHigh, int get_yLow, int get_yHigh, int recentSecondsOfInterest) {
         this.get_xLow = get_xLow;
-        this.get_xHigh = get_xHigh;
+        this.get_xHigh = Math.max(get_xLow, get_xHigh);
         this.get_yLow = get_yLow;
-        this.get_yHigh = get_yHigh;
+        this.get_yHigh = Math.max(get_yLow, get_yHigh);
         RecentSecondsOfInterest = recentSecondsOfInterest;
     }
 
