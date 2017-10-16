@@ -92,6 +92,7 @@ public class MainServlet extends HttpServlet{
         request.setAttribute("diaryList", diaryList);
         request.setAttribute("fieldNames", fieldNames);
         request.setAttribute("queryTime",time);
+        request.setAttribute("numberOfTuples", diaryList.size());
 //            int nowPage = Integer.parseInt(request.getParameter("page"));
 //            int beginPage = (nowPage-1)*4;
 //            int endPage = nowPage*4;
