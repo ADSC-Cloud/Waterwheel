@@ -120,7 +120,7 @@
       <div class="col-md-3 left_col">
         <div class="left_col scroll-view">
           <div class="navbar nav_title" style="border: 0;">
-            <a href="index.jsp" class="site_title" style="padding-left: 50px;"> <span>DITIR</span></a>
+            <a href="index.jsp" class="site_title" style="padding-left: 50px;"> <span>Waterwheel</span></a>
           </div>
 
           <div class="clearfix"></div>
@@ -271,7 +271,7 @@
                 </div>
                 <div class="x_content">
                   <p class="text-muted font-13 m-b-30">
-                    Query Response Time :  <code>${queryTime }ms</code>
+                    <code>${numberOfTuples}</code> tuples returned in <code>${queryTime } ms.</code>
                   </p>
                   <table id="datatable" class="table table-striped table-bordered">
                     <thead>
