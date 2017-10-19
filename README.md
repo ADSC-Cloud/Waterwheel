@@ -66,7 +66,7 @@ $ mvn tomcat7:run -pl web
 Now you can get access to the web ui via [http://localhost:8080](http://localhost:8080). 
 
 It looks like this:
-![screenshot](../web/resources/web-ui-screenshot.png)
+![screenshot of Waterwheel web ui](web/resources/web-ui-screenshot.png)
 
 
 On the dashboard, you can see the instantenaous insertion throughput and the resource utilization, as well as a table showing system parameters.
