@@ -3,9 +3,7 @@ package ui;
 import indexingTopology.api.client.GeoTemporalQueryClient;
 import indexingTopology.api.client.GeoTemporalQueryRequest;
 import indexingTopology.api.client.QueryResponse;
-import indexingTopology.common.aggregator.AggregateField;
-import indexingTopology.common.aggregator.Aggregator;
-import indexingTopology.common.aggregator.Count;
+import indexingTopology.common.aggregator.*;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 import indexingTopology.common.logics.DataTupleEquivalentPredicateHint;
@@ -16,6 +14,7 @@ import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Random;
@@ -42,14 +41,17 @@ public class SearchTest {
 
     private int RecentSecondsOfInterest = 5;
 
+    AggregateField[] fields = null;
+
     DataBean dataBean;
 
-    public SearchTest(int get_xLow, int get_xHigh, int get_yLow, int get_yHigh, int recentSecondsOfInterest) {
+    public SearchTest(int get_xLow, int get_xHigh, int get_yLow, int get_yHigh, int recentSecondsOfInterest, String groupby, AggregateField[] fields) {
         this.get_xLow = get_xLow;
         this.get_xHigh = Math.max(get_xLow, get_xHigh);
         this.get_yLow = get_yLow;
         this.get_yHigh = Math.max(get_yLow, get_yHigh);
         RecentSecondsOfInterest = recentSecondsOfInterest;
+        this.fields = fields;
     }
 
     public DataBean executeQuery() {
@@ -85,15 +87,16 @@ public class SearchTest {
         DataTuplePredicate predicate = t -> schema.getValue("id", t).equals(idString);
 
 
-
-        Aggregator<Integer> aggregator = new Aggregator<>(schema, "id", new AggregateField(new Count(), "*"));
+        Aggregator<Integer> aggregator = new Aggregator<>(schema, "id",fields);
+        for (int i = 0; i < fields.length; i++)
+            System.out.println(fields[i].aggregateFieldName());
 
 
         DataTupleEquivalentPredicateHint equivalentPredicateHint = new DataTupleEquivalentPredicateHint("id", idString);
 
         GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
                 System.currentTimeMillis() - RecentSecondsOfInterest * 1000,
-                System.currentTimeMillis(), null,null, null, null);
+                System.currentTimeMillis(), null,aggregator, null, null);
         long start = System.currentTimeMillis();
         try {
             DateFormat dateFormat = new SimpleDateFormat("MM-dd HH:mm:ss");
@@ -153,8 +156,8 @@ public class SearchTest {
     }
 
     public static void main(String[] args) {
-        SearchTest searchTest1 = new SearchTest(0,0,0,0,0);
+      /* // SearchTest searchTest1 = new SearchTest(0,0,0,0,0);
         DataBean dataBean = searchTest1.executeQuery();
-        System.out.println("This is FieldNamesSize" + dataBean.getFieldNames().size());
+        System.out.println("This is FieldNamesSize" + dataBean.getFieldNames().size());*/
     }
 }

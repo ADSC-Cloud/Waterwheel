@@ -29,7 +29,9 @@
   <link href="gentelella-master/vendors/datatables.net-scroller-bs/css/scroller.bootstrap.min.css" rel="stylesheet">
   <!-- Custom Theme Style -->
   <link href="gentelella-master/build/css/custom.css" rel="stylesheet">
-  <script src="js/jquery-1.10.2.min.js"/>
+  <script src="gentelella-master/vendors/jquery/dist/jquery.min.js"></script>
+  <script type="text/javascript" src="js/bootstrap-multiselect.js"></script>
+  <link rel="stylesheet" href="css/bootstrap-multiselect.css" type="text/css">
   <script type="text/javascript">
       function saveData() {
           //alert("hehe")
@@ -55,13 +57,23 @@
       //            alert(x + " " + y + " " + time);
       //            return true;
       //        }
-      $(document).ready(function(){
+      $(document).ready(function() {
+          $('#groupby').multiselect();
 
-          $(".editableBox").change(function(){
-              $(".timeTextBox").val($(".editableBox option:selected").html());
-          });
       });
-
+      $(document).ready(function() {
+          $('#count').multiselect();
+      });
+      $(document).ready(function() {
+          $('#sum').multiselect();
+      });
+      $(document).ready(function() {
+          $('#max').multiselect();
+      });
+      $(document).ready(function() {
+          $('#min').multiselect();
+          ($('#min').multiselect().val());
+      });
   </script>
   <style>
 
@@ -186,6 +198,7 @@
             <div class="input-group">
               <div>
                 <div>
+
                   <small style="float: left; padding: 10px">Latitude :</small>
                   <div class="dropdown" style="float: left">
                     <input type="text" class="text" value="0" name="xLow" id="xLow" placeholder="xLow">
@@ -246,15 +259,82 @@
           </div>
 
           <div class="clearfix"></div>
-
+          <div class="row">
+            <div class="col-md-12 col-sm-12 col-xs-12">
+              <div class="x_panel">
+                <small style="padding: 10px; float: left; font-size: 25px;">Aggregation </small>
+                <small style="padding: 10px; float: left; font-size: 25px;">group-by:
+                <select id="groupby" name="groupby">
+                  <option value="id">id</option>
+                  <option value="veh_no">veh_no</option>
+                  <option value="lon">lon</option>
+                  <option value="lat">lat</option>
+                  <option value="car_status">car_status</option>
+                  <option value="speed">speed</option>
+                  <option value="position_type">position_type</option>
+                  <option value="update_time">update_time</option>
+                  <option value="zcode">zcode</option>
+                  <option value="timestamp">timestamp</option>
+                </select>
+                </small>
+                <small style="padding: 10px; float: left; font-size: 25px;">Conut:
+                  <select id="count" name="count">
+                    <option value="id" selected="selected">id</option>
+                    <option value="veh_no">veh_no</option>
+                    <option value="lon">lon</option>
+                    <option value="lat">lat</option>
+                    <option value="car_status">car_status</option>
+                    <option value="speed">speed</option>
+                    <option value="position_type">position_type</option>
+                    <option value="update_time">update_time</option>
+                    <option value="zcode">zcode</option>
+                    <option value="timestamp">timestamp</option>
+                  </select>
+                </small>
+                <small style="padding: 10px; float: left; font-size: 25px;">Sum:
+                  <select id="sum" name="sum" multiple="multiple">
+                    <option value="lon" selected="selected">lon</option>
+                    <option value="lat">lat</option>
+                    <option value="car_status">car_status</option>
+                    <option value="speed">speed</option>
+                    <option value="zcode">zcode</option>
+                    <option value="timestamp">timestamp</option>
+                  </select>
+                </small>
+                <small style="padding: 10px; float: left; font-size: 25px;">Max:
+                  <select id="max" name="max" multiple="multiple">
+                    <option value="lon" selected="selected">lon</option>
+                    <option value="lat">lat</option>
+                    <option value="car_status">car_status</option>
+                    <option value="speed">speed</option>
+                    <option value="zcode">zcode</option>
+                    <option value="timestamp">timestamp</option>
+                  </select>
+                </small>
+                <small style="padding: 10px; float: left; font-size: 25px;">Min:
+                  <select id="min" name="min" multiple="multiple">
+                    <option value="lon" selected="selected">lon</option>
+                    <option value="lat">lat</option>
+                    <option value="car_status">car_status</option>
+                    <option value="speed">speed</option>
+                    <option value="zcode">zcode</option>
+                    <option value="timestamp">timestamp</option>
+                  </select>
+                  </select>
+                </small>
+              </div>
+            </div>
+          </div>
           <div class="row">
             <div class="col-md-12 col-sm-12 col-xs-12">
               <div class="x_panel">
                 <div class="x_title">
-                  <h2>Query Rusult</h2>
+                  <h2>Query Result</h2>
                   <ul class="nav navbar-right panel_toolbox">
+
                     <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
                     </li>
+
                     <li class="dropdown">
                       <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><i class="fa fa-wrench"></i></a>
                       <ul class="dropdown-menu" role="menu">
@@ -268,6 +348,7 @@
                     </li>
                   </ul>
                   <div class="clearfix"></div>
+
                 </div>
                 <div class="x_content">
                   <p class="text-muted font-13 m-b-30">
@@ -307,10 +388,11 @@
   </div>
 
   <!-- jQuery -->
-  <script src="gentelella-master/vendors/jquery/dist/jquery.min.js"></script>
+
   <!-- Bootstrap -->
   <script src="gentelella-master/vendors/bootstrap/dist/js/bootstrap.min.js"></script>
   <!-- FastClick -->
+
   <script src="gentelella-master/vendors/fastclick/lib/fastclick.js"></script>
   <!-- NProgress -->
   <script src="gentelella-master/vendors/nprogress/nprogress.js"></script>
