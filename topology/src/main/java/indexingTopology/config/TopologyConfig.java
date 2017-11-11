@@ -9,7 +9,8 @@ import java.util.Map;
 public class TopologyConfig implements Serializable {
     public final double REBUILD_TEMPLATE_THRESHOLD = 10.0;
 
-    public String dataChunkDir = "/home/robert/data";
+//    public String dataChunkDir = "/home/robert/data";
+    public String dataChunkDir = "/Users/luzijie/code/data";
 
     public String metadataDir = "/home/robert/data";
 

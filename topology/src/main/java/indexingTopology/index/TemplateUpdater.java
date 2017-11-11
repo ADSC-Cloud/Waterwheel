@@ -1,5 +1,6 @@
 package indexingTopology.index;
 
+import indexingTopology.common.data.DataTuple;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.index.BTree;
@@ -32,15 +33,17 @@ public class TemplateUpdater<TKey extends Comparable<TKey>> {
         int numberOfLeaves = 0;
 
         List<TKey> keys = new ArrayList<TKey>();
-        List<ArrayList<byte []>> tuples = new ArrayList<>();
-        List<Integer> offsets = new ArrayList<>();
+        List<ArrayList<DataTuple>> dataTuples = new ArrayList<>();
+//        List<ArrayList<byte []>> tuples = new ArrayList<>();
+//        List<Integer> offsets = new ArrayList<>();
 
         while (currentLeave != null) {
             ++numberOfLeaves;
             totalKeyCount += currentLeave.getKeyCount();
             keys.addAll(currentLeave.keys);
-            tuples.addAll(currentLeave.tuples);
-            offsets.addAll(currentLeave.offsets);
+            dataTuples.addAll(currentLeave.dataTuples);
+//            tuples.addAll(currentLeave.tuples);
+//            offsets.addAll(currentLeave.offsets);
             currentLeave = (BTreeLeafNode) currentLeave.rightSibling;
         }
 
@@ -49,7 +52,8 @@ public class TemplateUpdater<TKey extends Comparable<TKey>> {
         if (averageKeyCount == 0) {
             return new ArrayList<>();
         }
-        List<BTreeLeafNode> leaves = createLeaves(keys, tuples, offsets, averageKeyCount, numberOfLeaves, totalKeyCount);
+//        List<BTreeLeafNode> leaves = createLeaves(keys, tuples, offsets, averageKeyCount, numberOfLeaves, totalKeyCount);
+        List<BTreeLeafNode> leaves = createLeaves(keys, dataTuples, averageKeyCount, numberOfLeaves, totalKeyCount);
 
 //        ArrayList<BTreeLeafNode> leaves = createLeaves(copyOfCurrentLeave, averageKeyCount, numberOfLeaves, totalKeyCount);
         List<BTreeInnerNode> innerNodes = new ArrayList<BTreeInnerNode>();
@@ -106,9 +110,46 @@ public class TemplateUpdater<TKey extends Comparable<TKey>> {
 
             for (int j = index; j < index + keyCount; ++j) {
                 leaf.keys.add(keys.get(j));
-                leaf.tuples.add(tuples.get(j));
-                leaf.atomicKeyCount.addAndGet(tuples.get(j).size());
+//                leaf.tuples.add(tuples.get(j));
+//                leaf.atomicKeyCount.addAndGet(tuples.get(j).size());
                 leaf.offsets.add(offsets.get(j));
+            }
+            index += keyCount;
+
+            leaves.add(leaf);
+        }
+
+        return leaves;
+    }
+
+    private List<BTreeLeafNode> createLeaves(List<TKey> keys, List<ArrayList<DataTuple>> dataTuples,
+                                             int averageKeyCount, int numberOfLeaves, int totalKeyCount) {
+        BTreeLeafNode preNode = null;
+
+        int maxIndex = totalKeyCount - (numberOfLeaves) * averageKeyCount;
+        int index = 0;
+
+        List<BTreeLeafNode> leaves = new ArrayList<>(numberOfLeaves);
+        for (int i = 0; i < numberOfLeaves; ++i) {
+
+            int keyCount = i < maxIndex ? averageKeyCount + 1 : averageKeyCount;
+            BTreeLeafNode leaf = new BTreeLeafNode(keyCount);
+
+            if (i == 0) {
+                preNode = leaf;
+            } else {
+                leaf.leftSibling = preNode;
+                preNode.rightSibling = leaf;
+                preNode = leaf;
+            }
+
+            for (int j = index; j < index + keyCount; ++j) {
+                leaf.keys.add(keys.get(j));
+                leaf.dataTuples.add(dataTuples.get(j));
+//                leaf.tuples.add(tuples.get(j));
+//                leaf.atomicKeyCount.addAndGet(tuples.get(j).size());
+                leaf.atomicTupleCount.addAndGet(dataTuples.get(j).size());
+//                leaf.offsets.add(offsets.get(j));
             }
             index += keyCount;
 

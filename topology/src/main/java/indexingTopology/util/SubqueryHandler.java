@@ -142,7 +142,7 @@ public class SubqueryHandler<TKey extends Number & Comparable<TKey>> {
                 Long startTime = System.currentTimeMillis();
                 debugInfo.runningPosition = String.format("breakpoint 9.%d.1", count);
 
-                ArrayList<byte[]> tuplesInKeyRange = leaf.getTuplesWithinKeyRange(leftKey, rightKey);
+                ArrayList<byte[]> tuplesInKeyRange = leaf.getSerializedTuplesWithinKeyRange(leftKey, rightKey);
 
                 keyRangeTime += System.currentTimeMillis() - startTime;
                 debugInfo.runningPosition = String.format("breakpoint 9.%d.2", count);

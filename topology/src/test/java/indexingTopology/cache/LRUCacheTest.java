@@ -1,5 +1,7 @@
 package indexingTopology.cache;
 
+import indexingTopology.common.data.DataSchema;
+import indexingTopology.common.data.DataTuple;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.index.BTreeLeafNode;
 import org.junit.Test;
@@ -17,6 +19,12 @@ import static org.junit.Assert.*;
  * Created by acelzj on 11/29/16.
  */
 public class LRUCacheTest {
+
+    DataSchema schema = new DataSchema();
+    public void setUp() {
+        schema.addIntField("a1");
+        schema.setPrimaryIndexField("a1");
+    }
 
     private List<String> fieldNames = new ArrayList<String>(Arrays.asList("user_id", "id_1", "id_2", "ts_epoch",
             "date", "time", "latitude", "longitude"));
@@ -36,13 +44,15 @@ public class LRUCacheTest {
         CacheUnit cacheUnit = new CacheUnit();
         BTreeLeafNode leaf = new BTreeLeafNode(4);
         for (int i = 0; i < 4; ++i) {
-            List<Double> values = new ArrayList<>();
-            values.add((double) i);
-            for (int j = 0; j < fieldNames.size() + 1; ++j) {
-                values.add((double) j);
-            }
-            byte[] bytes = serializeIndexValue(values);
-            leaf.insertKeyTuples(i, bytes, false);
+//            List<Double> values = new ArrayList<>();
+//            values.add((double) i);
+//            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+//                values.add((double) j);
+//            }
+//            byte[] bytes = serializeIndexValue(values);
+//            leaf.insertKeyTuples(i, bytes, false);
+            DataTuple dataTuple = new DataTuple(i);
+            leaf.insertKeyTuples(i, dataTuple, false);
         }
         CacheData data = new LeafNodeCacheData(leaf);
         cacheUnit.setCacheData(data);
@@ -54,13 +64,15 @@ public class LRUCacheTest {
         cacheUnit = new CacheUnit();
         BTreeLeafNode leaf1 = new BTreeLeafNode(4);
         for (int i = 4; i < 8; ++i) {
-            List<Double> values = new ArrayList<>();
-            values.add((double) i);
-            for (int j = 0; j < fieldNames.size() + 1; ++j) {
-                values.add((double) j);
-            }
-            byte[] bytes = serializeIndexValue(values);
-            leaf1.insertKeyTuples(i, bytes, false);
+//            List<Double> values = new ArrayList<>();
+//            values.add((double) i);
+//            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+//                values.add((double) j);
+//            }
+//            byte[] bytes = serializeIndexValue(values);
+//            leaf1.insertKeyTuples(i, bytes, false);
+            DataTuple dataTuple = new DataTuple(i);
+            leaf1.insertKeyTuples(i, dataTuple, false);
         }
         data = new LeafNodeCacheData(leaf1);
         cacheUnit.setCacheData(data);
@@ -72,13 +84,15 @@ public class LRUCacheTest {
         cacheUnit = new CacheUnit();
         BTreeLeafNode leaf2 = new BTreeLeafNode(4);
         for (int i = 8; i < 12; ++i) {
-            List<Double> values = new ArrayList<>();
-            values.add((double) i);
-            for (int j = 0; j < fieldNames.size() + 1; ++j) {
-                values.add((double) j);
-            }
-            byte[] bytes = serializeIndexValue(values);
-            leaf2.insertKeyTuples(i, bytes, false);
+//            List<Double> values = new ArrayList<>();
+//            values.add((double) i);
+//            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+//                values.add((double) j);
+//            }
+//            byte[] bytes = serializeIndexValue(values);
+//            leaf2.insertKeyTuples(i, bytes, false);
+            DataTuple dataTuple = new DataTuple(i);
+            leaf2.insertKeyTuples(i, dataTuple, false);
         }
         data = new LeafNodeCacheData(leaf2);
         cacheUnit.setCacheData(data);

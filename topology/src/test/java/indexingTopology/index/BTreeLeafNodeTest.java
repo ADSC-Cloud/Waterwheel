@@ -1,6 +1,7 @@
 package indexingTopology.index;
 
 import indexingTopology.common.data.DataSchema;
+import indexingTopology.common.data.DataTuple;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.index.BTreeLeafNode;
 import indexingTopology.index.BTreeNode;
@@ -16,17 +17,19 @@ import static org.junit.Assert.*;
  * Created by acelzj on 11/1/16.
  */
 public class BTreeLeafNodeTest {
+    public void setUp() {
+        DataSchema schema = new DataSchema();
+        schema.addDoubleField("a1");
+        schema.setPrimaryIndexField("a1");
+    }
+
+
     @Test
     public void getTuples() throws Exception, UnsupportedGenericException {
         BTreeLeafNode node = new BTreeLeafNode(4);
         for (int i = 1; i <= 4; ++i) {
-            List<Double> values = new ArrayList<>();
-            values.add(i*1.0);
-            for (int j = 0; j < fieldNames.size() + 1; ++j) {
-                values.add(j*1.0);
-            }
-            byte[] bytes = serializeIndexValue(values);
-            node.insertKeyTuples(i*1.0, bytes, false);
+            DataTuple dataTuple = new DataTuple((double) i);
+            node.insertKeyTuples((double) i, dataTuple, false);
         }
 
         assertEquals(1, node.getTuplesWithinKeyRange(2.0, 2.0).size());
@@ -42,12 +45,6 @@ public class BTreeLeafNodeTest {
         assertEquals(0, node.getTuplesWithinKeyRange(6.0, 10.0).size());
     }
 
-    private List<String> fieldNames = new ArrayList<String>(Arrays.asList("user_id", "id_1", "id_2", "ts_epoch",
-            "date", "time", "latitude", "longitude"));
-    private ArrayList valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
-            Double.class, Double.class, Double.class, Double.class, Double.class));
-    private DataSchema schema = new DataSchema(fieldNames, valueTypes, "user_id");
-
     @Test
     public void testSearch() throws Exception, UnsupportedGenericException {
 
@@ -59,27 +56,22 @@ public class BTreeLeafNodeTest {
 
         Random random = new Random();
 
-        List<Integer> keys = new ArrayList<>();
+        List<Double> keys = new ArrayList<>();
 
-        Integer min = Integer.MAX_VALUE;
+        Double min = Double.MAX_VALUE;
 
-        Integer max = Integer.MIN_VALUE;
+        Double max = Double.MIN_VALUE;
 
         for (int i = 0; i < numberOfTuples; ++i) {
             Integer key = random.nextInt();
-            keys.add(key);
-            min = Math.min(min, key);
+            keys.add(key * 1.0);
+            min = Math.min(min, key * 1.0);
             max = Math.max(max, key);
         }
 
-        for (Integer key : keys) {
-            List<Double> values = new ArrayList<>();
-            values.add((double) key);
-            for (int j = 0; j < fieldNames.size() + 1; ++j) {
-                values.add((double) j);
-            }
-            byte[] bytes = serializeIndexValue(values);
-            leaf.insertKeyTuples(key, bytes, false);
+        for (Double key : keys) {
+            DataTuple dataTuple = new DataTuple(key);
+            leaf.insertKeyTuples(key, dataTuple, false);
         }
 
         Collections.sort(keys);
@@ -104,26 +96,21 @@ public class BTreeLeafNodeTest {
 
         Random random = new Random();
 
-        List<Integer> keys = new ArrayList<>();
+        List<Double> keys = new ArrayList<>();
 
         for (int i = 0; i < order + 1; ++i) {
-            keys.add(random.nextInt());
+            keys.add(random.nextInt() * 1.0);
         }
 
-        for (Integer key : keys) {
-            List<Double> values = new ArrayList<>();
-            values.add((double) key);
-            for (int j = 0; j < fieldNames.size() + 1; ++j) {
-                values.add((double) j);
-            }
-            byte[] bytes = serializeIndexValue(values);
-            root = leaf.insertKeyTuples(key, bytes, false);
+        for (Double key : keys) {
+            DataTuple dataTuple = new DataTuple(key);
+            root = leaf.insertKeyTuples(key, dataTuple, false);
         }
 
         assertEquals(512, leaf.getKeyCount());
-        assertEquals(512, leaf.getAtomicKeyCount());
+        assertEquals(512, leaf.getAtomicTupleCount());
         assertEquals(513, leaf.rightSibling.getKeyCount());
-        assertEquals(513, ((BTreeLeafNode) leaf.rightSibling).getAtomicKeyCount());
+        assertEquals(513, ((BTreeLeafNode) leaf.rightSibling).getAtomicTupleCount());
         assertEquals(1, root.getKeyCount());
     }
 
@@ -139,26 +126,21 @@ public class BTreeLeafNodeTest {
 
         Random random = new Random();
 
-        List<Integer> keys = new ArrayList<>();
+        List<Double> keys = new ArrayList<>();
 
         for (int i = 0; i < numberOfTuples; ++i) {
-            keys.add(random.nextInt());
+            keys.add(random.nextInt() * 1.0);
         }
 
-        for (Integer key : keys) {
-            List<Double> values = new ArrayList<>();
-            values.add((double) key);
-            for (int j = 0; j < fieldNames.size() + 1; ++j) {
-                values.add((double) j);
-            }
-            byte[] bytes = serializeIndexValue(values);
-            leaf.insertKeyTuples(key, bytes, false);
+        for (Double key : keys) {
+            DataTuple dataTuple = new DataTuple(key);
+            leaf.insertKeyTuples(key, dataTuple, false);
         }
 
-        for (Integer key : keys) {
+        for (Double key : keys) {
             leaf.acquireReadLock();
-//            List<byte[]> tuples = leaf.search(key, key);
-//            assertEquals(1, tuples.size());
+            List<DataTuple> tuples = leaf.getTuplesWithinKeyRange(key, key);
+            assertEquals(1, tuples.size());
         }
 
     }
@@ -174,36 +156,31 @@ public class BTreeLeafNodeTest {
 
         Random random = new Random();
 
-        List<Integer> keys = new ArrayList<>();
+        List<Double> keys = new ArrayList<>();
 
-        Integer min = Integer.MAX_VALUE;
+        Double min = Double.MAX_VALUE;
 
-        Integer max = Integer.MIN_VALUE;
+        Double max = Double.MIN_VALUE;
 
         for (int i = 0; i < order; ++i) {
             Integer key = random.nextInt();
             min = Math.min(min, key);
             max = Math.max(max, key);
-            keys.add(key);
+            keys.add(key * 1.0);
         }
 
-        for (Integer key : keys) {
-            List<Double> values = new ArrayList<>();
-            values.add((double) key);
-            for (int j = 0; j < fieldNames.size() + 1; ++j) {
-                values.add((double) j);
-            }
-            byte[] bytes = serializeIndexValue(values);
-            leaf.insertKeyTuples(key, bytes, false);
+        for (Double key : keys) {
+            DataTuple dataTuple = new DataTuple(key);
+            leaf.insertKeyTuples(key, dataTuple, false);
         }
 
         leaf.acquireReadLock();
-//        List<byte[]> tuples = leaf.search(min - 1, max + 1);
-//        assertEquals(numberOfTuples,  tuples.size());
+        List<DataTuple> tuples = leaf.getTuplesWithinKeyRange(min - 1, max + 1);
+        assertEquals(numberOfTuples,  tuples.size());
 
         leaf.acquireReadLock();
-//        tuples = leaf.search(min, max);
-//        assertEquals(numberOfTuples,  tuples.size());
+        tuples = leaf.getTuplesWithinKeyRange(min, max);
+        assertEquals(numberOfTuples,  tuples.size());
     }
 
 
@@ -217,37 +194,32 @@ public class BTreeLeafNodeTest {
 
         Random random = new Random();
 
-        List<Integer> keys = new ArrayList<>();
+        List<Double> keys = new ArrayList<>();
 
         for (int i = 0; i < numberOfTuples; ++i) {
             Integer key = random.nextInt();
-            keys.add(key);
+            keys.add(key * 1.0);
         }
 
-        for (Integer key : keys) {
-            List<Double> values = new ArrayList<>();
-            values.add((double) key);
-            for (int j = 0; j < fieldNames.size() + 1; ++j) {
-                values.add((double) j);
-            }
-            byte[] bytes = serializeIndexValue(values);
-            leaf.insertKeyTuples(key, bytes, false);
+        for (Double key : keys) {
+            DataTuple dataTuple = new DataTuple(key);
+            leaf.insertKeyTuples(key, dataTuple, false);
         }
 
         Collections.sort(keys);
 
         leaf.acquireReadLock();
-//        List<byte[]> tuples = leaf.search(keys.get(300), keys.get(512));
-//        assertEquals(213, tuples.size());
+        List<byte[]> tuples = leaf.getTuplesWithinKeyRange(keys.get(300), keys.get(512));
+        assertEquals(213, tuples.size());
 
 
         leaf.acquireReadLock();
-//        tuples = leaf.search(keys.get(1022), keys.get(1023));
-//        assertEquals(2, tuples.size());
+        tuples = leaf.getTuplesWithinKeyRange(keys.get(1022), keys.get(1023));
+        assertEquals(2, tuples.size());
 
         leaf.acquireReadLock();
-//        tuples = leaf.search(keys.get(0), keys.get(1));
-//        assertEquals(2, tuples.size());
+        tuples = leaf.getTuplesWithinKeyRange(keys.get(0), keys.get(1));
+        assertEquals(2, tuples.size());
     }
 
     @Test
@@ -260,36 +232,31 @@ public class BTreeLeafNodeTest {
 
         Random random = new Random();
 
-        List<Integer> keys = new ArrayList<>();
+        List<Double> keys = new ArrayList<>();
 
-        Integer min = Integer.MAX_VALUE;
+        Double min = Double.MAX_VALUE;
 
-        Integer max = Integer.MIN_VALUE;
+        Double max = Double.MIN_VALUE;
 
         for (int i = 0; i < order; ++i) {
             Integer key = random.nextInt();
             min = Math.min(min, key);
             max = Math.max(max, key);
-            keys.add(key);
+            keys.add(key * 1.0);
         }
 
-        for (Integer key : keys) {
-            List<Double> values = new ArrayList<>();
-            values.add((double) key);
-            for (int j = 0; j < fieldNames.size() + 1; ++j) {
-                values.add((double) j);
-            }
-            byte[] bytes = serializeIndexValue(values);
-            leaf.insertKeyTuples(key, bytes, false);
+        for (Double key : keys) {
+            DataTuple dataTuple = new DataTuple(key);
+            leaf.insertKeyTuples(key, dataTuple, false);
         }
 
         leaf.acquireReadLock();
-//        List<byte[]> tuples = leaf.search(max + 1, Integer.MAX_VALUE);
-//        assertEquals(0, tuples.size());
+        List<DataTuple> tuples = leaf.getTuplesWithinKeyRange((max + 1) * 1.0, Integer.MAX_VALUE * 1.0);
+        assertEquals(0, tuples.size());
 
-//        leaf.acquireReadLock();
-//        tuples = leaf.search(Integer.MIN_VALUE, min - 1);
-//        assertEquals(0, tuples.size());
+        leaf.acquireReadLock();
+        tuples = leaf.getTuplesWithinKeyRange(Integer.MIN_VALUE * 1.0, (min - 1) * 1.0);
+        assertEquals(0, tuples.size());
     }
 
 
@@ -304,11 +271,11 @@ public class BTreeLeafNodeTest {
 
         Random random = new Random();
 
-        List<Integer> keys = new ArrayList<>();
+        List<Double> keys = new ArrayList<>();
 
-        Integer min = Integer.MAX_VALUE;
+        Double min = Double.MAX_VALUE;
 
-        Integer max = Integer.MIN_VALUE;
+        Double max = Double.MIN_VALUE;
 
         for (int i = 0; i < numberOfTuples; ++i) {
             Integer key = random.nextInt();
@@ -317,22 +284,17 @@ public class BTreeLeafNodeTest {
             }
             min = Math.min(min, key);
             max = Math.max(max, key);
-            keys.add(key);
+            keys.add(key * 1.0);
         }
 
-        for (Integer key : keys) {
-            List<Double> values = new ArrayList<>();
-            values.add((double) key);
-            for (int j = 0; j < fieldNames.size() + 1; ++j) {
-                values.add((double) j);
-            }
-            byte[] bytes = serializeIndexValue(values);
-            leaf.insertKeyTuples(key, bytes, false);
+        for (Double key : keys) {
+            DataTuple dataTuple = new DataTuple(key);
+            leaf.insertKeyTuples(key, dataTuple, false);
         }
 
         leaf.acquireReadLock();
-//        List<byte[]> tuples = leaf.search(min, max);
-//        assertEquals(numberOfTuples, tuples.size());
+        List<DataTuple> tuples = leaf.getTuplesWithinKeyRange(min, max);
+        assertEquals(numberOfTuples, tuples.size());
 
     }
 
@@ -346,27 +308,22 @@ public class BTreeLeafNodeTest {
 
         Random random = new Random();
 
-        List<Integer> keys = new ArrayList<>();
+        List<Double> keys = new ArrayList<>();
 
         Integer randomKey = random.nextInt();
 
         for (int i = 0; i < order; ++i) {
-            keys.add(randomKey);
+            keys.add(randomKey * 1.0);
         }
 
-        for (Integer key : keys) {
-            List<Double> values = new ArrayList<>();
-            values.add((double) key);
-            for (int j = 0; j < fieldNames.size() + 1; ++j) {
-                values.add((double) j);
-            }
-            byte[] bytes = serializeIndexValue(values);
-            leaf.insertKeyTuples(key, bytes, false);
+        for (Double key : keys) {
+            DataTuple dataTuple = new DataTuple(key);
+            leaf.insertKeyTuples(key, dataTuple, false);
         }
 
         leaf.acquireReadLock();
-//        List<byte[]> tuples = leaf.search(randomKey, randomKey);
-//        assertEquals(numberOfTuples, tuples.size());
+        List<DataTuple> tuples = leaf.getTuplesWithinKeyRange(randomKey * 1.0, randomKey * 1.0);
+        assertEquals(numberOfTuples, tuples.size());
     }
 
     public byte[] serializeIndexValue(List<Double> values) throws IOException{
