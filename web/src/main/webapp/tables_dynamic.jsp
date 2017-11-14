@@ -43,19 +43,7 @@
 
         }
 
-        function checkForm() {
-            var x = Number(document.getElementById("xLow").value);
-            var y = Number(document.getElementById("xHigh").value);
-            var time = Number(document.getElementById("time").value);
-            alert(x + " " + y + " " + time);
-        }
-        if ((x && y && time && (x == 0 && y == 0 && time == 0) == false)) {
-            alert("just Full or null");
-            return false;
-        } else {
-            alert(x + " " + y + " " + time);
-            return true;
-        }
+
     </script>
     <style>
       .text{
@@ -119,7 +107,7 @@
               <div class="menu_section">
                 <h3>General</h3>
                 <ul class="nav side-menu">
-                  <li><a><i class="fa fa-home"></i> Home <span class="fa fa-chevron-down"></span></a>
+                  <li><a><i class="fa fa-home"></i> Home <span class="fa fa-chevr.on-down"></span></a>
                     <ul class="nav child_menu">
                       <li><a href="gentelella-master/production/index.html">Dashboard</a></li>
                       <li><a href="gentelella-master/production/index2.html">Dashboard2</a></li>
