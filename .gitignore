@@ -40,3 +40,5 @@ fabric.properties
 /dataDir/
 
 /logs/
+/data/
+

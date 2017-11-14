@@ -1,4 +1,4 @@
-# Waterwheel
+m# Waterwheel
 
 Waterwheel is a distributed append-only store designed for high-throughput data ingestion and real-time temporal range queries. Waterwheel supports over 1 million insertions per seconds and millisecond queries simultaneously.
 
@@ -37,7 +37,7 @@ To run our system in local mode, you should follow those steps:
 $ git clone https://github.com/ADSC-Cloud/Waterwheel
 ```
 
-2. Compile the source code
+2. Compile the source codeF
 
  ```
  $ mvn clean install -DskipTests

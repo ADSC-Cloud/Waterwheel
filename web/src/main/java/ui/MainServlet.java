@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import indexingTopology.common.aggregator.*;
 import indexingTopology.common.data.DataTuple;
 import model.DataBean;
 import model.PageBean;
@@ -39,6 +40,7 @@ public class MainServlet extends HttpServlet{
 
     SearchTest searchTest;
 
+
     int rows;
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -62,12 +64,31 @@ public class MainServlet extends HttpServlet{
         yLow = Integer.parseInt(request.getParameter("yLow"));
         yHigh = Integer.parseInt(request.getParameter("yHigh"));
         time = Integer.parseInt(request.getParameter("time"));
+        //System.out.println("min is : "+ request.getParameterValues("min")[0] + request.getParameterValues("min")[1]);
         System.out.println(xLow+ " " + yLow + " " + xHigh + " " + yHigh + " " + time);
 //        if(StringUtil.isEmpty(page)) {
 //            page = "1";
 //        }
 //        if(null == oldDataBean){
-        searchTest = new SearchTest(xLow, xHigh, yLow, yHigh, time);
+        String groupby = request.getParameter("groupby");
+        System.out.println(request.getParameter("groupby"));
+        int count_len = request.getParameterValues("count").length;
+        int sum_len = request.getParameterValues("sum").length;
+        int max_len = request.getParameterValues("max").length;
+        int min_len = request.getParameterValues("min").length;
+        int len = count_len + sum_len + max_len + min_len;
+        AggregateField[] fields = new AggregateField[len];
+        System.out.println(len);
+        int i = 0;
+        for (int i1 = 0; i1 < count_len; i1++)
+            fields[i++] = new AggregateField(new Count(), request.getParameterValues("count")[i1]);
+        for (int i2 = 0; i2 < sum_len; i2++)
+            fields[i++] = new AggregateField(new Sum(), request.getParameterValues("sum")[i2]);
+        for (int i3 = 0; i3 < max_len; i3++)
+            fields[i++] = new AggregateField(new Max(), request.getParameterValues("max")[i3]);
+        for (int i4 = 0; i4 < min_len; i4++)
+            fields[i++] = new AggregateField(new Min(), request.getParameterValues("min")[i4]);
+        searchTest = new SearchTest(xLow, xHigh, yLow, yHigh, time, groupby, fields);
         dataBean = searchTest.executeQuery();
 //        }else{
 //            dataBean = oldDataBean;
