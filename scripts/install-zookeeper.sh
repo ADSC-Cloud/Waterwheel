@@ -1,10 +1,10 @@
 #! /bin/bash
-wget http://www-eu.apache.org/dist/zookeeper/zookeeper-3.4.9/zookeeper-3.4.9.tar.gz
+wget http://www-us.apache.org/dist/zookeeper/zookeeper-3.4.11/zookeeper-3.4.11.tar.gz
 
-tar xvf zookeeper-3.4.9.tar.gz
+tar xvf zookeeper-3.4.11.tar.gz
 
-cp zookeeper-3.4.9/conf/zoo_sample.cfg zookeeper-3.4.9/conf/zoo.cfg
+cp zookeeper-3.4.11/conf/zoo_sample.cfg zookeeper-3.4.11/conf/zoo.cfg
 
-cd zookeeper-3.4.9/bin/
+cd zookeeper-3.4.11/bin/
 ./zkServer.sh start
 cd ../..
