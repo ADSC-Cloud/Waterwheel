@@ -336,15 +336,14 @@ if (typeof NProgress != 'undefined') {
 	function gd(year, month, day) {
 		return new Date(year, month - 1, day).getTime();
 	}
-	  
-	
-	function init_flot_chart(systemState){
+
+	function init_flot_chart(sys){
 		
-		if( typeof ($.plot) === 'undefined'){ return; }
-		
-		console.log('init_flot_chart');
-		
-		
+		// if( typeof ($.plot) === 'undefined'){ return; }
+		//
+		// console.log('init_flot_chart');
+		//
+		//
 		
 		var arr_data1 = [
 			[gd(2012, 1, 1), 17],
@@ -386,28 +385,42 @@ if (typeof NProgress != 'undefined') {
 		];
 		
 		var chart_plot_02_data = [];
-		
-		var chart_plot_03_data = [
-			// [0, systemState[0]],
-			// [10, systemState[1]],
-			[10,10],
-			[15,15]
-			[20, 6],
-			[30, 10],
-			[40, 5],
-			[50, 17],
-			// [6, 6],
-			// [7, 10],
-			// [8, 7],
-			// [9, 11],
-			// [10, 35],
-			// [11, 9],
-			// [12, 12],
-			// [13, 5],
-			// [14, 3],
-			// [15, 4],
-			// [50, 9]
-		];
+		var i = 0;
+        var chart_plot_03_data = [];
+        // var sys = {
+        	// "throughput": 10,
+         //    "lastThroughput":[],
+		// 	"hashMap":{"dataChunkDir":"1","metadataDir":"2"},
+		// };
+		// alert("类型是："+sys+" ");
+		// if(sys){
+            while(i < sys.length){
+                chart_plot_03_data.push([i+"s ago",sys[i]]);
+                // alert(systemState.lastThroughput[i]);
+                i++;
+            }
+		// }
+		// var chart_plot_03_data = [
+		// 	[0, systemState.lastThroughput[0]],
+		// 	[10, systemState.lastThroughput[1]],
+		// 	// [10,10],
+		// 	// [15,15]
+		// 	[20, systemState.lastThroughput[2]],
+		// 	[30, systemState.lastThroughput[3]],
+		// 	[40, systemState.lastThroughput[4]],
+		// 	[50, systemState.lastThroughput[5]],
+		// 	// [6, 6],
+		// 	// [7, 10],
+		// 	// [8, 7],
+		// 	// [9, 11],
+		// 	// [10, 35],
+		// 	// [11, 9],
+		// 	// [12, 12],
+		// 	// [13, 5],
+		// 	// [14, 3],
+		// 	// [15, 4],
+		// 	// [50, 9]
+		// ];
 		
 		
 		for (var i = 0; i < 30; i++) {
@@ -529,9 +542,9 @@ if (typeof NProgress != 'undefined') {
 		var chart_plot_03_settings = {
 			series: {
 				curvedLines: {
-					apply: true,
-					active: true,
-					monotonicFit: true
+					apply: false,
+					active: false,
+					monotonicFit: false
 				}
 			},
 			colors: ["#26B99A"],
@@ -546,7 +559,40 @@ if (typeof NProgress != 'undefined') {
 					bottom: "#7F8790",
 					left: "#7F8790"
 				}
-			}
+			},
+            yaxis: {
+                ticks: 8,
+                tickColor: "rgba(51, 51, 51, 0.06)",
+            },
+
+			xAxis: [{
+				type: 'category',
+				boundaryGap: false,
+				data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+			}],
+                // mode: "time",
+                // minTickSize: [1, "seconds"],
+                // timeformat: "%d",
+                // mode: 'time' ,
+                // data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+                //  min: 10,
+                //  max: 30,
+
+                        // data: ['1000', '2000', '3000','4000', '5000', '6000' ],
+				// mode: 'category',
+				// data: ['1', '2', '3','4', '5', '6' ],
+            // xaxis :
+            //     {
+            //         ticks: 8,
+            //         tickColor: "rgba(51, 51, 51, 0.06)",
+            //     }
+            // ,
+            // yAxis : [
+            //     {
+            //         type: 'category',
+            //         data: ['1000', '2000', '3000','4000', '5000', '6000' ],
+            //     }
+            // ]
 		};
         
 		
@@ -578,7 +624,7 @@ if (typeof NProgress != 'undefined') {
 			
 			
 			$.plot($("#chart_plot_03"), [{
-				label: "Registrations",
+				label: "Throughput",
 				data: chart_plot_03_data,
 				lines: {
 					fillColor: "rgba(150, 202, 89, 0.12)"
@@ -1926,14 +1972,17 @@ if (typeof NProgress != 'undefined') {
 			});
 			
 		};
+
+
+
+
 		
 			/* EASYPIECHART */
 			
 			function init_EasyPieChart() {
-				
+				// alert("hello");
 				if( typeof ($.fn.easyPieChart) === 'undefined'){ return; }
 				console.log('init_EasyPieChart');
-				
 				$('.chart').easyPieChart({
 				  easing: 'easeOutElastic',
 				  delay: 3000,
@@ -1947,42 +1996,42 @@ if (typeof NProgress != 'undefined') {
 					$(this.el).find('.percent').text(Math.round(percent));
 				  }
 				});
-				var chart = window.chart = $('.chart').data('easyPieChart');
-				$('.js_update').on('click', function() {
-				  chart.update(Math.random() * 200 - 100);
-				});
-
-				//hover and retain popover when on popover content
-				var originalLeave = $.fn.popover.Constructor.prototype.leave;
-				$.fn.popover.Constructor.prototype.leave = function(obj) {
-				  var self = obj instanceof this.constructor ?
-					obj : $(obj.currentTarget)[this.type](this.getDelegateOptions()).data('bs.' + this.type);
-				  var container, timeout;
-
-				  originalLeave.call(this, obj);
-
-				  if (obj.currentTarget) {
-					container = $(obj.currentTarget).siblings('.popover');
-					timeout = self.timeout;
-					container.one('mouseenter', function() {
-					  //We entered the actual popover – call off the dogs
-					  clearTimeout(timeout);
-					  //Let's monitor popover content instead
-					  container.one('mouseleave', function() {
-						$.fn.popover.Constructor.prototype.leave.call(self, self);
-					  });
-					});
-				  }
-				};
-
-				$('body').popover({
-				  selector: '[data-popover]',
-				  trigger: 'click hover',
-				  delay: {
-					show: 50,
-					hide: 400
-				  }
-				});
+				// var chart = window.chart = $('.chart').data('easyPieChart');
+				// $('.js_update').on('click', function() {
+				//   chart.update(Math.random() * 200 - 100);
+				// });
+                //
+				// //hover and retain popover when on popover content
+				// var originalLeave = $.fn.popover.Constructor.prototype.leave;
+				// $.fn.popover.Constructor.prototype.leave = function(obj) {
+				//   var self = obj instanceof this.constructor ?
+				// 	obj : $(obj.currentTarget)[this.type](this.getDelegateOptions()).data('bs.' + this.type);
+				//   var container, timeout;
+                //
+				//   originalLeave.call(this, obj);
+                //
+				//   if (obj.currentTarget) {
+				// 	container = $(obj.currentTarget).siblings('.popover');
+				// 	timeout = self.timeout;
+				// 	container.one('mouseenter', function() {
+				// 	  //We entered the actual popover – call off the dogs
+				// 	  clearTimeout(timeout);
+				// 	  //Let's monitor popover content instead
+				// 	  container.one('mouseleave', function() {
+				// 		$.fn.popover.Constructor.prototype.leave.call(self, self);
+				// 	  });
+				// 	});
+				//   }
+				// };
+                //
+				// $('body').popover({
+				//   selector: '[data-popover]',
+				//   trigger: 'click hover',
+				//   delay: {
+				// 	show: 50,
+				// 	hide: 400
+				//   }
+				// });
 				
 			};
 	   
@@ -2755,7 +2804,7 @@ if (typeof NProgress != 'undefined') {
 		/* ECHRTS */
 	
 		
-		function init_echarts() {
+		function init_echarts(sys) {
 		
 				if( typeof (echarts) === 'undefined'){ return; }
 				console.log('init_echarts');
@@ -3307,56 +3356,100 @@ if (typeof NProgress != 'undefined') {
 			if ($('#echart_line').length ){ 
 			  
 			  var echartLine = echarts.init(document.getElementById('echart_line'), theme);
+				var lineDatax = [];
+				var lineDatay = [];
 
+			  var i = 0;
+			  var j = sys.length-1;
+                while(i < sys.length){
+                	// alert(sys.length+"  "+sys[i]);
+                    lineDatax.push(sys[i]*10);
+                    if(j == 0){
+                        lineDatay.push("now");
+                    }
+                    else{
+                        lineDatay.push(j*5+"s ago");
+                    }
+                    j--;
+                    // alert(systemState.lastThroughput[i]);in
+                    i++;
+                }
 			  echartLine.setOption({
-				title: {
-				  text: 'Line Graph',
-				  subtext: 'Subtitle'
-				},
+				// title: {
+				//   text: 'Line Graph',
+				//   subtext: 'Subtitle'
+				// },
+				  animation:false,
 				tooltip: {
 				  trigger: 'axis'
 				},
-				legend: {
-				  x: 220,
-				  y: 40,
-				  data: ['Intent', 'Pre-order', 'Deal']
-				},
-				toolbox: {
-				  show: true,
-				  feature: {
-					magicType: {
-					  show: true,
-					  title: {
-						line: 'Line',
-						bar: 'Bar',
-						stack: 'Stack',
-						tiled: 'Tiled'
-					  },
-					  type: ['line', 'bar', 'stack', 'tiled']
-					},
-					restore: {
-					  show: true,
-					  title: "Restore"
-					},
-					saveAsImage: {
-					  show: true,
-					  title: "Save Image"
-					}
-				  }
-				},
+				  grid:{
+				  	top:'5%',
+					  right:'3%',
+					  bottom:'15%',
+					  left:'18%',
+				  },
+				// legend: {
+				//   x: 400,
+				//   y: 40,
+				//   data: ['Intent', 'Pre-order', 'Deal']
+				// },
+				// toolbox: {
+				//   show: true,
+				//   feature: {
+				// 	magicType: {
+				// 	  show: true,
+				// 	  title: {
+				// 		line: 'Line',
+				// 		bar: 'Bar',
+				// 		stack: 'Stack',
+				// 		tiled: 'Tiled'
+				// 	  },
+				// 	  type: ['line', 'bar', 'stack', 'tiled']
+				// 	},
+				// 	restore: {
+				// 	  show: true,
+				// 	  title: "Restore"
+				// 	},
+				// 	saveAsImage: {
+				// 	  show: false,
+				// 	  title: "Save Image"
+				// 	}
+				//   }
+				// },
 				calculable: true,
 				xAxis: [{
-				  type: 'category',
+                    name:'time',
+                    nameTextStyle:{'fontsize':15,'color':'black'},
+                    nameLocation:'middle',
+					max_interval:4,
+					nameGap:30,
+                    axisLabel:{'showMinLabel':false,interval:4, textStyle: {color: '#000'}},
+                    axisLine:{lineStyle:{color:'#000'}},
+				  	type: 'category',
+                    nameGap:25,
+					max:'now',
 				  boundaryGap: false,
-				  data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+				  data: lineDatay,
+					// data:[1,2,3,4,5],
+					// min:0,
+					// max:100
+				  // data: ['60s ago','50s ago','40s ago','30s ago','20s ago','10s ago','now','60s ago','50s ago','40s ago','30s ago','20s ago','10s ago','now']
 				}],
 				yAxis: [{
-				  type: 'value'
+				  	name:'Throughput (tuples/s)',
+					nameTextStyle:{'fontsize':15,'color':'black'},
+					nameLocation:'middle',
+					nameGap:70,
+                    axisLabel:{'show':true,'textStyle': {'color': '#000'}},
+                    axisLine:{lineStyle:{color:'#000'}},
+					type: 'value',
+                    // min:lineDatax.min-4000,
 				}],
-				series: [{
-				  name: 'Deal',
+				series: {
+				  name: 'Throughput',
 				  type: 'line',
-				  smooth: true,
+				  smooth: false,
 				  itemStyle: {
 					normal: {
 					  areaStyle: {
@@ -3364,32 +3457,8 @@ if (typeof NProgress != 'undefined') {
 					  }
 					}
 				  },
-				  data: [10, 12, 21, 54, 260, 830, 710]
-				}, {
-				  name: 'Pre-order',
-				  type: 'line',
-				  smooth: true,
-				  itemStyle: {
-					normal: {
-					  areaStyle: {
-						type: 'default'
-					  }
-					}
-				  },
-				  data: [30, 182, 434, 791, 390, 30, 10]
-				}, {
-				  name: 'Intent',
-				  type: 'line',
-				  smooth: true,
-				  itemStyle: {
-					normal: {
-					  areaStyle: {
-						type: 'default'
-					  }
-					}
-				  },
-				  data: [1320, 1132, 601, 234, 120, 90, 20]
-				}]
+				  data: lineDatax
+				},
 			  });
 
 			} 
@@ -4145,7 +4214,7 @@ if (typeof NProgress != 'undefined') {
 				legend: {
 				  x: 'center',
 				  y: 'bottom',
-				  data: ['Direct Access', 'E-mail Marketing', 'Union Ad', 'Video Ads', 'Search Engine']
+				  data: ['using', 'idle']
 				},
 				toolbox: {
 				  show: true,
@@ -4197,20 +4266,11 @@ if (typeof NProgress != 'undefined') {
 					}
 				  },
 				  data: [{
-					value: 335,
-					name: 'Direct Access'
+					value: 400,
+					name: 'using'
 				  }, {
-					value: 310,
-					name: 'E-mail Marketing'
-				  }, {
-					value: 234,
-					name: 'Union Ad'
-				  }, {
-					value: 135,
-					name: 'Video Ads'
-				  }, {
-					value: 1548,
-					name: 'Search Engine'
+					value: 100,
+					name: 'idle'
 				  }]
 				}]
 			  });
@@ -5031,7 +5091,7 @@ if (typeof NProgress != 'undefined') {
 	   
 	   
 	$(document).ready(function() {
-				
+        var sys = [];
 		init_sparklines();
 		// init_flot_chart();
 		init_sidebar();
@@ -5049,9 +5109,9 @@ if (typeof NProgress != 'undefined') {
 		init_daterangepicker_single_call();
 		init_daterangepicker_reservation();
 		init_SmartWizard();
-		init_EasyPieChart();
+		// init_EasyPieChart();
 		init_charts();
-		init_echarts();
+		// init_echarts();
 		init_morris_charts();
 		init_skycons();
 		init_select2();

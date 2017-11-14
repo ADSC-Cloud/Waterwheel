@@ -1,5 +1,5 @@
 *.dat
-
+topology/logs
 *.iml
 .idea
 .idea/libraries/*.xml
@@ -33,8 +33,15 @@ crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 
-/.idea/
+#/.idea/
 
 *.DS_Store
 
+<<<<<<< HEAD
+=======
+/dataDir/
+
+/logs/
+/data/
+>>>>>>> web-ui/zl1030
 

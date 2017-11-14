@@ -1,4 +1,4 @@
-m# Waterwheel
+# Waterwheel
 
 Waterwheel is a distributed append-only store designed for high-throughput data ingestion and real-time temporal range queries. Waterwheel supports over 1 million insertions per seconds and millisecond queries simultaneously.
 
@@ -37,7 +37,7 @@ To run our system in local mode, you should follow those steps:
 $ git clone https://github.com/ADSC-Cloud/Waterwheel
 ```
 
-2. Compile the source codeF
+2. Compile the source code
 
  ```
  $ mvn clean install -DskipTests
@@ -48,7 +48,7 @@ $ git clone https://github.com/ADSC-Cloud/Waterwheel
 Run the following command to launch the system
 
 ```
-$ mvn exec:java -pl topology -Dexec.mainClass=indexingTopology.topology.kingbase.KingBaseTopology -Dexec.args="-m submit --local -f conf/conf.yaml"
+$ mvn exec:java -pl topology -Dexec.mainClass=indexingTopology.topology.kingbase.KingBaseTopology -Dexec.args="-m submit --local"
 ```
 
 4. Open a new terminal and run the following command to ingest tuples to the system:
@@ -66,12 +66,12 @@ $ mvn tomcat7:run -pl web
 Now you can get access to the web ui via [http://localhost:8080](http://localhost:8080). 
 
 It looks like this:
-![screenshot of Waterwheel web ui](web/resources/web-ui-screenshot.png)
+![screenshot](../web/resources/web-ui-screenshot.png)
 
 
 On the dashboard, you can see the instantenaous insertion throughput and the resource utilization, as well as a table showing system parameters.
 
-6. Run queries
+6 Run queries
 
 You can try to run some demo queries either on the web ui or via terminal commandline.
 

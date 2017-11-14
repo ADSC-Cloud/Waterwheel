@@ -36,27 +36,27 @@ if [ ! "$MODE" = "slave" ] && [ ! "$MODE" = "master" ]; then
     exit 0
 fi
 
-if [ ! -f hadoop-2.7.3.tar.gz ]; then
-    wget http://www-eu.apache.org/dist/hadoop/common/hadoop-2.7.3/hadoop-2.7.3.tar.gz
+if [ ! -f hadoop-2.8.1.tar.gz ]; then
+    wget http://www-eu.apache.org/dist/hadoop/common/hadoop-2.8.1/hadoop-2.8.1.tar.gz
 fi
 
-tar zxf hadoop-2.7.3.tar.gz
+tar zxf hadoop-2.8.1.tar.gz
 
-cp default-config/core-site.xml hadoop-2.7.3/etc/hadoop/
-cp default-config/hdfs-site.xml hadoop-2.7.3/etc/hadoop/
+cp default-config/core-site.xml hadoop-2.8.1/etc/hadoop/
+cp default-config/hdfs-site.xml hadoop-2.8.1/etc/hadoop/
 
-sed -i "s/namenode-host/$NAMENODE_HOST/g" hadoop-2.7.3/etc/hadoop/core-site.xml
+sed -i "s/namenode-host/$NAMENODE_HOST/g" hadoop-2.8.1/etc/hadoop/core-site.xml
 
-DATANODE_FOLDER=`pwd`/hadoop-2.7.3/datanode-folder
-mkdir -p "`pwd`/hadoop-2.7.3/datanode-folder"
+DATANODE_FOLDER=`pwd`/hadoop-2.8.1/datanode-folder
+mkdir -p "`pwd`/hadoop-2.8.1/datanode-folder"
 echo "data node: $DATANODE_FOLDER"
-sed -i "s|datanode-dir|$DATANODE_FOLDER|g" hadoop-2.7.3/etc/hadoop/hdfs-site.xml
+sed -i "s|datanode-dir|$DATANODE_FOLDER|g" hadoop-2.8.1/etc/hadoop/hdfs-site.xml
 
 # set $JAVA_HOME variable in hadoop-env.sh
-sed -i "s|JAVA_HOME=.*|JAVA_HOME=$JAVA_HOME|g" hadoop-2.7.3/etc/hadoop/hadoop-env.sh
+sed -i "s|JAVA_HOME=.*|JAVA_HOME=$JAVA_HOME|g" hadoop-2.8.1/etc/hadoop/hadoop-env.sh
 if [ "$MODE" = "master" ]; then
-    hadoop-2.7.3/bin/hdfs namenode -format
-    hadoop-2.7.3/sbin/start-dfs.sh
+    hadoop-2.8.1/bin/hdfs namenode -format
+    hadoop-2.8.1/sbin/start-dfs.sh
 else
-    hadoop-2.7.3/sbin/hadoop-daemons.sh  --script "hadoop-2.7.3/bin/hdfs" start datanode
+    hadoop-2.8.1/sbin/hadoop-daemons.sh  --script "hadoop-2.8.1/bin/hdfs" start datanode
 fi

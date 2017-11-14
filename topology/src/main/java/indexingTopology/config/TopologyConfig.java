@@ -9,9 +9,9 @@ import java.util.Map;
 public class TopologyConfig implements Serializable {
     public final double REBUILD_TEMPLATE_THRESHOLD = 10.0;
 
-    public String dataChunkDir = "/Users/Robert/Documents/data";
+    public String dataChunkDir = "/home/hadoop/dataDir";
 
-    public String metadataDir = "/Users/Robert/Documents/data";
+    public String metadataDir = "/home/hadoop/dataDir";
 
     public String HDFS_HOST = "hdfs://192.168.0.237:54310/";
 
@@ -56,12 +56,16 @@ public class TopologyConfig implements Serializable {
 
     public int INSERTION_SERVER_PER_NODE = 2;
 
+    public int DISPATCHER_PER_NODE = 1;
+
 
     public static final String ZOOKEEPER_HOST = "192.168.0.207";
 
     public final boolean SHUFFLE_GROUPING_FLAG = false;
 
     public final boolean TASK_QUEUE_MODEL = false;
+
+    static public final int StaticRequestTimeIntervalInSeconds = 5;
 
     /**
      * Used for maintaining persistent meta logs in HDFS. In case reconstruction
@@ -111,7 +115,7 @@ public class TopologyConfig implements Serializable {
             }
 
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            System.err.println("The configure file " + filePath + " is not found. Use default conf instead.");
         }
     }
 

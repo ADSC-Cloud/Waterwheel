@@ -11,6 +11,15 @@ import java.util.List;
 public class DataBean  {
     List<DataTuple> tuples;
     List<String> fieldNames;
+    long time;
+
+    public long getTime() {
+        return time;
+    }
+
+    public void setTime(long time) {
+        this.time = time;
+    }
 
     public List<DataTuple> getTuples() {
         return tuples;

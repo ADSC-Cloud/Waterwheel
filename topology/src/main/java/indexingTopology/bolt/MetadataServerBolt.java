@@ -2,7 +2,6 @@ package indexingTopology.bolt;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import indexingTopology.api.client.SystemStateQueryClient;
 import indexingTopology.api.server.Server;
 import indexingTopology.api.server.SystemStateQueryHandle;
 import indexingTopology.bloom.DataChunkBloomFilters;
@@ -12,6 +11,7 @@ import indexingTopology.common.KeyDomain;
 import indexingTopology.common.SystemState;
 import indexingTopology.common.TimeDomain;
 import indexingTopology.config.TopologyConfig;
+import indexingTopology.metrics.PerNodeMetrics;
 import indexingTopology.util.*;
 import indexingTopology.util.partition.BalancedPartition;
 import org.apache.storm.task.OutputCollector;
@@ -26,6 +26,7 @@ import indexingTopology.metadata.FilePartitionSchemaManager;
 import indexingTopology.streams.Streams;
 import org.apache.zookeeper.KeeperException;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -58,6 +59,12 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
     private long[] partitionLoads = null;
 
     private Histogram histogram;
+
+    private List<Double> CPUloads;
+
+    private List<Double> totalDiskSpaces;
+
+    private List<Double> freeDiskSpaces;
 
     private Thread staticsRequestSendingThread;
 
@@ -97,6 +104,8 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         collector = outputCollector;
 
+        initializeMetadataFolder();
+
         filePartitionSchemaManager = new FilePartitionSchemaManager();
 
         numberOfDispatchers = topologyContext.getComponentTasks("DispatcherBolt").size();
@@ -135,18 +144,23 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 //            e.printStackTrace();
 //        }
 
+
+        CPUloads = Collections.synchronizedList(new ArrayList<Double>());
+        totalDiskSpaces = Collections.synchronizedList(new ArrayList<>());
+        freeDiskSpaces = Collections.synchronizedList(new ArrayList<>());
+
         systemState = new SystemState();
         staticsRequestSendingThread = new Thread(new StatisticsRequestSendingRunnable());
         staticsRequestSendingThread.start();
 
 
-//        createMetadataSendingThread();
-//        System.out.println("aaaaaaaaaaaa:"+config.dataChunkDir);
         String a = "aa";
-//        systemState.setHashMap("11",a);
-//        systemState.setHashMap("22","bb");
-        systemState.setTreeMap("dataChunkDir",config.dataChunkDir);
-        systemState.setTreeMap("metadataDir",config.metadataDir);
+        systemState.addConfig("DataChunk Dir",config.dataChunkDir);
+        systemState.addConfig("Metadata Dir",config.metadataDir);
+        systemState.addConfig("Load Balance Threshold", config.LOAD_BALANCE_THRESHOLD);
+        systemState.addConfig("Query Servers per Node", config.CHUNK_SCANNER_PER_NODE);
+        systemState.addConfig("HDFS", config.HDFSFlag);
+
         systemStateQueryServer = new Server(20000, SystemStateQueryHandle.class, new Class[]{SystemState.class}, systemState);
         systemStateQueryServer.startDaemon();
     }
@@ -186,12 +200,17 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
     public void execute(Tuple tuple) {
 
         if (tuple.getSourceStreamId().equals(Streams.StatisticsReportStream)) {
-
-            Histogram histogram = (Histogram) tuple.getValue(0);
-
+            PerNodeMetrics perNodeMetrics = (PerNodeMetrics) tuple.getValue(0);
+            Histogram histogram = perNodeMetrics.histogram;
+            Double cpuLoads = perNodeMetrics.CPULoad;
+            Double totalDiskSpace = perNodeMetrics.totalDiskSpace;
+            Double freeDiskSpace = perNodeMetrics.freeDiskSpace;
             if (numberOfStaticsReceived < numberOfDispatchers) {
                 partitionLoads = new long[numberOfPartitions];
+                totalDiskSpaces.add(totalDiskSpace);
+                freeDiskSpaces.add(freeDiskSpace);
                 this.histogram.merge(histogram);
+                CPUloads.add(cpuLoads);
                 ++numberOfStaticsReceived;
                 if (numberOfStaticsReceived == numberOfDispatchers) {
 //                    Double skewnessFactor = getSkewnessFactor(this.histogram);
@@ -228,6 +247,8 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 //                        System.out.println("skewness is not detected!!!");
 //                        System.out.println(histogram.getHistogram());
                     }
+
+                    updateSystemState();
 
                     numberOfStaticsReceived = 0;
                 }
@@ -374,6 +395,46 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
         return maxWorkload / averageLoad;
     }
 
+    private void updateSystemState() {
+        double totalCPULoad = .0;
+        for (int i = 0; i < CPUloads.size(); i++) {
+            totalCPULoad += CPUloads.get(i);
+        }
+        systemState.setCpuRatio(totalCPULoad / CPUloads.size());
+        CPUloads.clear();
+
+        double totalDiskSpace = .0;
+        for (double i: totalDiskSpaces) {
+            totalDiskSpace += i;
+        }
+        systemState.setTotalDiskSpaceInGB(totalDiskSpace / config.DISPATCHER_PER_NODE);
+        totalDiskSpaces.clear();
+
+        double freeDiskSpace = .0;
+        for (double i: freeDiskSpaces) {
+            freeDiskSpace += i;
+        }
+        systemState.setAvailableDiskSpaceInGB(freeDiskSpace / config.DISPATCHER_PER_NODE);
+        freeDiskSpaces.clear();
+
+
+        List<Long> counts = histogram.histogramToList();
+        long sum = 0;
+        for(Long count: counts) {
+            sum += count;
+        }
+        systemState.setThroughout(sum / (double)TopologyConfig.StaticRequestTimeIntervalInSeconds);
+
+        // evict the oldest value to make room for the latest one.
+        for (int i = 0; i < SystemState.NumberOfHistoricThroughputs - 1; i++) {
+            systemState.lastThroughput[i] = systemState.lastThroughput[i + 1];
+        }
+        systemState.lastThroughput[SystemState.NumberOfHistoricThroughputs - 1] = systemState.getThroughput();
+        System.out.println(String.format("Overall Throughput: %f tuple / second.", systemState.getThroughput()));
+        System.out.println(String.format("CPU utilization: %f.", systemState.getRatio()));
+        System.out.println(String.format("total disk: %.2f GN.", systemState.getTotalDiskSpaceInGB()));
+        System.out.println(String.format("free disk: %.2f GB.", systemState.getAvailableDiskSpaceInGB()));
+    }
 
     public List<Long> getWorkLoads(Histogram histogram) {
         Map<Integer, Integer> intervalToPartitionMapping = balancedPartition.getIntervalToPartitionMapping();
@@ -457,63 +518,52 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
         return ret;
     }
 
+    private void initializeMetadataFolder() {
+        Runtime runtime = Runtime.getRuntime();
+        try {
+            runtime.exec("mkdir -p " + config.metadataDir);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     class StatisticsRequestSendingRunnable implements Runnable {
 
         @Override
         public void run() {
-            final int sleepTimeInSecond = 5;
+
 //            while (true) {
-            systemState.setLastThroughput(new double[6]);
-            int i = 0;//throughput计数器.
+            systemState.setLastThroughput(new double[SystemState.NumberOfHistoricThroughputs]);
+
             while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    Thread.sleep(sleepTimeInSecond * 1000);
+                    Thread.sleep(TopologyConfig.StaticRequestTimeIntervalInSeconds * 1000);
                 } catch (InterruptedException e) {
 //                    e.printStackTrace();
                     Thread.currentThread().interrupt();
                 }
 
-                List<Long> counts = histogram.histogramToList();
-                long sum = 0;
-                for(Long count: counts) {
-                    sum += count;
-                }
-                systemState.setThroughout(sum / (double)sleepTimeInSecond);
-                systemState.setCpuRatio(60);
-                System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!throughput:  "+systemState.getThroughput()+"----------------------");
-                int throughputSite = systemState.lastThroughput.length-1;
-                while(throughputSite > 0){
-                    systemState.lastThroughput[throughputSite] = systemState.lastThroughput[throughputSite-1];
-                    throughputSite--;
-                }
-                systemState.lastThroughput[0] = systemState.getThroughput();
-//                if(i >= systemState.lastThroughput.length){
-//                    for(int j = 0;j< systemState.lastThroughput.length-1;j++){
-//                        systemState.lastThroughput[j] = systemState.lastThroughput[j+1];
-////                            systemState.lastThroughput[j] = j+1;
-//                    }
-//                    systemState.lastThroughput[systemState.lastThroughput.length-1] = systemState.getThroughput();
-////                    systemState.lastThroughput[systemState.lastThroughput.length-1] = 1;
+//                List<Long> counts = histogram.histogramToList();
+//                long sum = 0;
+//                for(Long count: counts) {
+//                    sum += count;
 //                }
-//                else{
-//                    if(systemState.getThroughput() != 0){
-//                        systemState.lastThroughput[i++] = systemState.getThroughput();
-//                        System.out.println("i: "+i+" "+systemState.lastThroughput[i-1]);
-//                    }
-////                    systemState.lastThroughput[i++] = i+1;
+//                systemState.setThroughout(sum / (double)sleepTimeInSecond);
+//                systemState.setCpuRatio(60);
+//                systemState.setDiskRatio(40);
+//                int throughputSite = systemState.lastThroughput.length-1;
+//                while(throughputSite > 0){
+//                    systemState.lastThroughput[throughputSite] = systemState.lastThroughput[throughputSite-1];
+//                    throughputSite--;
 //                }
-                System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!lastThroughput:  "+systemState.lastThroughput[0]+" "+systemState.lastThroughput[1]+" "+systemState.lastThroughput[2]+" "+systemState.lastThroughput[3]+" "+systemState.lastThroughput[4]+" "+systemState.lastThroughput[5]+"----------------------");
-
-//                System.out.println("statics request has been sent!!!");
-                System.out.println(String.format("Overall Throughput: %f tuple / second", sum / (double)sleepTimeInSecond));
+//                   System.out.println("statics request has been sent!!!");
 
                 histogram.clear();
 
-//                if (repartitionEnabled) {
                 collector.emit(Streams.StaticsRequestStream,
                         new Values("Statics Request"));
-//                }
+
             }
         }
 

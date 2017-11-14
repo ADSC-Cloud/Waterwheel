@@ -59,7 +59,7 @@ public class KingBaseTopology {
     private String TopologyName = "T0";
 
     @Option(name = "--config-file", aliases = {"-f"}, usage = "conf.yaml to override default configs")
-    private String confFile = "none";
+    private String confFile = "conf/conf.yaml";
 
     @Option(name = "--node", aliases = {"-n"}, usage = "number of nodes used in the topology")
     private int NumberOfNodes = 1;
@@ -104,12 +104,6 @@ public class KingBaseTopology {
         DataSchema schema = getDataSchema();
         GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient(QueryServerIp, 10001);
         Thread queryThread = new Thread(() -> {
-            try {
-                queryClient.connectWithTimeout(10000);
-            } catch (IOException e) {
-                e.printStackTrace();
-                return;
-            }
             Random random = new Random();
 
             int executed = 0;
@@ -117,6 +111,12 @@ public class KingBaseTopology {
 
             while (true) {
 
+                try {
+                    queryClient.connectWithTimeout(10000);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return;
+                }
                 double x = x1 + (x2 - x1) * (1 - selectivityOnOneDimension) * random.nextDouble();
                 double y = y1 + (y2 - y1) * (1 - selectivityOnOneDimension) * random.nextDouble();
 
@@ -151,7 +151,7 @@ public class KingBaseTopology {
 
                 GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
                         System.currentTimeMillis() - RecentSecondsOfInterest * 1000,
-                        System.currentTimeMillis(), predicate, aggregator, null, equivalentPredicateHint);
+                        System.currentTimeMillis(), null, aggregator, null, null);
                 long start = System.currentTimeMillis();
                 try {
                     DateFormat dateFormat = new SimpleDateFormat("MM-dd HH:mm:ss");
@@ -184,7 +184,11 @@ public class KingBaseTopology {
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
-
+                try {
+                    queryClient.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
             try {
                 queryClient.close();
@@ -213,17 +217,23 @@ public class KingBaseTopology {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+
+            DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+
             while(true) {
                 Car car = generator.generate();
                 DataTuple tuple = new DataTuple();
                 tuple.add(Integer.toString((int)car.id));
-                tuple.add(Integer.toString(random.nextInt()));
+                tuple.add("" + (char)((int)'A'+Math.random()*((int)'Z'-(int)'A'+1))
+                        + (char)((int)'A'+Math.random()*((int)'Z'-(int)'A'+1))
+                        + Integer.toString(Math.abs(random.nextInt()) + 1000000).substring(0, 5));
                 tuple.add(car.x);
                 tuple.add(car.y);
-                tuple.add(1);
-                tuple.add(55.3);
-                tuple.add("position 1");
-                tuple.add("2015-10-10, 11:12:34");
+                tuple.add((int)(Math.random() * 3));
+                tuple.add(Math.random() * 70.0);
+                tuple.add(Integer.toString((int)(Math.random() * 15)));
+                Calendar cal = Calendar.getInstance();
+                tuple.add(dateFormat.format(cal.getTime()));
                 try {
                     restrictor.getPermission();
                     clientBatchMode.appendInBatch(tuple);
@@ -327,6 +337,7 @@ public class KingBaseTopology {
 
         conf.put(Config.WORKER_CHILDOPTS, "-Xmx1024m");
         conf.put(Config.WORKER_HEAP_MEMORY_MB, 1024);
+        conf.put(Config.STORM_MESSAGING_NETTY_MAX_SLEEP_MS, 1);
 
         if (LocalMode) {
             LocalCluster localCluster = new LocalCluster();

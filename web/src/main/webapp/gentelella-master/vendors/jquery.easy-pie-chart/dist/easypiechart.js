@@ -222,7 +222,7 @@ var EasyPieChart = function(el, opts) {
 		size: 110,
 		rotate: 0,
 		animate: {
-			duration: 1000,
+			duration: 1,
 			enabled: true
 		},
 		easing: function (x, t, b, c, d) { // more can be found here: http://gsgd.co.uk/sandbox/jquery/easing/
