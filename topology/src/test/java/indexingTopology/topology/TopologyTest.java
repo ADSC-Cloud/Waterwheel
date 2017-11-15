@@ -695,13 +695,12 @@ public class TopologyTest extends TestCase {
             Aggregator<Integer> aggregator = new Aggregator<>(schema, "a1", new AggregateField(new Count(), "*")
                     , new AggregateField(new Min<>(), "a2"), new AggregateField(new Max<>(), "a2"));
 
-            DataTuplePredicate postPredicate = t -> (int)aggregator.getOutputDataSchema().getValue("a1", t) < 40;
+            DataTuplePredicate postPredicate = t -> (int)aggregator.getOutputDataSchema().getValue("a1", t) < 100000;
 
             // full key range query
             QueryResponse response = queryClient.query(new QueryRequest<>(minIndex, maxIndex, Long.MIN_VALUE,
                     Long.MAX_VALUE, null, postPredicate, aggregator));
             assertTrue(response.getSchema() != null);
-            System.out.println("dddddddddddd" + response.getTuples().get(0).get(3));
             assertEquals(100, response.dataTuples.size());
             for (DataTuple tuple: response.dataTuples) {
                 assertEquals((double)tuples/100, (double)tuple.get(1), 0.0001);
@@ -1279,14 +1278,14 @@ public class TopologyTest extends TestCase {
             Aggregator<Integer> aggregator = new Aggregator<>(schema, "a1", new AggregateField(new Count(), "*")
                     , new AggregateField(new Min<>(), "a2"), new AggregateField(new Max<>(), "a2"));
 
-            DataTuplePredicate postPredicate = t -> Double.parseDouble(aggregator.getOutputDataSchema().getValue("max(a2)", t).toString()) < 999.0;
+            DataTuplePredicate postPredicate = t -> Double.parseDouble(aggregator.getOutputDataSchema().getValue("max(a2)", t).toString()) < 1000.0;
 
             // full key range query
             QueryResponse response = queryClient.query(new QueryRequest<>(minIndex, maxIndex, Long.MIN_VALUE,
                     Long.MAX_VALUE, null, postPredicate, aggregator));
             assertTrue(response.getSchema() != null);
 //            System.out.println("dddddddddddd" + response.getTuples().get(0).get(3));
-            assertEquals(2, response.dataTuples.size());
+            assertEquals(100, response.dataTuples.size());
 
             fullyExecuted = true;
 

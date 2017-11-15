@@ -427,7 +427,6 @@ public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends Bas
             filterByPredicate(dataTuplesInKeyRange, subQuery.getPostPredicate());
 //            dataTuplesInKeyRange.get(0).get(4);
 //            aggregationTime += System.currentTimeMillis() - startTime;
-            System.out.println("lllllllllllllllll" + dataTuplesInKeyRange.get(0).get(4));
 
             debugInfo.runningPosition = "breakpoint 11";
 
