@@ -10,7 +10,9 @@ import indexingTopology.common.Histogram;
 import indexingTopology.common.KeyDomain;
 import indexingTopology.common.SystemState;
 import indexingTopology.common.TimeDomain;
+import indexingTopology.common.data.DataSchema;
 import indexingTopology.config.TopologyConfig;
+import indexingTopology.metadata.SchemaManager;
 import indexingTopology.metrics.PerNodeMetrics;
 import indexingTopology.util.*;
 import indexingTopology.util.partition.BalancedPartition;
@@ -94,6 +96,8 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
     private Server systemStateQueryServer;
 
+    private SchemaManager schemaManager;
+
     public MetadataServerBolt(Key lowerBound, Key upperBound, TopologyConfig config) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
@@ -102,6 +106,9 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
+
+        schemaManager = new SchemaManager();
+
         collector = outputCollector;
 
         initializeMetadataFolder();
@@ -343,6 +350,15 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
             // simply forward the info
             collector.emit(Streams.LocationInfoUpdateStream, new Values(info));
+        } else if (tuple.getSourceStreamId().equals("DMLStream")) {
+            if (tuple.getString(0).equals("create")) {
+                String name = tuple.getString(1);
+                DataSchema schema = (DataSchema) tuple.getValue(2);
+                schemaManager.createSchema(name, schema);
+                System.out.printf("Table %s is created as %s", name, schema.toString());
+            } else {
+
+            }
         }
     }
 
