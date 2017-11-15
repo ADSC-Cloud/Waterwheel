@@ -81,16 +81,16 @@ public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends Bas
     }
 
     static class TaggedSubQueryOnFile<T extends Number> {
-         public SubQueryOnFile<T> subquery;
-         public Tags tags;
-         public TaggedSubQueryOnFile(SubQueryOnFile<T> subquery, Tags tags) {
-             this.subquery = subquery;
-             this.tags = tags;
-         }
+        public SubQueryOnFile<T> subquery;
+        public Tags tags;
+        public TaggedSubQueryOnFile(SubQueryOnFile<T> subquery, Tags tags) {
+            this.subquery = subquery;
+            this.tags = tags;
+        }
 
-         public TaggedSubQueryOnFile(SubQueryOnFile<T> subquery) {
-             this(subquery, null);
-         }
+        public TaggedSubQueryOnFile(SubQueryOnFile<T> subquery) {
+            this(subquery, null);
+        }
     }
 
     TopologyConfig config;
@@ -278,7 +278,7 @@ public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends Bas
         metrics.setTag("location", InetAddress.getLocalHost().getHostName());
         metrics.setTag("chunk", subQuery.getFileName());
         debugInfo.runningPosition = "breakpoint 1";
-            FileSystemHandler fileSystemHandler = null;
+        FileSystemHandler fileSystemHandler = null;
         try {
 //            System.out.println(String.format("chunk name %s is being executed !!!", subQuery.getFileName()));
 
@@ -424,10 +424,10 @@ public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends Bas
             }
             metrics.endEvent("aggregate");
 
-
+            filterByPredicate(dataTuplesInKeyRange, subQuery.getPostPredicate());
+//            dataTuplesInKeyRange.get(0).get(4);
 //            aggregationTime += System.currentTimeMillis() - startTime;
-
-
+            System.out.println("lllllllllllllllll" + dataTuplesInKeyRange.get(0).get(4));
 
             debugInfo.runningPosition = "breakpoint 11";
 
@@ -438,6 +438,7 @@ public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends Bas
             metrics.startEvent("serialize");
             if (subQuery.getAggregator() != null) {
                 DataSchema outputSchema = subQuery.getAggregator().getOutputDataSchema();
+
                 dataTuplesInKeyRange.stream().forEach(p -> serializedDataTuples.add(outputSchema.serializeTuple(p)));
             } else {fileSystemHandler.closeFile();
                 dataTuplesInKeyRange.stream().forEach(p -> serializedDataTuples.add(schema.serializeTuple(p)));

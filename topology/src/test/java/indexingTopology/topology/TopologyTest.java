@@ -1,4 +1,5 @@
 package indexingTopology.topology;
+import indexingTopology.bolt.QueryCoordinatorWithQueryReceiverServerBolt;
 import indexingTopology.common.aggregator.*;
 import indexingTopology.api.client.IngestionClientBatchMode;
 import indexingTopology.api.client.QueryClient;
@@ -7,7 +8,6 @@ import indexingTopology.api.client.QueryResponse;
 import indexingTopology.bolt.InputStreamReceiverBolt;
 import indexingTopology.bolt.InputStreamReceiverBoltServer;
 import indexingTopology.bolt.QueryCoordinatorBolt;
-import indexingTopology.bolt.QueryCoordinatorWithQueryReceiverServerBolt;
 import indexingTopology.common.logics.DataTupleEquivalentPredicateHint;
 import indexingTopology.common.logics.DataTupleMapper;
 import indexingTopology.common.logics.DataTuplePredicate;
@@ -29,7 +29,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
 
-import org.apache.storm.utils.Utils;
 import org.junit.Test;
 
 
@@ -424,16 +423,16 @@ public class TopologyTest extends TestCase {
                 DataTupleEquivalentPredicateHint hint = new DataTupleEquivalentPredicateHint("a4", "payload 0");
 
                 // full key range query
-                QueryResponse response = queryClient.query(new QueryRequest<>(minIndex, maxIndex, Long.MIN_VALUE, Long.MAX_VALUE, predicate, null, null, hint));
+                QueryResponse response = queryClient.query(new QueryRequest<>(minIndex, maxIndex, Long.MIN_VALUE, Long.MAX_VALUE, predicate, null, null, null, hint));
                 assertEquals(tuples / 100, response.dataTuples.size());
 
 
                 //half key range query
-                response = queryClient.query(new QueryRequest<>(0, 49, Long.MIN_VALUE, Long.MAX_VALUE, predicate, null, null, hint));
+                response = queryClient.query(new QueryRequest<>(0, 49, Long.MIN_VALUE, Long.MAX_VALUE, predicate, null, null, null, hint));
                 assertEquals(tuples / 100, response.dataTuples.size());
 
                 //a key range query
-                response = queryClient.query(new QueryRequest<>(0, 0, Long.MIN_VALUE, Long.MAX_VALUE, predicate, null, null, hint));
+                response = queryClient.query(new QueryRequest<>(0, 0, Long.MIN_VALUE, Long.MAX_VALUE, predicate, null, null, null, hint));
                 assertEquals(tuples / 100, response.dataTuples.size());
             }
 
@@ -576,16 +575,16 @@ public class TopologyTest extends TestCase {
                 DataTupleEquivalentPredicateHint hint = new DataTupleEquivalentPredicateHint("a2", 0.0);
 
                 // full key range query
-                QueryResponse response = queryClient.query(new QueryRequest<>(minIndex, maxIndex, Long.MIN_VALUE, Long.MAX_VALUE, predicate, null, null, hint));
+                QueryResponse response = queryClient.query(new QueryRequest<>(minIndex, maxIndex, Long.MIN_VALUE, Long.MAX_VALUE, predicate, null, null, null, hint));
                 assertEquals(tuples / 100, response.dataTuples.size());
 
 
                 //half key range query
-                response = queryClient.query(new QueryRequest<>(0, 49, Long.MIN_VALUE, Long.MAX_VALUE, predicate, null, null, hint));
+                response = queryClient.query(new QueryRequest<>(0, 49, Long.MIN_VALUE, Long.MAX_VALUE, predicate, null, null, null, hint));
                 assertEquals(tuples / 100, response.dataTuples.size());
 
                 //a key range query
-                response = queryClient.query(new QueryRequest<>(0, 0, Long.MIN_VALUE, Long.MAX_VALUE, predicate, null, null, hint));
+                response = queryClient.query(new QueryRequest<>(0, 0, Long.MIN_VALUE, Long.MAX_VALUE, predicate, null, null, null, hint));
                 assertEquals(tuples / 100, response.dataTuples.size());
             }
 
@@ -694,12 +693,15 @@ public class TopologyTest extends TestCase {
         try {
 
             Aggregator<Integer> aggregator = new Aggregator<>(schema, "a1", new AggregateField(new Count(), "*")
-            , new AggregateField(new Min<>(), "a2"), new AggregateField(new Max<>(), "a2"));
+                    , new AggregateField(new Min<>(), "a2"), new AggregateField(new Max<>(), "a2"));
+
+            DataTuplePredicate postPredicate = t -> (int)aggregator.getOutputDataSchema().getValue("a1", t) < 40;
 
             // full key range query
             QueryResponse response = queryClient.query(new QueryRequest<>(minIndex, maxIndex, Long.MIN_VALUE,
-                    Long.MAX_VALUE, aggregator));
+                    Long.MAX_VALUE, null, postPredicate, aggregator));
             assertTrue(response.getSchema() != null);
+            System.out.println("dddddddddddd" + response.getTuples().get(0).get(3));
             assertEquals(100, response.dataTuples.size());
             for (DataTuple tuple: response.dataTuples) {
                 assertEquals((double)tuples/100, (double)tuple.get(1), 0.0001);
@@ -982,19 +984,19 @@ public class TopologyTest extends TestCase {
 
             // full key range query
             QueryResponse response = queryClient.query(new QueryRequest<>(minIndex, maxIndex, Long.MIN_VALUE,
-                    Long.MAX_VALUE, predicate, null, sorter));
+                    Long.MAX_VALUE, predicate, null, null, sorter));
             for (int i = 1; i < response.dataTuples.size(); i++) {
                 assertTrue((int)response.dataTuples.get(i -1).get(0)<=(int)response.dataTuples.get(i).get(0));
             }
 
             //half key range query
-            response = queryClient.query(new QueryRequest<>(0, 49, Long.MIN_VALUE, Long.MAX_VALUE, predicate,null, sorter));
+            response = queryClient.query(new QueryRequest<>(0, 49, Long.MIN_VALUE, Long.MAX_VALUE, predicate,null, null, sorter));
             for (int i = 1; i < response.dataTuples.size(); i++) {
                 assertTrue((int)response.dataTuples.get(i -1).get(0)<=(int)response.dataTuples.get(i).get(0));
             }
 
             //a key range query
-            response =  queryClient.query(new QueryRequest<>(0,0, Long.MIN_VALUE, Long.MAX_VALUE, predicate,null, sorter));
+            response =  queryClient.query(new QueryRequest<>(0,0, Long.MIN_VALUE, Long.MAX_VALUE, predicate,null, null, sorter));
             for (int i = 1; i < response.dataTuples.size(); i++) {
                 assertTrue((int)response.dataTuples.get(i -1).get(0)<=(int)response.dataTuples.get(i).get(0));
             }
@@ -1191,4 +1193,121 @@ public class TopologyTest extends TestCase {
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
     }
+
+    @Test
+    public void testSimpleTopologyPostPredicate() throws InterruptedException {
+        DataSchema schema = new DataSchema();
+        schema.addIntField("a1");
+        schema.addDoubleField("a2");
+        schema.addLongField("timestamp");
+        schema.addVarcharField("a4", 100);
+        schema.setPrimaryIndexField("a1");
+
+        final int minIndex = 0;
+        final int maxIndex = 100;
+
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
+
+        assertTrue(config != null);
+
+        TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
+
+        InputStreamReceiverBolt inputStreamReceiverBolt = new InputStreamReceiverBoltServer(schema, ingestionPort, config);
+        QueryCoordinatorBolt<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServerBolt<>(minIndex, maxIndex, queryPort,
+                config, schema);
+
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiverBolt,
+                coordinator, config);
+
+        Config conf = new Config();
+        conf.setDebug(false);
+        conf.setNumWorkers(1);
+
+//        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+//        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+
+
+//        LocalCluster cluster = new LocalCluster();
+        cluster.submitTopology("testSimpleTopologyAggregation", conf, topology);
+
+        final int tuples = 100000;
+
+
+        final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, schema, 1024);
+        try {
+            ingestionClient.connectWithTimeout(50000);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        final QueryClient queryClient = new QueryClient("localhost", queryPort);
+        try {
+            queryClient.connectWithTimeout(50000);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        ExecutorService executorService = Executors.newCachedThreadPool();
+
+
+        boolean fullyExecuted = false;
+
+        for (int i = 0; i < tuples; i++) {
+            DataTuple tuple = new DataTuple();
+            tuple.add(i / (tuples / 100));
+            tuple.add((double)(i % 1000));
+            tuple.add(100L);
+            tuple.add("payload");
+            try {
+                ingestionClient.appendInBatch(tuple);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        try {
+            ingestionClient.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // wait for the tuples to be appended.
+        ingestionClient.waitFinish();
+        Thread.sleep(3000);
+
+        try {
+
+            Aggregator<Integer> aggregator = new Aggregator<>(schema, "a1", new AggregateField(new Count(), "*")
+                    , new AggregateField(new Min<>(), "a2"), new AggregateField(new Max<>(), "a2"));
+
+            DataTuplePredicate postPredicate = t -> Double.parseDouble(aggregator.getOutputDataSchema().getValue("max(a2)", t).toString()) < 999.0;
+
+            // full key range query
+            QueryResponse response = queryClient.query(new QueryRequest<>(minIndex, maxIndex, Long.MIN_VALUE,
+                    Long.MAX_VALUE, null, postPredicate, aggregator));
+            assertTrue(response.getSchema() != null);
+//            System.out.println("dddddddddddd" + response.getTuples().get(0).get(3));
+            assertEquals(2, response.dataTuples.size());
+
+            fullyExecuted = true;
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            ingestionClient.close();
+            queryClient.close();
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testSimpleTopologyAggregation", killOptions);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        assertTrue(fullyExecuted);
+//        cluster.shutdown();
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
+    }
+
 }

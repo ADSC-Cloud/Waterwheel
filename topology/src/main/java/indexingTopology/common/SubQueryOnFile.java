@@ -12,8 +12,8 @@ public class SubQueryOnFile<T extends Number> extends SubQuery<T> {
 
     String fileName;
     public SubQueryOnFile(long queryId, T leftKey, T rightKey, String fileName, Long startTimestamp, Long endTimestamp,
-                          DataTuplePredicate dataTuplePredicate, Aggregator aggregator, DataTupleSorter sorter) {
-        super(queryId, leftKey, rightKey, startTimestamp, endTimestamp, dataTuplePredicate, aggregator, sorter);
+                          DataTuplePredicate dataTuplePredicate, DataTuplePredicate dataTuplePostPredicate,Aggregator aggregator, DataTupleSorter sorter) {
+        super(queryId, leftKey, rightKey, startTimestamp, endTimestamp, dataTuplePredicate, dataTuplePostPredicate, aggregator, sorter);
         this.fileName = fileName;
     }
 
