@@ -1228,7 +1228,7 @@ public class TopologyTest extends TestCase {
 
 
 //        LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("testSimpleTopologyAggregation", conf, topology);
+        cluster.submitTopology("testSimpleTopologyPostPredicate", conf, topology);
 
         final int tuples = 100000;
 
@@ -1298,7 +1298,7 @@ public class TopologyTest extends TestCase {
             queryClient.close();
             KillOptions killOptions = new KillOptions();
             killOptions.set_wait_secs(0);
-            cluster.killTopologyWithOpts("testSimpleTopologyAggregation", killOptions);
+            cluster.killTopologyWithOpts("testSimpleTopologyPostPredicate", killOptions);
         } catch (IOException e) {
             e.printStackTrace();
         }

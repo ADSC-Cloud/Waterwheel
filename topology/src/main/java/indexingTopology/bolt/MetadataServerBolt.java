@@ -160,7 +160,7 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
         systemState.addConfig("Load Balance Threshold", config.LOAD_BALANCE_THRESHOLD);
         systemState.addConfig("Query Servers per Node", config.CHUNK_SCANNER_PER_NODE);
         systemState.addConfig("HDFS", config.HDFSFlag);
-
+        systemState.addConfig("Dispatchers per Node", config.DISPATCHER_PER_NODE);
         systemStateQueryServer = new Server(20000, SystemStateQueryHandle.class, new Class[]{SystemState.class}, systemState);
         systemStateQueryServer.startDaemon();
     }
