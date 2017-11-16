@@ -5,12 +5,15 @@ import com.esotericsoftware.kryo.io.Output;
 import indexingTopology.api.server.Server;
 import indexingTopology.api.server.SystemStateQueryHandle;
 import indexingTopology.bloom.DataChunkBloomFilters;
+import indexingTopology.bolt.message.*;
 import indexingTopology.bolt.metrics.LocationInfo;
 import indexingTopology.common.Histogram;
 import indexingTopology.common.KeyDomain;
 import indexingTopology.common.SystemState;
 import indexingTopology.common.TimeDomain;
+import indexingTopology.common.data.DataSchema;
 import indexingTopology.config.TopologyConfig;
+import indexingTopology.metadata.SchemaManager;
 import indexingTopology.metrics.PerNodeMetrics;
 import indexingTopology.util.*;
 import indexingTopology.util.partition.BalancedPartition;
@@ -94,14 +97,23 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
     private Server systemStateQueryServer;
 
-    public MetadataServerBolt(Key lowerBound, Key upperBound, TopologyConfig config) {
+    private SchemaManager schemaManager;
+
+    private DataSchema defaultSchema;
+
+    public MetadataServerBolt(Key lowerBound, Key upperBound, DataSchema defaultSchema, TopologyConfig config) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
         this.config = config;
+        this.defaultSchema = defaultSchema;
     }
 
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
+
+        schemaManager = new SchemaManager();
+        schemaManager.setDefaultSchema(defaultSchema);
+
         collector = outputCollector;
 
         initializeMetadataFolder();
@@ -343,6 +355,20 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
             // simply forward the info
             collector.emit(Streams.LocationInfoUpdateStream, new Values(info));
+        } else if (tuple.getSourceStreamId().equals(Streams.DDLRequestStream)) {
+            AsyncRequestMessage request = (AsyncRequestMessage)tuple.getValue(0);
+            AsyncResponseMessage response = null;
+            if (request instanceof AsyncSchemaCreateRequest) {
+                final String name = ((AsyncSchemaCreateRequest) request).name;
+                final DataSchema schema = ((AsyncSchemaCreateRequest) request).schema;
+                boolean isSuccessful = schemaManager.createSchema(name, schema);
+                response = new AsyncSchemaCreateResponse(name, isSuccessful, request.id);
+            } else if (request instanceof AsyncSchemaQueryRequest) {
+                final String name = ((AsyncSchemaQueryRequest) request).name;
+                DataSchema schema = schemaManager.getSchema(name);
+                response = new AsyncSchemaQueryResponse(name, schema, request.id);
+            }
+            collector.emit(Streams.DDLResponseStream, new Values(response));
         }
     }
 
@@ -372,6 +398,8 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
         outputFieldsDeclarer.declareStream(Streams.LoadBalanceStream, new Fields("loadBalance"));
 
         outputFieldsDeclarer.declareStream(Streams.LocationInfoUpdateStream, new Fields("info"));
+
+        outputFieldsDeclarer.declareStream(Streams.DDLResponseStream, new Fields("response"));
     }
 
     @Override

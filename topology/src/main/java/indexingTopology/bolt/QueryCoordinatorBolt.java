@@ -3,15 +3,18 @@ package indexingTopology.bolt;
 import com.google.common.hash.BloomFilter;
 import indexingTopology.bloom.BloomFilterStore;
 import indexingTopology.bloom.DataChunkBloomFilters;
+import indexingTopology.bolt.message.*;
 import indexingTopology.bolt.metrics.LocationInfo;
 import indexingTopology.common.*;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.PartialQueryResult;
 import indexingTopology.common.logics.DataTuplePredicate;
 import indexingTopology.filesystem.HdfsFileSystemHandler;
+import indexingTopology.metadata.ISchemaManager;
 import indexingTopology.metadata.SchemaManager;
 import indexingTopology.metrics.Tags;
 import indexingTopology.metrics.TimeMetrics;
+import indexingTopology.util.AsynchronousTrigger;
 import indexingTopology.util.partition.BalancedPartition;
 import javafx.util.Pair;
 import org.apache.hadoop.fs.BlockLocation;
@@ -105,6 +108,23 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
 
     protected SchemaManager schemaManager;
 
+    protected ISchemaManager schemaManagerInterface;
+
+    private AsynchronousTrigger trigger;
+
+    class SchemaManagerImplementation implements ISchemaManager {
+
+        @Override
+        public boolean createSchema(String name, DataSchema schema) {
+            return createSchemaImplementation(name, schema);
+        }
+
+        @Override
+        public DataSchema getSchema(String name) {
+            return getSchemaImplementation(name);
+        }
+    }
+
     public QueryCoordinatorBolt(T lowerBound, T upperBound, TopologyConfig config, DataSchema schema) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
@@ -115,8 +135,11 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
 
-
         collector = outputCollector;
+
+        trigger = new AsynchronousTrigger();
+
+        schemaManagerInterface = new SchemaManagerImplementation();
 
         bloomFilterStore = new BloomFilterStore(config);
 
@@ -167,8 +190,6 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
 
         createQueryHandlingThread();
 
-        schemaManager = new SchemaManager();
-        schemaManager.setDefaultSchema(schema);
     }
 
     @Override
@@ -292,10 +313,69 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
                     break;
             }
             // TODO: handle location update logic, e.g., update a location from a value to a different value.
+        } else if (tuple.getSourceStreamId().equals(Streams.DDLResponseStream)) {
+            AsyncResponseMessage response = (AsyncResponseMessage)tuple.getValue(0);
+            trigger.triggerFunction(response.id, response);
         }
     }
 
     public abstract void handlePartialQueryResult(Long queryId, PartialQueryResult partialQueryResult);
+
+    private DataSchema getSchemaImplementation(String name) {
+        AsyncSchemaQueryRequest request = new AsyncSchemaQueryRequest(name);
+        class QueryResult {
+            public Semaphore semaphore = new Semaphore(0);
+            public DataSchema schema = null;
+        }
+        final QueryResult queryResult = new QueryResult();
+
+        request.id = trigger.addFunction((r) -> {
+            AsyncSchemaQueryResponse response = (AsyncSchemaQueryResponse) r;
+            queryResult.schema = response.schema;
+            queryResult.semaphore.release();
+            return null;
+        });
+
+        collector.emit(Streams.DDLRequestStream, new Values(request));
+
+        try {
+            queryResult.semaphore.acquire();
+            return queryResult.schema;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private boolean createSchemaImplementation(String name, DataSchema schema) {
+        AsyncSchemaCreateRequest request = new AsyncSchemaCreateRequest(name, schema);
+        // TODO: outputCollector may not be thread-safe.
+        class QueryResult {
+            Semaphore semaphore = new Semaphore(0);
+            Boolean succefull;
+        }
+//        final Semaphore semaphore = new Semaphore(0);
+        final QueryResult result = new QueryResult();
+
+        long id = trigger.addFunction((r) ->{
+            AsyncSchemaCreateResponse response = (AsyncSchemaCreateResponse)r;
+            result.succefull = response.isSuccessful;
+            result.semaphore.release();
+            return null;});
+
+        request.id = id;
+
+        collector.emit(Streams.DDLRequestStream, new Values(request));
+
+        try {
+            result.semaphore.acquire();
+            return result.succefull;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            return false;
+        }
+
+    }
 
     private boolean isPartitionDeletable() {
         Map<Integer, Integer> staleIntervalIdToPartitionIdMapping = balancedPartitionToBeDeleted.getIntervalToPartitionMapping();
@@ -333,6 +413,8 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
         outputFieldsDeclarer.declareStream(Streams.EnableRepartitionStream, new Fields("Repartition"));
 
         outputFieldsDeclarer.declareStream(Streams.PartialQueryResultReceivedStream, new Fields("queryId"));
+
+        outputFieldsDeclarer.declareStream(Streams.DDLRequestStream, new Fields("request"));
     }
 
     @Override
@@ -833,8 +915,8 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
             unprocessedSubqueries.remove(subQuery.getFileName());
             collector.emitDirect(taskId, Streams.FileSystemQueryStream
                     , new Values(subQuery, tags));
-            System.out.println(String.format("subquery %d is sent to %s for %s", subQuery.queryId,
-                    chunkServerIdToLocation.get(taskId), subQuery.getFileName()));
+//            System.out.println(String.format("subquery %d is sent to %s for %s", subQuery.queryId,
+//                    chunkServerIdToLocation.get(taskId), subQuery.getFileName()));
         }
 
     }
