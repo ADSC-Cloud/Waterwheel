@@ -133,7 +133,7 @@ public class NetworkTopology {
 
                 NetworkTemporalQueryRequest queryRequest = new NetworkTemporalQueryRequest<>((int) destIpLow, (int) destIpHigh,
                         System.currentTimeMillis() - RecentSecondsOfInterest * 1000,
-                        System.currentTimeMillis(), null, null, null, equivalentPredicateHint);
+                        System.currentTimeMillis(), null, null, null, null, equivalentPredicateHint);
                 long start = System.currentTimeMillis();
                 try {
                     DateFormat dateFormat = new SimpleDateFormat("MM-dd HH:mm:ss");

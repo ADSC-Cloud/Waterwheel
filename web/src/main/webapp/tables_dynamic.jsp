@@ -29,7 +29,9 @@
   <link href="gentelella-master/vendors/datatables.net-scroller-bs/css/scroller.bootstrap.min.css" rel="stylesheet">
   <!-- Custom Theme Style -->
   <link href="gentelella-master/build/css/custom.css" rel="stylesheet">
-  <script src="js/jquery-1.10.2.min.js"/>
+  <script src="gentelella-master/vendors/jquery/dist/jquery.min.js"></script>
+  <script type="text/javascript" src="js/bootstrap-multiselect.js"></script>
+  <link rel="stylesheet" href="css/bootstrap-multiselect.css" type="text/css">
   <script type="text/javascript">
       function saveData() {
           //alert("hehe")
@@ -39,6 +41,10 @@
                 request.getSession().setAttribute("oldDataBean",request.getSession().getAttribute("dataBean"));
               }
           %>
+
+      }
+
+      function postPredicate() {
 
       }
       //
@@ -55,13 +61,22 @@
       //            alert(x + " " + y + " " + time);
       //            return true;
       //        }
-      $(document).ready(function(){
+      $(document).ready(function() {
+          $('#groupby').multiselect();
 
-          $(".editableBox").change(function(){
-              $(".timeTextBox").val($(".editableBox option:selected").html());
-          });
       });
-
+      $(document).ready(function() {
+          $('#count').multiselect();
+      });
+      $(document).ready(function() {
+          $('#sum').multiselect();
+      });
+      $(document).ready(function() {
+          $('#max').multiselect();
+      });
+      $(document).ready(function() {
+          $('#min').multiselect();
+      });
   </script>
   <style>
 
@@ -114,7 +129,7 @@
 </head>
 
 <body class="nav-md">
-<form action="main" method="post" onsubmit="checkForm()">
+<form method="post" name = "form">
   <div class="container body">
     <div class="main_container">
       <div class="col-md-3 left_col">
@@ -141,20 +156,20 @@
 
           <!-- sidebar menu -->
           <div id="sidebar-menu" class="main_menu_side hidden-print main_menu">
-              <div class="menu_section">
-                  <ul class="nav side-menu">
-                      <li><a href="index.jsp"><i class="fa fa-home"></i> Dashboard </a>
-                          <%--<ul class="nav child_menu">--%>
-                          <%--<li><a href="/web/gentelella-master/production/index.jsp">Dashboard</a></li>--%>
-                          <%--</ul>--%>
-                      </li>
-                      <li><a href="tables_dynamic.jsp"><i class="fa fa-table"></i> Try Query </a>
-                          <%--<ul class="nav child_menu">--%>
-                          <%--<li><a href="/web/tables_dynamic.jsp">Table Dynamic</a></li>--%>
-                          <%--</ul>--%>
-                      </li>
-                  </ul>
-              </div>
+            <div class="menu_section">
+              <ul class="nav side-menu">
+                <li><a href="index.jsp"><i class="fa fa-home"></i> Dashboard </a>
+                  <%--<ul class="nav child_menu">--%>
+                  <%--<li><a href="/web/gentelella-master/production/index.jsp">Dashboard</a></li>--%>
+                  <%--</ul>--%>
+                </li>
+                <li><a href="tables_dynamic.jsp"><i class="fa fa-table"></i> Try Query </a>
+                  <%--<ul class="nav child_menu">--%>
+                  <%--<li><a href="/web/tables_dynamic.jsp">Table Dynamic</a></li>--%>
+                  <%--</ul>--%>
+                </li>
+              </ul>
+            </div>
 
           </div>
           <!-- /sidebar menu -->
@@ -179,14 +194,15 @@
       <div class="right_col" role="main">
         <div class="">
           <div class="page-title">
-            <div class="title_left" style="width:30%">
+            <div class="title_left" style="width:20%">
               <h3>Query Parameters</h3>
             </div>
 
             <div class="input-group">
               <div>
                 <div>
-                  <small style="float: left; padding: 10px">Latitude :</small>
+
+                  <small style="float: left; padding: 10px" id="Lat">Latitude :</small>
                   <div class="dropdown" style="float: left">
                     <input type="text" class="text" value="0" name="xLow" id="xLow" placeholder="xLow">
                     <select  onchange="this.previousElementSibling.value=this.value; this.previousElementSibling.focus()">
@@ -223,7 +239,7 @@
                   <div class="dropdown" style="float: left">
                     <input type="text" class="text" value = "200"name="yHigh" id="yHigh" placeholder="yHigh">
                     <select  onchange="this.previousElementSibling.value=this.value; this.previousElementSibling.focus()">
-                       <option>200</option>
+                      <option>200</option>
                       <option>400</option>
                       <option>600</option>
                       <option>800</option>
@@ -237,8 +253,31 @@
                     <option value="10">10s</option>
                     <option value="30">30s</option>
                   </select>
+                  <%--<small style="float: left; padding: 10px">PostPredicate :</small>
+                  <select class="text" id="fieldNamesPostSelect" name="fieldNamesPostSelect" style="color: #1f6377; float: left; margin-right: 10px;">
+                    <option value="null">null</option>
+                    <c:forEach var="fieldName" items="${fieldNames}" varStatus="status">
+                      <c:if test="${!fn:contains(fieldName, 'id')}">
+                        <c:if test="${!fn:contains(fieldName, 'veh_no')}">
+                          <c:if test="${!fn:contains(fieldName, 'position_type')}">
+                            <c:if test="${!fn:contains(fieldName, 'update_time')}">
+                              <option value="${status.index}">${fieldName}</option>
+                            </c:if>
+                          </c:if>
+                        </c:if>
+                      </c:if>
+                    </c:forEach>
+                  </select>
+                  <select class="text" id="equal" name="equal" style="color: #1f6377; float: left; margin-right: 10px; width: 40px">
+                    <option value=">">></option>
+                    <option value="=">=</option>
+                    <option value="<"><</option>
+                    <option value=">=">>=</option>
+                    <option value="<="><=</option>
+                  </select>
+                  <input type="text" class="text" style="float: left; margin-right: 10px" value="null" placeholder="Postpredicate" name="digital" id="digital">--%>
                   <span>
-                      <input style="float: left" class="btn btn-info" type="submit" value="Query!" />
+                      <input style="float: left" class="btn btn-info" type="button" value="Query!" onclick="form.action='main';form.submit();"/>
                     </span>
                 </div>
               </div>
@@ -246,15 +285,85 @@
           </div>
 
           <div class="clearfix"></div>
+          <div class="row">
+            <div class="col-md-12 col-sm-12 col-xs-12">
+              <div class="x_panel">
+                <h3><small style="padding: 2px; width: 20%;float: left; font-size: 20px;">Aggregation </small></h3>
 
+                <small style="padding: 2px; float: left; font-size: 15px;">group-by:
+                  <select id="groupby" name="groupby">
+                    <option value="null">None selected</option>
+                    <option value="id">id</option>
+                    <option value="veh_no">veh_no</option>
+                    <option value="lon">lon</option>
+                    <option value="lat">lat</option>
+                    <option value="car_status">car_status</option>
+                    <option value="speed">speed</option>
+                    <option value="position_type">position_type</option>
+                    <option value="update_time">update_time</option>
+                    <option value="zcode">zcode</option>
+                    <option value="timestamp">timestamp</option>
+                  </select>
+                </small>
+                <small style="padding: 2px; float: left; font-size: 15px;">Conut:
+                  <select id="count" name="count">
+                    <option value="null">None selected</option>
+                    <option value="id">id</option>
+                    <option value="veh_no">veh_no</option>
+                    <option value="lon">lon</option>
+                    <option value="lat">lat</option>
+                    <option value="car_status">car_status</option>
+                    <option value="speed">speed</option>
+                    <option value="position_type">position_type</option>
+                    <option value="update_time">update_time</option>
+                    <option value="zcode">zcode</option>
+                    <option value="timestamp">timestamp</option>
+                  </select>
+                </small>
+                <small style="padding: 2px; float: left; font-size: 15px;">Sum:
+                  <select id="sum" name="sum" multiple="multiple">
+                    <option value="lon">lon</option>
+                    <option value="lat">lat</option>
+                    <option value="car_status">car_status</option>
+                    <option value="speed">speed</option>
+                    <option value="zcode">zcode</option>
+                    <option value="timestamp">timestamp</option>
+                  </select>
+                </small>
+                <small style="padding: 2px; float: left; font-size: 15px;">Max:
+                  <select id="max" name="max" multiple="multiple">
+                    <option value="lon">lon</option>
+                    <option value="lat">lat</option>
+                    <option value="car_status">car_status</option>
+                    <option value="speed">speed</option>
+                    <option value="zcode">zcode</option>
+                    <option value="timestamp">timestamp</option>
+                  </select>
+                </small>
+                <small style="padding: 2px; float: left; font-size: 15px;">Min:
+                  <select id="min" name="min" multiple="multiple">
+                    <option value="lon">lon</option>
+                    <option value="lat">lat</option>
+                    <option value="car_status">car_status</option>
+                    <option value="speed">speed</option>
+                    <option value="zcode">zcode</option>
+                    <option value="timestamp">timestamp</option>
+                  </select>
+                  </select>
+                </small>
+              </div>
+            </div>
+          </div>
           <div class="row">
             <div class="col-md-12 col-sm-12 col-xs-12">
               <div class="x_panel">
                 <div class="x_title">
-                  <h2>Query Rusult</h2>
+                  <h2>Query Result</h2>
                   <ul class="nav navbar-right panel_toolbox">
+
                     <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
                     </li>
+
                     <li class="dropdown">
                       <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><i class="fa fa-wrench"></i></a>
                       <ul class="dropdown-menu" role="menu">
@@ -268,11 +377,13 @@
                     </li>
                   </ul>
                   <div class="clearfix"></div>
+
                 </div>
                 <div class="x_content">
                   <p class="text-muted font-13 m-b-30">
                     <code>${numberOfTuples}</code> tuples returned in <code>${queryTime } ms.</code>
                   </p>
+                  <c:set value="${numberOfTuples}" var="TupleSize" scope="session"/>
                   <table id="datatable" class="table table-striped table-bordered">
                     <thead>
                     <tr>
@@ -280,6 +391,7 @@
                       <c:forEach var="fieldName" items="${fieldNames}">
                         <th>${fieldName}</th>
                       </c:forEach>
+                      <c:set value="${fieldNames}" var="fieldNamesPost" scope="session"/>
                     </tr>
                     </thead>
 
@@ -287,12 +399,13 @@
                     <tbody>
 
                     <c:forEach var="diary" items="${diaryList }" begin="0" end="1024">
-                      <tr>
+                      <tr id = "myTr">
                         <c:forEach items="${diary}" var="msg">
                           <td>${msg }</td>
                         </c:forEach>
                       </tr>
                     </c:forEach>
+                    <c:set value="${diaryList}" var="diaryListPost" scope="session"/>
                     </tbody>
                   </table>
                 </div>
@@ -307,10 +420,11 @@
   </div>
 
   <!-- jQuery -->
-  <script src="gentelella-master/vendors/jquery/dist/jquery.min.js"></script>
+
   <!-- Bootstrap -->
   <script src="gentelella-master/vendors/bootstrap/dist/js/bootstrap.min.js"></script>
   <!-- FastClick -->
+
   <script src="gentelella-master/vendors/fastclick/lib/fastclick.js"></script>
   <!-- NProgress -->
   <script src="gentelella-master/vendors/nprogress/nprogress.js"></script>

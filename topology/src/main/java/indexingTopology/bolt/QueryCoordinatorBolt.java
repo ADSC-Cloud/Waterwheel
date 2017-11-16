@@ -47,7 +47,7 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
 
     private FilePartitionSchemaManager filePartitionSchemaManager;
 
-     private Semaphore concurrentQueriesSemaphore;
+    private Semaphore concurrentQueriesSemaphore;
 
     private static final int MAX_NUMBER_OF_CONCURRENT_QUERIES = 1;
 
@@ -395,7 +395,7 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
 
                 if (!prunedByBloomFilter) {
                     subQueries.add(new SubQueryOnFile<>(queryId, leftKey, rightKey, chunkName, startTimestamp, endTimestamp,
-                            query.predicate, query.aggregator, query.sorter));
+                            query.predicate, query.postPredicate, query.aggregator, query.sorter));
                 } else {
                     prunedCount ++;
                 }
@@ -487,7 +487,7 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
                     DataTuplePredicate finalAdditionalPredicate1 = additionalPredicate;
                     additionalPredicate = t -> finalAdditionalPredicate1.test(t) ||
                             (currentQuery.leftKey.compareTo((T)localSchema.getIndexValue(t)) <= 0 &&
-                            currentQuery.rightKey.compareTo((T)localSchema.getIndexValue(t)) >= 0);
+                                    currentQuery.rightKey.compareTo((T)localSchema.getIndexValue(t)) >= 0);
                 }
                 DataTuplePredicate finalAdditionalPredicate = additionalPredicate;
                 DataTuplePredicate finalPredicate = predicate;
@@ -496,7 +496,7 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
 
                 SubQueryOnFile<T> subQuery = new SubQueryOnFile<>(firstQuery.queryId, leftMost,
                         rightMost, firstQuery.getFileName(), firstQuery.startTimestamp,
-                        firstQuery.endTimestamp, composedPredicate, firstQuery.aggregator,
+                        firstQuery.endTimestamp, composedPredicate, firstQuery.postPredicate, firstQuery.aggregator,
                         firstQuery.sorter);
                 ret.add(subQuery);
             }
@@ -535,7 +535,7 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
                 DataTuplePredicate composedPredicate = t -> finalPredicate.test(t) && finalAddtionalPredicate.test(t);
 
                 SubQuery<T> subquery = new SubQuery<T>(first.queryId,leftmostKey, rightmostKey, first.startTimestamp,
-                        first.endTimestamp, composedPredicate, first.aggregator, first.sorter);
+                        first.endTimestamp, composedPredicate, first.postPredicate, first.aggregator, first.sorter);
                 insertionServerIdToCompactedSubquery.put(id, subquery);
             }
         });
@@ -608,7 +608,7 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
                 Long timestamp = indexTaskToTimestampMapping.get(taskId);
                 if ((timestamp <= endTimestamp && timestamp >= startTimestamp) || (timestamp <= startTimestamp)) {
                     SubQuery<T> subQuery = new SubQuery<>(query.getQueryId(), query.leftKey, query.rightKey, query.startTimestamp,
-                            query.endTimestamp, query.predicate, query.aggregator, query.sorter);
+                            query.endTimestamp, query.predicate, query.postPredicate, query.aggregator, query.sorter);
                     List<SubQuery<T>> subQueries = insertionSeverIdToSubqueries.computeIfAbsent(taskId, t ->new ArrayList<>());
                     subQueries.add(subQuery);
 //                    collector.emitDirect(taskId, Streams.BPlusTreeQueryStream, new Values(subQuery));
@@ -768,7 +768,7 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
 
         for(int i = 0; i < taskIds.size(); i++) {
             PriorityBlockingQueue<SubQueryOnFileWithPriority> taskQueue = taskIdToTaskQueue.get(taskIds.get(i));
-                taskQueue.put(new SubQueryOnFileWithPriority(subQuery,i));
+            taskQueue.put(new SubQueryOnFileWithPriority(subQuery,i));
         }
     }
 

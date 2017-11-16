@@ -435,7 +435,7 @@ public class TopologyOverallTest extends TestCase {
                     new AggregateField(new Sum(), "f3"), new AggregateField(new Count(), "f3")
             });
 
-            QueryResponse response = queryClient.query(new QueryRequest<>(0, 100, 0L, Long.MAX_VALUE, null, aggregator));
+            QueryResponse response = queryClient.query(new QueryRequest<>(0, 100, 0L, Long.MAX_VALUE, null, null, aggregator));
             Collections.sort(response.dataTuples, (DataTuple t1, DataTuple t2) -> ((Comparable)t1.get(0)).compareTo(t2.get(0)));
             assertEquals(10, response.dataTuples.size());
             assertEquals(new DataTuple(0, 20.0, 5.0), response.dataTuples.get(0));

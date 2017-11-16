@@ -37,6 +37,11 @@ fabric.properties
 
 *.DS_Store
 
+<<<<<<< HEAD
+=======
 /dataDir/
 
 /logs/
+/data/
+>>>>>>> web-ui/zl1030
+

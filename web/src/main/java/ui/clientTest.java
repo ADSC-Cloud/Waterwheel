@@ -74,6 +74,7 @@ public class clientTest  extends HttpServlet {
 //        systemState.setTotalDiskSpaceInGB(new Random().nextDouble()*100);
 //        systemState.setCpuRatio(new Random().nextDouble()*100);
 
+
 //        List<Map.Entry<String,String>> list222 = new ArrayList<Map.Entry<String,String>>(systemState.getHashMap().entrySet());
 //        //然后通过比较器来实现排序
 //        Collections.sort(list222,new Comparator<Map.Entry<String,String>>() {
@@ -110,6 +111,7 @@ public class clientTest  extends HttpServlet {
 //        }
 //        String source[] = { "dad", "bood", "bada", "Admin", "Aa ", "A ", "Good", "aete", "cc", "Ko", "Beta", "Could" };
 //        List<String> list = Arrays.asList(source);
+
 
         JSONObject json = JSONObject.fromObject(systemState); //v即对象
         String jsonStr = json.toString();
