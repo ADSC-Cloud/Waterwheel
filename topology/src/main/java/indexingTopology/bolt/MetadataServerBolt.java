@@ -356,7 +356,6 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
             // simply forward the info
             collector.emit(Streams.LocationInfoUpdateStream, new Values(info));
         } else if (tuple.getSourceStreamId().equals(Streams.DDLRequestStream)) {
-            System.out.println("####received a request on metadata server!");
             AsyncRequestMessage request = (AsyncRequestMessage)tuple.getValue(0);
             AsyncResponseMessage response = null;
             if (request instanceof AsyncSchemaCreateRequest) {
@@ -369,7 +368,6 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
                 DataSchema schema = schemaManager.getSchema(name);
                 response = new AsyncSchemaQueryResponse(name, schema, request.id);
             }
-            System.out.println(String.format("%s will be send back!", response));
             collector.emit(Streams.DDLResponseStream, new Values(response));
         }
     }

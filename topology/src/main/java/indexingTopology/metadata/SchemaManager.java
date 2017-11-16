@@ -21,18 +21,16 @@ public class SchemaManager implements ISchemaManager {
 
     public boolean createSchema(String name, DataSchema schema) {
         if (schema ==null || nameToSchema.containsKey(name)) {
-            System.out.println("******* Cannot create Schema " + name);
+            System.out.println("Cannot create Schema " + name);
             return false;
         } else {
             nameToSchema.put(name, schema);
-            System.out.println(String.format("*******[%s] is created as [%s]", name, schema));
             return true;
         }
     }
 
     public DataSchema getSchema(String name) {
         final DataSchema schema = nameToSchema.get(name);
-        System.out.println(String.format("******* Get Schema [%s] as [%s]", name, schema));
         return schema;
     }
 }

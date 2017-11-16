@@ -315,7 +315,6 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
             // TODO: handle location update logic, e.g., update a location from a value to a different value.
         } else if (tuple.getSourceStreamId().equals(Streams.DDLResponseStream)) {
             AsyncResponseMessage response = (AsyncResponseMessage)tuple.getValue(0);
-            System.out.println("#### to triger the function for " + response.id);
             trigger.triggerFunction(response.id, response);
         }
     }
@@ -337,13 +336,10 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
             return null;
         });
 
-        System.out.println("#### AsyncSchemaQueryRequest has been sent!");
         collector.emit(Streams.DDLRequestStream, new Values(request));
 
         try {
-            System.out.println("#### Waiting the result!");
             queryResult.semaphore.acquire();
-            System.out.println("#### Waited the result!");
             return queryResult.schema;
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -919,8 +915,8 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
             unprocessedSubqueries.remove(subQuery.getFileName());
             collector.emitDirect(taskId, Streams.FileSystemQueryStream
                     , new Values(subQuery, tags));
-            System.out.println(String.format("subquery %d is sent to %s for %s", subQuery.queryId,
-                    chunkServerIdToLocation.get(taskId), subQuery.getFileName()));
+//            System.out.println(String.format("subquery %d is sent to %s for %s", subQuery.queryId,
+//                    chunkServerIdToLocation.get(taskId), subQuery.getFileName()));
         }
 
     }

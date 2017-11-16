@@ -176,7 +176,7 @@ public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends Bas
                 System.out.println(String.format("Debug info: %s", debugInfo.runningPosition));
             }
         });
-        debugThread.start();
+//        debugThread.start();
 
         try {
             hdfsFileSystemHandler = new HdfsFileSystemHandler(config.dataChunkDir, config);
@@ -223,7 +223,7 @@ public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends Bas
 
 //                        System.out.println("sub query " + subQuery.getQueryId() + " has been taken from queue");
 
-                        System.out.println("$$$ to process a subquery on " + taggedSubQuery.subquery.getFileName() + " for " + taggedSubQuery.subquery.queryId);
+//                        System.out.println("$$$ to process a subquery on " + taggedSubQuery.subquery.getFileName() + " for " + taggedSubQuery.subquery.queryId);
                         if (config.ChunkOrientedCaching) {
                             List<byte[]> tuples = subqueryHandler.handleSubquery(taggedSubQuery.subquery, debugInfo);
 
@@ -235,7 +235,7 @@ public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends Bas
                         } else {
                             handleSubQuery(taggedSubQuery.subquery, taggedSubQuery.tags);
                         }
-                        System.out.println("$$$ processed a subquery on " + taggedSubQuery.subquery.getFileName() + " for " + taggedSubQuery.subquery.queryId);
+//                        System.out.println("$$$ processed a subquery on " + taggedSubQuery.subquery.getFileName() + " for " + taggedSubQuery.subquery.queryId);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         System.out.println("subqueryHandlding thread is interrupted.");
@@ -265,7 +265,7 @@ public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends Bas
         super.cleanup();
         subQueryHandlingThread.interrupt();
         locationReportingThread.interrupt();
-        debugThread.interrupt();
+//        debugThread.interrupt();
     }
 
     @SuppressWarnings("unchecked")
