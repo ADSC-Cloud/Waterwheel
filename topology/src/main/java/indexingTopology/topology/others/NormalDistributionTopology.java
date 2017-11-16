@@ -105,7 +105,7 @@ public class NormalDistributionTopology {
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryInformationStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryInformationStream);
 
-        builder.setBolt(MetadataServer, new MetadataServerBolt(lowerBound, upperBound, config))
+        builder.setBolt(MetadataServer, new MetadataServerBolt(lowerBound, upperBound, schema, config))
                 .shuffleGrouping(RangeQueryDispatcherBolt, Streams.StatisticsReportStream)
                 .shuffleGrouping(IndexerBolt, Streams.TimestampUpdateStream)
                 .shuffleGrouping(IndexerBolt, Streams.FileInformationUpdateStream);

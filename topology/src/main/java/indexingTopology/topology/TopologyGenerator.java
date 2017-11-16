@@ -61,7 +61,8 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
                 .shuffleGrouping(MetadataServer, Streams.FileInformationUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.TimestampUpdateStream)
-                .shuffleGrouping(MetadataServer, Streams.LocationInfoUpdateStream);
+                .shuffleGrouping(MetadataServer, Streams.LocationInfoUpdateStream)
+                .shuffleGrouping(MetadataServer, Streams.DDLResponseStream);
 
 
         if (config.SHUFFLE_GROUPING_FLAG) {
@@ -82,13 +83,14 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryInformationStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.PartialQueryResultReceivedStream);
 
-        builder.setBolt(MetadataServer, new MetadataServerBolt<>(lowerBound, upperBound, config), 1)
+        builder.setBolt(MetadataServer, new MetadataServerBolt<>(lowerBound, upperBound, dataSchema, config), 1)
                 .shuffleGrouping(RangeQueryDispatcherBolt, Streams.StatisticsReportStream)
                 .shuffleGrouping(IndexerBolt, Streams.TimestampUpdateStream)
                 .shuffleGrouping(IndexerBolt, Streams.FileInformationUpdateStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.EnableRepartitionStream)
                 .shuffleGrouping(IndexerBolt, Streams.LocationInfoUpdateStream)
-                .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.LocationInfoUpdateStream);
+                .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.LocationInfoUpdateStream)
+                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.DDLRequestStream);
 
         builder.setBolt(LogWriter, new LoggingBolt(), 1)
 //                .shuffleGrouping(RangeQueryDispatcherBolt, Streams.ThroughputReportStream)

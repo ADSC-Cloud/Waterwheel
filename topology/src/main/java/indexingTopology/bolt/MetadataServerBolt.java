@@ -5,6 +5,7 @@ import com.esotericsoftware.kryo.io.Output;
 import indexingTopology.api.server.Server;
 import indexingTopology.api.server.SystemStateQueryHandle;
 import indexingTopology.bloom.DataChunkBloomFilters;
+import indexingTopology.bolt.message.*;
 import indexingTopology.bolt.metrics.LocationInfo;
 import indexingTopology.common.Histogram;
 import indexingTopology.common.KeyDomain;
@@ -98,16 +99,20 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
     private SchemaManager schemaManager;
 
-    public MetadataServerBolt(Key lowerBound, Key upperBound, TopologyConfig config) {
+    private DataSchema defaultSchema;
+
+    public MetadataServerBolt(Key lowerBound, Key upperBound, DataSchema defaultSchema, TopologyConfig config) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
         this.config = config;
+        this.defaultSchema = defaultSchema;
     }
 
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
 
         schemaManager = new SchemaManager();
+        schemaManager.setDefaultSchema(defaultSchema);
 
         collector = outputCollector;
 
@@ -350,15 +355,22 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
             // simply forward the info
             collector.emit(Streams.LocationInfoUpdateStream, new Values(info));
-        } else if (tuple.getSourceStreamId().equals("DMLStream")) {
-            if (tuple.getString(0).equals("create")) {
-                String name = tuple.getString(1);
-                DataSchema schema = (DataSchema) tuple.getValue(2);
-                schemaManager.createSchema(name, schema);
-                System.out.printf("Table %s is created as %s", name, schema.toString());
-            } else {
-
+        } else if (tuple.getSourceStreamId().equals(Streams.DDLRequestStream)) {
+            System.out.println("####received a request on metadata server!");
+            AsyncRequestMessage request = (AsyncRequestMessage)tuple.getValue(0);
+            AsyncResponseMessage response = null;
+            if (request instanceof AsyncSchemaCreateRequest) {
+                final String name = ((AsyncSchemaCreateRequest) request).name;
+                final DataSchema schema = ((AsyncSchemaCreateRequest) request).schema;
+                boolean isSuccessful = schemaManager.createSchema(name, schema);
+                response = new AsyncSchemaCreateResponse(name, isSuccessful, request.id);
+            } else if (request instanceof AsyncSchemaQueryRequest) {
+                final String name = ((AsyncSchemaQueryRequest) request).name;
+                DataSchema schema = schemaManager.getSchema(name);
+                response = new AsyncSchemaQueryResponse(name, schema, request.id);
             }
+            System.out.println(String.format("%s will be send back!", response));
+            collector.emit(Streams.DDLResponseStream, new Values(response));
         }
     }
 
@@ -388,6 +400,8 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
         outputFieldsDeclarer.declareStream(Streams.LoadBalanceStream, new Fields("loadBalance"));
 
         outputFieldsDeclarer.declareStream(Streams.LocationInfoUpdateStream, new Fields("info"));
+
+        outputFieldsDeclarer.declareStream(Streams.DDLResponseStream, new Fields("response"));
     }
 
     @Override

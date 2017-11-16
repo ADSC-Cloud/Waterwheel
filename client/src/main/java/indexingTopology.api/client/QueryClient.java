@@ -71,15 +71,35 @@ public class QueryClient extends ClientSkeleton {
     }
 
     public DataSchema querySchema() throws IOException {
-        SchemaQueryRequest schemaQueryRequest = new SchemaQueryRequest();
+        return querySchema("default");
+    }
+
+    public DataSchema querySchema(String name) throws IOException {
+        SchemaQueryRequest schemaQueryRequest = new SchemaQueryRequest(name);
         objectOutputStream.writeUnshared(schemaQueryRequest);
         objectOutputStream.reset();
-        DataSchema schema = null;
         try {
-            schema = (DataSchema) objectInputStream.readUnshared();
+            DataSchema schema = (DataSchema) objectInputStream.readUnshared();
+            return schema;
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
+            return null;
         }
-        return schema;
+    }
+
+    public boolean createSchema(String name, DataSchema schema) throws IOException{
+        if (schema == null) {
+            return false;
+        }
+        SchemaCreationRequest schemaCreationRequest = new SchemaCreationRequest(name, schema);
+        objectOutputStream.writeUnshared(schemaCreationRequest);
+        objectOutputStream.reset();
+        try {
+            SchemaCreationResponse response = (SchemaCreationResponse) objectInputStream.readUnshared();
+            return response.status == 0;
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }

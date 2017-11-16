@@ -1,16 +1,15 @@
 package indexingTopology.bolt;
 
-import indexingTopology.api.client.QueryRequest;
-import indexingTopology.api.client.QueryResponse;
-import indexingTopology.api.client.SchemaQueryRequest;
+import indexingTopology.api.client.*;
 import indexingTopology.api.server.QueryHandle;
-import indexingTopology.api.server.SchemaQueryHandle;
+import indexingTopology.api.server.SchemaManipulationHandle;
 import indexingTopology.api.server.Server;
 import indexingTopology.api.server.ServerHandle;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.PartialQueryResult;
 import indexingTopology.common.Query;
+import indexingTopology.metadata.ISchemaManager;
 import indexingTopology.metadata.SchemaManager;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -53,7 +52,7 @@ public class QueryCoordinatorWithQueryReceiverServerBolt<T extends Number & Comp
         queryIdToPartialQueryResults = new HashMap<>();
 
 
-        server = new Server(port, QueryServerHandle.class, new Class[]{LinkedBlockingQueue.class, AtomicLong.class, Map.class, SchemaManager.class}, pendingQueue, queryId, queryIdToPartialQueryResults, schemaManager);
+        server = new Server(port, ManipulationServerHandle.class, new Class[]{LinkedBlockingQueue.class, AtomicLong.class, Map.class, ISchemaManager.class}, pendingQueue, queryId, queryIdToPartialQueryResults, schemaManagerInterface);
         server.startDaemon();
 //        queryIdToPartialQueryResultSemphore = new HashMap<>();
     }
@@ -81,16 +80,16 @@ public class QueryCoordinatorWithQueryReceiverServerBolt<T extends Number & Comp
 //        semaphore.release();
     }
 
-    static public class QueryServerHandle<T extends Number & Comparable<T>> extends ServerHandle implements QueryHandle, SchemaQueryHandle {
+    static public class ManipulationServerHandle<T extends Number & Comparable<T>> extends ServerHandle implements QueryHandle, SchemaManipulationHandle {
 
         LinkedBlockingQueue<List<Query<T>>> pendingQueryQueue;
         AtomicLong queryIdGenerator;
         AtomicLong superQueryIdGenerator;
         Map<Long, LinkedBlockingQueue<PartialQueryResult>> queryresults;
-        SchemaManager schemaManager;
-        public QueryServerHandle(LinkedBlockingQueue<List<Query<T>>> pendingQueryQueue, AtomicLong queryIdGenerator,
-                                 Map<Long, LinkedBlockingQueue<PartialQueryResult>> queryresults,
-                                 SchemaManager schemaManager) {
+        ISchemaManager schemaManager;
+        public ManipulationServerHandle(LinkedBlockingQueue<List<Query<T>>> pendingQueryQueue, AtomicLong queryIdGenerator,
+                                        Map<Long, LinkedBlockingQueue<PartialQueryResult>> queryresults,
+                                        ISchemaManager schemaManager) {
             this.pendingQueryQueue = pendingQueryQueue;
             this.queryresults = queryresults;
             this.queryIdGenerator = queryIdGenerator;
@@ -106,7 +105,7 @@ public class QueryCoordinatorWithQueryReceiverServerBolt<T extends Number & Comp
                 if (request.aggregator != null) {
                     outputSchema = request.aggregator.getOutputDataSchema();
                 } else {
-                    outputSchema = schemaManager.getDefaultSchema();
+                    outputSchema = schemaManager.getSchema("default");
                 }
 
                 LinkedBlockingQueue<PartialQueryResult> results =
@@ -134,9 +133,23 @@ public class QueryCoordinatorWithQueryReceiverServerBolt<T extends Number & Comp
 
         @Override
         public void handle(SchemaQueryRequest request) throws IOException {
-            DataSchema schema = schemaManager.getDefaultSchema();
+            DataSchema schema = schemaManager.getSchema(request.name);
             objectOutputStream.writeUnshared(schema);
             objectOutputStream.reset();
+        }
+
+        @Override
+        public void handle(SchemaCreationRequest request) throws IOException {
+            final boolean success = schemaManager.createSchema(request.name, request.schema);
+            SchemaCreationResponse response = null;
+            if (success) {
+                response = new SchemaCreationResponse(0);
+            } else {
+                response = new SchemaCreationResponse(-1);
+            }
+            objectOutputStream.writeUnshared(response);
+            objectOutputStream.reset();
+
         }
     }
 }

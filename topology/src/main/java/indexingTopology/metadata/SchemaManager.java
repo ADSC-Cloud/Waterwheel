@@ -8,7 +8,7 @@ import java.util.Map;
 /**
  * Created by Robert on 8/2/17.
  */
-public class SchemaManager {
+public class SchemaManager implements ISchemaManager {
     private Map<String, DataSchema> nameToSchema = new HashMap<>();
 
     public void setDefaultSchema(DataSchema schema) {
@@ -19,11 +19,20 @@ public class SchemaManager {
         return nameToSchema.get("default");
     }
 
-    public void createSchema(String name, DataSchema schema) {
-        nameToSchema.put(name, schema);
+    public boolean createSchema(String name, DataSchema schema) {
+        if (schema ==null || nameToSchema.containsKey(name)) {
+            System.out.println("******* Cannot create Schema " + name);
+            return false;
+        } else {
+            nameToSchema.put(name, schema);
+            System.out.println(String.format("*******[%s] is created as [%s]", name, schema));
+            return true;
+        }
     }
 
     public DataSchema getSchema(String name) {
-        return nameToSchema.get(name);
+        final DataSchema schema = nameToSchema.get(name);
+        System.out.println(String.format("******* Get Schema [%s] as [%s]", name, schema));
+        return schema;
     }
 }
