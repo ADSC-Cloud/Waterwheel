@@ -1,4 +1,4 @@
-m# Waterwheel
+# Waterwheel
 
 Waterwheel is a distributed append-only store designed for high-throughput data ingestion and real-time temporal range queries. Waterwheel supports over 1 million insertions per seconds and millisecond queries simultaneously.
 
