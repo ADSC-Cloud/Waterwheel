@@ -22,10 +22,16 @@ if [ -z $NAMENODE_HOST ] || [ -z $NODE ]; then
 fi
 
 
-
-cd ..
-mvn clean install -DskipTests
-cd scripts
+if [ ! -s waterwheel-topology.jar ]; then
+    echo "waterwheel-topology.jar cannot find. Build it with maven..."
+    cd ..
+    mvn clean install -DskipTests
+    cd scripts
+    cp ../topology/target/topology-1.0-SNAPSHOT.jar waterwheel-topology.jar
+    echo "waterwheel-topology.jar is generated"
+else
+   echo "waterwheel-topology.jar is found"
+fi
 
 CURRENT_PATH=`pwd`
 
@@ -34,7 +40,7 @@ METADATA_PATH="$CURRENT_PATH/metadata/"
 mkdir -p $METADATA_PATH
 
 CHUNK_PATH="$CURRENT_PATH/data/"
-hadoop-2.7.3/bin/hdfs dfs -mkdir -p $CHUNK_PATH
+hadoop-2.8.1/bin/hdfs dfs -mkdir -p $CHUNK_PATH
 
 
 cp default-config/topology-conf.yaml ./topology-conf.yaml
@@ -45,4 +51,4 @@ sed -i "s|metadata-folder|$METADATA_PATH|g" topology-conf.yaml
 sed -i "s|namenode-host|$NAMENODE_HOST|g" topology-conf.yaml
 
 
-apache-storm-1.1.0/bin/storm jar ../topology/target/topology-1.0-SNAPSHOT.jar indexingTopology.topology.kingbase.KingBaseTopology -f topology-conf.yaml -m submit -n $NODE -t Waterwheel
+apache-storm-1.1.0/bin/storm jar waterwheel-topology.jar indexingTopology.topology.kingbase.KingBaseTopology -f topology-conf.yaml -m submit -n $NODE -t Waterwheel
