@@ -1,5 +1,6 @@
 package ui;
 
+import config.Config;
 import indexingTopology.api.client.SystemStateQueryClient;
 import indexingTopology.common.SystemState;
 
@@ -43,7 +44,7 @@ public class clientTest  extends HttpServlet {
         response.setContentType("text/html; charset=UTF-8");
 
         response.setContentType("application/json; charset=utf-8");
-        SystemStateQueryClient sys = new SystemStateQueryClient("localhost",20000);
+        SystemStateQueryClient sys = new SystemStateQueryClient(Config.ServerHost,20000);
         sys.connect();
         SystemState systemState = null;
 //        QueryCoordinatorBolt systemConfig = new QueryCoordinatorBolt();
