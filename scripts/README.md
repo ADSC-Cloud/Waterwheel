@@ -51,3 +51,35 @@ Replace MASTER_IP with the actual ip
 
 ```./install-hdfs.sh -m slave -p MASTER_IP```
 
+#### 5. Install and deploy Zookeeper
+
+On master node only:
+
+```./install-zookeeper.sh```
+
+#### 6. Install and deploy Storm
+
+On master node:
+
+Replace MASTER_IP with the actual ip
+
+```./install-storm.sh -m master -p MASTER_IP```
+
+On slave node:
+
+Replace MASTER_IP with the actual ip
+
+```./install-storm.sh -m slave -p MASTER_IP```
+
+#### 7. Deplay Waterwheel topology
+On master node:
+
+Replace MASTER_IP with the actual ip and NUMBER_OF_NODE with the actual value, e.g., 5
+
+```./deploy-topology.sh -p MASTER_IP -n NUMBER_OF_NODE```
+
+#### 8. Deploy Waterwheel web ui
+
+On master node:
+
+```./deploy-tomcat.sh```
