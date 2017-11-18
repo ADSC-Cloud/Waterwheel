@@ -89,5 +89,5 @@ On master node:
 
 ```./deploy-tomcat.sh```
 
-Now you can open Waterwheel web ui via  http://localhost:8080/waterwheel 
+Now you can open Waterwheel web ui via  http://Master_NODE_IP:8080/waterwheel
 
