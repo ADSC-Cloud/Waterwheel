@@ -14,13 +14,13 @@ The scripts should be run on both master node and the slave nodes.
 
 #### 1. Generate security key add authorized keys
 
-##### Generate key
+##### 1.1 Generate key
 
 On both master and slave nodes:
 
 ```./generate-public-key.sh```
 
-##### Add public key to the authorized_keys
+##### 1.2 Add public key to the authorized_keys
 
 On master node:
 
@@ -88,3 +88,6 @@ Replace MASTER_IP with the actual ip and NUMBER_OF_NODE with the actual value, e
 On master node:
 
 ```./deploy-tomcat.sh```
+
+Now you can open Waterwheel web ui via  http://localhost:8080/waterwheel 
+
