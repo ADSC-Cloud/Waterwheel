@@ -52,3 +52,7 @@ sed -i "s|namenode-host|$NAMENODE_HOST|g" topology-conf.yaml
 
 
 apache-storm-1.1.0/bin/storm jar waterwheel-topology.jar indexingTopology.topology.kingbase.KingBaseTopology -f topology-conf.yaml -m submit -n $NODE -t Waterwheel
+
+apache-storm-1.1.0/bin/storm list
+
+echo "If everything is right, you should see a topology named Waterwheel listed above."
