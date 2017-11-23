@@ -43,6 +43,14 @@ else
     wget http://www-us.apache.org/dist/zookeeper/zookeeper-3.4.11/zookeeper-3.4.11.tar.gz
 fi
 
+echo "checking apache-tomcat-8.5.23.tar.gz..."
+if [ -s apache-tomcat-8.5.23.tar.gz ] && [[ `$CHECKSUM apache-tomcat-8.5.23.tar.gz |awk '{print $4}'` = "c4addea2c8c166530f11bdeb4730c26e" ]]; then
+    echo "file exists and checksum passed"
+else
+    echo "downloading apache-tomcat-8.5.23.tar.gz"
+    wget http://www-us.apache.org/dist/tomcat/tomcat-8/v8.5.23/bin/apache-tomcat-8.5.23.tar.gz
+fi
+
 echo "generating/updating waterwheel-topology.jar ..."
 cd ..
 mvn clean install -DskipTests
