@@ -10,9 +10,8 @@ echo "checking hadoop-2.8.1.tar.gz ..."
 if [ -s hadoop-2.8.1.tar.gz ] && [ `$CHECKSUM hadoop-2.8.1.tar.gz |awk '{print $4}'` = "def2211ee1561871794e1b0eec8cb628" ]; then
     echo "file exists and checksum passed"
 else
-    echo "expected def2211ee1561871794e1b0eec8cb628"
-    echo "actual `$CHECKSUM hadoop-2.8.1.tar.gz |awk '{print $1}'`"
     echo "downloading hadoop-2.8.1 ..."
+    rm -f hadoop-2.8.1.tar.gz
     wget http://www.apache.org/dist/hadoop/common/hadoop-2.8.1/hadoop-2.8.1.tar.gz
 fi
 
@@ -22,6 +21,7 @@ if [ -s jdk-8u152-linux-x64.rpm ] && [ `$CHECKSUM jdk-8u152-linux-x64.rpm |awk '
     echo "file exists and checksum passed"
 else
     echo "downloading jdk-8u152-linux-x64.rpm ..."
+    rm -f jdk-8u152-linux-x64.rpm
     wget --no-cookies --no-check-certificate --header "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie" "http://download.oracle.com/otn-pub/java/jdk/8u152-b16/aa0333dd3019491ca4f6ddbe78cdb6d0/jdk-8u152-linux-x64.rpm"
 fi
 
@@ -30,6 +30,7 @@ if [ -s apache-storm-1.1.0.tar.gz ] && [ `$CHECKSUM apache-storm-1.1.0.tar.gz |a
     echo "file exists and checksum passed"
 else
     echo "downloading apache-storm-1.1.0.tar.gz ..."
+    rm -f apache-storm-1.1.0.tar.gz
     wget http://www-us.apache.org/dist/storm/apache-storm-1.1.0/apache-storm-1.1.0.tar.gz
 fi
 
@@ -38,6 +39,7 @@ if [ -s zookeeper-3.4.11.tar.gz ] && [ `$CHECKSUM zookeeper-3.4.11.tar.gz |awk '
     echo "file exists and checksum passed"
 else
     echo "downloading zookeeper-3.4.11.tar.gz"
+    rm -f zookeeper-3.4.11.tar.gz
     wget http://www-us.apache.org/dist/zookeeper/zookeeper-3.4.11/zookeeper-3.4.11.tar.gz
 fi
 
