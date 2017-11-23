@@ -40,10 +40,12 @@ fi
 
 tar xzf apache-storm-1.1.0.tar.gz
 
-cp -f default-config/storm.yaml apache-storm-1.1.0/conf/
+if [ "$MODE" = "master" ]; then
+    cp -f default-config/storm-master.yaml apache-storm-1.1.0/conf/storm.yaml
+else
+    cp -f default-config/storm-slave.yaml apache-storm-1.1.0/conf/storm.yaml
 
 sed -i "s/master-host/$NAMENODE_HOST/g" apache-storm-1.1.0/conf/storm.yaml
-
 
 if [ "$MODE" = "master" ]; then
     nohup apache-storm-1.1.0/bin/storm nimbus > apache-storm-1.1.0/bin/nimbus.log & 

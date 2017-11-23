@@ -22,6 +22,13 @@
 
  supervisor.slots.ports:
    - 6700
+
+
+ topology.component.cpu.pcore.percent: 100.0
+# topology.scheduler.strategy: "org.apache.storm.scheduler.resource.strategies.scheduling.DefaultResourceAwareStrategy"
+# resource.aware.scheduler.eviction.strategy: "org.apache.storm.scheduler.resource.strategies.eviction.DefaultEvictionStrategy"
+# resource.aware.scheduler.priority.strategy: "org.apache.storm.scheduler.resource.strategies.priority.DefaultSchedulingPriorityStrategy"
+
 # 
 # 
 # ##### These may optionally be filled in:

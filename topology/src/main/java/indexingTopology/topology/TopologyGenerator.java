@@ -38,7 +38,8 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
         TopologyBuilder builder = new TopologyBuilder();
 
         builder.setBolt(TupleGenerator, dataSource, 1)
-                .directGrouping(IndexerBolt, Streams.AckStream);
+                .directGrouping(IndexerBolt, Streams.AckStream)
+                .setCPULoad(50);
 
         builder.setBolt(RangeQueryDispatcherBolt, new DispatcherServerBolt<>(dataSchema, lowerBound, upperBound,
                 enableLoadBalance, false, dataTupleMapper, config), numberOfNodes)
@@ -62,7 +63,8 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.TimestampUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.LocationInfoUpdateStream)
-                .shuffleGrouping(MetadataServer, Streams.DDLResponseStream);
+                .shuffleGrouping(MetadataServer, Streams.DDLResponseStream)
+                .setCPULoad(50);
 
 
         if (config.SHUFFLE_GROUPING_FLAG) {
