@@ -44,6 +44,7 @@ if [ "$MODE" = "master" ]; then
     cp -f default-config/storm-master.yaml apache-storm-1.1.0/conf/storm.yaml
 else
     cp -f default-config/storm-slave.yaml apache-storm-1.1.0/conf/storm.yaml
+fi
 
 sed -i "s/master-host/$NAMENODE_HOST/g" apache-storm-1.1.0/conf/storm.yaml
 
