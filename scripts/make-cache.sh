@@ -36,7 +36,7 @@ else
 fi
 
 echo "checking  zookeeper-3.4.11.tar.gz..."
-if [ -s zookeeper-3.4.11.tar.gz ] && [[ `$CHECKSUM zookeeper-3.4.11.tar.gz |awk '{print $4}'` = "55aec6196ed9fa4c451cb5ae4a1f42d8" ]]; then
+if [ -s zookeeper-3.4.11.tar.gz ] && [[ `$CHECKSUM zookeeper-3.4.11.tar.gz |awk '{print $1}'` = "55aec6196ed9fa4c451cb5ae4a1f42d8" ]]; then
     echo "file exists and checksum passed"
 else
     echo "downloading zookeeper-3.4.11.tar.gz"
