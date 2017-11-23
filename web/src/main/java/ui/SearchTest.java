@@ -4,14 +4,13 @@ import config.Config;
 import indexingTopology.api.client.GeoTemporalQueryClient;
 import indexingTopology.api.client.GeoTemporalQueryRequest;
 import indexingTopology.api.client.QueryResponse;
-import indexingTopology.common.aggregator.AggregateField;
-import indexingTopology.common.aggregator.Aggregator;
-import indexingTopology.common.aggregator.Count;
+import indexingTopology.common.aggregator.*;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 import indexingTopology.common.logics.DataTupleEquivalentPredicateHint;
 import indexingTopology.common.logics.DataTuplePredicate;
 import model.DataBean;
+import model.PostPredicator;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
@@ -34,6 +33,10 @@ public class SearchTest {
             get_yLow = 0,
             get_yHigh = 0;
 
+    private String predicateName;
+    private String predicateWay;
+    private double predicateDigital;
+
 
     static final double x1 = 40.012928;
     static final double x2 = 40.023983;
@@ -43,20 +46,43 @@ public class SearchTest {
 
     private int RecentSecondsOfInterest = 5;
 
+    String groupby;
+
+    AggregateField[] fields = null;
+
+    PostPredicator postPredicator = null;
+
     DataBean dataBean;
 
-    public SearchTest(int get_xLow, int get_xHigh, int get_yLow, int get_yHigh, int recentSecondsOfInterest) {
+    public SearchTest(int get_xLow, int get_xHigh, int get_yLow, int get_yHigh, int recentSecondsOfInterest, String groupby, AggregateField[] fields, PostPredicator postPredicator) {
         this.get_xLow = get_xLow;
         this.get_xHigh = Math.max(get_xLow, get_xHigh);
         this.get_yLow = get_yLow;
         this.get_yHigh = Math.max(get_yLow, get_yHigh);
         RecentSecondsOfInterest = recentSecondsOfInterest;
+        this.groupby = groupby;
+        System.out.println("this is :"+ fields.length);
+        this.fields = fields;
+        System.out.println(this.fields.length);
+        this.postPredicator = postPredicator;
+        /*predicateName = postPredicator.getPredicateName();
+        predicateWay = postPredicator.getPredicateWay();
+        predicateDigital = postPredicator.getPredicateDigital();*/
     }
+
+    public SearchTest(int get_xLow, int get_xHigh, int get_yLow, int get_yHigh, int recentSecondsOfInterest, String groupby) {
+        this(get_xLow, get_xHigh, get_yLow, get_yHigh, recentSecondsOfInterest, groupby, null, null);
+    }
+
+    public SearchTest(int get_xLow, int get_xHigh, int get_yLow, int get_yHigh, int recentSecondsOfInterest, String groupby, AggregateField[] fields) {
+        this(get_xLow, get_xHigh, get_yLow, get_yHigh, recentSecondsOfInterest, groupby, fields, null);
+    }
+
 
     public DataBean executeQuery() {
 
         double selectivityOnOneDimension = Math.sqrt(Selectivity);
-        DataSchema schema = getDataSchema();
+        DataSchema  schema = getDataSchema();
         GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient(QueryServerIp, 10001);
         dataBean = new DataBean();
         try {
@@ -84,17 +110,32 @@ public class SearchTest {
         final int id = new Random().nextInt(100000);
         final String idString = "" + id;
         DataTuplePredicate predicate = t -> schema.getValue("id", t).equals(idString);
-
-
-
-        Aggregator<Integer> aggregator = new Aggregator<>(schema, "id", new AggregateField(new Count(), "*"));
+        Aggregator<Integer> aggregator = null;
+        if(!groupby.equals("null") && fields.length == 0)
+            aggregator = new Aggregator<>(schema, groupby);
+        if(!groupby.equals("null") && fields.length != 0) {
+            System.out.println("fields :" + fields.length);
+            System.out.println(fields[0].fieldName);
+            aggregator = new Aggregator<>(schema, groupby, fields);
+        }
+        //DataTuplePredicate postPredicate = null;
+        /*if(postPredicator != null){
+            switch(postPredicator.getPredicateWay()){
+                case ">" : postPredicate = t -> Double.parseDouble(schema.getValue(predicateName, t).toString()) > predicateDigital;break;
+                case "<" : postPredicate = t -> Double.parseDouble(schema.getValue(predicateName, t).toString()) < predicateDigital;break;
+                case "=" : postPredicate = t -> Double.parseDouble(schema.getValue(predicateName, t).toString()) == predicateDigital;break;
+                case ">=" : postPredicate = t -> Double.parseDouble(schema.getValue(predicateName, t).toString()) >= predicateDigital;break;
+                case "<=" : postPredicate = t -> Double.parseDouble(schema.getValue(predicateName, t).toString()) <= predicateDigital;break;
+            }
+        }*/
+        //postPredicate = t -> schema.getValue("id", t).equals("232");
 
 
         DataTupleEquivalentPredicateHint equivalentPredicateHint = new DataTupleEquivalentPredicateHint("id", idString);
 
         GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
                 System.currentTimeMillis() - RecentSecondsOfInterest * 1000,
-                System.currentTimeMillis(), null,null, null, null);
+                System.currentTimeMillis(), null, null,aggregator, null, null);
         long start = System.currentTimeMillis();
         try {
             DateFormat dateFormat = new SimpleDateFormat("MM-dd HH:mm:ss");
@@ -107,6 +148,7 @@ public class SearchTest {
             DataSchema outputSchema = response.getSchema();
             System.out.println("this is fieldNames" + outputSchema.getFieldNames());
             List<DataTuple> tuples = response.getTuples();
+            // List<DataTuple> PredicateTuples = PostPredicateTest.PostPredicate(tuples);
             dataBean.setTuples(tuples);
             dataBean.setFieldNames(outputSchema.getFieldNames());
             dataBean.setTime(end - start);
@@ -154,8 +196,8 @@ public class SearchTest {
     }
 
     public static void main(String[] args) {
-        SearchTest searchTest1 = new SearchTest(0,0,0,0,0);
+      /* // SearchTest searchTest1 = new SearchTest(0,0,0,0,0);
         DataBean dataBean = searchTest1.executeQuery();
-        System.out.println("This is FieldNamesSize" + dataBean.getFieldNames().size());
+        System.out.println("This is FieldNamesSize" + dataBean.getFieldNames().size());*/
     }
 }

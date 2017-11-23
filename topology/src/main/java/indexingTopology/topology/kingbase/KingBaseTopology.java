@@ -151,7 +151,7 @@ public class KingBaseTopology {
 
                 GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
                         System.currentTimeMillis() - RecentSecondsOfInterest * 1000,
-                        System.currentTimeMillis(), null, aggregator, null, null);
+                        System.currentTimeMillis(), null, null, aggregator, null, null);
                 long start = System.currentTimeMillis();
                 try {
                     DateFormat dateFormat = new SimpleDateFormat("MM-dd HH:mm:ss");
@@ -243,13 +243,13 @@ public class KingBaseTopology {
                     }
                 } catch (IOException e) {
 //                    if (clientBatchMode.isClosed()) {
-                        try {
-                            System.out.println("try to reconnect....");
-                            clientBatchMode.connectWithTimeout(10000);
-                            System.out.println("connected.");
-                        } catch (IOException e1) {
-                            e1.printStackTrace();
-                        }
+                    try {
+                        System.out.println("try to reconnect....");
+                        clientBatchMode.connectWithTimeout(10000);
+                        System.out.println("connected.");
+                    } catch (IOException e1) {
+                        e1.printStackTrace();
+                    }
 //                    }
                     e.printStackTrace();
                     try {

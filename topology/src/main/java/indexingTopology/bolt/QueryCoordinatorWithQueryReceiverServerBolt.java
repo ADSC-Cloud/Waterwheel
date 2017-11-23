@@ -115,7 +115,7 @@ public class QueryCoordinatorWithQueryReceiverServerBolt<T extends Number & Comp
                         request.low, request.high, request.startTime, request.endTime);
                 final List<Query<T>> queryList = new ArrayList<>();
                 queryList.add(new Query(queryid, request.low, request.high, request.startTime,
-                        request.endTime, request.predicate, request.aggregator, request.sorter, request.equivalentPredicate));
+                        request.endTime, request.predicate, request.postPredicate, request.aggregator, request.sorter, request.equivalentPredicate));
                 pendingQueryQueue.put(queryList);
 
                 boolean eof = false;

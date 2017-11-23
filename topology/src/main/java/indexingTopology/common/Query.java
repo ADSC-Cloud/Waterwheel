@@ -16,18 +16,18 @@ public class Query <T extends Number> extends SubQuery<T> {
     }
 
     public Query(long id, T leftKey, T rightKey, Long startTimestamp, Long endTimestamp, DataTuplePredicate predicate,
-                 Aggregator aggregator) {
-        super(id, leftKey, rightKey, startTimestamp, endTimestamp, predicate, aggregator, null);
+                 DataTuplePredicate postPredicate, Aggregator aggregator) {
+        super(id, leftKey, rightKey, startTimestamp, endTimestamp, predicate, postPredicate, aggregator, null);
     }
 
     public Query(long id, T leftKey, T rightKey, Long startTimestamp, Long endTimestamp, DataTuplePredicate predicate,
-                 Aggregator aggregator, DataTupleSorter sorter) {
-        super(id, leftKey, rightKey, startTimestamp, endTimestamp, predicate, aggregator, sorter);
+                 DataTuplePredicate postPredicate, Aggregator aggregator, DataTupleSorter sorter) {
+        super(id, leftKey, rightKey, startTimestamp, endTimestamp, predicate, postPredicate, aggregator, sorter);
     }
 
     public Query(long id, T leftKey, T rightKey, Long startTimestamp, Long endTimestamp, DataTuplePredicate predicate,
-                 Aggregator aggregator, DataTupleSorter sorter, DataTupleEquivalentPredicateHint equivalentPredicate) {
-        super(id, leftKey, rightKey, startTimestamp, endTimestamp, predicate, aggregator, sorter, equivalentPredicate);
+                 DataTuplePredicate postPredicate, Aggregator aggregator, DataTupleSorter sorter, DataTupleEquivalentPredicateHint equivalentPredicate) {
+        super(id, leftKey, rightKey, startTimestamp, endTimestamp, predicate, postPredicate, aggregator, sorter, equivalentPredicate);
     }
 
     public String toString() {

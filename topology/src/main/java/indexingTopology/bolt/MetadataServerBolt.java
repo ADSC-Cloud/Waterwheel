@@ -156,10 +156,10 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 //            e.printStackTrace();
 //        }
 
+
         CPUloads = Collections.synchronizedList(new ArrayList<Double>());
         totalDiskSpaces = Collections.synchronizedList(new ArrayList<>());
         freeDiskSpaces = Collections.synchronizedList(new ArrayList<>());
-
 
         systemState = new SystemState();
         staticsRequestSendingThread = new Thread(new StatisticsRequestSendingRunnable());
@@ -560,8 +560,10 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
         @Override
         public void run() {
+
 //            while (true) {
             systemState.setLastThroughput(new double[SystemState.NumberOfHistoricThroughputs]);
+
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     Thread.sleep(TopologyConfig.StaticRequestTimeIntervalInSeconds * 1000);
@@ -589,6 +591,7 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
                 collector.emit(Streams.StaticsRequestStream,
                         new Values("Statics Request"));
+
             }
         }
 
