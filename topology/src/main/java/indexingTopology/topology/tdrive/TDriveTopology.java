@@ -62,7 +62,10 @@ public class TDriveTopology {
      */
 
     @Option(name = "--input-file-path", aliases = {"-f"}, usage = "the input file path")
-    private String InputFilePath = "";
+    private String InputFilePath = "docs/README.md";
+
+    @Option(name = "--config-file", aliases = {"-a"}, usage = "conf.yaml to override default configs")
+    private String confFile = "conf/conf.yaml";
 
     @Option(name = "--ingest-rate-limit", aliases = {"-r"}, usage = "max ingestion rate")
     private int MaxIngestRate = Integer.MAX_VALUE;
@@ -203,6 +206,15 @@ public class TDriveTopology {
         TopologyConfig config = new TopologyConfig();
 
 //        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000, config);
+        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" +
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" +
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" +
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" +
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" +
+                "" +
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" +
+                "~~~~~~~~~~~~~~~~~~~~~~~" +
+                InputFilePath);
         InputStreamReceiverBolt dataSource = new TDriveDataSourceBolt(schema, city, config, InputFilePath, MaxIngestRate);
 
         QueryCoordinatorBolt<Integer> queryCoordinatorBolt = new GeoTemporalQueryCoordinatorBoltBolt<>(lowerBound,

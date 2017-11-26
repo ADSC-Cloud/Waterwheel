@@ -11,9 +11,14 @@ import indexingTopology.common.KeyDomain;
 import indexingTopology.common.SystemState;
 import indexingTopology.common.TimeDomain;
 import indexingTopology.config.TopologyConfig;
+import indexingTopology.filesystem.FileSystemHandler;
+import indexingTopology.filesystem.HdfsFileSystemHandler;
+import indexingTopology.filesystem.LocalFileSystemHandler;
 import indexingTopology.metrics.PerNodeMetrics;
 import indexingTopology.util.*;
 import indexingTopology.util.partition.BalancedPartition;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.Path;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -26,8 +31,13 @@ import indexingTopology.metadata.FilePartitionSchemaManager;
 import indexingTopology.streams.Streams;
 import org.apache.zookeeper.KeeperException;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.*;
+
+import static org.hsqldb.HsqlDateTime.e;
 
 /**
  * Created by acelzj on 12/12/16.
@@ -93,6 +103,10 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
     private SystemState systemState;
 
     private Server systemStateQueryServer;
+
+    private int intervalTime;
+
+    private int removeHours;
 
     public MetadataServerBolt(Key lowerBound, Key upperBound, TopologyConfig config) {
         this.lowerBound = lowerBound;
@@ -163,6 +177,9 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
         systemState.addConfig("Dispatchers per Node", config.DISPATCHER_PER_NODE);
         systemStateQueryServer = new Server(20000, SystemStateQueryHandle.class, new Class[]{SystemState.class}, systemState);
         systemStateQueryServer.startDaemon();
+        intervalTime = config.removeIntervalHours;
+        removeHours = config.previousTime;
+        startTimer(intervalTime,removeHours); // Remove old data regularly
     }
 
     private void createMetadataSendingThread() {
@@ -527,6 +544,126 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
         }
     }
 
+
+    public static String getCurrentTime() {
+        Date date = new Date();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        return sdf.format(date);
+    }
+
+//    public static void main(String[] args) throws InterruptedException {
+//        System.out.println("main start:" + getCurrentTime());
+//        startTimer();
+//    }
+
+    public void startTimer(int intervalTime,int removeHours) {
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                Calendar time = Calendar.getInstance();
+                int currentHour = 0;
+                time.get(currentHour);
+                if (config.HDFSFlag == false) {
+                    // Local FileSystem
+                    LocalFileSystemHandler localFileSystemHandler = new LocalFileSystemHandler("../", config);
+                    File folderOfData = new File("../data");
+                    File folderOfMetaData = new File("../metadata");
+                    searchLocalOldData(folderOfData,localFileSystemHandler,removeHours);
+                    searchLocalOldData(folderOfMetaData,localFileSystemHandler,removeHours);
+                }
+                else{
+                    // HDFS
+                    try {
+                        HdfsFileSystemHandler fileSystemHandler = new HdfsFileSystemHandler("", config);
+                        fileSystemHandler.openFile("data","");
+                        fileSystemHandler.openFile("metadata","");
+                        try {
+                            searchHDFSOldData(fileSystemHandler,"data",removeHours);
+                            searchHDFSOldData(fileSystemHandler,"metadata",removeHours);
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        };
+        Timer timer = new Timer();
+        timer.schedule(task, buildTime(), 3600 * intervalTime);
+    }
+
+    public void searchHDFSOldData(HdfsFileSystemHandler fileSystemHandler,String relativePath,int removeHours) throws InterruptedException, IOException {
+        FileStatus[] fileStatus = fileSystemHandler.getFileSystem().listStatus(new Path(relativePath));
+        for(FileStatus singleFile : fileStatus) {
+            if (System.currentTimeMillis() - singleFile.getModificationTime() >= 3600 * removeHours) {
+//                System.out.println("---------------" + singleFile.getPath().getName() + "---------------");
+                fileSystemHandler.removeOldData(singleFile.getPath());
+            }
+        }
+    }
+
+    public void searchLocalOldData(File folder,LocalFileSystemHandler localFileSystemHandler,int removeHours){
+//        System.out.println(folder);
+        if (folder.exists()) {
+            File[] files = folder.listFiles();
+            if (files.length == 0) {
+                System.out.println("Folder empty!");
+                return;
+            }
+            else {
+                for (File singleFile : files) {
+                    System.out.println(singleFile.getPath());
+                    if (singleFile.getName().equals(".DS_Store")) {
+                                    continue;
+                    }
+                    // Can not call function SimpleDateFormat;
+//                    new SimpleDateFormat("yyy-MM-dd hh:mm:ss").format(new Date(singleFile.lastModified()));
+//                    String ctime = new SimpleDateFormat("yyy-MM-dd hh:mm:ss").format(new Date(singleFile.lastModified()));
+//                    String ntime = new SimpleDateFormat("yyy-MM-dd hh:mm:ss").format(new Date(System.currentTimeMillis()));
+                    if (System.currentTimeMillis() - singleFile.lastModified() >= 3600 * removeHours) {
+                        try {
+                            localFileSystemHandler.removeOldData(singleFile.getPath());
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        }
+        else{
+            System.out.println("---------------- Can not find Files !! ----------------");
+        }
+    }
+
+    private Date buildTime() {
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, 8);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        Date time = calendar.getTime();
+//        if (time.before(new Date())) {
+//            time = addDay(time, 1);
+//        }
+        return time;
+    }
+
+    private Date addDay(Date date, int days) {
+        Calendar startDT = Calendar.getInstance();
+        startDT.setTime(date);
+        startDT.add(Calendar.DAY_OF_MONTH, days);
+        return startDT.getTime();
+    }
+
+
+
+    class OldDataRemovalRunnable implements Runnable{
+
+        @Override
+        public void run() {
+
+        }
+    }
 
     class StatisticsRequestSendingRunnable implements Runnable {
 

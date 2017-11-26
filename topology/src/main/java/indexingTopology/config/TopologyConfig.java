@@ -9,11 +9,12 @@ import java.util.Map;
 public class TopologyConfig implements Serializable {
     public final double REBUILD_TEMPLATE_THRESHOLD = 10.0;
 
-    public String dataChunkDir = "/home/robert/data";
+    public String dataChunkDir = "data";
 
-    public String metadataDir = "/home/robert/data";
+    public String metadataDir = "metadata";
 
-    public String HDFS_HOST = "hdfs://192.168.0.237:54310/";
+//    public String HDFS_HOST = "hdfs://192.168.0.237:54310/";
+    public String HDFS_HOST = "hdfs://127.0.0.1:54310/";
 
     public final int CACHE_SIZE = 200;
 
@@ -58,6 +59,9 @@ public class TopologyConfig implements Serializable {
 
     public int DISPATCHER_PER_NODE = 1;
 
+    public int removeIntervalHours = 6; // Delete the time interval for old data
+
+    public int previousTime = 24; // Define the time for old data
 
     public static final String ZOOKEEPER_HOST = "192.168.0.207";
 
@@ -114,6 +118,12 @@ public class TopologyConfig implements Serializable {
                 this.HDFSFlag = result.get("storage.file.system").equals("hdfs");
             }
 
+            if (result.containsKey("remove.interval.hours"))
+                this.removeIntervalHours = (Integer)result.get("remove.interval.hours");
+
+            if (result.containsKey("old.data.previous.time")) {
+                this.previousTime = (Integer)result.get("olddata.previous.time");
+            }
         } catch (FileNotFoundException e) {
             System.err.println("The configure file " + filePath + " is not found. Use default conf instead.");
         }

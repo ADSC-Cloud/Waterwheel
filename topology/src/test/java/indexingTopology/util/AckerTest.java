@@ -31,6 +31,18 @@ public class AckerTest {
         backPressure.ack(15000L);
         assertEquals(25000L, backPressure.currentCount.get());
         assertEquals(0, backPressure.pendingIds.size());
+
+        backPressure.ack(30000L);
+        assertEquals(30000L, backPressure.currentCount.get());
+        assertEquals(0, backPressure.pendingIds.size());
+
+        backPressure.ack(40000L);
+        assertEquals(30000L, backPressure.currentCount.get());
+        assertEquals(1, backPressure.pendingIds.size());
+
+        backPressure.ack(35000L);
+        assertEquals(40000L, backPressure.currentCount.get());
+        assertEquals(0, backPressure.pendingIds.size());
     }
 
     @Test
