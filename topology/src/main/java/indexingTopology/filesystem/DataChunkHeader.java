@@ -13,12 +13,16 @@ import indexingTopology.config.TopologyConfig;
 public class DataChunkHeader {
     String compressionAlgorithm;
     int decompressedDataSize;
+    String compressionAlgorithm2;
+    int decompressedDataSize2;
 
     byte[] serialize() {
         Output output = new Output(TopologyConfig.DataChunkHeaderSectionSize);
 
         output.writeString(compressionAlgorithm);
         output.writeInt(decompressedDataSize);
+        output.writeString(compressionAlgorithm2);
+        output.writeInt(decompressedDataSize2);
 
         byte[] bytes = output.toBytes();
         output.close();
@@ -35,5 +39,7 @@ public class DataChunkHeader {
         Input input = new Input(bytes);
         compressionAlgorithm = input.readString();
         decompressedDataSize = input.readInt();
+        compressionAlgorithm2 = input.readString();
+        decompressedDataSize2 = input.readInt();
     }
 }
