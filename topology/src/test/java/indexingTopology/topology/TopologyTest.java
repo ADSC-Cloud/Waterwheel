@@ -1,6 +1,9 @@
 package indexingTopology.topology;
+<<<<<<< HEAD
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+=======
+>>>>>>> upstream/master
 import indexingTopology.bolt.QueryCoordinatorWithQueryReceiverServerBolt;
 import indexingTopology.common.aggregator.*;
 import indexingTopology.api.client.IngestionClientBatchMode;
@@ -1315,5 +1318,8 @@ public class TopologyTest extends TestCase {
         socketPool.returnPort(queryPort);
     }
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> upstream/master
 }

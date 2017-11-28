@@ -37,9 +37,11 @@ if [ ! "$MODE" = "slave" ] && [ ! "$MODE" = "master" ]; then
 fi
 
 if [ ! -f hadoop-2.8.1.tar.gz ]; then
-    wget http://www-eu.apache.org/dist/hadoop/common/hadoop-2.8.1/hadoop-2.8.1.tar.gz
+    wget http://www.apache.org/dist/hadoop/common/hadoop-2.8.1/hadoop-2.8.1.tar.gz
 fi
 
+echo "extracting files..."
+echo "type [yes] should you are asked any question.."
 tar zxf hadoop-2.8.1.tar.gz
 
 cp default-config/core-site.xml hadoop-2.8.1/etc/hadoop/

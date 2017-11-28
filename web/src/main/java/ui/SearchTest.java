@@ -1,5 +1,6 @@
 package ui;
 
+import config.Config;
 import indexingTopology.api.client.GeoTemporalQueryClient;
 import indexingTopology.api.client.GeoTemporalQueryRequest;
 import indexingTopology.api.client.QueryResponse;
@@ -23,7 +24,7 @@ public class SearchTest {
 
     private double Selectivity = 1;
 
-    private String QueryServerIp = "localhost";
+    private String QueryServerIp = Config.ServerHost;
 
     private int NumberOfQueries = Integer.MAX_VALUE;
 
