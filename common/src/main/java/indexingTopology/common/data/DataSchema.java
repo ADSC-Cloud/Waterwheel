@@ -2,6 +2,10 @@ package indexingTopology.common.data;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import net.sf.json.JSONObject;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -45,26 +49,6 @@ public class DataSchema implements Serializable {
         public int length;
     }
 
-    Object readFromStringByColumn(String string, Class type) {
-        if (type.equals(Integer.class)) {
-            return Integer.parseInt(string);
-        }else if(type.equals(Double.class)) {
-            return Double.parseDouble(string);
-        }else if(type.equals(Long.class)) {
-            return Long.parseLong(string);
-        }else if(type.equals(Float.class)) {
-            return Float.parseFloat(string);
-        }else if(type.equals(Byte.class)) {
-            return Byte.parseByte(string);
-        }else if(type.equals(Short.class)) {
-            return Short.parseShort(string);
-        }
-        return null;
-
-    }
-
-
-
 
     public DataSchema(){};
 
@@ -103,19 +87,6 @@ public class DataSchema implements Serializable {
         dataTypes.add(dataType);
     }
 
-    public void addFloatField(String name) {
-        final DataType dataType = new DataType(Float.class, Float.BYTES);
-        dataFieldNameToIndex.put(name, fieldNames.size());
-        fieldNames.add(name);
-        dataTypes.add(dataType);
-    }
-
-    public void addByteField(String name) {
-        final DataType dataType = new DataType(Byte.class, Byte.BYTES);
-        dataFieldNameToIndex.put(name, fieldNames.size());
-        fieldNames.add(name);
-        dataTypes.add(dataType);
-    }
 
     public void addIntField(String name) {
         final DataType dataType = new DataType(Integer.class, Integer.BYTES);
@@ -124,12 +95,6 @@ public class DataSchema implements Serializable {
         dataTypes.add(dataType);
     }
 
-    public void addShortField(String name) {
-        final DataType dataType = new DataType(Short.class, Short.BYTES);
-        dataFieldNameToIndex.put(name, fieldNames.size());
-        fieldNames.add(name);
-        dataTypes.add(dataType);
-    }
 
     public void addField(DataType dataType, String fieldName) {
         dataFieldNameToIndex.put(fieldName, fieldNames.size());
@@ -165,82 +130,10 @@ public class DataSchema implements Serializable {
                 output.writeInt((int)t.get(i));
             } else if (dataTypes.get(i).type.equals(Long.class)) {
                 output.writeLong((long)t.get(i));
-            } else if (dataTypes.get(i).type.equals(Float.class)) {
-                output.writeFloat((float)t.get(i));
-            } else if (dataTypes.get(i).type.equals(Byte.class)) {
-                output.writeByte((byte)t.get(i));
-            } else if (dataTypes.get(i).type.equals(Short.class)) {
-                output.writeByte((short)t.get(i));
             } else {
                 throw new RuntimeException("Not supported data type!" );
             }
         }
-        byte[] bytes = output.toBytes();
-        output.close();
-        return bytes;
-    }
-
-    public byte[] dataColumnSerializeTupe(DataTuple t, Class type) {
-        Output output = new Output(1000, 2000000);
-        for (int i = 0; i < t.size(); i++) {
-            if (type.equals(Double.class)) {
-                output.writeDouble((double)t.get(i));
-            } else if (type.equals(String.class)) {
-//                output.writeString((String)t.get(i));
-                byte[] bytes = ((String) t.get(i)).getBytes();
-                output.writeInt(bytes.length);
-                output.write(bytes);
-            } else if (type.equals(Integer.class)) {
-                output.writeInt((int)t.get(i));
-            } else if (type.equals(Long.class)) {
-                output.writeLong((long)t.get(i));
-            } else if (type.equals(Float.class)) {
-                output.writeFloat((float)t.get(i));
-            } else if (type.equals(Byte.class)) {
-                output.writeByte((byte)t.get(i));
-            } else if (type.equals(Short.class)) {
-                output.writeByte((short)t.get(i));
-            } else {
-                throw new RuntimeException("Not supported data type!" );
-            }
-        }
-        byte[] bytes = output.toBytes();
-        output.close();
-        return bytes;
-
-    }
-
-    public byte[] dataComSerializeTuple(DataTuple t) {
-        Output output = new Output(1000, 2000000);
-        int j = 0;
-        for (int i = 0; i < dataTypes.size(); i++) {
-            //System.out.println(fieldNames.get(i));
-            if(IsBooleanOrNot.judg(fieldNames.get(i)))
-                continue;
-
-            if (dataTypes.get(i).type.equals(Double.class)) {
-                output.writeDouble((double)t.get(j));
-            } else if (dataTypes.get(i).type.equals(String.class)) {
-//                output.writeString((String)t.get(j));
-                byte[] bytes = ((String) t.get(j)).getBytes();
-                output.writeInt(bytes.length);
-                output.write(bytes);
-            } else if (dataTypes.get(i).type.equals(Integer.class)) {
-                output.writeInt((int)t.get(j));
-            } else if (dataTypes.get(i).type.equals(Long.class)) {
-                output.writeLong((long)t.get(j));
-            } else if (dataTypes.get(i).type.equals(Float.class)) {
-                output.writeFloat((float)t.get(j));
-            } else if (dataTypes.get(i).type.equals(Byte.class)) {
-                output.writeByte((byte)t.get(j));
-            } else if (dataTypes.get(i).type.equals(Short.class)) {
-                output.writeByte((short)t.get(j));
-            } else {
-                throw new RuntimeException("Not supported data type!" );
-            }
-            j++;
-        }
-        output.writeShort((short)t.get(j));
         byte[] bytes = output.toBytes();
         output.close();
         return bytes;
@@ -263,8 +156,6 @@ public class DataSchema implements Serializable {
                 dataTuple.add(input.readInt());
             } else if (dataTypes.get(i).type.equals(Long.class)) {
                 dataTuple.add(input.readLong());
-            } else if (dataTypes.get(i).type.equals(Short.class)) {
-                dataTuple.add(input.readShort());
             } else {
                 throw new RuntimeException("Only classes supported till now are string and double");
             }
@@ -361,115 +252,77 @@ public class DataSchema implements Serializable {
         return true;
     }
 
-    public DataTuple parseTupleColumn(String tuple, String split, Class type) throws ParseException {
-        String[] attributes = tuple.split(split);
-        DataTuple dataTuple = new DataTuple();
-        StringBuffer stringBuffer = new StringBuffer();
-        Object attribute = null;
-        for (int i = 0; i < attributes.length; i++) {
-            if(type.equals(Long.class)) {
-                Long lg = readLongfromString(attributes[i]);
-                attribute = readFromStringByColumn(String.valueOf(lg), type);
-            } else if(type.equals(Float.class)) {
-                attribute = readFromStringByColumn(attributes[i], type);
-            }else if(type.equals(Double.class)) {
-                attribute = readFromStringByColumn(attributes[i], type);
-            }else if(type.equals(Byte.class)) {
-                attribute = readFromStringByColumn(attributes[i], type);
-            }else if(type.equals(Short.class)) {
-                attribute = readFromStringByColumn(attributes[i], type);
-            }
-            dataTuple.add(attribute);
-        }
-        return dataTuple;
-    }
 
-    public DataTuple parseJsonTuple(String tuple, String split) throws ParseException {
+    public DataTuple parseJsonTuple(String tuple, String split) {
         String[] attributes = tuple.split(split);
         DataTuple dataTuple = new DataTuple();
         StringBuffer stringBuffer = new StringBuffer();
+        SimpleDateFormat jsonfmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         Object attribute;
         for (int i = 0; i < attributes.length; i++) {
-            if(i == 8){
-                Long lg = readLongfromJsonString(attributes[8]);
+            Date date = null;
+            try {
+                date = jsonfmt.parse(attributes[i]);
+                Long lg = date.getTime();
                 attribute = dataTypes.get(i).readFromString(String.valueOf(lg));
-            }else{
-                if(IsBooleanOrNot.judg(fieldNames.get(i))) {
-                    stringBuffer.append(attributes[i]);
-                    continue;
-                } else if(IsFloatOrNot.judgFloatWithOne(fieldNames.get(i))) {
-                    attribute = saveFloatWithOneAsShort(attributes[i]);
-                } else if(IsFloatOrNot.judgFloatWithTwo(fieldNames.get(i))) {
-                    attribute = saveFloatWithTwoAsShort(attributes[i]);
-                } else if(IsFloatOrNot.judgFloatWithOneUnderByte(fieldNames.get(i))) {
-                    attribute = saveFloatWithOneUnderByteAsShort(attributes[i]);
-                } else {
-                    attribute = dataTypes.get(i).readFromString(attributes[i]);
-                }
+            } catch (ParseException e) {
+                attribute = dataTypes.get(i).readFromString(attributes[i]);
             }
 
             dataTuple.add(attribute);
         }
-        if (stringBuffer.length() != 0){
-//            System.out.println("1111");
-            attribute = saveBooleanAsShort(stringBuffer);
-            dataTuple.add(attribute);
-        }
+
         //System.out.println(dataTuple);
         return dataTuple;
     }
 
-    private static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-    private static SimpleDateFormat jsonSdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
-    public Long readLongfromString(String str) throws ParseException {
-        Date data = sdf.parse(str);
-        Long l = data.getTime();
-        return l;
-    }
-
-    public Long readLongfromJsonString(String str) throws ParseException {
-        Date data = jsonSdf.parse(str);
-        Long l = data.getTime();
-        return l;
-    }
-
-    static short saveBooleanAsShort(StringBuffer stringBuffer) {
-        StringBuffer strBuffer = new StringBuffer();
-        for(int i = 14; i >= 0; i--){
-            strBuffer.append(stringBuffer.charAt(i));
-
+    public List<DataTuple> getTuplesFromJson(JsonObject object, String arrayName) {
+        JsonArray array = object.getAsJsonArray(arrayName);
+        List<DataTuple> dataTuples = new ArrayList<>();
+        for (JsonElement element : array) {
+            JsonObject result = element.getAsJsonObject();
+            DataTuple dataTuple = getTupleFromJson(result);
+            dataTuples.add(dataTuple);
         }
-        return Short.valueOf(strBuffer.toString(),2);
+        return dataTuples;
     }
 
-    public static void main(String[] args) {
-        System.out.println(saveFloatWithOneUnderByteAsShort("3.1"));
-    }
-    static short saveFloatWithOneAsShort(String string){
-        Float fl = Float.parseFloat(string);
-        int Scale = 1;
-        int roundingMode = 4;
-        BigDecimal bd = new BigDecimal(fl);
-        bd = bd.setScale(Scale,roundingMode);
-        return (short)(bd.floatValue()*10);
+    public DataTuple getTupleFromJson(JsonObject object) {
+        String str = "";
+        int len = getNumberOfFields();
+        for (int i = 0; i < len; i++) {
+            String objectStr = "";
+            if(!object.get(getFieldName(i)).isJsonNull()) {
+                objectStr = object.get(getFieldName(i)).toString().replace("\"", "");
+            }
+            else {
+                objectStr = "null";
+            }
+            if(i < len - 1) {
+                str = str + objectStr + ",";
+            }
+            else {
+                str = str + objectStr;
+            }
+        }
+        DataTuple dataTuple = parseJsonTuple(str, ",");
+        return dataTuple;
     }
 
-    static short saveFloatWithTwoAsShort(String string){
-        Float fl = Float.parseFloat(string);
-        int Scale = 2;
-        int roundingMode = 4;
-        BigDecimal bd = new BigDecimal(fl);
-        bd = bd.setScale(Scale,roundingMode);
-        return (short)(bd.floatValue()*100);
+    public JSONObject getJsonFromDataTuple(DataTuple tuple) {
+        String jsonStr = "{";
+        int len = getNumberOfFields();
+        for (int i = 0; i < len; i++) {
+            String objectStr = "\"" + getFieldName(i) + "\"" + ":" + "\"" + tuple.get(i) + "\"";
+            if (i < len - 1) {
+                jsonStr = jsonStr + objectStr + ",";
+            }
+            else {
+                jsonStr = jsonStr + objectStr + "}";
+            }
+        }
+        JSONObject jsonObject = JSONObject.fromObject(jsonStr);
+        return jsonObject;
     }
 
-    static byte saveFloatWithOneUnderByteAsShort(String string){
-        Float fl = Float.parseFloat(string);
-        int Scale = 1;
-        int roundingMode = 4;
-        BigDecimal bd = new BigDecimal(fl);
-        bd = bd.setScale(Scale,roundingMode);
-        return (byte)(bd.floatValue()*10);
-    }
 }
