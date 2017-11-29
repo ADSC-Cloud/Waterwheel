@@ -6,7 +6,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
-import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 

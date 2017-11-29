@@ -1,14 +1,15 @@
 package indexingTopology.util.shape;
 
 import com.google.gson.JsonObject;
-import com.snatik.polygon.Point;
-import com.snatik.polygon.Polygon;
 import com.sun.scenario.effect.impl.sw.sse.SSEBlend_SRC_OUTPeer;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 
+
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.github.davidmoten.rtree.fbs.generated.GeometryType_.Point;
 
 /**
  * Create by zelin on 17-11-27
