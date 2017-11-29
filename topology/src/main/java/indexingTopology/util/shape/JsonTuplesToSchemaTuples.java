@@ -143,11 +143,10 @@ public class JsonTuplesToSchemaTuples {
         DataSchema dataSchemaOut = jsonTuplesToSchemaTuples.initOut();
         DataSchema dataSchemaRectangle = jsonTuplesToSchemaTuples.initRectangle();
         JsonParser parser = new JsonParser();
-        // 使用解析器解析json数据，返回值是JsonElement，强制转化为其子类JsonObject类型
-        JsonObject objectOut =  (JsonObject) parser.parse(new FileReader("/home/hadoop/mygit/append-only-store/topology/src/main/java/indexingTopology/util/shape/test.json"));
-        JsonObject objectRectangle = (JsonObject) parser.parse(new FileReader("/home/hadoop/mygit/append-only-store/topology/src/main/java/indexingTopology/util/shape/rectangle.json"));
-        JsonObject objectPolygon = (JsonObject) parser.parse(new FileReader("/home/hadoop/mygit/append-only-store/topology/src/main/java/indexingTopology/util/shape/circul"));
-        JsonObject objectCircle = (JsonObject) parser.parse(new FileReader("/home/hadoop/mygit/append-only-store/topology/src/main/java/indexingTopology/util/shape/polygon.json"));
+        JsonObject objectOut =  (JsonObject) parser.parse(new FileReader("topology/jsonfile/testjson.json"));
+        JsonObject objectRectangle = (JsonObject) parser.parse(new FileReader("topology/jsonfile/rectangle.json"));
+        JsonObject objectPolygon = (JsonObject) parser.parse(new FileReader("topology/jsonfile/polygon.json"));
+        JsonObject objectCircle = (JsonObject) parser.parse(new FileReader("topology/jsonfile/circul"));
         List<DataTuple> list = (List<DataTuple>) jsonToSchema(dataSchemaOut, objectOut, "out");
 //        DataTuple dataTupleRectangle = (DataTuple) jsonToSchema(dataSchemaRectangle, objectRectangle, "rectangle");
 //        List<DataTuple> outList = JudgContain.checkInRect(list, dataTupleRectangle);

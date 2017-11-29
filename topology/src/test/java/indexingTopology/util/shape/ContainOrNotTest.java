@@ -4,8 +4,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
-import indexingTopology.util.shape.JsonTuplesToSchemaTuples;
-import indexingTopology.util.shape.JudgContain;
 import junit.framework.TestCase;
 import org.junit.Test;
 
@@ -45,7 +43,7 @@ public class ContainOrNotTest extends TestCase {
         outDataSchema.addVarcharField("teamno", 8);
 
         JsonParser parser = new JsonParser();
-        JsonObject objectOut =  (JsonObject) parser.parse(new FileReader("/home/hadoop/mygit/append-only-store/topology/src/main/java/indexingTopology/util/shape/test.json"));
+        JsonObject objectOut =  (JsonObject) parser.parse(new FileReader("jsonfile/testjson.json"));
         List<DataTuple> list = (List<DataTuple>) JsonTuplesToSchemaTuples.jsonToSchema(outDataSchema, objectOut, "out");
         assertEquals(2, list.size());
     }
@@ -87,13 +85,13 @@ public class ContainOrNotTest extends TestCase {
         outDataSchema.addVarcharField("teamno", 8);
 
         JsonParser parser = new JsonParser();
-        JsonObject objectRectangle = (JsonObject) parser.parse(new FileReader("/home/hadoop/mygit/append-only-store/topology/src/main/java/indexingTopology/util/shape/rectangle.json"));
-        JsonObject objectPolygon = (JsonObject) parser.parse(new FileReader("/home/hadoop/mygit/append-only-store/topology/src/main/java/indexingTopology/util/shape/polygon.json"));
-        JsonObject objectCircle = (JsonObject) parser.parse(new FileReader("/home/hadoop/mygit/append-only-store/topology/src/main/java/indexingTopology/util/shape/circul"));
+        JsonObject objectRectangle = (JsonObject) parser.parse(new FileReader("jsonfile/rectangle.json"));
+        JsonObject objectPolygon = (JsonObject) parser.parse(new FileReader("jsonfile/polygon.json"));
+        JsonObject objectCircle = (JsonObject) parser.parse(new FileReader("jsonfile/circul"));
 
-        JsonObject objectTestCircleOut =  (JsonObject) parser.parse(new FileReader("/home/hadoop/mygit/append-only-store/topology/src/main/java/indexingTopology/util/shape/testcircle.json"));
-        JsonObject objectTestPolygonOut =  (JsonObject) parser.parse(new FileReader("/home/hadoop/mygit/append-only-store/topology/src/main/java/indexingTopology/util/shape/testpolygon.json"));
-        JsonObject objectTestRectangleOut =  (JsonObject) parser.parse(new FileReader("/home/hadoop/mygit/append-only-store/topology/src/main/java/indexingTopology/util/shape/testrectangle.json"));
+        JsonObject objectTestCircleOut =  (JsonObject) parser.parse(new FileReader("jsonfile/testcircle.json"));
+        JsonObject objectTestPolygonOut =  (JsonObject) parser.parse(new FileReader("jsonfile/testpolygon.json"));
+        JsonObject objectTestRectangleOut =  (JsonObject) parser.parse(new FileReader("jsonfile/testrectangle.json"));
         List<DataTuple> outTestCircleList = (List<DataTuple>) JsonTuplesToSchemaTuples.jsonToSchema(outDataSchema, objectTestCircleOut, "out");
         List<DataTuple> outTestPolygonList = (List<DataTuple>) JsonTuplesToSchemaTuples.jsonToSchema(outDataSchema, objectTestPolygonOut, "out");
         List<DataTuple> outTestRectangleList = (List<DataTuple>) JsonTuplesToSchemaTuples.jsonToSchema(outDataSchema, objectTestRectangleOut, "out");
