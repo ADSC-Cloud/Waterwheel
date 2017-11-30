@@ -93,50 +93,28 @@ public class DataSchemaTest {
 
     @Test
     public void getTuplesFromJsonTest() throws FileNotFoundException {
-        DataSchema outDataSchema = init();
-        JsonParser parser = new JsonParser();
-        JsonObject objectOut =  (JsonObject) parser.parse(new FileReader("jsonfile/testjson.json"));
-        List<DataTuple> list =  outDataSchema.getTuplesFromJson(objectOut, "result");
+        DataSchema schema = new DataSchema();
+        schema.addVarcharField("2" ,3);
+        schema.addVarcharField("1", 3);
+        schema.setDateFormat(" yy-MM-dd HH:mm:ss");
+        String jsonStr = "{\"result\":[{\"2\":\"efg\",\"1\":null},{\"2\":\"efg\",\"1\":null}]}";
+        JSONObject jsonObject = JSONObject.fromObject(jsonStr);
+        List<DataTuple> list =  schema.getTuplesFromJson(jsonObject, "result");
         assertEquals(2, list.size());
     }
 
     @Test
     public void getTupleFromJsonAndJsonFromTupleTest() throws FileNotFoundException {
-        DataSchema outDataSchema = init();
-        JsonParser parser = new JsonParser();
-        JsonObject objectOut =  (JsonObject) parser.parse(new FileReader("jsonfile/testonejson.json"));
-        DataTuple tuple = outDataSchema.getTupleFromJson(objectOut);
-        assertEquals(1,tuple.get(0));
-        JSONObject jsonObject = outDataSchema.getJsonFromDataTuple(tuple);
-        assertEquals("1", jsonObject.get("devbtype"));
+        DataSchema schema = new DataSchema();
+        schema.addVarcharField("2" ,3);
+        schema.addVarcharField("1", 3);
+        schema.setDateFormat(" yy-MM-dd HH:mm:ss");
+        String jsonStr = "{\"2\":\"efg\",\"1\":null}";
+        JSONObject jsonObject = JSONObject.fromObject(jsonStr);
+        DataTuple tuple = schema.getTupleFromJson(jsonObject);
+        assertEquals("efg",tuple.get(0));
+        jsonObject = schema.getJsonFromDataTuple(tuple);
+        assertEquals("efg", jsonObject.get("2"));
     }
 
-
-    public DataSchema init() {
-        DataSchema outDataSchema = new DataSchema();
-        outDataSchema.addIntField("devbtype");
-        outDataSchema.addVarcharField("devstype", 4);
-        outDataSchema.addVarcharField("devid", 6);
-        outDataSchema.addIntField("city");
-        outDataSchema.addDoubleField("longitude");
-        outDataSchema.addDoubleField("latitude");
-        outDataSchema.addDoubleField("speed");
-        outDataSchema.addDoubleField("direction");
-        outDataSchema.addLongField("locationtime");
-        outDataSchema.addIntField("workstate");
-        outDataSchema.addVarcharField("clzl",4);
-        outDataSchema.addVarcharField("hphm", 7);
-        outDataSchema.addIntField("jzlx");
-        outDataSchema.addLongField("jybh");
-        outDataSchema.addVarcharField("jymc", 3);
-        outDataSchema.addVarcharField("lxdh", 11);
-        outDataSchema.addVarcharField("dth", 12);
-        outDataSchema.addIntField("reservel");
-        outDataSchema.addIntField("reservel2");
-        outDataSchema.addIntField("reservel3");
-        outDataSchema.addVarcharField("ssdwdm",12);
-        outDataSchema.addVarcharField("ssdwmc", 5);
-        outDataSchema.addVarcharField("teamno", 8);
-        return outDataSchema;
-    }
 }

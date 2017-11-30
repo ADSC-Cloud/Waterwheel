@@ -5,6 +5,7 @@ import com.esotericsoftware.kryo.io.Output;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import java.io.Serializable;
@@ -253,76 +254,58 @@ public class DataSchema implements Serializable {
     }
 
 
-    public DataTuple parseJsonTuple(String tuple, String split) {
-        String[] attributes = tuple.split(split);
-        DataTuple dataTuple = new DataTuple();
-        StringBuffer stringBuffer = new StringBuffer();
-        SimpleDateFormat jsonfmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        Object attribute;
-        for (int i = 0; i < attributes.length; i++) {
-            Date date = null;
-            try {
-                date = jsonfmt.parse(attributes[i]);
-                Long lg = date.getTime();
-                attribute = dataTypes.get(i).readFromString(String.valueOf(lg));
-            } catch (ParseException e) {
-                attribute = dataTypes.get(i).readFromString(attributes[i]);
-            }
-
-            dataTuple.add(attribute);
-        }
-
-        //System.out.println(dataTuple);
-        return dataTuple;
-    }
-
-    public List<DataTuple> getTuplesFromJson(JsonObject object, String arrayName) {
-        JsonArray array = object.getAsJsonArray(arrayName);
+    public List<DataTuple> getTuplesFromJson(JSONObject object, String arrayName) {
+        JSONArray array = object.getJSONArray(arrayName);
         List<DataTuple> dataTuples = new ArrayList<>();
-        for (JsonElement element : array) {
-            JsonObject result = element.getAsJsonObject();
-            DataTuple dataTuple = getTupleFromJson(result);
+        for (Object jsonObject : array) {
+            DataTuple dataTuple = getTupleFromJson((JSONObject) jsonObject);
             dataTuples.add(dataTuple);
         }
         return dataTuples;
     }
 
-    public DataTuple getTupleFromJson(JsonObject object) {
-        String str = "";
+    public DataTuple getTupleFromJson(JSONObject object) {
         int len = getNumberOfFields();
+        DataTuple dataTuple = new DataTuple();
+        String objectStr = "";
+        Object attribute = new Object();
         for (int i = 0; i < len; i++) {
-            String objectStr = "";
-            if(!object.get(getFieldName(i)).isJsonNull()) {
+            if(object.get(getFieldName(i)) != null) {
                 objectStr = object.get(getFieldName(i)).toString().replace("\"", "");
+                Date date = null;
+                if (fmt != null) {
+                    try {
+                        date = fmt.parse(objectStr);
+                        Long lg = date.getTime();
+                        attribute = dataTypes.get(i).readFromString(String.valueOf(lg));
+                    } catch (ParseException e) {
+                        attribute = dataTypes.get(i).readFromString(objectStr);
+                    }
+                }
             }
             else {
-                objectStr = "null";
+                attribute = dataTypes.get(i).readFromString("null");
             }
-            if(i < len - 1) {
-                str = str + objectStr + ",";
-            }
-            else {
-                str = str + objectStr;
-            }
+            dataTuple.add(attribute);
         }
-        DataTuple dataTuple = parseJsonTuple(str, ",");
         return dataTuple;
     }
 
     public JSONObject getJsonFromDataTuple(DataTuple tuple) {
         String jsonStr = "{";
         int len = getNumberOfFields();
+        JSONObject jsonObject = new JSONObject();
         for (int i = 0; i < len; i++) {
-            String objectStr = "\"" + getFieldName(i) + "\"" + ":" + "\"" + tuple.get(i) + "\"";
-            if (i < len - 1) {
-                jsonStr = jsonStr + objectStr + ",";
-            }
-            else {
-                jsonStr = jsonStr + objectStr + "}";
-            }
+            jsonObject.element(getFieldName(i), tuple.get(i));
         }
-        JSONObject jsonObject = JSONObject.fromObject(jsonStr);
         return jsonObject;
+    }
+
+
+    private SimpleDateFormat fmt = null;
+    public void setDateFormat (String fmtStr) {
+        StringBuffer stringBuffer = new StringBuffer();
+        fmt = new SimpleDateFormat(fmtStr);
     }
 
 }
