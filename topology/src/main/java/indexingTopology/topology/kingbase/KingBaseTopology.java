@@ -71,7 +71,7 @@ public class KingBaseTopology {
      * ingest api configuration
      */
     @Option(name = "--ingest-server-ip", usage = "the ingestion server ip")
-    private String IngestServerIp = "172.31.6.161";
+    private String IngestServerIp = "localhost";
 
     @Option(name = "--ingest-rate-limit", aliases = {"-r"}, usage = "max ingestion rate")
     private int MaxIngestRate = Integer.MAX_VALUE;

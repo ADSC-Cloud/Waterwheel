@@ -7,11 +7,11 @@ public class CheckInRectangle implements CheckContain {
 
     private double leftTopX, leftTopY;
     private double rightBottomX, rightBottomY;
-    public CheckInRectangle() {
-        this.leftTopX = 113.325;
-        this.leftTopY = 25.1728;
-        this.rightBottomX = 115.325;
-        this.rightBottomY = 23.1728;
+    public CheckInRectangle(double leftTopX, double leftTopY, double rightBottomX, double rightBottomY) {
+        this.leftTopX = leftTopX;
+        this.leftTopY = leftTopY;
+        this.rightBottomX = rightBottomX;
+        this.rightBottomY = rightBottomY;
     }
 
     @Override

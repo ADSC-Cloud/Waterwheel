@@ -8,10 +8,10 @@ public class CheckInCircle implements CheckContain {
     private double longitude;
     private double latitude;
     private double radius;
-    public CheckInCircle() {
-        this.longitude = 113.325;
-        this.latitude = 23.1728;
-        this.radius = 1000.0;
+    public CheckInCircle(double longitude, double latitude, double radius) {
+        this.longitude = longitude;
+        this.latitude = latitude;
+        this.radius = radius;
     }
 
     @Override

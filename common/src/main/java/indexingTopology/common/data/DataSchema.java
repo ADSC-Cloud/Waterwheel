@@ -254,17 +254,16 @@ public class DataSchema implements Serializable {
     }
 
 
-    public List<DataTuple> getTuplesFromJson(JSONObject object, String arrayName) {
-        JSONArray array = object.getJSONArray(arrayName);
+    public List<DataTuple> getTuplesFromJsonArray(JSONArray array) {
         List<DataTuple> dataTuples = new ArrayList<>();
         for (Object jsonObject : array) {
-            DataTuple dataTuple = getTupleFromJson((JSONObject) jsonObject);
+            DataTuple dataTuple = getTupleFromJsonObject((JSONObject) jsonObject);
             dataTuples.add(dataTuple);
         }
         return dataTuples;
     }
 
-    public DataTuple getTupleFromJson(JSONObject object) {
+    public DataTuple getTupleFromJsonObject(JSONObject object) {
         int len = getNumberOfFields();
         DataTuple dataTuple = new DataTuple();
         String objectStr = "";
@@ -281,6 +280,8 @@ public class DataSchema implements Serializable {
                     } catch (ParseException e) {
                         attribute = dataTypes.get(i).readFromString(objectStr);
                     }
+                }else {
+                    attribute = dataTypes.get(i).readFromString(objectStr);
                 }
             }
             else {

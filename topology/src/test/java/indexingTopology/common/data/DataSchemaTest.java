@@ -1,12 +1,10 @@
 package indexingTopology.common.data;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.junit.Test;
 
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.util.List;
 
 import static junit.framework.TestCase.assertEquals;
@@ -96,10 +94,10 @@ public class DataSchemaTest {
         DataSchema schema = new DataSchema();
         schema.addVarcharField("2" ,3);
         schema.addVarcharField("1", 3);
-        schema.setDateFormat(" yy-MM-dd HH:mm:ss");
         String jsonStr = "{\"result\":[{\"2\":\"efg\",\"1\":null},{\"2\":\"efg\",\"1\":null}]}";
         JSONObject jsonObject = JSONObject.fromObject(jsonStr);
-        List<DataTuple> list =  schema.getTuplesFromJson(jsonObject, "result");
+        JSONArray array = jsonObject.getJSONArray("result");
+        List<DataTuple> list =  schema.getTuplesFromJsonArray(array);
         assertEquals(2, list.size());
     }
 
@@ -108,10 +106,9 @@ public class DataSchemaTest {
         DataSchema schema = new DataSchema();
         schema.addVarcharField("2" ,3);
         schema.addVarcharField("1", 3);
-        schema.setDateFormat(" yy-MM-dd HH:mm:ss");
         String jsonStr = "{\"2\":\"efg\",\"1\":null}";
         JSONObject jsonObject = JSONObject.fromObject(jsonStr);
-        DataTuple tuple = schema.getTupleFromJson(jsonObject);
+        DataTuple tuple = schema.getTupleFromJsonObject(jsonObject);
         assertEquals("efg",tuple.get(0));
         jsonObject = schema.getJsonFromDataTuple(tuple);
         assertEquals("efg", jsonObject.get("2"));
