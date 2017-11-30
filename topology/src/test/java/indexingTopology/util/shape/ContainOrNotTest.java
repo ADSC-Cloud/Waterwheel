@@ -23,6 +23,5 @@ public class ContainOrNotTest extends TestCase {
 
         boolean isCircle = new CheckInCircle().checkIn(circlePoint);
         assertEquals(true, isCircle);
-
     }
 }
