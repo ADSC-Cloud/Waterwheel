@@ -2,12 +2,14 @@ package indexingTopology.common.data;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.math.BigDecimal;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * Created by parijatmazumdar on 17/09/15.
@@ -19,9 +21,32 @@ public class DataSchema implements Serializable {
             this.type = type;
             this.length = length;
         }
+
+
+
+        Object readFromString(String string) {
+            if (type.equals(Integer.class)) {
+                return Integer.parseInt(string);
+            }else if(type.equals(Double.class)) {
+                return Double.parseDouble(string);
+            }else if(type.equals(Long.class)) {
+                return Long.parseLong(string);
+            }else if(type.equals(Float.class)) {
+                return Float.parseFloat(string);
+            }else if(type.equals(Byte.class)) {
+                return Byte.parseByte(string);
+            }else if(type.equals(Short.class)) {
+                return Short.parseShort(string);
+            }else if(type.equals(String.class)) {
+                return string;
+            }
+            return null;
+
+        }
         public Class type;
         public int length;
     }
+
 
     public DataSchema(){};
 
@@ -60,12 +85,14 @@ public class DataSchema implements Serializable {
         dataTypes.add(dataType);
     }
 
+
     public void addIntField(String name) {
         final DataType dataType = new DataType(Integer.class, Integer.BYTES);
         dataFieldNameToIndex.put(name, fieldNames.size());
         fieldNames.add(name);
         dataTypes.add(dataType);
     }
+
 
     public void addField(DataType dataType, String fieldName) {
         dataFieldNameToIndex.put(fieldName, fieldNames.size());
@@ -222,4 +249,38 @@ public class DataSchema implements Serializable {
 
         return true;
     }
+
+
+    public List<DataTuple> getTuplesFromJsonArray(JSONArray array) {
+        List<DataTuple> dataTuples = new ArrayList<>();
+        for (Object jsonObject : array) {
+            DataTuple dataTuple = getTupleFromJsonObject((JSONObject) jsonObject);
+            dataTuples.add(dataTuple);
+        }
+        return dataTuples;
+    }
+
+    public DataTuple getTupleFromJsonObject(JSONObject object) {
+        int len = getNumberOfFields();
+        DataTuple dataTuple = new DataTuple();
+        String objectStr = "";
+        Object attribute = new Object();
+        for (int i = 0; i < len; i++) {
+            objectStr = object.get(getFieldName(i)).toString().replace("\"", "");
+            attribute = dataTypes.get(i).readFromString(objectStr);
+            dataTuple.add(attribute);
+        }
+        return dataTuple;
+    }
+
+    public JSONObject getJsonFromDataTuple(DataTuple tuple) {
+        int len = getNumberOfFields();
+        JSONObject jsonObject = new JSONObject();
+        for (int i = 0; i < len; i++) {
+            jsonObject.element(getFieldName(i), tuple.get(i));
+        }
+        return jsonObject;
+    }
+
+
 }
