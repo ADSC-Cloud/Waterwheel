@@ -269,31 +269,14 @@ public class DataSchema implements Serializable {
         String objectStr = "";
         Object attribute = new Object();
         for (int i = 0; i < len; i++) {
-            if(object.get(getFieldName(i)) != null) {
-                objectStr = object.get(getFieldName(i)).toString().replace("\"", "");
-                Date date = null;
-                if (fmt != null) {
-                    try {
-                        date = fmt.parse(objectStr);
-                        Long lg = date.getTime();
-                        attribute = dataTypes.get(i).readFromString(String.valueOf(lg));
-                    } catch (ParseException e) {
-                        attribute = dataTypes.get(i).readFromString(objectStr);
-                    }
-                }else {
-                    attribute = dataTypes.get(i).readFromString(objectStr);
-                }
-            }
-            else {
-                attribute = dataTypes.get(i).readFromString("null");
-            }
+            objectStr = object.get(getFieldName(i)).toString().replace("\"", "");
+            attribute = dataTypes.get(i).readFromString(objectStr);
             dataTuple.add(attribute);
         }
         return dataTuple;
     }
 
     public JSONObject getJsonFromDataTuple(DataTuple tuple) {
-        String jsonStr = "{";
         int len = getNumberOfFields();
         JSONObject jsonObject = new JSONObject();
         for (int i = 0; i < len; i++) {
@@ -302,11 +285,5 @@ public class DataSchema implements Serializable {
         return jsonObject;
     }
 
-
-    private SimpleDateFormat fmt = null;
-    public void setDateFormat (String fmtStr) {
-        StringBuffer stringBuffer = new StringBuffer();
-        fmt = new SimpleDateFormat(fmtStr);
-    }
 
 }
