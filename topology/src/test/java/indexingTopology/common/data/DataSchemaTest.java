@@ -111,7 +111,6 @@ public class DataSchemaTest {
         String jsonStr = "{\"2\":\"efg\",\"1\":null,\"date\":\"2017-12-01 10:40:00\"}";
         JSONObject jsonObject = JSONObject.fromObject(jsonStr);
         DataTuple tuple = schema.getTupleFromJsonObject(jsonObject);
-        System.out.println(tuple);
         assertEquals("efg",tuple.get(0));
         jsonObject = schema.getJsonFromDataTuple(tuple);
         assertEquals("efg", jsonObject.get("2"));

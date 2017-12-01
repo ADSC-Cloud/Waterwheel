@@ -1,5 +1,6 @@
 package indexingTopology.util.shape;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,7 +10,7 @@ import java.util.List;
  * @author Roman Kushnarenko (sromku@gmail.com)
  * @see {@link Builder}
  */
-public class Polygon {
+public class Polygon implements Serializable{
 
     private final BoundingBox _boundingBox;
     private final List<Line> _sides;
@@ -238,7 +239,7 @@ public class Polygon {
         return true;
     }
 
-    private static class BoundingBox {
+    private static class BoundingBox implements Serializable {
         public double xMax = Double.NEGATIVE_INFINITY;
         public double xMin = Double.NEGATIVE_INFINITY;
         public double yMax = Double.NEGATIVE_INFINITY;

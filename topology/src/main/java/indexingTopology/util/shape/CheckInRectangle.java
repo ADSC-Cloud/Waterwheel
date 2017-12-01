@@ -17,7 +17,7 @@ public class CheckInRectangle implements CheckContain {
     @Override
     public boolean checkIn(Point point) {
         double pointX = point.x, pointY = point.y;
-        if((pointX < rightBottomX && pointX > leftTopX) && (pointY < leftTopY && pointY > rightBottomY)) {
+        if((pointX <= rightBottomX && pointX >= leftTopX) && (pointY <= leftTopY && pointY >= rightBottomY)) {
             return true;
         }
         return false;

@@ -1,11 +1,13 @@
 package indexingTopology.util.shape;
 
+import java.io.Serializable;
+
 /**
  * Line is defined by starting point and ending point on 2D dimension.<br>
  *
  * @author Roman Kushnarenko (sromku@gmail.com)
  */
-public class Line {
+public class Line implements Serializable {
     
     private final Point _start;
     private final Point _end;
