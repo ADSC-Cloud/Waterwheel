@@ -122,6 +122,7 @@ public class QueryCoordinatorWithQueryReceiverServerBolt<T extends Number & Comp
                 boolean eof = false;
                 while(!eof) {
                     PartialQueryResult partialQueryResult = results.take();
+                    System.out.println("!!!!!!!!!!!"+results.size());
                     eof = partialQueryResult.getEOFFlag();
                     objectOutputStream.writeUnshared(new QueryResponse(partialQueryResult, outputSchema, queryid));
                     objectOutputStream.reset();

@@ -485,6 +485,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                 }
 
                 drainer.add(firstDataTuple);
+                System.out.println("-----------------" + inputQueue.size() + "!!!!!!!!!!!!!!!!!-----------------");
                 inputQueue.drainTo(drainer, 256);
 
                 for (DataTuple dataTuple: drainer) {

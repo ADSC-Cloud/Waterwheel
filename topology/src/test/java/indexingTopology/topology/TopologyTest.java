@@ -15,8 +15,14 @@ import indexingTopology.common.logics.DataTupleSorter;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
+import indexingTopology.kafka.InputStreamKafkaReceiverBolt;
+import indexingTopology.kafka.InputStreamKafkaReceiverBoltServer;
 import indexingTopology.util.*;
 import junit.framework.TestCase;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
 import org.apache.storm.generated.KillOptions;
@@ -25,6 +31,7 @@ import org.apache.storm.generated.StormTopology;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
@@ -43,6 +50,9 @@ public class TopologyTest extends TestCase {
     AvailableSocketPool socketPool = new AvailableSocketPool();
 
     LocalCluster cluster;
+
+    Producer<String, String> producer = null;
+    int totalNumber = 0;
 
     boolean setupDone = false;
 
@@ -77,6 +87,154 @@ public class TopologyTest extends TestCase {
             tearDownDone = true;
         }
     }
+
+    @Test
+    public void testKafkaTopologyKeyRangeQuery() throws InterruptedException {
+        DataSchema schema = new DataSchema();
+        schema.addIntField("a1");
+        schema.addDoubleField("a2");
+        schema.addLongField("timestamp");
+        schema.addVarcharField("a4", 100);
+        schema.setPrimaryIndexField("a1");
+//        schema.addIntField("devbtype");
+//        schema.addVarcharField("devstype", 4);
+//        schema.setPrimaryIndexField("devbtype");
+
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
+
+        final int minIndex = 0;
+        final int maxIndex = 100;
+
+        TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
+
+        assertTrue(config != null);
+
+
+        int total = 10;
+        Thread emittingThread;
+        long start = System.currentTimeMillis();
+        System.out.println("Kafka Producer send msg start,total msgs:"+total);
+
+        // set up the producer
+        Properties props = new Properties();
+        props.put("bootstrap.servers", "localhost:9092");
+        props.put("group.id", 0);
+        props.put("acks", "all");
+        props.put("retries", "0");
+        props.put("batch.size", 16384);
+        props.put("auto.commit.interval.ms", "1000");
+        props.put("buffer.memory", 33554432);
+        props.put("key.serializer", StringSerializer.class.getName());
+        props.put("value.serializer", StringSerializer.class.getName());
+        producer = new KafkaProducer<String, String>(props);
+
+//            producer = new KafkaProducer<>(props);
+        emittingThread = new Thread(() -> {
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    for (int i = 0; i < total; i++) {
+                        this.producer.send(new ProducerRecord<String, String>("consumer",
+                                String.valueOf(i), "{\"employees\":[{\"firstName\":\"John\",\"lastName\":\"Doe\"},{\"firstName\":\"Anna\",\"lastName\":\"Smith\"},{\"firstName\":\"Peter\",\"lastName\":\"Jones\"}]}"));
+                        //                        String.format("{\"type\":\"test\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
+
+                        // every so often send to a different topic
+                        //                if (i % 1000 == 0) {
+                        //                    producer.send(new ProducerRecord<String, String>("test", String.format("{\"type\":\"marker\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
+                        //                    producer.send(new ProducerRecord<String, String>("hello", String.format("{\"type\":\"marker\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
+
+                        this.producer.flush();
+                        totalNumber++;
+                        System.out.println("Sent msg number " + i);
+                        //                }
+                    }
+                    //            producer.close();
+                    System.out.println("Kafka Producer send msg over,cost time:" + (System.currentTimeMillis() - start) + "ms");
+                    Thread.sleep(4000);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            }
+        });
+        emittingThread.start();
+
+
+        InputStreamKafkaReceiverBolt inputStreamReceiverBolt = new InputStreamKafkaReceiverBoltServer(schema, ingestionPort, config);
+        QueryCoordinatorBolt<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServerBolt<>(minIndex, maxIndex, queryPort,
+                config, schema);
+
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiverBolt,
+                coordinator, config);
+
+        Config conf = new Config();
+        conf.setDebug(false);
+        conf.setNumWorkers(1);
+
+//        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+//        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+
+
+
+        cluster.submitTopology("testSimpleTopologyKeyRangeQuery", conf, topology);
+
+        final int tuples = 1000;
+
+
+        final QueryClient queryClient = new QueryClient("localhost", queryPort);
+        try {
+            queryClient.connectWithTimeout(50000);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        ExecutorService executorService = Executors.newCachedThreadPool();
+
+
+        boolean fullyExecuted = false;
+
+        // wait for the tuples to be appended.
+        Thread.sleep(2000);
+        Thread.sleep(3000);
+
+        try {
+
+            // full key range query
+            QueryResponse response = queryClient.query(new QueryRequest<>(minIndex, maxIndex, Long.MIN_VALUE, Long.MAX_VALUE));
+            assertEquals(tuples, response.dataTuples.size());
+            System.out.println("success");
+
+            //half key range query
+            response = queryClient.query(new QueryRequest<>(0, 49, Long.MIN_VALUE, Long.MAX_VALUE));
+            assertEquals(tuples/2, response.dataTuples.size());
+
+            //a key range query
+            response =  queryClient.query(new QueryRequest<>(0,0, Long.MIN_VALUE, Long.MAX_VALUE));
+            assertEquals(tuples/100, response.dataTuples.size());
+
+
+            fullyExecuted = true;
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            queryClient.close();
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testSimpleTopologyKeyRangeQuery", killOptions);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        assertTrue(fullyExecuted);
+        assertEquals(totalNumber,inputStreamReceiverBolt.getInvokeNum());
+//        cluster.shutdown();
+        socketPool.returnPort(queryPort);
+    }
+
+
     @Test
     public void testSimpleTopologyKeyRangeQuery() throws InterruptedException {
         DataSchema schema = new DataSchema();

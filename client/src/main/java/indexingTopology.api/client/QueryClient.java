@@ -58,6 +58,7 @@ public class QueryClient extends ClientSkeleton {
                         response = remainingQueryResponse;
                     } else {
                         response.dataTuples.addAll(remainingQueryResponse.dataTuples);
+                        System.out.println("");
                     }
                     eof = remainingQueryResponse.getEOFFlag();
                 } catch (SocketTimeoutException e) {

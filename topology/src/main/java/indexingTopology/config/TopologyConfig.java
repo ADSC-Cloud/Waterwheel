@@ -122,7 +122,7 @@ public class TopologyConfig implements Serializable {
                 this.removeIntervalHours = (Integer)result.get("remove.interval.hours");
 
             if (result.containsKey("old.data.previous.time")) {
-                this.previousTime = (Integer)result.get("olddata.previous.time");
+                this.previousTime = (Integer)result.get("old.data.previous.time");
             }
         } catch (FileNotFoundException e) {
             System.err.println("The configure file " + filePath + " is not found. Use default conf instead.");
