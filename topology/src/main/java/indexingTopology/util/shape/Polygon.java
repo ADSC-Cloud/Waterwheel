@@ -68,6 +68,11 @@ public class Polygon implements Serializable{
             return this;
         }
 
+        public List<Point> getVertex() {
+            validate();
+            return _vertexes;
+        }
+
         /**
          * Close the polygon shape. This will create a new side (edge) from the <b>last</b> vertex point to the <b>first</b> vertex point.
          *

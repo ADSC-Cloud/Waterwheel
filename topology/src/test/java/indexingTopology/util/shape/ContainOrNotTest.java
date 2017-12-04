@@ -16,15 +16,15 @@ public class ContainOrNotTest extends TestCase {
         boolean isRectangle;
         //in
         rectanglePoint = new Point(1, 1);
-        isRectangle = new CheckInRectangle(0, 2, 2, 0).checkIn(rectanglePoint);
+        isRectangle = new CheckInRectangle(new Point(0, 2), new Point (2, 0)).checkIn(rectanglePoint);
         assertEquals(true, isRectangle);
         //out
         rectanglePoint = new Point(0, 3);
-        isRectangle = new CheckInRectangle(0, 2, 2, 0).checkIn(rectanglePoint);
+        isRectangle = new CheckInRectangle(new Point(0, 2), new Point (2, 0)).checkIn(rectanglePoint);
         assertEquals(false, isRectangle);
         //edge
         rectanglePoint = new Point(1, 2);
-        isRectangle = new CheckInRectangle(0, 2, 2, 0).checkIn(rectanglePoint);
+        isRectangle = new CheckInRectangle(new Point(0, 2), new Point (2, 0)).checkIn(rectanglePoint);
         assertEquals(true, isRectangle);
     }
 
