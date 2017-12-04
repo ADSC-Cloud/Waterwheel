@@ -17,10 +17,8 @@ public class GetExtRectangleFromCircle implements GetExtRectangle {
     @Override
     public Point[] getExtRectangle() {
         Point[] points = new Point[2];
-        points[0].x = longitude - radius;
-        points[0].y = latitude + radius;
-        points[1].x = longitude + radius;
-        points[1].y = latitude + radius;
+        points[0] = new Point(longitude - radius, latitude + radius);
+        points[1] = new Point(longitude + radius, latitude - radius);
         return points;
     }
 }
