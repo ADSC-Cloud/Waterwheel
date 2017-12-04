@@ -14,6 +14,7 @@ public class Polygon implements Serializable{
 
     private final BoundingBox _boundingBox;
     private final List<Line> _sides;
+
     private List<Point> points;
 
     private Polygon(List<Line> sides, BoundingBox boundingBox) {
@@ -72,8 +73,6 @@ public class Polygon implements Serializable{
 
             return this;
         }
-
-
 
         /**
          * Close the polygon shape. This will create a new side (edge) from the <b>last</b> vertex point to the <b>first</b> vertex point.

@@ -7,6 +7,7 @@ public class CheckInRectangle implements CheckContain {
 
     private double leftTopX, leftTopY;
     private double rightBottomX, rightBottomY;
+
     public CheckInRectangle(Point leftTop, Point rightBottom) {
         this.leftTopX = leftTop.x;
         this.leftTopY = leftTop.y;
