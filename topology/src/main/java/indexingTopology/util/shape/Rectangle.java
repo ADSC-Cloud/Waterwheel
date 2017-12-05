@@ -1,18 +1,34 @@
 package indexingTopology.util.shape;
 
 /**
- * Create by zelin on 17-11-29
+ * Create by zelin on 17-12-5
  **/
-public class CheckInRectangle implements CheckContain {
+public class Rectangle implements Shape{
 
     private double leftTopX, leftTopY;
     private double rightBottomX, rightBottomY;
 
-    public CheckInRectangle(Point leftTop, Point rightBottom) {
+    public Rectangle(Point leftTop, Point rightBottom) {
         this.leftTopX = leftTop.x;
         this.leftTopY = leftTop.y;
         this.rightBottomX = rightBottom.x;
         this.rightBottomY = rightBottom.y;
+    }
+
+    public double getLeftTopX() {
+        return leftTopX;
+    }
+
+    public double getLeftTopY() {
+        return leftTopY;
+    }
+
+    public double getRightBottomX() {
+        return rightBottomX;
+    }
+
+    public double getRightBottomY() {
+        return rightBottomY;
     }
 
     @Override
@@ -22,5 +38,10 @@ public class CheckInRectangle implements CheckContain {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public Rectangle getExternalRectangle() {
+        return this;
     }
 }

@@ -20,15 +20,14 @@ public class GetExternalRectangleTest extends TestCase{
                 .addVertex(new Point(3, 1))
                 .addVertex(new Point(1, 3))
                 .build();
-        GetExtRectangleFromPolygon getExtRectangleFromPolygon = new GetExtRectangleFromPolygon(polygon);
-        Point[] points = getExtRectangleFromPolygon.getExtRectangle();
-        assertEquals(2, points.length);
+        Rectangle rectangle = polygon.getExternalRectangle();
+        assertEquals(1.0, rectangle.getLeftTopX());
     }
 
     @Test
     public void testGetRectangleFromCircle() {
-        GetExtRectangleFromCircle getExtRectangleFromCircle = new GetExtRectangleFromCircle(1.0, 1.0, 1);
-        Point[] points = getExtRectangleFromCircle.getExtRectangle();
-        assertEquals(2, points.length);
+        Circle circle = new Circle(1, 0, 1);
+        Rectangle rectangle = circle.getExternalRectangle();
+        assertEquals(0.0, rectangle.getLeftTopX());
     }
 }
