@@ -110,16 +110,24 @@ public class KafkaTopology {
         JSONObject jsonObject = JSONObject.fromObject(searchTest);
         ShapeChecking shapeChecking = new ShapeChecking(jsonObject);
         ArrayList arrayList= shapeChecking.split();
+        Point leftTop;
+        Point rightBottom;
         if(shapeChecking.getError() != null){
             System.out.println("Error! ErrorCode :  " + shapeChecking.getError());
             return;
         }
         DataTuplePredicate predicate;
         if(jsonObject.get("type").equals("rectangle")){
-            predicate = t -> new Rectangle(new Point(Double.valueOf(String.valueOf(arrayList.get(0))),(Double.valueOf(String.valueOf(arrayList.get(1))))),new Point((Double.valueOf(String.valueOf(arrayList.get(2)))),(Double.valueOf(String.valueOf(arrayList.get(3)))))).checkIn(new Point((Double)schema.getValue("lon", t),(Double)schema.getValue("lat", t)));
+            Rectangle rectangle = new Rectangle(new Point(Double.valueOf(String.valueOf(arrayList.get(0))),(Double.valueOf(String.valueOf(arrayList.get(1))))),new Point(Double.valueOf(String.valueOf(arrayList.get(2))),(Double.valueOf(String.valueOf(arrayList.get(3))))));
+            predicate = t -> rectangle.checkIn(new Point((Double)schema.getValue("lon", t),(Double)schema.getValue("lat", t)));
+            leftTop = new Point(rectangle.getExternalRectangle().getLeftTopX(), rectangle.getExternalRectangle().getLeftTopY());
+            rightBottom = new Point(rectangle.getExternalRectangle().getRightBottomX(), rectangle.getExternalRectangle().getRightBottomY());
         }
         else if(jsonObject.get("type").equals("circle")){
-            predicate = t -> new Circle((Double.valueOf(String.valueOf(arrayList.get(0)))),(Double.valueOf(String.valueOf(arrayList.get(1)))),(Double.valueOf(String.valueOf(arrayList.get(2))))).checkIn(new Point((Double)schema.getValue("lon", t),(Double)schema.getValue("lat", t)));
+            Circle circle = new Circle((Double.valueOf(String.valueOf(arrayList.get(0)))),(Double.valueOf(String.valueOf(arrayList.get(1)))),(Double.valueOf(String.valueOf(arrayList.get(2)))));
+            predicate = t -> circle.checkIn(new Point((Double)schema.getValue("lon", t),(Double)schema.getValue("lat", t)));
+            leftTop = new Point(circle.getExternalRectangle().getLeftTopX(), circle.getExternalRectangle().getLeftTopY());
+            rightBottom = new Point(circle.getExternalRectangle().getRightBottomX(), circle.getExternalRectangle().getRightBottomY());
         }
         else if(jsonObject.get("type").equals("polygon")){
             Polygon.Builder builder = Polygon.Builder();
@@ -128,6 +136,9 @@ public class KafkaTopology {
             }
             Polygon polygon = builder.build();
             predicate = t -> polygon.checkIn(new Point((Double)schema.getValue("lon", t),(Double)schema.getValue("lat", t)));
+            leftTop = new Point(polygon.getExternalRectangle().getLeftTopX(), polygon.getExternalRectangle().getLeftTopY());
+            rightBottom = new Point(polygon.getExternalRectangle().getRightBottomX(), polygon.getExternalRectangle().getRightBottomY());
+
         }
         else{
             predicate = null;
@@ -149,37 +160,23 @@ public class KafkaTopology {
                     e.printStackTrace();
                     return;
                 }
-                double x = x1 + (x2 - x1) * (1 - selectivityOnOneDimension) * random.nextDouble();
-                double y = y1 + (y2 - y1) * (1 - selectivityOnOneDimension) * random.nextDouble();
-
-                final double xLow = x;
-                final double xHigh = x + selectivityOnOneDimension * (x2 - x1);
-                final double yLow = y;
-                final double yHigh = y + selectivityOnOneDimension * (y2 - y1);
-
-//                DataTuplePredicate predicate = t ->
-//                                 (double) schema.getValue("lon", t) >= xLow &&
-//                                (double) schema.getValue("lon", t) <= xHigh &&
-//                                (double) schema.getValue("lat", t) >= yLow &&
-//                                (double) schema.getValue("lat", t) <= yHigh ;
 
                 final int id = new Random().nextInt(100000);
                 final String idString = "" + id;
-//                DataTuplePredicate predicate = t -> schema.getValue("id", t).equals(Integer.toString(new Random().nextInt(100000)));
-//                DataTuplePredicate predicate = t -> schema.getValue("id", t).equals(idString);
-
-
-
-                Aggregator<Integer> aggregator = new Aggregator<>(schema, "id", new AggregateField(new Count(), "*"));
-//                Aggregator<Integer> aggregator = null;
-
-
-//                DataSchema schemaAfterAggregation = aggregator.getOutputDataSchema();
-//                DataTupleSorter sorter = (DataTuple o1, DataTuple o2) -> Double.compare((double) schemaAfterAggregation.getValue("count(*)", o1),
-//                        (double) schemaAfterAggregation.getValue("count(*)", o2));
-
-
                 DataTupleEquivalentPredicateHint equivalentPredicateHint = new DataTupleEquivalentPredicateHint("id", idString);
+
+
+                double x = x1 + (x2 - x1) * (1 - selectivityOnOneDimension) * random.nextDouble();
+                double y = y1 + (y2 - y1) * (1 - selectivityOnOneDimension) * random.nextDouble();
+
+//                final double xLow = x;
+//                final double xHigh = x + selectivityOnOneDimension * (x2 - x1);
+//                final double yLow = y;
+//                final double yHigh = y + selectivityOnOneDimension * (y2 - y1);
+                final double xLow = leftTop.x;
+                final double xHigh =rightBottom.x;
+                final double yLow = rightBottom.y;
+                final double yHigh =leftTop.y;
 
                 GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
                         System.currentTimeMillis() - RecentSecondsOfInterest * 1000,
@@ -196,7 +193,6 @@ public class KafkaTopology {
                     DataSchema outputSchema = response.getSchema();
                     System.out.println(outputSchema.getFieldNames());
                     System.out.println("datatuples : " + response.dataTuples.size());
-                    System.out.println(xLow + " " + xHigh + " " + yLow +  " " + yHigh);
                     List<DataTuple> tuples = response.getTuples();
                     for (int i = 0; i < tuples.size(); i++) {
                         System.out.println(tuples.get(i).toValues());
@@ -268,7 +264,7 @@ public class KafkaTopology {
 
 
 
-        int total = 10;
+        int total = 100;
         Thread emittingThread;
         long start = System.currentTimeMillis();
         System.out.println("Kafka Producer send msg start,total msgs:"+total);

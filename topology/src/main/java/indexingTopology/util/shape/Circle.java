@@ -1,9 +1,11 @@
 package indexingTopology.util.shape;
 
+import java.io.Serializable;
+
 /**
  * Create by zelin on 17-12-5
  **/
-public class Circle implements Shape{
+public class Circle implements Shape, Serializable{
 
     private double longitude;
     private double latitude;
