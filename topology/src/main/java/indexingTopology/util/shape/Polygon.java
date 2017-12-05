@@ -10,14 +10,20 @@ import java.util.List;
  * @author Roman Kushnarenko (sromku@gmail.com)
  * @see {@link Builder}
  */
-public class Polygon implements Serializable{
+public class Polygon implements Serializable, Shape{
 
     private final BoundingBox _boundingBox;
     private final List<Line> _sides;
 
+    private List<Point> points;
+
     private Polygon(List<Line> sides, BoundingBox boundingBox) {
         _sides = sides;
         _boundingBox = boundingBox;
+    }
+
+    public List<Point> getVertex() {
+        return points;
     }
 
     /**
@@ -27,6 +33,31 @@ public class Polygon implements Serializable{
      */
     public static Builder Builder() {
         return new Builder();
+    }
+
+    @Override
+    public boolean checkIn(Point point) {
+        if (contains(point)) {
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public Rectangle getExternalRectangle() {
+        List<Point> points = getVertex();
+        if (points.size() < 3) {
+            throw new RuntimeException("Polygon must have at least 3 points");
+        }
+        Point leftTop = new Point(points.get(0).x, points.get(0).y);
+        Point rightBottom = new Point(points.get(1).x, points.get(1).y);
+        for (int i = 0; i < points.size() - 1; i++) {
+            leftTop.x = leftTop.x < points.get(i+1).x?leftTop.x:points.get(i+1).x;
+            leftTop.y = leftTop.y > points.get(i+1).y?leftTop.y:points.get(i+1).y;
+            rightBottom.x = rightBottom.x > points.get(i+1).x?rightBottom.x:points.get(i+1).x;
+            rightBottom.y = rightBottom.y < points.get(i+1).y?rightBottom.y:points.get(i+1).y;
+        }
+        return new Rectangle(leftTop, rightBottom);
     }
 
     /**
@@ -98,6 +129,7 @@ public class Polygon implements Serializable{
             }
 
             Polygon polygon = new Polygon(_sides, _boundingBox);
+            polygon.points = _vertexes;
             return polygon;
         }
 
