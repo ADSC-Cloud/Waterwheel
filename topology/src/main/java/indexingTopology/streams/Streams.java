@@ -28,5 +28,7 @@ public class Streams {
     public static final String PartialQueryResultDeliveryStream = "PartialQueryResultDeliveryStream";
     public static final String PartialQueryResultReceivedStream = "PartialQueryResultReceivedStream";
     public static final String LocationInfoUpdateStream = "LocationInfoUpdateStream";
+    public static final String DDLRequestStream = "DDLRequestStream";
+    public static final String DDLResponseStream = "DDLResponseStream";
 }
 

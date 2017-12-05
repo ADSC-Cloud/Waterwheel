@@ -74,7 +74,7 @@ public class KingBaseTopology {
     private String IngestServerIp = "localhost";
 
     @Option(name = "--ingest-rate-limit", aliases = {"-r"}, usage = "max ingestion rate")
-    private int MaxIngestRate = Integer.MAX_VALUE;
+    private int MaxIngestRate = 100;
 
     /**
      * query api configuration
@@ -89,7 +89,7 @@ public class KingBaseTopology {
     private int RecentSecondsOfInterest = 5;
 
     @Option(name = "--queries", usage = "number of queries to perform")
-    private int NumberOfQueries = Integer.MAX_VALUE;
+    private int NumberOfQueries = 10;
 
 
     static final double x1 = 40.012928;
@@ -151,7 +151,7 @@ public class KingBaseTopology {
 
                 GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
                         System.currentTimeMillis() - RecentSecondsOfInterest * 1000,
-                        System.currentTimeMillis(), null, aggregator, null, null);
+                        System.currentTimeMillis(), null, null, null, null,null);
                 long start = System.currentTimeMillis();
                 try {
                     DateFormat dateFormat = new SimpleDateFormat("MM-dd HH:mm:ss");
@@ -243,13 +243,13 @@ public class KingBaseTopology {
                     }
                 } catch (IOException e) {
 //                    if (clientBatchMode.isClosed()) {
-                        try {
-                            System.out.println("try to reconnect....");
-                            clientBatchMode.connectWithTimeout(10000);
-                            System.out.println("connected.");
-                        } catch (IOException e1) {
-                            e1.printStackTrace();
-                        }
+                    try {
+                        System.out.println("try to reconnect....");
+                        clientBatchMode.connectWithTimeout(10000);
+                        System.out.println("connected.");
+                    } catch (IOException e1) {
+                        e1.printStackTrace();
+                    }
 //                    }
                     e.printStackTrace();
                     try {
@@ -339,14 +339,18 @@ public class KingBaseTopology {
         conf.put(Config.WORKER_HEAP_MEMORY_MB, 1024);
         conf.put(Config.STORM_MESSAGING_NETTY_MAX_SLEEP_MS, 1);
 
-        if (LocalMode) {
+        // use ResourceAwareScheduler with some magic configurations to ensure that QueryCoordinator and Sink
+        // are executed on the nimbus node.
+        conf.setTopologyStrategy(org.apache.storm.scheduler.resource.strategies.scheduling.DefaultResourceAwareStrategy.class);
+
+//        if (LocalMode) {
             LocalCluster localCluster = new LocalCluster();
             localCluster.submitTopology(TopologyName, conf, topology);
-        } else {
-            StormSubmitter.submitTopology(TopologyName, conf, topology);
-            System.out.println("Topology is successfully submitted to the cluster!");
-            System.out.println(config.getCriticalSettings());
-        }
+//        } else {
+//            StormSubmitter.submitTopology(TopologyName, conf, topology);
+//            System.out.println("Topology is successfully submitted to the cluster!");
+//            System.out.println(config.getCriticalSettings());
+//        }
     }
 
     public static void main(String[] args) throws InvalidTopologyException, AuthorizationException, AlreadyAliveException {
@@ -367,12 +371,27 @@ public class KingBaseTopology {
             return;
         }
 
-        switch (kingBaseTopology.Mode) {
-            case "submit": kingBaseTopology.submitTopology(); break;
-            case "ingest": kingBaseTopology.executeIngestion(); break;
-            case "query": kingBaseTopology.executeQuery(); break;
-            default: System.out.println("Invalid command!");
-        }
+//        kingBaseTopology.submitTopology();
+//        try {
+//            Thread.sleep(10000);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+//
+//        kingBaseTopology.executeIngestion();
+//        try {
+//            Thread.sleep(10000);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+//
+        kingBaseTopology.executeQuery();
+//        switch (kingBaseTopology.Mode) {
+//            case "submit": kingBaseTopology.submitTopology(); break;
+//            case "ingest": kingBaseTopology.executeIngestion(); break;
+//            case "query": kingBaseTopology.executeQuery(); break;
+//            default: System.out.println("Invalid command!");
+//        }
 //        if (command.equals("submit"))
 //            submitTopology();
 //        else if (command.equals("ingest"))
@@ -388,7 +407,7 @@ public class KingBaseTopology {
         rawSchema.addVarcharField("id", 32);
         rawSchema.addVarcharField("veh_no", 10);
         rawSchema.addDoubleField("lon");
-        rawSchema.addDoubleField("lat");
+        rawSchema.addDoubleField( "lat");
         rawSchema.addIntField("car_status");
         rawSchema.addDoubleField("speed");
         rawSchema.addVarcharField("position_type", 10);

@@ -104,7 +104,7 @@ public class SubqueryHandlerTest extends TestCase {
         writingHandler.writeToFileSystem(bytes, chunkName);
         writingHandler.closeFile();
 
-        SubQueryOnFile subQueryOnFile = new SubQueryOnFile(0L, 0, numTuples, chunkName, 0L, Long.MAX_VALUE, null, null, null);
+        SubQueryOnFile subQueryOnFile = new SubQueryOnFile(0L, 0, numTuples, chunkName, 0L, Long.MAX_VALUE, null, null, null, null);
 
         SubqueryHandler subqueryHandler = new SubqueryHandler(schema, config);
         QueryServerBolt.DebugInfo info = new QueryServerBolt.DebugInfo();
@@ -166,7 +166,7 @@ public class SubqueryHandlerTest extends TestCase {
         writingHandler.writeToFileSystem(bytes, chunkName);
         writingHandler.closeFile();
 
-        SubQueryOnFile subQueryOnFile = new SubQueryOnFile(0L, 0, numTuples, chunkName, 0L, Long.MAX_VALUE, null, null, null);
+        SubQueryOnFile subQueryOnFile = new SubQueryOnFile(0L, 0, numTuples, chunkName, 0L, Long.MAX_VALUE, null, null, null, null);
 
         SubqueryHandler subqueryHandler = new SubqueryHandler(schema, config);
         QueryServerBolt.DebugInfo info = new QueryServerBolt.DebugInfo();

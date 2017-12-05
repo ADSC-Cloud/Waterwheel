@@ -3,15 +3,18 @@ package indexingTopology.bolt;
 import com.google.common.hash.BloomFilter;
 import indexingTopology.bloom.BloomFilterStore;
 import indexingTopology.bloom.DataChunkBloomFilters;
+import indexingTopology.bolt.message.*;
 import indexingTopology.bolt.metrics.LocationInfo;
 import indexingTopology.common.*;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.PartialQueryResult;
 import indexingTopology.common.logics.DataTuplePredicate;
 import indexingTopology.filesystem.HdfsFileSystemHandler;
+import indexingTopology.metadata.ISchemaManager;
 import indexingTopology.metadata.SchemaManager;
 import indexingTopology.metrics.Tags;
 import indexingTopology.metrics.TimeMetrics;
+import indexingTopology.util.AsynchronousTrigger;
 import indexingTopology.util.partition.BalancedPartition;
 import javafx.util.Pair;
 import org.apache.hadoop.fs.BlockLocation;
@@ -47,7 +50,7 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
 
     private FilePartitionSchemaManager filePartitionSchemaManager;
 
-     private Semaphore concurrentQueriesSemaphore;
+    private Semaphore concurrentQueriesSemaphore;
 
     private static final int MAX_NUMBER_OF_CONCURRENT_QUERIES = 1;
 
@@ -105,6 +108,23 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
 
     protected SchemaManager schemaManager;
 
+    protected ISchemaManager schemaManagerInterface;
+
+    private AsynchronousTrigger trigger;
+
+    class SchemaManagerImplementation implements ISchemaManager {
+
+        @Override
+        public boolean createSchema(String name, DataSchema schema) {
+            return createSchemaImplementation(name, schema);
+        }
+
+        @Override
+        public DataSchema getSchema(String name) {
+            return getSchemaImplementation(name);
+        }
+    }
+
     public QueryCoordinatorBolt(T lowerBound, T upperBound, TopologyConfig config, DataSchema schema) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
@@ -115,8 +135,11 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
 
-
         collector = outputCollector;
+
+        trigger = new AsynchronousTrigger();
+
+        schemaManagerInterface = new SchemaManagerImplementation();
 
         bloomFilterStore = new BloomFilterStore(config);
 
@@ -167,8 +190,6 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
 
         createQueryHandlingThread();
 
-        schemaManager = new SchemaManager();
-        schemaManager.setDefaultSchema(schema);
     }
 
     @Override
@@ -292,10 +313,69 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
                     break;
             }
             // TODO: handle location update logic, e.g., update a location from a value to a different value.
+        } else if (tuple.getSourceStreamId().equals(Streams.DDLResponseStream)) {
+            AsyncResponseMessage response = (AsyncResponseMessage)tuple.getValue(0);
+            trigger.triggerFunction(response.id, response);
         }
     }
 
     public abstract void handlePartialQueryResult(Long queryId, PartialQueryResult partialQueryResult);
+
+    private DataSchema getSchemaImplementation(String name) {
+        AsyncSchemaQueryRequest request = new AsyncSchemaQueryRequest(name);
+        class QueryResult {
+            public Semaphore semaphore = new Semaphore(0);
+            public DataSchema schema = null;
+        }
+        final QueryResult queryResult = new QueryResult();
+
+        request.id = trigger.addFunction((r) -> {
+            AsyncSchemaQueryResponse response = (AsyncSchemaQueryResponse) r;
+            queryResult.schema = response.schema;
+            queryResult.semaphore.release();
+            return null;
+        });
+
+        collector.emit(Streams.DDLRequestStream, new Values(request));
+
+        try {
+            queryResult.semaphore.acquire();
+            return queryResult.schema;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private boolean createSchemaImplementation(String name, DataSchema schema) {
+        AsyncSchemaCreateRequest request = new AsyncSchemaCreateRequest(name, schema);
+        // TODO: outputCollector may not be thread-safe.
+        class QueryResult {
+            Semaphore semaphore = new Semaphore(0);
+            Boolean succefull;
+        }
+//        final Semaphore semaphore = new Semaphore(0);
+        final QueryResult result = new QueryResult();
+
+        long id = trigger.addFunction((r) ->{
+            AsyncSchemaCreateResponse response = (AsyncSchemaCreateResponse)r;
+            result.succefull = response.isSuccessful;
+            result.semaphore.release();
+            return null;});
+
+        request.id = id;
+
+        collector.emit(Streams.DDLRequestStream, new Values(request));
+
+        try {
+            result.semaphore.acquire();
+            return result.succefull;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            return false;
+        }
+
+    }
 
     private boolean isPartitionDeletable() {
         Map<Integer, Integer> staleIntervalIdToPartitionIdMapping = balancedPartitionToBeDeleted.getIntervalToPartitionMapping();
@@ -333,6 +413,8 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
         outputFieldsDeclarer.declareStream(Streams.EnableRepartitionStream, new Fields("Repartition"));
 
         outputFieldsDeclarer.declareStream(Streams.PartialQueryResultReceivedStream, new Fields("queryId"));
+
+        outputFieldsDeclarer.declareStream(Streams.DDLRequestStream, new Fields("request"));
     }
 
     @Override
@@ -395,7 +477,7 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
 
                 if (!prunedByBloomFilter) {
                     subQueries.add(new SubQueryOnFile<>(queryId, leftKey, rightKey, chunkName, startTimestamp, endTimestamp,
-                            query.predicate, query.aggregator, query.sorter));
+                            query.predicate, query.postPredicate, query.aggregator, query.sorter));
                 } else {
                     prunedCount ++;
                 }
@@ -487,7 +569,7 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
                     DataTuplePredicate finalAdditionalPredicate1 = additionalPredicate;
                     additionalPredicate = t -> finalAdditionalPredicate1.test(t) ||
                             (currentQuery.leftKey.compareTo((T)localSchema.getIndexValue(t)) <= 0 &&
-                            currentQuery.rightKey.compareTo((T)localSchema.getIndexValue(t)) >= 0);
+                                    currentQuery.rightKey.compareTo((T)localSchema.getIndexValue(t)) >= 0);
                 }
                 DataTuplePredicate finalAdditionalPredicate = additionalPredicate;
                 DataTuplePredicate finalPredicate = predicate;
@@ -496,7 +578,7 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
 
                 SubQueryOnFile<T> subQuery = new SubQueryOnFile<>(firstQuery.queryId, leftMost,
                         rightMost, firstQuery.getFileName(), firstQuery.startTimestamp,
-                        firstQuery.endTimestamp, composedPredicate, firstQuery.aggregator,
+                        firstQuery.endTimestamp, composedPredicate, firstQuery.postPredicate, firstQuery.aggregator,
                         firstQuery.sorter);
                 ret.add(subQuery);
             }
@@ -535,7 +617,7 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
                 DataTuplePredicate composedPredicate = t -> finalPredicate.test(t) && finalAddtionalPredicate.test(t);
 
                 SubQuery<T> subquery = new SubQuery<T>(first.queryId,leftmostKey, rightmostKey, first.startTimestamp,
-                        first.endTimestamp, composedPredicate, first.aggregator, first.sorter);
+                        first.endTimestamp, composedPredicate, first.postPredicate, first.aggregator, first.sorter);
                 insertionServerIdToCompactedSubquery.put(id, subquery);
             }
         });
@@ -608,7 +690,7 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
                 Long timestamp = indexTaskToTimestampMapping.get(taskId);
                 if ((timestamp <= endTimestamp && timestamp >= startTimestamp) || (timestamp <= startTimestamp)) {
                     SubQuery<T> subQuery = new SubQuery<>(query.getQueryId(), query.leftKey, query.rightKey, query.startTimestamp,
-                            query.endTimestamp, query.predicate, query.aggregator, query.sorter);
+                            query.endTimestamp, query.predicate, query.postPredicate, query.aggregator, query.sorter);
                     List<SubQuery<T>> subQueries = insertionSeverIdToSubqueries.computeIfAbsent(taskId, t ->new ArrayList<>());
                     subQueries.add(subQuery);
 //                    collector.emitDirect(taskId, Streams.BPlusTreeQueryStream, new Values(subQuery));
@@ -768,7 +850,7 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
 
         for(int i = 0; i < taskIds.size(); i++) {
             PriorityBlockingQueue<SubQueryOnFileWithPriority> taskQueue = taskIdToTaskQueue.get(taskIds.get(i));
-                taskQueue.put(new SubQueryOnFileWithPriority(subQuery,i));
+            taskQueue.put(new SubQueryOnFileWithPriority(subQuery,i));
         }
     }
 
@@ -833,8 +915,8 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
             unprocessedSubqueries.remove(subQuery.getFileName());
             collector.emitDirect(taskId, Streams.FileSystemQueryStream
                     , new Values(subQuery, tags));
-            System.out.println(String.format("subquery %d is sent to %s for %s", subQuery.queryId,
-                    chunkServerIdToLocation.get(taskId), subQuery.getFileName()));
+//            System.out.println(String.format("subquery %d is sent to %s for %s", subQuery.queryId,
+//                    chunkServerIdToLocation.get(taskId), subQuery.getFileName()));
         }
 
     }

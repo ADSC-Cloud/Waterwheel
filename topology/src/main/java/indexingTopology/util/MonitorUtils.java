@@ -52,7 +52,8 @@ public class MonitorUtils {
         while (true) {
             Thread.sleep(1000);
             System.out.println(getProcessCpuLoad());
-            System.out.println(getFreeDiskSpaceInGB("/home/robert") + "GB");
+            System.out.println(getFreeDiskSpaceInGB(null) + "GB");
+            System.out.println(getTotalDiskSpaceInGB(null) + "GB");
         }
     }
 }

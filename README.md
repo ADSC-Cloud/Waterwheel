@@ -37,7 +37,7 @@ To run our system in local mode, you should follow those steps:
 $ git clone https://github.com/ADSC-Cloud/Waterwheel
 ```
 
-2. Compile the source code
+2. Compile the source codeF
 
  ```
  $ mvn clean install -DskipTests

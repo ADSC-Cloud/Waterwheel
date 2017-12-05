@@ -151,11 +151,11 @@ public class ResultMergerBolt extends BaseRichBolt {
 
     private boolean isQueryFinished(Long queryId) {
 
-        System.out.println(String.format("query: %d, numberOfFilesToScan: %s -> %s, B+ tree to scan: %s, Count: %s", queryId,
-                queryIdToNumberOfFilesToScan.get(queryId),
-                queryIdToNumberOfQueriesOnFileFinished.get(queryId),
-                queryIdToNumberOfTasksToSearch.get(queryId),
-                queryIdToCounter.get(queryId)));
+//        System.out.println(String.format("query: %d, numberOfFilesToScan: %s -> %s, B+ tree to scan: %s, Count: %s", queryId,
+//                queryIdToNumberOfFilesToScan.get(queryId),
+//                queryIdToNumberOfQueriesOnFileFinished.get(queryId),
+//                queryIdToNumberOfTasksToSearch.get(queryId),
+//                queryIdToCounter.get(queryId)));
         if (queryIdToNumberOfFilesToScan.get(queryId) != null &&
                 queryIdToNumberOfTasksToSearch.get(queryId) != null) {
             int numberOfFilesToScan = queryIdToNumberOfFilesToScan.get(queryId);
@@ -223,7 +223,6 @@ public class ResultMergerBolt extends BaseRichBolt {
         PartialQueryResult allResults = new PartialQueryResult(Integer.MAX_VALUE);
 
         List<PartialQueryResult> compactedResults = null;
-
         // perform aggregation if applicable.
         if (subQuery.getAggregator() != null) {
             Aggregator globalAggregator = subQuery.getAggregator().generateGlobalAggregator();
@@ -240,6 +239,8 @@ public class ResultMergerBolt extends BaseRichBolt {
 //            System.out.println("Sort is applied!! ##########");
         }
 
+
+
         // compact results into groups with bounded size.
         compactedResults = PartialQueryResult.Compact(allResults, unitSize);
 
@@ -253,7 +254,7 @@ public class ResultMergerBolt extends BaseRichBolt {
 
     private void sendNewQueryPermit(Long queryId) {
         collector.emit(Streams.QueryFinishedStream, new Values(queryId, "New query can be executed",
-                        null, 0));
+                null, 0));
     }
 
     private void removeQueryIdFromMappings(Long queryId) {

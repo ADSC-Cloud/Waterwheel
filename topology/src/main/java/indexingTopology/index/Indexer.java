@@ -390,12 +390,12 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
                         fileName = "taskId" + taskId + "chunk" + chunkId;
                         long start = System.currentTimeMillis();
-                        System.out.println("Before writing into HDFS ###");
+//                        System.out.println("Before writing into HDFS ###");
                         writingHandler.openFile(fileName);
                         writingHandler.writeToFileSystem(bytes, fileName);
                         writingHandler.closeFile();
-                        System.out.println(String.format("File %s is written in %d ms. ###", fileName,
-                                System.currentTimeMillis() - start));
+//                        System.out.println(String.format("File %s is written in %d ms. ###", fileName,
+//                                System.currentTimeMillis() - start));
 
                         if (config.HybridStorage && config.HDFSFlag) {
                             LocalWritingHandler localWritingHandler = new LocalWritingHandler(config.dataChunkDir, false);
@@ -404,8 +404,8 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                             localWritingHandler.writeToFileSystem(bytes, fileName);
                             localWritingHandler.closeFile();
 //                            localFileSystemHandler.writeToFileSystem(chunk, "/", fileName);
-                            System.out.println(String.format("File %s is written to the disk cache in %d ms", fileName,
-                                    System.currentTimeMillis() - start));
+//                            System.out.println(String.format("File %s is written to the disk cache in %d ms", fileName,
+//                                    System.currentTimeMillis() - start));
                             System.out.println(fileName + " is written locally.");
                         }
 
@@ -485,7 +485,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                 }
 
                 drainer.add(firstDataTuple);
-                System.out.println("-----------------" + inputQueue.size() + "!!!!!!!!!!!!!!!!!-----------------");
+//                System.out.println("-----------------" + inputQueue.size() + "!!!!!!!!!!!!!!!!!-----------------");
                 inputQueue.drainTo(drainer, 256);
 
                 for (DataTuple dataTuple: drainer) {

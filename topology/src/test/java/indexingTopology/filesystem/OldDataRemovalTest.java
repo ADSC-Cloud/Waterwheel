@@ -1,6 +1,7 @@
 package indexingTopology.filesystem;
 
 import indexingTopology.bolt.MetadataServerBolt;
+import indexingTopology.common.data.DataSchema;
 import indexingTopology.config.TopologyConfig;
 import org.junit.Test;
 
@@ -45,14 +46,16 @@ public class OldDataRemovalTest {
             }
         }
         else{
-            System.out.println("Can not find Files");
+            System.out.println("Can not find Folders");
         }
     }
 
-
+    // Make sure that the file path add the "../"
+    // The path is different from the MetadataServerbolt relative path
     @Test
     public void Localremove() throws Exception {
-        MetadataServerBolt metadataServerBolt = new MetadataServerBolt(0,10000,new TopologyConfig());
+        DataSchema schema = new DataSchema();
+        MetadataServerBolt metadataServerBolt = new MetadataServerBolt(0,10000,schema,new TopologyConfig());
         metadataServerBolt.startTimer(100,100);
     }
 

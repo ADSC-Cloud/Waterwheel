@@ -81,16 +81,16 @@ public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends Bas
     }
 
     static class TaggedSubQueryOnFile<T extends Number> {
-         public SubQueryOnFile<T> subquery;
-         public Tags tags;
-         public TaggedSubQueryOnFile(SubQueryOnFile<T> subquery, Tags tags) {
-             this.subquery = subquery;
-             this.tags = tags;
-         }
+        public SubQueryOnFile<T> subquery;
+        public Tags tags;
+        public TaggedSubQueryOnFile(SubQueryOnFile<T> subquery, Tags tags) {
+            this.subquery = subquery;
+            this.tags = tags;
+        }
 
-         public TaggedSubQueryOnFile(SubQueryOnFile<T> subquery) {
-             this(subquery, null);
-         }
+        public TaggedSubQueryOnFile(SubQueryOnFile<T> subquery) {
+            this(subquery, null);
+        }
     }
 
     TopologyConfig config;
@@ -176,7 +176,7 @@ public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends Bas
                 System.out.println(String.format("Debug info: %s", debugInfo.runningPosition));
             }
         });
-        debugThread.start();
+//        debugThread.start();
 
         try {
             hdfsFileSystemHandler = new HdfsFileSystemHandler(config.dataChunkDir, config);
@@ -223,7 +223,7 @@ public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends Bas
 
 //                        System.out.println("sub query " + subQuery.getQueryId() + " has been taken from queue");
 
-                        System.out.println("$$$ to process a subquery on " + taggedSubQuery.subquery.getFileName() + " for " + taggedSubQuery.subquery.queryId);
+//                        System.out.println("$$$ to process a subquery on " + taggedSubQuery.subquery.getFileName() + " for " + taggedSubQuery.subquery.queryId);
                         if (config.ChunkOrientedCaching) {
                             List<byte[]> tuples = subqueryHandler.handleSubquery(taggedSubQuery.subquery, debugInfo);
 
@@ -235,7 +235,7 @@ public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends Bas
                         } else {
                             handleSubQuery(taggedSubQuery.subquery, taggedSubQuery.tags);
                         }
-                        System.out.println("$$$ processed a subquery on " + taggedSubQuery.subquery.getFileName() + " for " + taggedSubQuery.subquery.queryId);
+//                        System.out.println("$$$ processed a subquery on " + taggedSubQuery.subquery.getFileName() + " for " + taggedSubQuery.subquery.queryId);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         System.out.println("subqueryHandlding thread is interrupted.");
@@ -265,7 +265,7 @@ public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends Bas
         super.cleanup();
         subQueryHandlingThread.interrupt();
         locationReportingThread.interrupt();
-        debugThread.interrupt();
+//        debugThread.interrupt();
     }
 
     @SuppressWarnings("unchecked")
@@ -278,7 +278,7 @@ public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends Bas
         metrics.setTag("location", InetAddress.getLocalHost().getHostName());
         metrics.setTag("chunk", subQuery.getFileName());
         debugInfo.runningPosition = "breakpoint 1";
-            FileSystemHandler fileSystemHandler = null;
+        FileSystemHandler fileSystemHandler = null;
         try {
 //            System.out.println(String.format("chunk name %s is being executed !!!", subQuery.getFileName()));
 
@@ -424,10 +424,9 @@ public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends Bas
             }
             metrics.endEvent("aggregate");
 
-
+            filterByPredicate(dataTuplesInKeyRange, subQuery.getPostPredicate());
+//            dataTuplesInKeyRange.get(0).get(4);
 //            aggregationTime += System.currentTimeMillis() - startTime;
-
-
 
             debugInfo.runningPosition = "breakpoint 11";
 
@@ -438,6 +437,7 @@ public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends Bas
             metrics.startEvent("serialize");
             if (subQuery.getAggregator() != null) {
                 DataSchema outputSchema = subQuery.getAggregator().getOutputDataSchema();
+
                 dataTuplesInKeyRange.stream().forEach(p -> serializedDataTuples.add(outputSchema.serializeTuple(p)));
             } else {fileSystemHandler.closeFile();
                 dataTuplesInKeyRange.stream().forEach(p -> serializedDataTuples.add(schema.serializeTuple(p)));

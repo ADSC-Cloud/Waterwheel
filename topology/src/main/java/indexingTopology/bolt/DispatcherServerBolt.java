@@ -113,8 +113,8 @@ public class DispatcherServerBolt<IndexType extends Number> extends BaseRichBolt
         } else if (tuple.getSourceStreamId().equals(Streams.StaticsRequestStream)){
             final Histogram histogram = new Histogram(balancedPartition.getIntervalDistribution().getHistogram(), config.NUMBER_OF_INTERVALS);
             double CPUload = MonitorUtils.getProcessCpuLoad();
-            double freeDiskSpace = MonitorUtils.getFreeDiskSpaceInGB(config.dataChunkDir);
-            double totalDiskSpace = MonitorUtils.getTotalDiskSpaceInGB(config.dataChunkDir);
+            double freeDiskSpace = MonitorUtils.getFreeDiskSpaceInGB(config.HDFSFlag ? null: config.dataChunkDir);
+            double totalDiskSpace = MonitorUtils.getTotalDiskSpaceInGB(config.HDFSFlag ? null: config.dataChunkDir);
 
 
             PerNodeMetrics perNodeMetrics = new PerNodeMetrics(histogram, CPUload, totalDiskSpace, freeDiskSpace);

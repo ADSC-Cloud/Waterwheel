@@ -5,15 +5,17 @@ import com.esotericsoftware.kryo.io.Output;
 import indexingTopology.api.server.Server;
 import indexingTopology.api.server.SystemStateQueryHandle;
 import indexingTopology.bloom.DataChunkBloomFilters;
+import indexingTopology.bolt.message.*;
 import indexingTopology.bolt.metrics.LocationInfo;
 import indexingTopology.common.Histogram;
 import indexingTopology.common.KeyDomain;
 import indexingTopology.common.SystemState;
 import indexingTopology.common.TimeDomain;
+import indexingTopology.common.data.DataSchema;
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.filesystem.FileSystemHandler;
 import indexingTopology.filesystem.HdfsFileSystemHandler;
 import indexingTopology.filesystem.LocalFileSystemHandler;
+import indexingTopology.metadata.SchemaManager;
 import indexingTopology.metrics.PerNodeMetrics;
 import indexingTopology.util.*;
 import indexingTopology.util.partition.BalancedPartition;
@@ -108,14 +110,23 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
     private int removeHours;
 
-    public MetadataServerBolt(Key lowerBound, Key upperBound, TopologyConfig config) {
+    private SchemaManager schemaManager;
+
+    private DataSchema defaultSchema;
+
+    public MetadataServerBolt(Key lowerBound, Key upperBound, DataSchema defaultSchema, TopologyConfig config) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
         this.config = config;
+        this.defaultSchema = defaultSchema;
     }
 
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
+
+        schemaManager = new SchemaManager();
+        schemaManager.setDefaultSchema(defaultSchema);
+
         collector = outputCollector;
 
         initializeMetadataFolder();
@@ -158,10 +169,10 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 //            e.printStackTrace();
 //        }
 
+
         CPUloads = Collections.synchronizedList(new ArrayList<Double>());
         totalDiskSpaces = Collections.synchronizedList(new ArrayList<>());
         freeDiskSpaces = Collections.synchronizedList(new ArrayList<>());
-
 
         systemState = new SystemState();
         staticsRequestSendingThread = new Thread(new StatisticsRequestSendingRunnable());
@@ -360,6 +371,20 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
             // simply forward the info
             collector.emit(Streams.LocationInfoUpdateStream, new Values(info));
+        } else if (tuple.getSourceStreamId().equals(Streams.DDLRequestStream)) {
+            AsyncRequestMessage request = (AsyncRequestMessage)tuple.getValue(0);
+            AsyncResponseMessage response = null;
+            if (request instanceof AsyncSchemaCreateRequest) {
+                final String name = ((AsyncSchemaCreateRequest) request).name;
+                final DataSchema schema = ((AsyncSchemaCreateRequest) request).schema;
+                boolean isSuccessful = schemaManager.createSchema(name, schema);
+                response = new AsyncSchemaCreateResponse(name, isSuccessful, request.id);
+            } else if (request instanceof AsyncSchemaQueryRequest) {
+                final String name = ((AsyncSchemaQueryRequest) request).name;
+                DataSchema schema = schemaManager.getSchema(name);
+                response = new AsyncSchemaQueryResponse(name, schema, request.id);
+            }
+            collector.emit(Streams.DDLResponseStream, new Values(response));
         }
     }
 
@@ -389,6 +414,8 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
         outputFieldsDeclarer.declareStream(Streams.LoadBalanceStream, new Fields("loadBalance"));
 
         outputFieldsDeclarer.declareStream(Streams.LocationInfoUpdateStream, new Fields("info"));
+
+        outputFieldsDeclarer.declareStream(Streams.DDLResponseStream, new Fields("response"));
     }
 
     @Override
@@ -566,8 +593,8 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
                 if (config.HDFSFlag == false) {
                     // Local FileSystem
                     LocalFileSystemHandler localFileSystemHandler = new LocalFileSystemHandler("../", config);
-                    File folderOfData = new File("../data");
-                    File folderOfMetaData = new File("../metadata");
+                    File folderOfData = new File("data");
+                    File folderOfMetaData = new File("metadata");
                     searchLocalOldData(folderOfData,localFileSystemHandler,removeHours);
                     searchLocalOldData(folderOfMetaData,localFileSystemHandler,removeHours);
                 }
@@ -604,7 +631,7 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
     }
 
     public void searchLocalOldData(File folder,LocalFileSystemHandler localFileSystemHandler,int removeHours){
-//        System.out.println(folder);
+        System.out.println(folder);
         if (folder.exists()) {
             File[] files = folder.listFiles();
             if (files.length == 0) {
@@ -632,7 +659,7 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
             }
         }
         else{
-            System.out.println("---------------- Can not find Files !! ----------------");
+            System.out.println("---------------- Can not find Folders !! ----------------");
         }
     }
 
@@ -669,8 +696,10 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
         @Override
         public void run() {
+
 //            while (true) {
             systemState.setLastThroughput(new double[SystemState.NumberOfHistoricThroughputs]);
+
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     Thread.sleep(TopologyConfig.StaticRequestTimeIntervalInSeconds * 1000);
@@ -698,6 +727,7 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
                 collector.emit(Streams.StaticsRequestStream,
                         new Values("Statics Request"));
+
             }
         }
 

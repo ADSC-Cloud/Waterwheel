@@ -1,6 +1,11 @@
 package indexingTopology.common.data;
 
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 import org.junit.Test;
+
+import java.io.FileNotFoundException;
+import java.util.List;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
@@ -85,4 +90,32 @@ public class DataSchemaTest {
         assertEquals("[f1, f2]", schema.getFieldNames().toString());
         assertEquals(schema.getIndexField(),"f2");
     }
+
+    @Test
+    public void getTuplesFromJsonTest() throws FileNotFoundException {
+        DataSchema schema = new DataSchema();
+        schema.addVarcharField("2" ,3);
+        schema.addVarcharField("1", 3);
+        schema.addVarcharField("date", 15);
+        String jsonStr = "{\"result\":[{\"2\":\"efg\",\"1\":null,\"date\":\"2017-12-01 10:40:00\"},{\"2\":\"efg\",\"1\":null,\"date\":\"2017-12-01 10:40:00\"}]}";
+        JSONObject jsonObject = JSONObject.fromObject(jsonStr);
+        JSONArray array = jsonObject.getJSONArray("result");
+        List<DataTuple> list =  schema.getTuplesFromJsonArray(array);
+        assertEquals(2, list.size());
+    }
+
+    @Test
+    public void getTupleFromJsonAndJsonFromTupleTest() throws FileNotFoundException {
+        DataSchema schema = new DataSchema();
+        schema.addVarcharField("2" ,3);
+        schema.addVarcharField("1", 3);
+        schema.addVarcharField("date", 15);
+        String jsonStr = "{\"2\":\"efg\",\"1\":null,\"date\":\"2017-12-01 10:40:00\"}";
+        JSONObject jsonObject = JSONObject.fromObject(jsonStr);
+        DataTuple tuple = schema.getTupleFromJsonObject(jsonObject);
+        assertEquals("efg",tuple.get(0));
+        jsonObject = schema.getJsonFromDataTuple(tuple);
+        assertEquals("efg", jsonObject.get("2"));
+    }
+
 }

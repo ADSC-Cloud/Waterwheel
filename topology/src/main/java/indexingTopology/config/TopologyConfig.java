@@ -13,6 +13,7 @@ public class TopologyConfig implements Serializable {
 
     public String metadataDir = "metadata";
 
+
 //    public String HDFS_HOST = "hdfs://192.168.0.237:54310/";
     public String HDFS_HOST = "hdfs://127.0.0.1:54310/";
 
