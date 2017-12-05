@@ -14,17 +14,18 @@ public class ContainOrNotTest extends TestCase {
     public void testRectangleContain() throws Exception {
         Point rectanglePoint;
         boolean isRectangle;
+        Rectangle rectangle = new Rectangle(new Point(0, 2), new Point (2, 0));
         //in
         rectanglePoint = new Point(1, 1);
-        isRectangle = new CheckInRectangle(0, 2, 2, 0).checkIn(rectanglePoint);
+        isRectangle = rectangle.checkIn(rectanglePoint);
         assertEquals(true, isRectangle);
         //out
         rectanglePoint = new Point(0, 3);
-        isRectangle = new CheckInRectangle(0, 2, 2, 0).checkIn(rectanglePoint);
+        isRectangle = rectangle.checkIn(rectanglePoint);
         assertEquals(false, isRectangle);
         //edge
         rectanglePoint = new Point(1, 2);
-        isRectangle = new CheckInRectangle(0, 2, 2, 0).checkIn(rectanglePoint);
+        isRectangle = rectangle.checkIn(rectanglePoint);
         assertEquals(true, isRectangle);
     }
 
@@ -32,17 +33,18 @@ public class ContainOrNotTest extends TestCase {
     public void testCircleContain() {
         Point circlePoint;
         boolean isCircle;
+        Circle circle = new Circle(1, 0, 1);
         //in
         circlePoint = new Point(1, 0);
-        isCircle = new CheckInCircle(1, 0, 1).checkIn(circlePoint);
+        isCircle = circle.checkIn(circlePoint);
         assertEquals(true, isCircle);
         //out
         circlePoint = new Point(1, 2);
-        isCircle = new CheckInCircle(1, 0, 1).checkIn(circlePoint);
+        isCircle = circle.checkIn(circlePoint);
         assertEquals(false, isCircle);
         //edge
         circlePoint = new Point(1, 1);
-        isCircle = new CheckInCircle(1, 0, 1).checkIn(circlePoint);
+        isCircle = circle.checkIn(circlePoint);
         assertEquals(true, isCircle);
     }
 
@@ -63,15 +65,15 @@ public class ContainOrNotTest extends TestCase {
         boolean isPolygon;
         //in
         polygonPoint  = new Point(1,3);
-        isPolygon = new CheckInPolygon(polygon).checkIn(polygonPoint);
+        isPolygon = polygon.checkIn(polygonPoint);
         assertEquals(true, isPolygon);
         //out
         polygonPoint  = new Point(0,0);
-        isPolygon = new CheckInPolygon(polygon).checkIn(polygonPoint);
+        isPolygon = polygon.checkIn(polygonPoint);
         assertEquals(false, isPolygon);
         //edge
         polygonPoint  = new Point(2,2);
-        isPolygon = new CheckInPolygon(polygon).checkIn(polygonPoint);
+        isPolygon = polygon.checkIn(polygonPoint);
         assertEquals(true, isPolygon);
     }
 }
