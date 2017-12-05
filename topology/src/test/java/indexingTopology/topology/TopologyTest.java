@@ -1,14 +1,8 @@
 package indexingTopology.topology;
 
-import indexingTopology.bolt.QueryCoordinatorWithQueryReceiverServerBolt;
+import indexingTopology.api.client.*;
+import indexingTopology.bolt.*;
 import indexingTopology.common.aggregator.*;
-import indexingTopology.api.client.IngestionClientBatchMode;
-import indexingTopology.api.client.QueryClient;
-import indexingTopology.api.client.QueryRequest;
-import indexingTopology.api.client.QueryResponse;
-import indexingTopology.bolt.InputStreamReceiverBolt;
-import indexingTopology.bolt.InputStreamReceiverBoltServer;
-import indexingTopology.bolt.QueryCoordinatorBolt;
 import indexingTopology.common.logics.DataTupleEquivalentPredicateHint;
 import indexingTopology.common.logics.DataTupleMapper;
 import indexingTopology.common.logics.DataTuplePredicate;
@@ -16,9 +10,13 @@ import indexingTopology.common.logics.DataTupleSorter;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
+import indexingTopology.kafka.FakeKafkaReceiverBolt;
 import indexingTopology.kafka.InputStreamKafkaReceiverBolt;
 import indexingTopology.kafka.InputStreamKafkaReceiverBoltServer;
 import indexingTopology.util.*;
+import indexingTopology.util.shape.CheckInRectangle;
+import indexingTopology.util.shape.Point;
+import indexingTopology.util.taxi.City;
 import junit.framework.TestCase;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
@@ -92,18 +90,41 @@ public class TopologyTest extends TestCase {
 
     @Test
     public void testKafkaTopologyKeyRangeQuery() throws InterruptedException {
+        DataSchema rawSchema = new DataSchema();
+        rawSchema.addDoubleField("lon");
+        rawSchema.addDoubleField("lat");
+        rawSchema.addIntField("devbtype");
+        rawSchema.addVarcharField("devid", 8);
+        rawSchema.addVarcharField("id", 32);
+
         DataSchema schema = new DataSchema();
-        schema.addIntField("2");
-        schema.addVarcharField("1", 3);
+        schema.addDoubleField("lon");
+        schema.addDoubleField("lat");
+        schema.addIntField("devbtype");
+        schema.addVarcharField("devid", 8);
+        schema.addVarcharField("id", 32);
+        schema.addIntField("zcode");
         schema.addLongField("timestamp");
+        schema.setPrimaryIndexField("zcode");
+//        schema.addIntField("2");
+//        schema.addVarcharField("1", 3);
+//        schema.addLongField("timestamp");
 //        schema.addVarcharField("a4", 100);
-        schema.setPrimaryIndexField("2");
+//        schema.setPrimaryIndexField("2");
 //        schema.addIntField("devbtype");
 //        schema.addVarcharField("devstype", 4);
 //        schema.setPrimaryIndexField("devbtype");
 
         int ingestionPort = socketPool.getAvailablePort();
         int queryPort = socketPool.getAvailablePort();
+        double x1 = 80.012928;
+        double x2 = 90.023983;
+        double y1 = 70.292677;
+        double y2 = 80.614865;
+        int partitions = 128;
+        City city = new City(x1, x2, y1, y2, partitions);
+        Integer lowerBound = 0;
+        Integer upperBound = 5000;
 
         final int minIndex = 0;
         final int maxIndex = 99999;
@@ -113,86 +134,115 @@ public class TopologyTest extends TestCase {
         assertTrue(config != null);
 
 
-        int total = 10;
+        int total = 100;
         Thread emittingThread;
         long start = System.currentTimeMillis();
         System.out.println("Kafka Producer send msg start,total msgs:"+total);
 
         // set up the producer
-        Properties props = new Properties();
-        props.put("bootstrap.servers", "localhost:9092");
-        props.put("group.id", 0);
-        props.put("acks", "all");
-        props.put("retries", "0");
-        props.put("batch.size", 16384);
-        props.put("auto.commit.interval.ms", "1000");
-        props.put("buffer.memory", 33554432);
-        props.put("key.serializer", StringSerializer.class.getName());
-        props.put("value.serializer", StringSerializer.class.getName());
-        producer = new KafkaProducer<String, String>(props);
-
-//            producer = new KafkaProducer<>(props);
-        emittingThread = new Thread(() -> {
-            while (!Thread.currentThread().isInterrupted()) {
-                try {
-                    for (int i = 0; i < total; i++) {
-                        totalNumber++;
-//                       "{"2":3,"1":"asd","timestamp":10086}"
-                        this.producer.send(new ProducerRecord<String, String>("consumer",
-                                String.valueOf(i),
-                                "{\"2\":"+ totalNumber +",\"1\":\"asd\",\"timestamp\":10086}"));
+//        Properties props = new Properties();
+//        props.put("bootstrap.servers", "localhost:9092");
+//        props.put("group.id", 0);
+//        props.put("acks", "all");
+//        props.put("retries", "0");
+//        props.put("batch.size", 16384);
+//        props.put("auto.commit.interval.ms", "1000");
+//        props.put("buffer.memory", 33554432);
+//        props.put("key.serializer", StringSerializer.class.getName());
+//        props.put("value.serializer", StringSerializer.class.getName());
+//        producer = new KafkaProducer<String, String>(props);
+//
+////            producer = new KafkaProducer<>(props);
+//        emittingThread = new Thread(() -> {
+//            while (!Thread.currentThread().isInterrupted()) {
+//                try {
+//                    for (int i = 0; i < total; i++) {
+//                        totalNumber++;
+////                       "{"2":3,"1":"asd","timestamp":10086}"
 //                        this.producer.send(new ProducerRecord<String, String>("consumer",
-//                                String.valueOf(i), "{\"employees\":[{\"firstName\":\"John\",\"lastName\":\"Doe\"},{\"firstName\":\"Anna\",\"lastName\":\"Smith\"},{\"firstName\":\"Peter\",\"lastName\":\"Jones\"}]}"));
-                        //                        String.format("{\"type\":\"test\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
+//                                String.valueOf(i),
+//                                "{\"2\":"+ totalNumber +",\"1\":\"asd\",\"timestamp\":10086}"));
+////                        this.producer.send(new ProducerRecord<String, String>("consumer",
+////                                String.valueOf(i), "{\"employees\":[{\"firstName\":\"John\",\"lastName\":\"Doe\"},{\"firstName\":\"Anna\",\"lastName\":\"Smith\"},{\"firstName\":\"Peter\",\"lastName\":\"Jones\"}]}"));
+//                        //                        String.format("{\"type\":\"test\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
+//
+//                        // every so often send to a different topic
+//                        //                if (i % 1000 == 0) {
+//                        //                    producer.send(new ProducerRecord<String, String>("test", String.format("{\"type\":\"marker\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
+//                        //                    producer.send(new ProducerRecord<String, String>("hello", String.format("{\"type\":\"marker\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
+//
+//                        this.producer.flush();
+//                        System.out.println("Sent msg number " + totalNumber);
+//                        //                }
+//                    }
+//                    //            producer.close();
+//                    System.out.println("Kafka Producer send msg over,cost time:" + (System.currentTimeMillis() - start) + "ms");
+//                    Thread.sleep(1000);
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//
+//            }
+//        });
+//        emittingThread.start();
 
-                        // every so often send to a different topic
-                        //                if (i % 1000 == 0) {
-                        //                    producer.send(new ProducerRecord<String, String>("test", String.format("{\"type\":\"marker\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
-                        //                    producer.send(new ProducerRecord<String, String>("hello", String.format("{\"type\":\"marker\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
 
-                        this.producer.flush();
-                        System.out.println("Sent msg number " + totalNumber);
-                        //                }
-                    }
-                    //            producer.close();
-                    System.out.println("Kafka Producer send msg over,cost time:" + (System.currentTimeMillis() - start) + "ms");
-                    Thread.sleep(1000);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+        FakeKafkaReceiverBolt inputStreamReceiverBolt = new FakeKafkaReceiverBolt(rawSchema, config, 80, 90, 70, 80, total);
 
-            }
+        QueryCoordinatorBolt<Integer> coordinator = new GeoTemporalQueryCoordinatorBoltBolt<>(lowerBound,
+                upperBound, queryPort, city, config, schema);
+
+        DataTupleMapper dataTupleMapper = new DataTupleMapper(rawSchema, (Serializable & Function<DataTuple, DataTuple>) t -> {
+            double lon = (double)schema.getValue("lon", t);
+            double lat = (double)schema.getValue("lat", t);
+            int zcode = city.getZCodeForALocation(lon, lat);
+            t.add(zcode);
+            t.add(System.currentTimeMillis());
+            return t;
         });
-        emittingThread.start();
 
 
-        InputStreamKafkaReceiverBolt inputStreamReceiverBolt = new InputStreamKafkaReceiverBoltServer(schema, ingestionPort, config);
-        QueryCoordinatorBolt<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServerBolt<>(minIndex, maxIndex, queryPort,
-                config, schema);
 
-        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiverBolt,
-                coordinator, config);
+//        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
+//                enableLoadBalance, dataSource, queryCoordinatorBolt, dataTupleMapper, bloomFilterColumns, config);
+        List<String> bloomFilterColumns = new ArrayList<>();
+        bloomFilterColumns.add("id");
+
+        topologyGenerator.setNumberOfNodes(1);
+
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound, false, inputStreamReceiverBolt,
+                coordinator,dataTupleMapper, bloomFilterColumns , config);
 
         Config conf = new Config();
         conf.setDebug(false);
         conf.setNumWorkers(1);
 
-//        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
-//        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+        conf.put(Config.WORKER_CHILDOPTS, "-Xmx1024m");
+        conf.put(Config.WORKER_HEAP_MEMORY_MB, 1024);
+        conf.put(Config.STORM_MESSAGING_NETTY_MAX_SLEEP_MS, 1);
 
-
+        // use ResourceAwareScheduler with some magic configurations to ensure that QueryCoordinator and Sink
+        // are executed on the nimbus node.
+        conf.setTopologyStrategy(org.apache.storm.scheduler.resource.strategies.scheduling.DefaultResourceAwareStrategy.class);
 
         cluster.submitTopology("testSimpleTopologyKeyRangeQuery", conf, topology);
 
         final int tuples = 1000;
 
 
-        final QueryClient queryClient = new QueryClient("localhost", queryPort);
+        GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient("localhost", queryPort);
+
         try {
             queryClient.connectWithTimeout(50000);
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        DataTuplePredicate predicate = t -> new CheckInRectangle(x1,y2,x2,y1).checkIn(new Point((Double)schema.getValue("lon", t),(Double)schema.getValue("lat", t)));
+
+        GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(x1, x2, y1, y2,
+                System.currentTimeMillis() - 100 * 1000,
+                System.currentTimeMillis(), predicate, null, null, null, null);
 
         ExecutorService executorService = Executors.newCachedThreadPool();
 
@@ -200,33 +250,18 @@ public class TopologyTest extends TestCase {
         boolean fullyExecuted = false;
 
         // wait for the tuples to be appended.
-        Thread.sleep(2000);
-        Thread.sleep(3000);
+//        Thread.sleep(2000);
 
         try {
 
-            // full key range query
-            QueryResponse response = queryClient.query(new QueryRequest<>(minIndex, maxIndex, Long.MIN_VALUE, Long.MAX_VALUE));
-            List<DataTuple> tuplesss = response.getTuples();
-            for (int i = 0; i < tuplesss.size(); i++) {
-                System.out.println(tuplesss.get(i).toValues());
-            }
-
-            assertEquals(totalNumber, response.dataTuples.size());
-            System.out.println("success");
-
-            //half key range query
-            response = queryClient.query(new QueryRequest<>(0, 50, Long.MIN_VALUE, Long.MAX_VALUE));
-            assertEquals(50, response.dataTuples.size());
-
-//            //a key range query
-//            response =  queryClient.query(new QueryRequest<>(0,0, Long.MIN_VALUE, Long.MAX_VALUE));
-//            assertEquals(totalNumber/100, response.dataTuples.size());
-
-
+            Thread.sleep(5000);
+            QueryResponse response = queryClient.query(queryRequest);
+            assertEquals(inputStreamReceiverBolt.getMeetRequirements(), response.dataTuples.size());
             fullyExecuted = true;
 
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
 
@@ -240,7 +275,6 @@ public class TopologyTest extends TestCase {
         }
 
         assertTrue(fullyExecuted);
-        assertEquals(totalNumber,inputStreamReceiverBolt.getInvokeNum());
 //        cluster.shutdown();
         socketPool.returnPort(queryPort);
     }
