@@ -10,28 +10,21 @@ import indexingTopology.common.logics.DataTupleSorter;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
-import indexingTopology.kafka.FakeKafkaReceiverBolt;
-import indexingTopology.kafka.InputStreamKafkaReceiverBolt;
-import indexingTopology.kafka.InputStreamKafkaReceiverBoltServer;
+import indexingTopology.bolt.FakeKafkaReceiverBolt;
 import indexingTopology.util.*;
-import indexingTopology.util.shape.CheckInRectangle;
 import indexingTopology.util.shape.Point;
+import indexingTopology.util.shape.Rectangle;
 import indexingTopology.util.taxi.City;
 import junit.framework.TestCase;
-import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
 import org.apache.storm.generated.KillOptions;
 import org.apache.storm.generated.StormTopology;
 
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Properties;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -106,16 +99,7 @@ public class TopologyTest extends TestCase {
         schema.addIntField("zcode");
         schema.addLongField("timestamp");
         schema.setPrimaryIndexField("zcode");
-//        schema.addIntField("2");
-//        schema.addVarcharField("1", 3);
-//        schema.addLongField("timestamp");
-//        schema.addVarcharField("a4", 100);
-//        schema.setPrimaryIndexField("2");
-//        schema.addIntField("devbtype");
-//        schema.addVarcharField("devstype", 4);
-//        schema.setPrimaryIndexField("devbtype");
 
-        int ingestionPort = socketPool.getAvailablePort();
         int queryPort = socketPool.getAvailablePort();
         double x1 = 80.012928;
         double x2 = 90.023983;
@@ -238,7 +222,7 @@ public class TopologyTest extends TestCase {
             e.printStackTrace();
         }
 
-        DataTuplePredicate predicate = t -> new CheckInRectangle(x1,y2,x2,y1).checkIn(new Point((Double)schema.getValue("lon", t),(Double)schema.getValue("lat", t)));
+        DataTuplePredicate predicate = t -> new Rectangle(new Point(x1,y2),new Point(x2,y1)).checkIn(new Point((Double)schema.getValue("lon", t),(Double)schema.getValue("lat", t)));
 
         GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(x1, x2, y1, y2,
                 System.currentTimeMillis() - 100 * 1000,

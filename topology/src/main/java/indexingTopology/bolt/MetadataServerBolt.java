@@ -635,7 +635,7 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
         if (folder.exists()) {
             File[] files = folder.listFiles();
             if (files.length == 0) {
-                System.out.println("Folder empty!");
+                System.out.println("Folder empty");
                 return;
             }
             else {
@@ -659,7 +659,7 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
             }
         }
         else{
-            System.out.println("---------------- Can not find Folders !! ----------------");
+            System.out.println("Can not find Folders");
         }
     }
 

@@ -95,6 +95,8 @@ public class TopologyConfig implements Serializable {
         ret += String.format("dataChunkDir: %s\n", dataChunkDir);
         ret += String.format("metadataDir: %s\n", metadataDir);
         ret += String.format("HDFS host: %s\n", HDFS_HOST);
+        ret += String.format("removeIntervalHours: %d\n", removeIntervalHours);
+        ret += String.format("previousTime: %d\n", previousTime);
         ret += String.format("HDFS: %s\n", HDFSFlag);
         return ret;
     }
@@ -119,11 +121,16 @@ public class TopologyConfig implements Serializable {
                 this.HDFSFlag = result.get("storage.file.system").equals("hdfs");
             }
 
-            if (result.containsKey("remove.interval.hours"))
-                this.removeIntervalHours = (Integer)result.get("remove.interval.hours");
+//            if (result.containsKey("remove.interval.hours")){
+//                this.removeIntervalHours = (Integer)result.get("remove.interval.hours");
+//            }
 
             if (result.containsKey("old.data.previous.time")) {
                 this.previousTime = (Integer)result.get("old.data.previous.time");
+            }
+
+            if (result.containsKey("remove.interval.hours")) {
+                this.removeIntervalHours = (Integer)result.get("remove.interval.hours");
             }
         } catch (FileNotFoundException e) {
             System.err.println("The configure file " + filePath + " is not found. Use default conf instead.");
