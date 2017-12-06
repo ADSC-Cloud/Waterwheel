@@ -123,53 +123,6 @@ public class TopologyTest extends TestCase {
         long start = System.currentTimeMillis();
         System.out.println("Kafka Producer send msg start,total msgs:"+total);
 
-        // set up the producer
-//        Properties props = new Properties();
-//        props.put("bootstrap.servers", "localhost:9092");
-//        props.put("group.id", 0);
-//        props.put("acks", "all");
-//        props.put("retries", "0");
-//        props.put("batch.size", 16384);
-//        props.put("auto.commit.interval.ms", "1000");
-//        props.put("buffer.memory", 33554432);
-//        props.put("key.serializer", StringSerializer.class.getName());
-//        props.put("value.serializer", StringSerializer.class.getName());
-//        producer = new KafkaProducer<String, String>(props);
-//
-////            producer = new KafkaProducer<>(props);
-//        emittingThread = new Thread(() -> {
-//            while (!Thread.currentThread().isInterrupted()) {
-//                try {
-//                    for (int i = 0; i < total; i++) {
-//                        totalNumber++;
-////                       "{"2":3,"1":"asd","timestamp":10086}"
-//                        this.producer.send(new ProducerRecord<String, String>("consumer",
-//                                String.valueOf(i),
-//                                "{\"2\":"+ totalNumber +",\"1\":\"asd\",\"timestamp\":10086}"));
-////                        this.producer.send(new ProducerRecord<String, String>("consumer",
-////                                String.valueOf(i), "{\"employees\":[{\"firstName\":\"John\",\"lastName\":\"Doe\"},{\"firstName\":\"Anna\",\"lastName\":\"Smith\"},{\"firstName\":\"Peter\",\"lastName\":\"Jones\"}]}"));
-//                        //                        String.format("{\"type\":\"test\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
-//
-//                        // every so often send to a different topic
-//                        //                if (i % 1000 == 0) {
-//                        //                    producer.send(new ProducerRecord<String, String>("test", String.format("{\"type\":\"marker\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
-//                        //                    producer.send(new ProducerRecord<String, String>("hello", String.format("{\"type\":\"marker\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
-//
-//                        this.producer.flush();
-//                        System.out.println("Sent msg number " + totalNumber);
-//                        //                }
-//                    }
-//                    //            producer.close();
-//                    System.out.println("Kafka Producer send msg over,cost time:" + (System.currentTimeMillis() - start) + "ms");
-//                    Thread.sleep(1000);
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                }
-//
-//            }
-//        });
-//        emittingThread.start();
-
 
         FakeKafkaReceiverBolt inputStreamReceiverBolt = new FakeKafkaReceiverBolt(rawSchema, config, 80, 90, 70, 80, total);
 
