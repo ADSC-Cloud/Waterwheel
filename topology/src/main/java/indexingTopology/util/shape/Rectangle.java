@@ -1,9 +1,11 @@
 package indexingTopology.util.shape;
 
+import java.io.Serializable;
+
 /**
  * Create by zelin on 17-12-5
  **/
-public class Rectangle implements Shape{
+public class Rectangle implements Shape, Serializable{
 
     private double leftTopX, leftTopY;
     private double rightBottomX, rightBottomY;

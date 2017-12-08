@@ -12,7 +12,7 @@ import java.io.IOException;
 public class ClientTest {
     static public void main(String [] args) throws IOException {
 
-        String host = "yy05";
+        String host = "localhost";
         if (args.length != 0) {
             host = args[0];
         }

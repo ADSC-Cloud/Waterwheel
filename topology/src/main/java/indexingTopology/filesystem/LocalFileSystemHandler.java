@@ -5,6 +5,8 @@ import indexingTopology.common.MemChunk;
 
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * Created by dmir on 10/26/16.
@@ -20,6 +22,16 @@ public class LocalFileSystemHandler implements FileSystemHandler {
     public LocalFileSystemHandler(String path, TopologyConfig config) {
         this.path = path;
         this.config = config;
+    }
+
+    public void removeOldData(String filePathAndName) throws InterruptedException {
+        file = new File(filePathAndName);
+        if(file.delete()){
+//            System.out.println("---------------- Delete file : "+ filePathAndName + "----------------");
+        }
+        else{
+//            System.out.println("---------------- Can't find !" + "----------------");
+        }
     }
 
     public void writeToFileSystem(MemChunk chunk, String relativePath, String fileName) throws IOException {
