@@ -62,10 +62,7 @@ public class TDriveTopology {
      */
 
     @Option(name = "--input-file-path", aliases = {"-f"}, usage = "the input file path")
-    private String InputFilePath = "docs/README.md";
-
-    @Option(name = "--config-file", aliases = {"-a"}, usage = "conf.yaml to override default configs")
-    private String confFile = "conf/conf.yaml";
+    private String InputFilePath = "";
 
     @Option(name = "--ingest-rate-limit", aliases = {"-r"}, usage = "max ingestion rate")
     private int MaxIngestRate = Integer.MAX_VALUE;

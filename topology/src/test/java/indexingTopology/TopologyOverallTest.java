@@ -21,8 +21,8 @@ import indexingTopology.util.AvailableSocketPool;
 import junit.framework.TestCase;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
-import org.apache.storm.StormSubmitter;
-import org.apache.storm.generated.*;
+import org.apache.storm.generated.KillOptions;
+import org.apache.storm.generated.StormTopology;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -49,6 +49,7 @@ public class TopologyOverallTest extends TestCase {
         config.HDFSFlag = false;
         config.dataChunkDir = "./target/tmp";
         config.metadataDir = "./target/tmp";
+        config.previousTime = Integer.MAX_VALUE;
     }
 
     public void tearDown() {
@@ -139,102 +140,6 @@ public class TopologyOverallTest extends TestCase {
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
     }
-
-//    public void testTopologyHDFS() {
-//        boolean fullyTested = false;
-//
-//        final String topologyName = "testTopologyHDFS";
-//
-//        DataSchema schema = new DataSchema();
-//        schema.addDoubleField("f1");
-//        schema.addDoubleField("f2");
-//        schema.addDoubleField("f3");
-//        schema.addLongField("timestamp");
-//        schema.setPrimaryIndexField("f1");
-//
-//        int ingestionPort = socketPool.getAvailablePort();
-//        int queryPort = socketPool.getAvailablePort();
-//
-//        Double lowerBound = 0.0;
-//        Double upperBound = 5000.0;
-//
-//        final boolean enableLoadBalance = false;
-//
-//
-//        config.HDFSFlag = true;
-//        config.dataChunkDir = "data";
-//        config.metadataDir = "metadata";
-//        config.HDFS_HOST = "hdfs://192.168.3.5:9000/";
-//        InputStreamReceiverBolt dataSource = new InputStreamReceiverBoltServer(schema, ingestionPort, config);
-//        QueryCoordinatorBolt<Double> queryCoordinatorBolt = new QueryCoordinatorWithQueryReceiverServerBolt<>(lowerBound,
-//                upperBound, queryPort, config, schema);
-//
-//        TopologyGenerator<Double> topologyGenerator = new TopologyGenerator<>();
-//
-//        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
-//                enableLoadBalance, dataSource, queryCoordinatorBolt, config);
-//
-//        Config conf = new Config();
-//        conf.setDebug(false);
-//        conf.setNumWorkers(1);
-//
-//        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
-////        conf.put(Config.SUPERVISOR_CHILDOPTS, "-Xmx2048m");
-//        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
-//
-////        LocalCluster cluster = new LocalCluster();
-////        cluster.submitTopology(topologyName, conf, topology);
-//
-//        try {
-//            StormSubmitter.submitTopology(topologyName, conf, topology);
-//        } catch (AlreadyAliveException e) {
-//            e.printStackTrace();
-//        } catch (InvalidTopologyException e) {
-//            e.printStackTrace();
-//        } catch (AuthorizationException e) {
-//            e.printStackTrace();
-//        }
-//        System.out.println("--------------- nb2 ---------------");
-//        System.out.println("Topology is successfully submitted to the cluster!");
-//        System.out.println(config.getCriticalSettings());
-//
-//        double start = 0;
-//        double step = 1.5;
-//        int numberOfTuples = 50;
-//
-//        try {
-////            Thread.sleep(10000);
-//            IngestionClient oneTuplePerTransferIngestionClient = new IngestionClient("localhost", ingestionPort);
-//            oneTuplePerTransferIngestionClient.connectWithTimeout(10000);
-//            for (int i = 0; i < numberOfTuples; i++) {
-//                oneTuplePerTransferIngestionClient.append(new DataTuple(start + step * i, 0.0, 0.0, System.currentTimeMillis()));
-//            }
-//
-//            Thread.sleep(1000);
-//
-//            QueryClient queryClient = new QueryClient("localhost", queryPort);
-//            queryClient.connectWithTimeout(10000);
-//            QueryResponse response = queryClient.temporalRangeQuery(0.0, 10000.0, 0, Long.MAX_VALUE);
-//
-//            assertEquals(numberOfTuples, response.dataTuples.size());
-//            oneTuplePerTransferIngestionClient.close();
-//            queryClient.close();
-//
-//            KillOptions killOptions = new KillOptions();
-//            killOptions.set_wait_secs(0);
-//            cluster.killTopologyWithOpts("testTopologyDouble", killOptions);
-//
-//            fullyTested = true;
-////            Thread.sleep(5000);
-//
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//        assertTrue(fullyTested);
-//        socketPool.returnPort(ingestionPort);
-//        socketPool.returnPort(queryPort);
-//    }
-//
 
     @Test
     public void testTopologyIntegerFilter() {

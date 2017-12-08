@@ -4,6 +4,8 @@ import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.streams.Streams;
+import info.batey.kafka.unit.KafkaUnit;
+import net.sf.json.JSONObject;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -20,50 +22,38 @@ public class FakeKafkaReceiverBolt extends InputStreamReceiverBolt {
     private final DataSchema schema;
     static int  invokeNum = 0;
     int total = 100;
-    int totalNumber = 0;
     static int meetRequirements = 0;
-    double x1;
-    double x2;
-    double y1;
-    double y2;
+    transient KafkaUnit kafkaUnitServer;
+    List<String> messages;
 
     TopologyConfig config;
 
-    public FakeKafkaReceiverBolt(DataSchema schema, TopologyConfig config, double x1, double x2, double y1, double y2, int total) {
+    public FakeKafkaReceiverBolt(DataSchema schema, TopologyConfig config, KafkaUnit kafkaUnitServer, int total) {
         super(schema, config);
         this.schema = schema;
         this.config = config;
-        this.x1 = x1;
-        this.x2 = x2;
-        this.y1 = y1;
-        this.y2 = y2;
+        this.kafkaUnitServer = kafkaUnitServer;
         this.total = total;
+        setKafkaUnit(kafkaUnitServer);
+    }
+
+    public void setKafkaUnit(KafkaUnit kafkaUnitServer){
+        System.out.println("kafkaUnitServer.getZkPort() : " + this.kafkaUnitServer.getZkPort());
+        try {
+             messages = kafkaUnitServer.readMessages("consumer",total);
+        } catch (TimeoutException e) {
+            e.printStackTrace();
+        }
     }
 
     public void insertTupleTest(){
-        for(int i = 0;i < total;i++){
-            DataTuple tuple = new DataTuple();
-            Double lon = Math.random() * 100;
-            Double lat = Math.random() * 100;
-            final int id = new Random().nextInt(100);
-            final String idString = "" + id;
-            totalNumber++;
-            tuple.add(lon);
-            tuple.add(lat);
-            tuple.add(totalNumber);
-            tuple.add("asd");
-            tuple.add(idString);
-            if(lon >= x1 && lon <= x2 && lat >= y1 && lat <= y2){
-                meetRequirements++;
+        try {
+            for (int i = 0; i < messages.size(); i++) {
+                JSONObject jsonFromData = JSONObject.fromObject(messages.get(i));
+                getInputQueue().put(schema.getTupleFromJsonObject(jsonFromData));
             }
-//            tuple.add("payload");
-
-            try {
-                getInputQueue().put(tuple);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                e.printStackTrace();
-            }
+        }catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
@@ -82,8 +72,13 @@ public class FakeKafkaReceiverBolt extends InputStreamReceiverBolt {
         public void run() {
             try {
                     // the consumer whill bolck until the records coming
-                    insertTupleTest();
-                    Thread.sleep(1000);
+                List<String> messages = kafkaUnitServer.readMessages("consumer",1000);
+                for(int i = 0; i < messages.size(); i++) {
+                    System.out.println("111" + messages.get(i));
+                    JSONObject jsonFromData = JSONObject.fromObject(messages.get(i));
+                    getInputQueue().put(schema.getTupleFromJsonObject(jsonFromData));
+                }
+//                    Thread.sleep(1000);
             } catch (Exception e) {
                 System.out.println("consumer start failed2!");
                 e.printStackTrace();
@@ -131,9 +126,7 @@ public class FakeKafkaReceiverBolt extends InputStreamReceiverBolt {
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         super.prepare(map,topologyContext,outputCollector);
-        ConsumerLoop consumer = new ConsumerLoop(0);
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        executorService.submit(consumer);
+        insertTupleTest();
     }
 
 

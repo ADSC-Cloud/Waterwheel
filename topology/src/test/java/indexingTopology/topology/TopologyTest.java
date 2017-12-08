@@ -1,7 +1,9 @@
 package indexingTopology.topology;
 
+import com.esotericsoftware.kryo.serializers.DefaultSerializers;
 import indexingTopology.api.client.*;
 import indexingTopology.bolt.*;
+
 import indexingTopology.common.aggregator.*;
 import indexingTopology.common.logics.DataTupleEquivalentPredicateHint;
 import indexingTopology.common.logics.DataTupleMapper;
@@ -10,22 +12,29 @@ import indexingTopology.common.logics.DataTupleSorter;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
-import indexingTopology.bolt.FakeKafkaReceiverBolt;
 import indexingTopology.util.*;
 import indexingTopology.util.shape.Point;
 import indexingTopology.util.shape.Rectangle;
+import indexingTopology.util.taxi.Car;
 import indexingTopology.util.taxi.City;
+import info.batey.kafka.unit.KafkaUnit;
 import junit.framework.TestCase;
+import kafka.producer.KeyedMessage;
+import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.LongSerializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
 import org.apache.storm.generated.KillOptions;
 import org.apache.storm.generated.StormTopology;
 
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
@@ -41,6 +50,8 @@ public class TopologyTest extends TestCase {
     TopologyConfig config = new TopologyConfig();
 
     AvailableSocketPool socketPool = new AvailableSocketPool();
+
+    transient KafkaUnit kafkaUnitServer = new KafkaUnit("localhost:9092","localhost:9093");
 
     LocalCluster cluster;
 
@@ -63,6 +74,7 @@ public class TopologyTest extends TestCase {
             config.CHUNK_SIZE = 2 * 1024 * 1024;
             config.HDFSFlag = false;
             config.HDFSFlag = false;
+            config.previousTime = Integer.MAX_VALUE;
             System.out.println("dataChunkDir is set to " + config.dataChunkDir);
             cluster = new LocalCluster();
             setupDone = true;
@@ -82,7 +94,7 @@ public class TopologyTest extends TestCase {
     }
 
     @Test
-    public void testKafkaTopologyKeyRangeQuery() throws InterruptedException {
+    public void testKafkaTopologyKeyRangeQuery() throws InterruptedException, ClassNotFoundException {
         DataSchema rawSchema = new DataSchema();
         rawSchema.addDoubleField("lon");
         rawSchema.addDoubleField("lat");
@@ -118,13 +130,49 @@ public class TopologyTest extends TestCase {
         assertTrue(config != null);
 
 
-        int total = 100;
+        int total = 1000;
         Thread emittingThread;
         long start = System.currentTimeMillis();
         System.out.println("Kafka Producer send msg start,total msgs:"+total);
 
+        kafkaUnitServer.startup();
+//        kafkaUnitServer.createTopic("consumer");
+        // set up the producer
+//        Properties props = new Properties();
+////        props.put("bootstrap.servers", "localhost:9092");
+//        props.put("group.id", 0);
+//        props.put("acks", "all");
+//        props.put("retries", "0");
+//        props.put("batch.size", 16384);
+//        props.put("auto.commit.interval.ms", "1000");
+//        props.put("buffer.memory", 33554432);
+//        props.put("key.serializer", StringSerializer.class.getName());
+//        props.put("value.serializer", StringSerializer.class.getName());
+////        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, LongSerializer.class.getCanonicalName());
+////        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getCanonicalName());
+//        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUnitServer.getKafkaConnect());
+//        producer = new KafkaProducer<String, String>(props);
+        int meetRequirements = 0;
+        for (int i = 0; i < total; i++) {
+            totalNumber++;
+            Long timestamp = System.currentTimeMillis();
+            Double lon = Math.random() * 100;
+            Double lat = Math.random() * 100;
+            final int id = new Random().nextInt(100);
+            final String idString = "" + id;
+            if(lon >= x1 && lon <= x2 && lat >= y1 && lat <= y2){
+                meetRequirements++;
+            }
+            KeyedMessage<String, String> keyedMessage = new KeyedMessage<>("consumer", "key", "{\"lon\":"+ lon + ",\"lat\":" + lat + ",\"devbtype\":"+ totalNumber +",\"devid\":\"asd\",\"id\":"+ idString +"}");
+            kafkaUnitServer.sendMessages(keyedMessage);
+//            this.producer.send(new ProducerRecord<String, String>("consumer",
+//                    String.valueOf(i),
+//                    "{\"lon\":"+ lon + ",\"lat\":" + lat + ",\"devbtype\":"+ totalNumber +",\"devid\":\"asd\",\"id\":"+ idString +"}"));
+//            this.producer.flush();
+        }
+        System.out.println("Kafka Producer send msg over,cost time:" + (System.currentTimeMillis() - start) + "ms");
 
-        FakeKafkaReceiverBolt inputStreamReceiverBolt = new FakeKafkaReceiverBolt(rawSchema, config, 80, 90, 70, 80, total);
+        FakeKafkaReceiverBolt inputStreamReceiverBolt = new FakeKafkaReceiverBolt(rawSchema, config, kafkaUnitServer, total);
 
         QueryCoordinatorBolt<Integer> coordinator = new GeoTemporalQueryCoordinatorBoltBolt<>(lowerBound,
                 upperBound, queryPort, city, config, schema);
@@ -147,9 +195,10 @@ public class TopologyTest extends TestCase {
 
         topologyGenerator.setNumberOfNodes(1);
 
+
+        Thread.sleep(2000);
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound, false, inputStreamReceiverBolt,
                 coordinator,dataTupleMapper, bloomFilterColumns , config);
-
         Config conf = new Config();
         conf.setDebug(false);
         conf.setNumWorkers(1);
@@ -191,14 +240,12 @@ public class TopologyTest extends TestCase {
 
         try {
 
-            Thread.sleep(5000);
+            Thread.sleep(3000);
             QueryResponse response = queryClient.query(queryRequest);
-            assertEquals(inputStreamReceiverBolt.getMeetRequirements(), response.dataTuples.size());
+            assertEquals(meetRequirements, response.dataTuples.size());
             fullyExecuted = true;
 
         } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
 
@@ -214,6 +261,7 @@ public class TopologyTest extends TestCase {
         assertTrue(fullyExecuted);
 //        cluster.shutdown();
         socketPool.returnPort(queryPort);
+        kafkaUnitServer.shutdown();
     }
 
 
@@ -235,6 +283,8 @@ public class TopologyTest extends TestCase {
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
         assertTrue(config != null);
+
+
 
         InputStreamReceiverBolt inputStreamReceiverBolt = new InputStreamReceiverBoltServer(schema, ingestionPort, config);
         QueryCoordinatorBolt<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServerBolt<>(minIndex, maxIndex, queryPort,

@@ -110,6 +110,8 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
     private int removeHours;
 
+    private boolean removeOldDataStart;
+
     private SchemaManager schemaManager;
 
     private DataSchema defaultSchema;
@@ -190,7 +192,7 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
         systemStateQueryServer.startDaemon();
         intervalTime = config.removeIntervalHours;
         removeHours = config.previousTime;
-        startTimer(intervalTime,removeHours); // Remove old data regularly
+        removeOldDataStart = false;
     }
 
     private void createMetadataSendingThread() {
@@ -289,6 +291,13 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
             Long tupleCount = tuple.getLongByField("tupleCount");
             filePartitionSchemaManager.add(new FileMetaData(fileName, (Double) keyDomain.getLowerBound(),
                     (Double)keyDomain.getUpperBound(), timeDomain.getStartTimestamp(), timeDomain.getEndTimestamp()));
+            if(removeHours == Integer.MAX_VALUE){ // topologyTest, ignore remove data
+                removeOldDataStart = true;
+            }
+            if(removeOldDataStart == false) {
+                startTimer(intervalTime, removeHours); // Remove old data regularly
+                removeOldDataStart = true;
+            }
 
 //            System.out.println(timeDomain.getEndTimestamp() - timeDomain.getStartTimestamp());
 
@@ -593,20 +602,20 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
                 if (config.HDFSFlag == false) {
                     // Local FileSystem
                     LocalFileSystemHandler localFileSystemHandler = new LocalFileSystemHandler("../", config);
-                    File folderOfData = new File("data");
-                    File folderOfMetaData = new File("metadata");
-                    searchLocalOldData(folderOfData,localFileSystemHandler,removeHours);
-                    searchLocalOldData(folderOfMetaData,localFileSystemHandler,removeHours);
+                    File folderOfData = new File(config.dataChunkDir);
+                    File folderOfMetaData = new File(config.metadataDir);
+                    searchLocalOldData(folderOfData,localFileSystemHandler,removeHours,false);
+                    searchLocalOldData(folderOfMetaData,localFileSystemHandler,removeHours,true);
                 }
                 else{
                     // HDFS
                     try {
                         HdfsFileSystemHandler fileSystemHandler = new HdfsFileSystemHandler("", config);
-                        fileSystemHandler.openFile("data","");
-                        fileSystemHandler.openFile("metadata","");
+                        fileSystemHandler.openFile(config.dataChunkDir,"");
+                        fileSystemHandler.openFile(config.metadataDir,"");
                         try {
-                            searchHDFSOldData(fileSystemHandler,"data",removeHours);
-                            searchHDFSOldData(fileSystemHandler,"metadata",removeHours);
+                            searchHDFSOldData(fileSystemHandler, config.dataChunkDir, removeHours, false);
+                            searchHDFSOldData(fileSystemHandler, config.metadataDir, removeHours, true);
                         } catch (InterruptedException e1) {
                             e1.printStackTrace();
                         }
@@ -617,49 +626,60 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
             }
         };
         Timer timer = new Timer();
-        timer.schedule(task, buildTime(), 3600 * intervalTime);
+//        timer.schedule(task, buildTime(), 3600 * intervalTime);
+        timer.schedule(task, buildTime(), 3600 * 1000 * intervalTime);
     }
 
-    public void searchHDFSOldData(HdfsFileSystemHandler fileSystemHandler,String relativePath,int removeHours) throws InterruptedException, IOException {
+    public void searchHDFSOldData(HdfsFileSystemHandler fileSystemHandler,String relativePath,int removeHours, boolean isMetadata) throws InterruptedException, IOException {
         FileStatus[] fileStatus = fileSystemHandler.getFileSystem().listStatus(new Path(relativePath));
-        for(FileStatus singleFile : fileStatus) {
-            if (System.currentTimeMillis() - singleFile.getModificationTime() >= 3600 * removeHours) {
-//                System.out.println("---------------" + singleFile.getPath().getName() + "---------------");
-                fileSystemHandler.removeOldData(singleFile.getPath());
+        List<FileMetaData> removalFileMeta = filePartitionSchemaManager.searchFileMetaData(Double.MIN_VALUE, Double.MAX_VALUE, 0, System.currentTimeMillis() - 3600 * 1000 * removeHours);
+        for(int i = 0; i < removalFileMeta.size(); i++){
+            if(removalFileMeta.get(i).getEndTime() > System.currentTimeMillis() - 3600 * 1000 * removeHours){
+                removalFileMeta.remove(i);
             }
         }
+        for(int i = 0; i < removalFileMeta.size(); i++){
+            try {
+                if(isMetadata == false){
+                    fileSystemHandler.removeOldData(new Path(relativePath + "/" + removalFileMeta.get(i).getFilename()));
+                }
+                else{
+                    fileSystemHandler.removeOldData(new Path(relativePath + "/" + removalFileMeta.get(i).getFilename() + "-id"));
+                }
+            } catch (InterruptedException e1) {
+                e1.printStackTrace();
+            }
+        }
+//        for(FileStatus singleFile : fileStatus) {
+//            if (System.currentTimeMillis() - singleFile.getModificationTime() >= 3600 * removeHours) {
+////                System.out.println("---------------" + singleFile.getPath().getName() + "---------------");
+//                fileSystemHandler.removeOldData(singleFile.getPath());
+//            }
+//        }
     }
 
-    public void searchLocalOldData(File folder,LocalFileSystemHandler localFileSystemHandler,int removeHours){
-        System.out.println(folder);
-        if (folder.exists()) {
-            File[] files = folder.listFiles();
-            if (files.length == 0) {
-//                System.out.println("Folder empty");
-                return;
-            }
-            else {
-                for (File singleFile : files) {
-                    System.out.println(singleFile.getPath());
-                    if (singleFile.getName().equals(".DS_Store")) {
-                                    continue;
-                    }
-                    // Can not call function SimpleDateFormat;
-//                    new SimpleDateFormat("yyy-MM-dd hh:mm:ss").format(new Date(singleFile.lastModified()));
-//                    String ctime = new SimpleDateFormat("yyy-MM-dd hh:mm:ss").format(new Date(singleFile.lastModified()));
-//                    String ntime = new SimpleDateFormat("yyy-MM-dd hh:mm:ss").format(new Date(System.currentTimeMillis()));
-                    if (System.currentTimeMillis() - singleFile.lastModified() >= 3600 * removeHours) {
-                        try {
-                            localFileSystemHandler.removeOldData(singleFile.getPath());
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
+    public void searchLocalOldData(File folder,LocalFileSystemHandler localFileSystemHandler,int removeHours, boolean isMetadata){
+//        System.out.println(folder);
+
+        List<FileMetaData> removalFileMeta = filePartitionSchemaManager.searchFileMetaData(Double.MIN_VALUE, Double.MAX_VALUE, 0, System.currentTimeMillis() - 3600 * 1000 * removeHours);
+        System.out.println(System.currentTimeMillis() - 3600 * 1000 * removeHours + "    " + removalFileMeta.get(0).getStartTime());
+        for(int i = 0; i < removalFileMeta.size(); i++){
+            if(removalFileMeta.get(i).getEndTime() > System.currentTimeMillis() - 3600 * 1000 * removeHours){
+                removalFileMeta.remove(i);
             }
         }
-        else{
-//            System.out.println("Can not find Folders");
+        for(int i = 0; i < removalFileMeta.size(); i++){
+            System.out.println("removalFileMeta.get(i).getFilename():"+removalFileMeta.get(i).getFilename());
+            try {
+                if(isMetadata == false){
+                    localFileSystemHandler.removeOldData(folder.getPath() + "/" + removalFileMeta.get(i).getFilename());
+                }
+                else{
+                    localFileSystemHandler.removeOldData(folder.getPath() + "/" + removalFileMeta.get(i).getFilename() + "-id");
+                }
+            } catch (InterruptedException e1) {
+                e1.printStackTrace();
+            }
         }
     }
 
@@ -682,14 +702,8 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
         return startDT.getTime();
     }
 
-
-
-    class OldDataRemovalRunnable implements Runnable{
-
-        @Override
-        public void run() {
-
-        }
+    public FilePartitionSchemaManager getFilePartitionSchemaManager(){
+        return filePartitionSchemaManager;
     }
 
     class StatisticsRequestSendingRunnable implements Runnable {

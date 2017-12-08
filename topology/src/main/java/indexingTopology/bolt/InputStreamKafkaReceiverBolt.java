@@ -8,6 +8,7 @@ import net.sf.json.JSONObject;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.StringDeserializer;
 
@@ -68,7 +69,8 @@ public class InputStreamKafkaReceiverBolt extends InputStreamReceiverBolt {
             this.id = id;
             this.topics = topics;
             Properties props = new Properties();
-            props.put("bootstrap.servers", "localhost:9092");
+//            props.put("bootstrap.servers", "localhost:9092");
+            props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
 //            props.put("MyTest", 123123);
             props.put("group.id", groupId);
             props.put("key.deserializer", StringDeserializer.class.getName());
@@ -83,6 +85,7 @@ public class InputStreamKafkaReceiverBolt extends InputStreamReceiverBolt {
                 consumer.subscribe(topics);
 
                 while (true) {
+                    System.out.println("-------------------------------------");
                     // the consumer whill bolck until the records coming
                     ConsumerRecords<String, String> records = consumer.poll(Long.MAX_VALUE);
 
@@ -93,7 +96,7 @@ public class InputStreamKafkaReceiverBolt extends InputStreamReceiverBolt {
                         data.put("partition", record.partition());
                         data.put("offset", record.offset());
                         data.put("value", record.value());
-//                        System.out.println(record.value());
+                        System.out.println(record.value());
                         JSONObject jsonFromData = JSONObject.fromObject(record.value());
                         getInputQueue().put(schema.getTupleFromJsonObject(jsonFromData));
                     }

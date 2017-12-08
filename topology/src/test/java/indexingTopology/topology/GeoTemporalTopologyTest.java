@@ -18,6 +18,7 @@ import indexingTopology.util.AvailableSocketPool;
 import indexingTopology.util.taxi.City;
 import indexingTopology.util.taxi.ZOrderCoding;
 import junit.framework.TestCase;
+import org.apache.hadoop.yarn.webapp.hamlet.Hamlet;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
 import org.apache.storm.generated.KillOptions;
@@ -56,6 +57,7 @@ public class GeoTemporalTopologyTest extends TestCase {
             config.metadataDir = "./target/tmp";
             config.HDFSFlag = false;
             config.CHUNK_SIZE = 1024 * 1024;
+            config.previousTime = Integer.MAX_VALUE;
             System.out.println("dataChunkDir is set to " + config.dataChunkDir);
             cluster = new LocalCluster();
             setupDone = true;

@@ -74,7 +74,7 @@ public class KingBaseTopology {
     private String IngestServerIp = "localhost";
 
     @Option(name = "--ingest-rate-limit", aliases = {"-r"}, usage = "max ingestion rate")
-    private int MaxIngestRate = 100;
+    private int MaxIngestRate = Integer.MAX_VALUE;
 
     /**
      * query api configuration
@@ -89,7 +89,7 @@ public class KingBaseTopology {
     private int RecentSecondsOfInterest = 5;
 
     @Option(name = "--queries", usage = "number of queries to perform")
-    private int NumberOfQueries = 10;
+    private int NumberOfQueries = Integer.MAX_VALUE;
 
 
     static final double x1 = 40.012928;
@@ -151,7 +151,7 @@ public class KingBaseTopology {
 
                 GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
                         System.currentTimeMillis() - RecentSecondsOfInterest * 1000,
-                        System.currentTimeMillis(), null, null, null, null,null);
+                        System.currentTimeMillis(), null, null, aggregator, null,null);
                 long start = System.currentTimeMillis();
                 try {
                     DateFormat dateFormat = new SimpleDateFormat("MM-dd HH:mm:ss");
@@ -343,14 +343,14 @@ public class KingBaseTopology {
         // are executed on the nimbus node.
         conf.setTopologyStrategy(org.apache.storm.scheduler.resource.strategies.scheduling.DefaultResourceAwareStrategy.class);
 
-//        if (LocalMode) {
+        if (LocalMode) {
             LocalCluster localCluster = new LocalCluster();
             localCluster.submitTopology(TopologyName, conf, topology);
-//        } else {
-//            StormSubmitter.submitTopology(TopologyName, conf, topology);
-//            System.out.println("Topology is successfully submitted to the cluster!");
-//            System.out.println(config.getCriticalSettings());
-//        }
+        } else {
+            StormSubmitter.submitTopology(TopologyName, conf, topology);
+            System.out.println("Topology is successfully submitted to the cluster!");
+            System.out.println(config.getCriticalSettings());
+        }
     }
 
     public static void main(String[] args) throws InvalidTopologyException, AuthorizationException, AlreadyAliveException {
@@ -371,34 +371,12 @@ public class KingBaseTopology {
             return;
         }
 
-//        kingBaseTopology.submitTopology();
-//        try {
-//            Thread.sleep(10000);
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
-//
-//        kingBaseTopology.executeIngestion();
-//        try {
-//            Thread.sleep(10000);
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
-//
-        kingBaseTopology.executeQuery();
-//        switch (kingBaseTopology.Mode) {
-//            case "submit": kingBaseTopology.submitTopology(); break;
-//            case "ingest": kingBaseTopology.executeIngestion(); break;
-//            case "query": kingBaseTopology.executeQuery(); break;
-//            default: System.out.println("Invalid command!");
-//        }
-//        if (command.equals("submit"))
-//            submitTopology();
-//        else if (command.equals("ingest"))
-//            executeIngestion();
-//        else if (command.equals("query"))
-//            executeQuery();
-
+        switch (kingBaseTopology.Mode) {
+            case "submit": kingBaseTopology.submitTopology(); break;
+            case "ingest": kingBaseTopology.executeIngestion(); break;
+            case "query": kingBaseTopology.executeQuery(); break;
+            default: System.out.println("Invalid command!");
+        }
     }
 
 
@@ -407,7 +385,7 @@ public class KingBaseTopology {
         rawSchema.addVarcharField("id", 32);
         rawSchema.addVarcharField("veh_no", 10);
         rawSchema.addDoubleField("lon");
-        rawSchema.addDoubleField( "lat");
+        rawSchema.addDoubleField("lat");
         rawSchema.addIntField("car_status");
         rawSchema.addDoubleField("speed");
         rawSchema.addVarcharField("position_type", 10);

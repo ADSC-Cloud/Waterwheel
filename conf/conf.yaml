@@ -17,4 +17,4 @@
 
 # the hdfs host. This value can be omitted when strage.file.system is local.
 # the host generally can be obtained by ./hdsf getconf --confKey fs.default.name
- hdfs.host: "hdfs://172.31.24.245:9000/"
+ hdfs.host: "hdfs://10.21.25.40:9000/"
