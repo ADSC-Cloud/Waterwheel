@@ -51,8 +51,6 @@ public class TopologyTest extends TestCase {
 
     AvailableSocketPool socketPool = new AvailableSocketPool();
 
-    transient KafkaUnit kafkaUnitServer = new KafkaUnit("localhost:9092","localhost:9093");
-
     LocalCluster cluster;
 
     Producer<String, String> producer = null;
@@ -61,6 +59,8 @@ public class TopologyTest extends TestCase {
     boolean setupDone = false;
 
     boolean tearDownDone = false;
+
+    transient KafkaUnit kafkaUnitServer;
 
     public void setUp() {
         if (!setupDone) {
@@ -113,10 +113,16 @@ public class TopologyTest extends TestCase {
         schema.setPrimaryIndexField("zcode");
 
         int queryPort = socketPool.getAvailablePort();
-        double x1 = 80.012928;
-        double x2 = 90.023983;
-        double y1 = 70.292677;
-        double y2 = 80.614865;
+        int kafkaZkport = socketPool.getAvailablePort();
+        int kafkaUnitport = socketPool.getAvailablePort();
+
+        kafkaUnitServer = new KafkaUnit("localhost:" + kafkaZkport,"localhost:" + kafkaUnitport);
+        kafkaUnitServer.startup();
+        Thread.sleep(1000);
+        double x1 = 40.0;
+        double x2 = 90.0;
+        double y1 = 30.0;
+        double y2 = 80.0;
         int partitions = 128;
         City city = new City(x1, x2, y1, y2, partitions);
         Integer lowerBound = 0;
@@ -130,12 +136,11 @@ public class TopologyTest extends TestCase {
         assertTrue(config != null);
 
 
-        int total = 1000;
+        int total = 100;
         Thread emittingThread;
         long start = System.currentTimeMillis();
         System.out.println("Kafka Producer send msg start,total msgs:"+total);
 
-        kafkaUnitServer.startup();
 //        kafkaUnitServer.createTopic("consumer");
         // set up the producer
 //        Properties props = new Properties();
@@ -195,8 +200,6 @@ public class TopologyTest extends TestCase {
 
         topologyGenerator.setNumberOfNodes(1);
 
-
-        Thread.sleep(2000);
         StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound, false, inputStreamReceiverBolt,
                 coordinator,dataTupleMapper, bloomFilterColumns , config);
         Config conf = new Config();
@@ -226,8 +229,11 @@ public class TopologyTest extends TestCase {
 
         DataTuplePredicate predicate = t -> new Rectangle(new Point(x1,y2),new Point(x2,y1)).checkIn(new Point((Double)schema.getValue("lon", t),(Double)schema.getValue("lat", t)));
 
+//         wait for the tuples to be appended, because of the time and currentTimeMillis
+        Thread.sleep(5000);
+
         GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(x1, x2, y1, y2,
-                System.currentTimeMillis() - 100 * 1000,
+                System.currentTimeMillis() - 1000 * 1000,
                 System.currentTimeMillis(), predicate, null, null, null, null);
 
         ExecutorService executorService = Executors.newCachedThreadPool();
@@ -235,13 +241,14 @@ public class TopologyTest extends TestCase {
 
         boolean fullyExecuted = false;
 
-        // wait for the tuples to be appended.
-//        Thread.sleep(2000);
+
 
         try {
 
-            Thread.sleep(3000);
             QueryResponse response = queryClient.query(queryRequest);
+            System.out.println(queryPort);
+            System.out.println("meetRequirements:" + meetRequirements);
+            System.out.println("dataTuples.size:" + response.dataTuples.size());
             assertEquals(meetRequirements, response.dataTuples.size());
             fullyExecuted = true;
 
@@ -250,6 +257,7 @@ public class TopologyTest extends TestCase {
         }
 
         try {
+            kafkaUnitServer.shutdown();
             queryClient.close();
             KillOptions killOptions = new KillOptions();
             killOptions.set_wait_secs(0);
@@ -261,7 +269,8 @@ public class TopologyTest extends TestCase {
         assertTrue(fullyExecuted);
 //        cluster.shutdown();
         socketPool.returnPort(queryPort);
-        kafkaUnitServer.shutdown();
+        socketPool.returnPort(kafkaZkport);
+        socketPool.returnPort(kafkaUnitport);
     }
 
 

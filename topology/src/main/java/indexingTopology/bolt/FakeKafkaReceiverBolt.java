@@ -39,8 +39,10 @@ public class FakeKafkaReceiverBolt extends InputStreamReceiverBolt {
 
     public void setKafkaUnit(KafkaUnit kafkaUnitServer){
         System.out.println("kafkaUnitServer.getZkPort() : " + this.kafkaUnitServer.getZkPort());
+        System.out.println(this.kafkaUnitServer.getKafkaConnect()+ "  " + this.kafkaUnitServer.getBrokerPort()) ;
         try {
              messages = kafkaUnitServer.readMessages("consumer",total);
+             kafkaUnitServer.shutdown();
         } catch (TimeoutException e) {
             e.printStackTrace();
         }
