@@ -18,7 +18,6 @@ import indexingTopology.util.AvailableSocketPool;
 import indexingTopology.util.taxi.City;
 import indexingTopology.util.taxi.ZOrderCoding;
 import junit.framework.TestCase;
-import org.apache.hadoop.yarn.webapp.hamlet.Hamlet;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
 import org.apache.storm.generated.KillOptions;

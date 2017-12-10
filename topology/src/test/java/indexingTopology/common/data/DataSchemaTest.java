@@ -86,9 +86,7 @@ public class DataSchemaTest {
         DataSchema schema = new DataSchema();
         schema.addDoubleField("f1");
         schema.addLongField("f2");
-        schema.setPrimaryIndexField("f2");
         assertEquals("[f1, f2]", schema.getFieldNames().toString());
-        assertEquals(schema.getIndexField(),"f2");
     }
 
     @Test
