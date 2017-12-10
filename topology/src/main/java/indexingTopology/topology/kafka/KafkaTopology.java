@@ -169,10 +169,6 @@ public class KafkaTopology {
                 double x = x1 + (x2 - x1) * (1 - selectivityOnOneDimension) * random.nextDouble();
                 double y = y1 + (y2 - y1) * (1 - selectivityOnOneDimension) * random.nextDouble();
 
-//                final double xLow = x;
-//                final double xHigh = x + selectivityOnOneDimension * (x2 - x1);
-//                final double yLow = y;
-//                final double yHigh = y + selectivityOnOneDimension * (y2 - y1);
                 final double xLow = leftTop.x;
                 final double xHigh =rightBottom.x;
                 final double yLow = rightBottom.y;
