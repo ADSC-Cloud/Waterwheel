@@ -26,12 +26,7 @@ public class LocalFileSystemHandler implements FileSystemHandler {
 
     public void removeOldData(String filePathAndName) throws InterruptedException {
         file = new File(filePathAndName);
-        if(file.delete()){
-//            System.out.println("---------------- Delete file : "+ filePathAndName + "----------------");
-        }
-        else{
-//            System.out.println("---------------- Can't find !" + "----------------");
-        }
+        file.delete();
     }
 
     public void writeToFileSystem(MemChunk chunk, String relativePath, String fileName) throws IOException {
