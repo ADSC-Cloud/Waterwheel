@@ -24,6 +24,12 @@ public class FilePartitionSchemaManager {
 //        System.out.println(fileMetaData.startTime + "---->" + fileMetaData.endTime + "###########");
     }
 
+    public void remove(FileMetaData fileMetaData) {
+        tree = tree.delete(fileMetaData, Geometries.rectangle(fileMetaData.keyRangeLowerBound, fileMetaData.startTime,
+                fileMetaData.keyRangeUpperBound, fileMetaData.endTime));
+//        System.out.println(fileMetaData.startTime + "---->" + fileMetaData.endTime + "###########");
+    }
+
     // Retrieve the set of files for a given key range and time duration
     public List<String> search(double keyRangeLowerBound, double keyRangeUpperBound, long startTime,
                                      long endTime) {

@@ -60,6 +60,7 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
                 .shuffleGrouping(ResultMergeBolt, Streams.PartialQueryResultDeliveryStream)
                 .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSubQueryFinishStream)
                 .shuffleGrouping(MetadataServer, Streams.FileInformationUpdateStream)
+                .shuffleGrouping(MetadataServer, Streams.OldDataRemoval)
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.TimestampUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.LocationInfoUpdateStream)

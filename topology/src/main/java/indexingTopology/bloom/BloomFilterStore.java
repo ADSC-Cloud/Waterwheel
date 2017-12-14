@@ -7,6 +7,7 @@ import indexingTopology.config.TopologyConfig;
 import indexingTopology.filesystem.FileSystemHandler;
 import indexingTopology.filesystem.LocalFileSystemHandler;
 import indexingTopology.common.MemChunk;
+import jdk.nashorn.internal.codegen.CompilerConstants;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.storm.shade.org.eclipse.jetty.util.ConcurrentHashSet;
 import org.apache.storm.shade.org.jboss.netty.util.internal.ConcurrentHashMap;
@@ -90,6 +91,12 @@ public class BloomFilterStore {
         fileSystemHandler = new LocalFileSystemHandler(config.metadataDir, config);
         fileSystemHandler.writeToFileSystem(memChunk, "/", id.toString());
         registeredBloomFilters.add(id);
+    }
+
+    public void delete(BloomFilterId id) throws IOException{
+        if (!registeredBloomFilters.contains(id))
+            return;
+        registeredBloomFilters.remove(id);
     }
 
 }

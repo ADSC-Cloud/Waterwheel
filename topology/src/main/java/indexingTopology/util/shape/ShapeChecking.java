@@ -145,5 +145,10 @@ public class ShapeChecking {
                 System.out.print(Integer.valueOf(arrayList3.get(i).toString()) + " ");
             }
         }
+        Object object = new Object();
+        String searchTest11 = "{\"type\":\"rectangle\",\"leftTop\":\"113,24\",\"rightBottom\":\"112,23\",\"geoStr\":null,\"lon\":null,\"lat\":null,\"radius\":null}";
+        JSONObject jsonObject1 = JSONObject.fromObject(searchTest);
+        object = (Object)jsonObject1;
+        System.out.println(object);
     }
 }
