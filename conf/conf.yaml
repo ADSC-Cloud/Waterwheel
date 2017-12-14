@@ -2,12 +2,19 @@
 # the path where the data chunks will be stored
  storage.datachunk.folder: "data"
 
+
+
 # the path where the metadata will be stored
  metadata.local.storage.path: "metadata"
-
 # default file system for storage: hdfs/local.
  storage.file.system: "local"
 
+# default time to remove old data
+ remove.interval.hours: 6
+
+# default time for old data time property
+ old.data.previous.time: 24
+
 # the hdfs host. This value can be omitted when strage.file.system is local.
 # the host generally can be obtained by ./hdsf getconf --confKey fs.default.name
- hdfs.host: "hdfs://172.31.24.245:9000/"
+ hdfs.host: "hdfs://10.21.25.40:9000/"

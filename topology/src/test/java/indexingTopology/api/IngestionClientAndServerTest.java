@@ -74,7 +74,6 @@ public class IngestionClientAndServerTest extends TestCase {
         assertEquals(tuples, count);
         ingestionClientBatchMode.close();
         server.endDaemon();
-
     }
 
 

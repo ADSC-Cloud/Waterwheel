@@ -151,7 +151,7 @@ public class KingBaseTopology {
 
                 GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
                         System.currentTimeMillis() - RecentSecondsOfInterest * 1000,
-                        System.currentTimeMillis(), null, null, aggregator, null, null);
+                        System.currentTimeMillis(), null, null, aggregator, null,null);
                 long start = System.currentTimeMillis();
                 try {
                     DateFormat dateFormat = new SimpleDateFormat("MM-dd HH:mm:ss");
@@ -377,13 +377,6 @@ public class KingBaseTopology {
             case "query": kingBaseTopology.executeQuery(); break;
             default: System.out.println("Invalid command!");
         }
-//        if (command.equals("submit"))
-//            submitTopology();
-//        else if (command.equals("ingest"))
-//            executeIngestion();
-//        else if (command.equals("query"))
-//            executeQuery();
-
     }
 
 

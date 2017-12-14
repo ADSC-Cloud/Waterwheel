@@ -266,7 +266,7 @@ public class DataSchema implements Serializable {
         String objectStr = "";
         Object attribute = new Object();
         for (int i = 0; i < len; i++) {
-            objectStr = object.get(getFieldName(i)).toString().replace("\"", "");
+            objectStr = object.get(getFieldName(i)).toString();
             attribute = dataTypes.get(i).readFromString(objectStr);
             dataTuple.add(attribute);
         }

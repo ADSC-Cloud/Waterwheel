@@ -10,6 +10,7 @@ import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.PartialQueryResult;
 import indexingTopology.common.logics.DataTuplePredicate;
 import indexingTopology.filesystem.HdfsFileSystemHandler;
+import indexingTopology.filesystem.LocalFileSystemHandler;
 import indexingTopology.metadata.ISchemaManager;
 import indexingTopology.metadata.SchemaManager;
 import indexingTopology.metrics.Tags;
@@ -219,7 +220,31 @@ abstract public class QueryCoordinatorBolt<T extends Number & Comparable<T>> ext
                     e.printStackTrace();
                 }
             }
-        } else if (tuple.getSourceStreamId().equals(Streams.QueryFinishedStream)) {
+        }
+        else if(tuple.getSourceStreamId().equals(Streams.OldDataRemoval)){
+            String fileName = tuple.getString(0);
+            Map<String, BloomFilter> columnToBloomFilter = (Map<String, BloomFilter>)tuple.getValueByField("columnToBloomFilter");
+            for(String column: columnToBloomFilter.keySet()) {
+              try {
+                  BloomFilterStore.BloomFilterId bloomFilterId = new BloomFilterStore.BloomFilterId(fileName, column);
+                  if(config.HDFSFlag == false){
+                      LocalFileSystemHandler localFileSystemHandler = new LocalFileSystemHandler("../", config);
+                      localFileSystemHandler.removeOldData(config.metadataDir + "/" + bloomFilterId.toString());
+                  }
+                  else{
+                      LocalFileSystemHandler localFileSystemHandler = new LocalFileSystemHandler(config.metadataDir, config);
+                      localFileSystemHandler.removeOldData(config.metadataDir + "/" + bloomFilterId.toString());
+                  }
+                  bloomFilterStore.delete(bloomFilterId);
+//                  System.out.println(String.format("A bloom filter is remove for chunk: %s, column: %s", fileName, column));
+                } catch (InterruptedException e) {
+                  e.printStackTrace();
+              } catch (IOException e) {
+                  e.printStackTrace();
+              }
+            }
+        }
+        else if (tuple.getSourceStreamId().equals(Streams.QueryFinishedStream)) {
             Long queryId = tuple.getLong(0);
 
 //            Long start = queryIdToStartTime.get(queryId);
