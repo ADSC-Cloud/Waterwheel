@@ -12,3 +12,9 @@
 # the hdfs host. This value can be omitted when strage.file.system is local.
 # the host generally can be obtained by ./hdsf getconf --confKey fs.default.name
  hdfs.host: "hdfs://namenode-host:9000/"
+
+# default time to remove old data
+ remove.interval.hours: 1
+
+# default time for old data time property
+ old.data.previous.time: 48
