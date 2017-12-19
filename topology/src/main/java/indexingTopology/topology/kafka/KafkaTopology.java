@@ -290,6 +290,7 @@ public class KafkaTopology {
                         String locationtime = String.valueOf(new Date(timestamp));
                         Double lon = Math.random() * 100;
                         Double lat = Math.random() * 100;
+                        int devbtype = (int) (Math.random() * 10);
                         final int id = new Random().nextInt(100);
                         final String idString = "" + id;
 //                          int id = (int) (Math.random() * 100);
@@ -297,7 +298,7 @@ public class KafkaTopology {
                         this.producer.send(new ProducerRecord<String, String>("consumer",
                                 String.valueOf(i),
 //                                \"timestamp\":"+ timestamp +",
-                                "{\"lon\":"+ lon + ",\"lat\":" + lat + ",\"devbtype\":"+ totalNumber +",\"devid\":\"asd\",\"id\":"+ idString +"}"));
+                                "{\"lon\":"+ lon + ",\"lat\":" + lat + ",\"devbtype\":"+ devbtype +",\"devid\":\"asd\",\"city\": \"4401\",\"locationtime\":" + System.currentTimeMillis() + "}"));
 //                        this.producer.send(new ProducerRecord<String, String>("consumer",
 //                                String.valueOf(i), "{\"employees\":[{\"firstName\":\"John\",\"lastName\":\"Doe\"},{\"firstName\":\"Anna\",\"lastName\":\"Smith\"},{\"firstName\":\"Peter\",\"lastName\":\"Jones\"}]}"));
                         //                        String.format("{\"type\":\"test\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
@@ -313,7 +314,7 @@ public class KafkaTopology {
                     }
                     //            producer.close();
                     System.out.println("Kafka Producer send msg over,cost time:" + (System.currentTimeMillis() - start) + "ms");
-                    Thread.sleep(1000);
+                    Thread.sleep(5000);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -329,14 +330,14 @@ public class KafkaTopology {
 //        QueryCoordinatorBolt<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServerBolt<>(minIndex, maxIndex, queryPort,
 //                config, schema);
         QueryCoordinatorBolt<Integer> coordinator = new GeoTemporalQueryCoordinatorBoltBolt<>(lowerBound,
-                upperBound, queryPort, city, config, schema);
+                upperBound, 10001, city, config, schema);
 
         DataTupleMapper dataTupleMapper = new DataTupleMapper(rawSchema, (Serializable & Function<DataTuple, DataTuple>) t -> {
             double lon = (double)schema.getValue("lon", t);
             double lat = (double)schema.getValue("lat", t);
             int zcode = city.getZCodeForALocation(lon, lat);
             t.add(zcode);
-            t.add(System.currentTimeMillis());
+//            t.add(System.currentTimeMillis());
             return t;
         });
 
@@ -345,7 +346,7 @@ public class KafkaTopology {
 //        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
 //                enableLoadBalance, dataSource, queryCoordinatorBolt, dataTupleMapper, bloomFilterColumns, config);
         List<String> bloomFilterColumns = new ArrayList<>();
-        bloomFilterColumns.add("id");
+        bloomFilterColumns.add("devid");
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
         topologyGenerator.setNumberOfNodes(NumberOfNodes);
@@ -389,12 +390,12 @@ public class KafkaTopology {
         }
 
         kafkaTopology.submitTopology();
-        try {
-            Thread.sleep(10000);
-            kafkaTopology.excuteQuery();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            Thread.sleep(10000);
+//            kafkaTopology.excuteQuery();
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
 
     }
 
@@ -404,7 +405,11 @@ public class KafkaTopology {
         rawSchema.addDoubleField("lat");
         rawSchema.addIntField("devbtype");
         rawSchema.addVarcharField("devid", 8);
-        rawSchema.addVarcharField("id", 32);
+//        rawSchema.addVarcharField("id", 32);
+        rawSchema.addVarcharField("city",32);
+        rawSchema.addLongField("locationtime");
+        rawSchema.setTemporalField("locationtime");
+//        rawSchema.addLongField("timestamp");
         return rawSchema;
     }
 
@@ -414,9 +419,12 @@ public class KafkaTopology {
         schema.addDoubleField("lat");
         schema.addIntField("devbtype");
         schema.addVarcharField("devid", 8);
-        schema.addVarcharField("id", 32);
+//        schema.addVarcharField("id", 32);
+        schema.addVarcharField("city",32);
+        schema.addLongField("locationtime");
+        schema.setTemporalField("locationtime");
+//        schema.addLongField("timestamp");
         schema.addIntField("zcode");
-        schema.addLongField("timestamp");
         schema.setPrimaryIndexField("zcode");
 
         return schema;

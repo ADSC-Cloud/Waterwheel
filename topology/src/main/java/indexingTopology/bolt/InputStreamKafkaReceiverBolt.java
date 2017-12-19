@@ -18,6 +18,7 @@ import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.tuple.Fields;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -75,6 +76,15 @@ public class InputStreamKafkaReceiverBolt extends InputStreamReceiverBolt {
                         data.put("value", record.value());
                         System.out.println(record.value());
                         JSONObject jsonFromData = JSONObject.fromObject(record.value());
+//                        String dateValue = (String)jsonFromData.get("locationtime");
+//                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+//                        Date date = dateFormat.parse(dateValue);
+//                        jsonFromData.accumulate("timestamp", date.getTime());
+
+                        //template replace
+                        long dataValue = (long)jsonFromData.get("locationtime");
+//                        jsonFromData.accumulate("timestamp", dataValue);
+
                         getInputQueue().put(schema.getTupleFromJsonObject(jsonFromData));
                     }
 //                        JsonParser parser = new JsonParser();

@@ -3,6 +3,7 @@ package indexingTopology.util.shape;
 import info.batey.kafka.unit.KafkaUnit;
 import kafka.producer.KeyedMessage;
 import net.sf.json.JSON;
+import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 import org.apache.kafka.common.protocol.types.Field;
 
@@ -59,7 +60,7 @@ public class ShapeChecking {
             String[] geoToPoint = geoClean.split(",");
 //            System.out.println(geoToPoint[0].split("  ")[1]);
             for(int i = 0;i < geoToPoint.length;i++){
-                String[] splited = geoToPoint[i].split("  ");
+                String[] splited = geoToPoint[i].split(" ");
                 for(int j = 0;j < 2;j++){
                     arrayList.add(splited[j]);
                 }
@@ -147,7 +148,13 @@ public class ShapeChecking {
         }
         Object object = new Object();
         String searchTest11 = "{\"type\":\"rectangle\",\"leftTop\":\"113,24\",\"rightBottom\":\"112,23\",\"geoStr\":null,\"lon\":null,\"lat\":null,\"radius\":null}";
-        JSONObject jsonObject1 = JSONObject.fromObject(searchTest);
+        JSONObject jsonObject1 = JSONObject.fromObject(searchTest11);
+        try{
+            Double jsonInteger = jsonObject.getDouble("type");
+            System.out.println(jsonInteger);
+        }catch (JSONException e){
+            System.out.println("Error !");;
+        }
         object = (Object)jsonObject1;
         System.out.println(object);
     }

@@ -156,6 +156,7 @@ public class KryoTemplateSerializerTest extends TestCase {
         schema.addVarcharField("update_time", 32);
         schema.addIntField("zcode");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.setPrimaryIndexField("zcode");
 
 

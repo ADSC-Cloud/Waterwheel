@@ -72,6 +72,7 @@ public class TopologyOverallTest extends TestCase {
         schema.addDoubleField("f2");
         schema.addDoubleField("f3");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.setPrimaryIndexField("f1");
 
         int ingestionPort = socketPool.getAvailablePort();
@@ -152,6 +153,7 @@ public class TopologyOverallTest extends TestCase {
         schema.addIntField("f2");
         schema.addIntField("f3");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.setPrimaryIndexField("f1");
 
         int ingestionPort = socketPool.getAvailablePort();
@@ -230,6 +232,7 @@ public class TopologyOverallTest extends TestCase {
         schema.addDoubleField("f2");
         schema.addDoubleField("f3");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.setPrimaryIndexField("f1");
 
         int ingestionPort = socketPool.getAvailablePort();
@@ -306,6 +309,7 @@ public class TopologyOverallTest extends TestCase {
         schema.addDoubleField("f2");
         schema.addDoubleField("f3");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.setPrimaryIndexField("f1");
 
         int ingestionPort = socketPool.getAvailablePort();
@@ -384,6 +388,7 @@ public class TopologyOverallTest extends TestCase {
         schema.addIntField("f2");
         schema.addIntField("f3");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.setPrimaryIndexField("f1");
 
         int ingestionPort = socketPool.getAvailablePort();
@@ -475,6 +480,7 @@ public class TopologyOverallTest extends TestCase {
         schema.addIntField("f2");
         schema.addIntField("f3");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.setPrimaryIndexField("f1");
 
         int ingestionPort = socketPool.getAvailablePort();
@@ -553,6 +559,7 @@ public class TopologyOverallTest extends TestCase {
         schema.addIntField("f2");
         schema.addIntField("f3");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.setPrimaryIndexField("f1");
 
         int ingestionPort = socketPool.getAvailablePort();

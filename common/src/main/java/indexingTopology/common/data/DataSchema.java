@@ -52,7 +52,7 @@ public class DataSchema implements Serializable {
 
     private int tupleLength = 0;
 
-    public DataSchema(List<String> fieldNames,List<Class> valueTypes, String indexField) {
+    public DataSchema(List<String> fieldNames,List<Class> valueTypes, String indexField, String temporalField) {
         assert fieldNames.size()==valueTypes.size() : "number of fields should be " +
                 "same as the number of value types provided";
         for(int i = 0; i < valueTypes.size(); i++) {
@@ -67,16 +67,23 @@ public class DataSchema implements Serializable {
             }
         }
         this.indexField = indexField;
+        this.temporalField = temporalField;
     }
 
     private final Map<String, Integer> dataFieldNameToIndex = new HashMap<>();
     private final List<String> fieldNames = new ArrayList<>();
     private final List<DataType> dataTypes = new ArrayList<>();
     private String indexField;
+    private String temporalField;
 
     public void setPrimaryIndexField(String name) {
         indexField = name;
     }
+
+    public void setTemporalField(String name){
+        temporalField = name;
+    }
+
 
     public void addDoubleField(String name) {
         final DataType dataType = new DataType(Double.class, Double.BYTES);
@@ -165,6 +172,10 @@ public class DataSchema implements Serializable {
         return indexField;
     }
 
+    public String getTemporalField(){
+        return temporalField;
+    }
+
     public String getFieldName(int index) {
         return fieldNames.get(index);
     }
@@ -182,6 +193,10 @@ public class DataSchema implements Serializable {
         return getDataType(indexField);
     }
 
+    public DataType getTemporalType(){
+        return getDataType(temporalField);
+    }
+
     public int getFieldIndex(String fieldName) {
         return dataFieldNameToIndex.get(fieldName);
     }
@@ -194,6 +209,7 @@ public class DataSchema implements Serializable {
         DataSchema ret = new DataSchema();
         ret.dataTypes.addAll(dataTypes);
         ret.indexField = indexField;
+        ret.temporalField = temporalField;
         ret.dataFieldNameToIndex.putAll(dataFieldNameToIndex);
         ret.fieldNames.addAll(fieldNames);
         return ret;
@@ -207,6 +223,11 @@ public class DataSchema implements Serializable {
     public Object getIndexValue(DataTuple dataTuple) {
         final int indexOffset = dataFieldNameToIndex.get(indexField);
         return dataTuple.get(indexOffset);
+    }
+
+    public Object getTemporalValue(DataTuple dataTuple){
+        final int temporalOffset = dataFieldNameToIndex.get(temporalField);
+        return dataTuple.get(temporalOffset);
     }
 
     public int getTupleLength() {
@@ -223,6 +244,7 @@ public class DataSchema implements Serializable {
                     dataTypes.get(i).length);
         }
         ret += String.format("index field: %s\n", indexField);
+        ret += String.format("temporal field: %s\n", temporalField);
         return ret;
     }
 
@@ -245,6 +267,8 @@ public class DataSchema implements Serializable {
         }
 
         if (this.indexField != null && schema.indexField !=null && ! this.indexField.equals(schema.indexField))
+            return false;
+        if (this.temporalField != null && schema.temporalField !=null && ! this.temporalField.equals(schema.temporalField))
             return false;
 
         return true;

@@ -63,6 +63,7 @@ public class SubqueryHandlerTest extends TestCase {
         DataSchema schema = new DataSchema();
         schema.addIntField("a1");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.addVarcharField("a4", 100);
         schema.setPrimaryIndexField("a1");
 
@@ -123,6 +124,7 @@ public class SubqueryHandlerTest extends TestCase {
         DataSchema schema = new DataSchema();
         schema.addIntField("a1");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.addVarcharField("a4", 100);
         schema.setPrimaryIndexField("a1");
 

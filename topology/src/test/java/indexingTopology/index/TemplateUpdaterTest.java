@@ -24,7 +24,7 @@ public class TemplateUpdaterTest {
             "date", "time", "latitude", "longitude"));
     private ArrayList valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
             Double.class, Double.class, Double.class, Double.class, Double.class));
-    private DataSchema schema = new DataSchema(fieldNames, valueTypes, "user_id");
+    private DataSchema schema = new DataSchema(fieldNames, valueTypes, "user_id","time");
 
     private TopologyConfig config = new TopologyConfig();
 

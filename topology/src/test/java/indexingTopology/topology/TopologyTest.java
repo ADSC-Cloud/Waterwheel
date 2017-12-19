@@ -110,6 +110,7 @@ public class TopologyTest extends TestCase {
         schema.addVarcharField("id", 32);
         schema.addIntField("zcode");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.setPrimaryIndexField("zcode");
 
         int queryPort = socketPool.getAvailablePort();
@@ -280,6 +281,7 @@ public class TopologyTest extends TestCase {
         schema.addIntField("a1");
         schema.addDoubleField("a2");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.addVarcharField("a4", 100);
         schema.setPrimaryIndexField("a1");
 
@@ -401,6 +403,7 @@ public class TopologyTest extends TestCase {
         schema.addIntField("a1");
         schema.addDoubleField("a2");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.addVarcharField("a4", 100);
         schema.setPrimaryIndexField("a1");
 
@@ -517,6 +520,7 @@ public class TopologyTest extends TestCase {
         schema.addIntField("a1");
         schema.addDoubleField("a2");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.addVarcharField("a4", 100);
         schema.setPrimaryIndexField("a1");
 
@@ -666,6 +670,7 @@ public class TopologyTest extends TestCase {
         schema.addIntField("a1");
         schema.addDoubleField("a2");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.addVarcharField("a4", 100);
         schema.setPrimaryIndexField("a1");
 
@@ -816,6 +821,7 @@ public class TopologyTest extends TestCase {
         schema.addIntField("a1");
         schema.addDoubleField("a2");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.addVarcharField("a4", 100);
         schema.setPrimaryIndexField("a1");
 
@@ -957,6 +963,7 @@ public class TopologyTest extends TestCase {
         rawSchema.addIntField("a1");
         rawSchema.addDoubleField("a2");
         rawSchema.addLongField("timestamp");
+        rawSchema.setTemporalField("timestamp");
         rawSchema.addVarcharField("a4", 100);
         rawSchema.setPrimaryIndexField("a1");
 
@@ -1099,6 +1106,7 @@ public class TopologyTest extends TestCase {
         schema.addIntField("a1");
         schema.addDoubleField("a2");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.addVarcharField("a4", 100);
         schema.setPrimaryIndexField("a1");
 
@@ -1229,6 +1237,7 @@ public class TopologyTest extends TestCase {
         schema.addIntField("a1");
         schema.addDoubleField("a2");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.addVarcharField("a4", 100);
         schema.setPrimaryIndexField("a1");
 
@@ -1348,6 +1357,7 @@ public class TopologyTest extends TestCase {
         schema.addIntField("a1");
         schema.addDoubleField("a2");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.addVarcharField("a4", 100);
         schema.setPrimaryIndexField("a1");
 
@@ -1399,6 +1409,7 @@ public class TopologyTest extends TestCase {
         schema.addIntField("a1");
         schema.addDoubleField("a2");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.addVarcharField("a4", 100);
         schema.setPrimaryIndexField("a1");
 
