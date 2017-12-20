@@ -118,6 +118,7 @@ public class TopologyTest extends TestCase {
         int kafkaUnitport = socketPool.getAvailablePort();
 
         kafkaUnitServer = new KafkaUnit("localhost:" + kafkaZkport,"localhost:" + kafkaUnitport);
+        System.out.println("kafkaZkport: " + kafkaZkport + " " + kafkaUnitport);
         kafkaUnitServer.startup();
         Thread.sleep(1000);
         double x1 = 40.0;
