@@ -113,7 +113,8 @@ public class TopologyTest extends TestCase {
         schema.setPrimaryIndexField("zcode");
 
         int queryPort = socketPool.getAvailablePort();
-        int kafkaZkport = socketPool.getAvailablePort();
+//        int kafkaZkport = socketPool.getAvailablePort();
+        int kafkaZkport = 2181;
         int kafkaUnitport = socketPool.getAvailablePort();
 
         kafkaUnitServer = new KafkaUnit("localhost:" + kafkaZkport,"localhost:" + kafkaUnitport);
