@@ -649,6 +649,7 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
                 fileSystemHandler.removeOldData(new Path(relativePath + "/" + removalFileMeta.get(i).getFilename()));
                 filePartitionSchemaManager.remove(removalFileMeta.get(i));
                 collector.emit(Streams.OldDataRemoval, new Values(removalFileMeta.get(i).getFilename(), columnToBloomFilter));
+                System.out.println(String.format("Data chunk %s is removed.\n", removalFileMeta.get(i).getFilename()));
             } catch (InterruptedException e1) {
                 e1.printStackTrace();
             }

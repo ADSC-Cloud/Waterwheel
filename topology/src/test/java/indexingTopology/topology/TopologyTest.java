@@ -113,7 +113,8 @@ public class TopologyTest extends TestCase {
         schema.setPrimaryIndexField("zcode");
 
         int queryPort = socketPool.getAvailablePort();
-        int kafkaZkport = socketPool.getAvailablePort();
+//        int kafkaZkport = socketPool.getAvailablePort();
+        int kafkaZkport = 2181;
         int kafkaUnitport = socketPool.getAvailablePort();
 
         kafkaUnitServer = new KafkaUnit("localhost:" + kafkaZkport,"localhost:" + kafkaUnitport);
@@ -176,7 +177,7 @@ public class TopologyTest extends TestCase {
 //            this.producer.flush();
         }
         System.out.println("Kafka Producer send msg over,cost time:" + (System.currentTimeMillis() - start) + "ms");
-
+        Thread.sleep(5000);
         FakeKafkaReceiverBolt inputStreamReceiverBolt = new FakeKafkaReceiverBolt(rawSchema, config, kafkaUnitServer, total);
 
         QueryCoordinatorBolt<Integer> coordinator = new GeoTemporalQueryCoordinatorBoltBolt<>(lowerBound,
