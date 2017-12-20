@@ -177,7 +177,7 @@ public class TopologyTest extends TestCase {
 //            this.producer.flush();
         }
         System.out.println("Kafka Producer send msg over,cost time:" + (System.currentTimeMillis() - start) + "ms");
-
+        Thread.sleep(5000);
         FakeKafkaReceiverBolt inputStreamReceiverBolt = new FakeKafkaReceiverBolt(rawSchema, config, kafkaUnitServer, total);
 
         QueryCoordinatorBolt<Integer> coordinator = new GeoTemporalQueryCoordinatorBoltBolt<>(lowerBound,
