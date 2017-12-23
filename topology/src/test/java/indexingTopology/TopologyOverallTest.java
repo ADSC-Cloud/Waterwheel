@@ -49,6 +49,7 @@ public class TopologyOverallTest extends TestCase {
         config.HDFSFlag = false;
         config.dataChunkDir = "./target/tmp";
         config.metadataDir = "./target/tmp";
+        config.previousTime = Integer.MAX_VALUE;
     }
 
     public void tearDown() {
@@ -435,7 +436,7 @@ public class TopologyOverallTest extends TestCase {
                     new AggregateField(new Sum(), "f3"), new AggregateField(new Count(), "f3")
             });
 
-            QueryResponse response = queryClient.query(new QueryRequest<>(0, 100, 0L, Long.MAX_VALUE, null, aggregator));
+            QueryResponse response = queryClient.query(new QueryRequest<>(0, 100, 0L, Long.MAX_VALUE, null, null, aggregator));
             Collections.sort(response.dataTuples, (DataTuple t1, DataTuple t2) -> ((Comparable)t1.get(0)).compareTo(t2.get(0)));
             assertEquals(10, response.dataTuples.size());
             assertEquals(new DataTuple(0, 20.0, 5.0), response.dataTuples.get(0));
@@ -531,6 +532,93 @@ public class TopologyOverallTest extends TestCase {
             KillOptions killOptions = new KillOptions();
             killOptions.set_wait_secs(0);
             cluster.killTopologyWithOpts("testTopologyIntegerFilterWithTrivialMapper", killOptions);
+            fullyTested = true;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        assertTrue(fullyTested);
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
+    }
+
+    @Test
+    public void testTopologyDDL() {
+
+        boolean fullyTested = false;
+        final String topologyName = "testTopologyDDL";
+
+        DataSchema schema = new DataSchema();
+        schema.addIntField("f1");
+        schema.addIntField("f2");
+        schema.addIntField("f3");
+        schema.addLongField("timestamp");
+        schema.setPrimaryIndexField("f1");
+
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
+
+        Integer lowerBound = 0;
+        Integer upperBound = 5000;
+
+        final boolean enableLoadBalance = false;
+
+        InputStreamReceiverBolt dataSource = new InputStreamReceiverBoltServer(schema, ingestionPort, config);
+        QueryCoordinatorBolt<Integer> queryCoordinatorBolt = new QueryCoordinatorWithQueryReceiverServerBolt<>(lowerBound,
+                upperBound, queryPort, config, schema);
+
+        TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
+
+        DataTupleMapper dataTupleMapper = new DataTupleMapper(schema, (Serializable & Function<DataTuple, DataTuple>) t -> t);
+
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
+                enableLoadBalance, dataSource, queryCoordinatorBolt, dataTupleMapper, config);
+
+        Config conf = new Config();
+        conf.setDebug(false);
+        conf.setNumWorkers(1);
+
+        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+//        conf.put(Config.SUPERVISOR_CHILDOPTS, "-Xmx2048m");
+        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+
+        LocalCluster cluster = new LocalCluster();
+        cluster.submitTopology(topologyName, conf, topology);
+
+
+        try {
+//            Thread.sleep(10000);
+
+
+            QueryClient queryClient = new QueryClient("localhost", queryPort);
+            queryClient.connectWithTimeout(10000);
+
+            DataSchema queriedSchema = queryClient.querySchema("default");
+            DataSchema queriedSchema2 = queryClient.querySchema();
+
+            assertEquals(queriedSchema.toString(), queriedSchema2.toString());
+            assertEquals(queriedSchema.toString(), schema.toString());
+
+            DataSchema schemaToBeCreated = new DataSchema();
+            schemaToBeCreated.addLongField("a1");
+            schemaToBeCreated.addVarcharField("100", 10);
+
+            assertEquals(true, queryClient.createSchema("new schema", schemaToBeCreated));
+
+            DataSchema schema3 = queryClient.querySchema("new schema");
+            assertEquals(schemaToBeCreated.toString(), schema3.toString());
+
+            // reject duplication
+            assertEquals(false, queryClient.createSchema("new schema", schemaToBeCreated));
+
+            // reject null schema
+            assertEquals(false, queryClient.createSchema("tmp", null));
+
+
+            queryClient.close();
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testTopologyDDL", killOptions);
             fullyTested = true;
 
         } catch (Exception e) {

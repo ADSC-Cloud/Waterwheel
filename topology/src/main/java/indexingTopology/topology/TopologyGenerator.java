@@ -4,6 +4,8 @@ import indexingTopology.bolt.*;
 import indexingTopology.common.logics.DataTupleMapper;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.DataSchema;
+import indexingTopology.spout.DummySpout;
+import indexingTopology.spout.Spout;
 import indexingTopology.streams.Streams;
 import org.apache.storm.generated.StormTopology;
 import org.apache.storm.topology.TopologyBuilder;
@@ -37,21 +39,31 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
                                                   DataTupleMapper dataTupleMapper, List<String> bloomFilterColumns, TopologyConfig config) {
         TopologyBuilder builder = new TopologyBuilder();
 
+        builder.setSpout("dummy", new DummySpout(), 1)
+                .setCPULoad(1)
+                .setMemoryLoad(1);
         builder.setBolt(TupleGenerator, dataSource, 1)
-                .directGrouping(IndexerBolt, Streams.AckStream);
+                .directGrouping(IndexerBolt, Streams.AckStream)
+                .shuffleGrouping("dummy")
+                .setCPULoad(400)
+                .setMemoryLoad(1);
 
         builder.setBolt(RangeQueryDispatcherBolt, new DispatcherServerBolt<>(dataSchema, lowerBound, upperBound,
                 enableLoadBalance, false, dataTupleMapper, config), numberOfNodes)
 
                 .localOrShuffleGrouping(TupleGenerator, Streams.IndexStream)
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
-                .allGrouping(MetadataServer, Streams.StaticsRequestStream);
+                .allGrouping(MetadataServer, Streams.StaticsRequestStream)
+                .setMemoryLoad(1)
+                .setCPULoad(1);
 
         builder.setBolt(IndexerBolt, new IndexingServerBolt(dataSchema, bloomFilterColumns, config), config.INSERTION_SERVER_PER_NODE * numberOfNodes)
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.TreeCleanStream)
-                .allGrouping(LogWriter, Streams.ThroughputRequestStream);
+                .allGrouping(LogWriter, Streams.ThroughputRequestStream)
+                .setMemoryLoad(1)
+                .setCPULoad(1);
 
 //        builder.setBolt(RangeQueryDecompositionBolt, new QueryCoordinatorWithQueryGenerator<>(lowerBound, upperBound), 1)
         builder.setBolt(RangeQueryDecompositionBolt, queryCoordinatorBolt, 1)
@@ -59,20 +71,29 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
                 .shuffleGrouping(ResultMergeBolt, Streams.PartialQueryResultDeliveryStream)
                 .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.FileSubQueryFinishStream)
                 .shuffleGrouping(MetadataServer, Streams.FileInformationUpdateStream)
+                .shuffleGrouping(MetadataServer, Streams.OldDataRemoval)
                 .shuffleGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.TimestampUpdateStream)
-                .shuffleGrouping(MetadataServer, Streams.LocationInfoUpdateStream);
+                .shuffleGrouping(MetadataServer, Streams.LocationInfoUpdateStream)
+                .shuffleGrouping(MetadataServer, Streams.DDLResponseStream)
+                .setCPULoad(400)
+                .setMemoryLoad(1);
 
 
         if (config.SHUFFLE_GROUPING_FLAG) {
             builder.setBolt(RangeQueryChunkScannerBolt, new QueryServerBolt<Key>(dataSchema, config), config.CHUNK_SCANNER_PER_NODE * numberOfNodes)
 //                .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream)
                     .directGrouping(ResultMergeBolt, Streams.SubQueryReceivedStream)
-                    .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream); //make comparision with our method.
+                    .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream)
+                    .setCPULoad(1) //make comparision with our method.
+                    .setMemoryLoad(1);
         } else {
             builder.setBolt(RangeQueryChunkScannerBolt, new QueryServerBolt<Key>(dataSchema, config), config.CHUNK_SCANNER_PER_NODE * numberOfNodes)
                     .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream)
-                    .directGrouping(ResultMergeBolt, Streams.SubQueryReceivedStream);
+                    .directGrouping(ResultMergeBolt, Streams.SubQueryReceivedStream)
+                    .setCPULoad(1)
+                    .setMemoryLoad(1);
+
         }
 
         builder.setBolt(ResultMergeBolt, new ResultMergerBolt(dataSchema), 1)
@@ -80,20 +101,27 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
                 .shuffleGrouping(IndexerBolt, Streams.BPlusTreeQueryStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryInformationStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryInformationStream)
-                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.PartialQueryResultReceivedStream);
+                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.PartialQueryResultReceivedStream)
+                .setCPULoad(1)
+                .setMemoryLoad(1);
 
-        builder.setBolt(MetadataServer, new MetadataServerBolt<>(lowerBound, upperBound, config), 1)
+        builder.setBolt(MetadataServer, new MetadataServerBolt<>(lowerBound, upperBound, dataSchema, config), 1)
                 .shuffleGrouping(RangeQueryDispatcherBolt, Streams.StatisticsReportStream)
                 .shuffleGrouping(IndexerBolt, Streams.TimestampUpdateStream)
                 .shuffleGrouping(IndexerBolt, Streams.FileInformationUpdateStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.EnableRepartitionStream)
                 .shuffleGrouping(IndexerBolt, Streams.LocationInfoUpdateStream)
-                .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.LocationInfoUpdateStream);
+                .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.LocationInfoUpdateStream)
+                .shuffleGrouping(RangeQueryDecompositionBolt, Streams.DDLRequestStream)
+                .setCPULoad(1)
+                .setMemoryLoad(1);
 
         builder.setBolt(LogWriter, new LoggingBolt(), 1)
 //                .shuffleGrouping(RangeQueryDispatcherBolt, Streams.ThroughputReportStream)
                 .shuffleGrouping(IndexerBolt, Streams.ThroughputReportStream)
-                .shuffleGrouping(MetadataServer, Streams.LoadBalanceStream);
+                .shuffleGrouping(MetadataServer, Streams.LoadBalanceStream)
+                .setCPULoad(1)
+                .setMemoryLoad(1);
 
         return builder.createTopology();
     }

@@ -37,7 +37,7 @@ To run our system in local mode, you should follow those steps:
 $ git clone https://github.com/ADSC-Cloud/Waterwheel
 ```
 
-2. Compile the source code
+2. Compile the source codeF
 
  ```
  $ mvn clean install -DskipTests
@@ -119,6 +119,12 @@ $ mvn clean install -DskipTests
 ```
 $ storm jar SOURCE_CODE_PATH/target/IndexingTopology-1.0-SNAPSHOT.jar indexingTopologyNormalDistributionTopology append-only-store
 ```
+
+#### Publications
+
+1. DITIR: Distributed Index for High Throughput Trajectory Insertion and Real-time Temporal Range Query. VLDB 2017 (demo). [[pdf]](http://42.61.39.87:8080/Publication/indexing-demo.pdf) [[cite]](http://42.61.39.87:8080/Publication/indexing-demo-cite.txt)
+
+2. Waterwheel: Realtime Indexing and Temporal Range Query Processing over Massive Data Streams. To appear in ICDE 2018. [[pdf]](http://42.61.39.87:8080/Publication/waterwheel.pdf) [[cite]](http://42.61.39.87:8080/Publication/waterwheel-cite.txt)
 
 #### Acknowledgement
 

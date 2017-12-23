@@ -147,7 +147,7 @@ public class TDriveTopology {
 
                 GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
                         System.currentTimeMillis() - RecentSecondsOfInterest * 1000,
-                        System.currentTimeMillis(), null, aggregator, null, null);
+                        System.currentTimeMillis(), null, null, aggregator, null, null);
                 long start = System.currentTimeMillis();
                 try {
                     DateFormat dateFormat = new SimpleDateFormat("MM-dd HH:mm:ss");
@@ -203,6 +203,7 @@ public class TDriveTopology {
         TopologyConfig config = new TopologyConfig();
 
 //        InputStreamReceiver dataSource = new InputStreamReceiverServer(rawSchema, 10000, config);
+
         InputStreamReceiverBolt dataSource = new TDriveDataSourceBolt(schema, city, config, InputFilePath, MaxIngestRate);
 
         QueryCoordinatorBolt<Integer> queryCoordinatorBolt = new GeoTemporalQueryCoordinatorBoltBolt<>(lowerBound,

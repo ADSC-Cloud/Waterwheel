@@ -8,6 +8,7 @@ public class Streams {
     public static final String FileSystemQueryStream = "FileSystemQueryStream";
     public static final String BPlusTreeQueryStream = "BPlusTreeQueryStream";
     public static final String FileInformationUpdateStream = "FileInformationUpdateStream";
+    public static final String OldDataRemoval = "OldDataRemoval";
     public static final String IndexStream = "IndexStream";
     public static final String BPlusTreeQueryInformationStream = "BPlusTreeQueryInformationStream";
     public static final String FileSystemQueryInformationStream = "FileSystemQueryInformationStream";
@@ -28,5 +29,7 @@ public class Streams {
     public static final String PartialQueryResultDeliveryStream = "PartialQueryResultDeliveryStream";
     public static final String PartialQueryResultReceivedStream = "PartialQueryResultReceivedStream";
     public static final String LocationInfoUpdateStream = "LocationInfoUpdateStream";
+    public static final String DDLRequestStream = "DDLRequestStream";
+    public static final String DDLResponseStream = "DDLResponseStream";
 }
 

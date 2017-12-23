@@ -116,7 +116,7 @@ public class NetworkTemporalQueryCoordinatorWithQueryReceiverServerBolt<T extend
                         request.low, request.high, request.startTime, request.endTime);
                 final List<Query<T>> queryList = new ArrayList<>();
                 queryList.add(new Query(queryid, request.low, request.high, request.startTime,
-                        request.endTime, request.predicate, request.aggregator, request.sorter, request.equivalentPredicate));
+                        request.endTime, request.predicate, request.postPredicate, request.aggregator, request.sorter, request.equivalentPredicate));
                 pendingQueryQueue.put(queryList);
 
                 System.out.println("Admitted a query.  waiting for query results");
@@ -155,13 +155,14 @@ public class NetworkTemporalQueryCoordinatorWithQueryReceiverServerBolt<T extend
                 final long startTimeStamp = clientQueryRequest.startTime;
                 final long endTimeStamp = clientQueryRequest.endTime;
                 final DataTuplePredicate predicate = clientQueryRequest.predicate;
+                final DataTuplePredicate postPredicate = clientQueryRequest.postPredicate;
                 final Aggregator aggregator = clientQueryRequest.aggregator;
                 final DataTupleSorter sorter = clientQueryRequest.sorter;
                 final DataTupleEquivalentPredicateHint equivalentPredicate = clientQueryRequest.equivalentPredicate;
 
 
                 queryList.add(new Query(queryid, clientQueryRequest.destIpLowerBound, clientQueryRequest.destIpUpperBound, startTimeStamp, endTimeStamp,
-                        predicate, aggregator, sorter, equivalentPredicate));
+                        predicate, postPredicate, aggregator, sorter, equivalentPredicate));
                 LOG.info("A new Query{} ({}, {}, {}, {}) is added to the pending queue.", queryid,
                         clientQueryRequest.destIpLowerBound, clientQueryRequest.destIpUpperBound, startTimeStamp, endTimeStamp);
 

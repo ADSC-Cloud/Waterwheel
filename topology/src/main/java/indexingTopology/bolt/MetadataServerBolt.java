@@ -2,18 +2,26 @@ package indexingTopology.bolt;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.google.common.hash.BloomFilter;
 import indexingTopology.api.server.Server;
 import indexingTopology.api.server.SystemStateQueryHandle;
 import indexingTopology.bloom.DataChunkBloomFilters;
+import indexingTopology.bolt.message.*;
 import indexingTopology.bolt.metrics.LocationInfo;
 import indexingTopology.common.Histogram;
 import indexingTopology.common.KeyDomain;
 import indexingTopology.common.SystemState;
 import indexingTopology.common.TimeDomain;
+import indexingTopology.common.data.DataSchema;
 import indexingTopology.config.TopologyConfig;
+import indexingTopology.filesystem.HdfsFileSystemHandler;
+import indexingTopology.filesystem.LocalFileSystemHandler;
+import indexingTopology.metadata.SchemaManager;
 import indexingTopology.metrics.PerNodeMetrics;
 import indexingTopology.util.*;
 import indexingTopology.util.partition.BalancedPartition;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.Path;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -26,8 +34,13 @@ import indexingTopology.metadata.FilePartitionSchemaManager;
 import indexingTopology.streams.Streams;
 import org.apache.zookeeper.KeeperException;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.*;
+
+import static org.hsqldb.HsqlDateTime.e;
 
 /**
  * Created by acelzj on 12/12/16.
@@ -94,14 +107,31 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
     private Server systemStateQueryServer;
 
-    public MetadataServerBolt(Key lowerBound, Key upperBound, TopologyConfig config) {
+    private int intervalTime;
+
+    private int removeHours;
+
+    private boolean removeOldDataStart;
+
+    private SchemaManager schemaManager;
+
+    private DataSchema defaultSchema;
+
+    private Map<String, BloomFilter> columnToBloomFilter;
+
+    public MetadataServerBolt(Key lowerBound, Key upperBound, DataSchema defaultSchema, TopologyConfig config) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
         this.config = config;
+        this.defaultSchema = defaultSchema;
     }
 
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
+
+        schemaManager = new SchemaManager();
+        schemaManager.setDefaultSchema(defaultSchema);
+
         collector = outputCollector;
 
         initializeMetadataFolder();
@@ -144,10 +174,10 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 //            e.printStackTrace();
 //        }
 
+
         CPUloads = Collections.synchronizedList(new ArrayList<Double>());
         totalDiskSpaces = Collections.synchronizedList(new ArrayList<>());
         freeDiskSpaces = Collections.synchronizedList(new ArrayList<>());
-
 
         systemState = new SystemState();
         staticsRequestSendingThread = new Thread(new StatisticsRequestSendingRunnable());
@@ -163,6 +193,10 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
         systemState.addConfig("Dispatchers per Node", config.DISPATCHER_PER_NODE);
         systemStateQueryServer = new Server(20000, SystemStateQueryHandle.class, new Class[]{SystemState.class}, systemState);
         systemStateQueryServer.startDaemon();
+        intervalTime = config.removeIntervalHours;
+        removeHours = config.previousTime;
+        removeOldDataStart = false;
+        columnToBloomFilter = new HashMap<>();
     }
 
     private void createMetadataSendingThread() {
@@ -261,6 +295,13 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
             Long tupleCount = tuple.getLongByField("tupleCount");
             filePartitionSchemaManager.add(new FileMetaData(fileName, (Double) keyDomain.getLowerBound(),
                     (Double)keyDomain.getUpperBound(), timeDomain.getStartTimestamp(), timeDomain.getEndTimestamp()));
+            if(removeHours == Integer.MAX_VALUE){ // topologyTest, ignore remove data
+                removeOldDataStart = true;
+            }
+            if(removeOldDataStart == false) {
+                startTimer(intervalTime, removeHours); // Remove old data regularly
+                removeOldDataStart = true;
+            }
 
 //            System.out.println(timeDomain.getEndTimestamp() - timeDomain.getStartTimestamp());
 
@@ -320,6 +361,7 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
             DataChunkBloomFilters bloomFilters = (DataChunkBloomFilters) tuple.getValueByField("bloomFilters");
 
+            columnToBloomFilter = bloomFilters.columnToBloomFilter;
             // omit the logic of storing bloomFilter externally, simply forwarding to the query coordinator.
 
 //            System.out.println("File information is sent from metedata servers");
@@ -343,6 +385,20 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
             // simply forward the info
             collector.emit(Streams.LocationInfoUpdateStream, new Values(info));
+        } else if (tuple.getSourceStreamId().equals(Streams.DDLRequestStream)) {
+            AsyncRequestMessage request = (AsyncRequestMessage)tuple.getValue(0);
+            AsyncResponseMessage response = null;
+            if (request instanceof AsyncSchemaCreateRequest) {
+                final String name = ((AsyncSchemaCreateRequest) request).name;
+                final DataSchema schema = ((AsyncSchemaCreateRequest) request).schema;
+                boolean isSuccessful = schemaManager.createSchema(name, schema);
+                response = new AsyncSchemaCreateResponse(name, isSuccessful, request.id);
+            } else if (request instanceof AsyncSchemaQueryRequest) {
+                final String name = ((AsyncSchemaQueryRequest) request).name;
+                DataSchema schema = schemaManager.getSchema(name);
+                response = new AsyncSchemaQueryResponse(name, schema, request.id);
+            }
+            collector.emit(Streams.DDLResponseStream, new Values(response));
         }
     }
 
@@ -362,6 +418,9 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
         outputFieldsDeclarer.declareStream(Streams.FileInformationUpdateStream,
                 new Fields("fileName", "keyDomain", "timeDomain", "bloomFilters"));
 
+        outputFieldsDeclarer.declareStream(Streams.OldDataRemoval,
+                new Fields("fileName", "columnToBloomFilter"));
+
         outputFieldsDeclarer.declareStream(Streams.TimestampUpdateStream,
                 new Fields("taskId", "keyDomain", "timeDomain"));
 
@@ -372,6 +431,8 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
         outputFieldsDeclarer.declareStream(Streams.LoadBalanceStream, new Fields("loadBalance"));
 
         outputFieldsDeclarer.declareStream(Streams.LocationInfoUpdateStream, new Fields("info"));
+
+        outputFieldsDeclarer.declareStream(Streams.DDLResponseStream, new Fields("response"));
     }
 
     @Override
@@ -528,12 +589,133 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
     }
 
 
+    public static String getCurrentTime() {
+        Date date = new Date();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        return sdf.format(date);
+    }
+
+//    public static void main(String[] args) throws InterruptedException {
+//        System.out.println("main start:" + getCurrentTime());
+//        startTimer();
+//    }
+
+    public void startTimer(int intervalTime,int removeHours) {
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                Calendar time = Calendar.getInstance();
+                int currentHour = 0;
+                time.get(currentHour);
+                if (config.HDFSFlag == false) {
+                    // Local FileSystem
+                    LocalFileSystemHandler localFileSystemHandler = new LocalFileSystemHandler("../", config);
+                    File folderOfData = new File(config.dataChunkDir);
+                    File folderOfMetaData = new File(config.metadataDir);
+                    searchLocalOldData(folderOfData,localFileSystemHandler,removeHours,false);
+//                    searchLocalOldData(folderOfMetaData,localFileSystemHandler,removeHours,true);
+                }
+                else{
+                    // HDFS
+                    try {
+                        HdfsFileSystemHandler fileSystemHandler = new HdfsFileSystemHandler("", config);
+                        fileSystemHandler.openFile(config.dataChunkDir,"");
+                        try {
+                            searchHDFSOldData(fileSystemHandler, config.dataChunkDir, removeHours, false);
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        };
+        Timer timer = new Timer();
+        timer.schedule(task, buildTime(), 1000 * 30);
+//        timer.schedule(task, buildTime(), 3600 * 1000 * intervalTime);
+    }
+
+    public void searchHDFSOldData(HdfsFileSystemHandler fileSystemHandler,String relativePath,int removeHours, boolean isMetadata) throws InterruptedException, IOException {
+        FileStatus[] fileStatus = fileSystemHandler.getFileSystem().listStatus(new Path(relativePath));
+        List<FileMetaData> removalFileMeta = filePartitionSchemaManager.searchFileMetaData(Double.MIN_VALUE, Double.MAX_VALUE, 0, System.currentTimeMillis() - 3600 * 1000 * removeHours);
+        for(int i = 0; i < removalFileMeta.size(); i++){
+            if(removalFileMeta.get(i).getEndTime() > System.currentTimeMillis() - 3600 * 1000 * removeHours){
+                removalFileMeta.remove(i);
+            }
+        }
+        for(int i = 0; i < removalFileMeta.size(); i++){
+            try {
+                fileSystemHandler.removeOldData(new Path(relativePath + "/" + removalFileMeta.get(i).getFilename()));
+                filePartitionSchemaManager.remove(removalFileMeta.get(i));
+                collector.emit(Streams.OldDataRemoval, new Values(removalFileMeta.get(i).getFilename(), columnToBloomFilter));
+                System.out.println(String.format("Data chunk %s is removed.\n", removalFileMeta.get(i).getFilename()));
+            } catch (InterruptedException e1) {
+                e1.printStackTrace();
+            }
+        }
+//        for(FileStatus singleFile : fileStatus) {
+//            if (System.currentTimeMillis() - singleFile.getModificationTime() >= 3600 * removeHours) {
+////                System.out.println("---------------" + singleFile.getPath().getName() + "---------------");
+//                fileSystemHandler.removeOldData(singleFile.getPath());
+//            }
+//        }
+    }
+
+    public void searchLocalOldData(File folder,LocalFileSystemHandler localFileSystemHandler,int removeHours, boolean isMetadata){
+//        System.out.println(folder);
+
+        List<FileMetaData> removalFileMeta = filePartitionSchemaManager.searchFileMetaData(Double.MIN_VALUE, Double.MAX_VALUE, 0, System.currentTimeMillis() - 3600 * 1000 * removeHours);
+        System.out.println(System.currentTimeMillis() - 3600 * 1000 * removeHours + "    " + removalFileMeta.get(0).getStartTime());
+        for(int i = 0; i < removalFileMeta.size(); i++){
+//            if(removalFileMeta.get(i).getEndTime() > System.currentTimeMillis() - 1000 * 30){
+            if(removalFileMeta.get(i).getEndTime() > System.currentTimeMillis() - 3600 * 1000 * removeHours){
+                removalFileMeta.remove(i);
+            }
+        }
+        for(int i = 0; i < removalFileMeta.size(); i++){
+//            System.out.println("removalFile : " + removalFileMeta.get(i).getFilename());
+            try {
+                localFileSystemHandler.removeOldData(folder.getPath() + "/" + removalFileMeta.get(i).getFilename());
+                filePartitionSchemaManager.remove(removalFileMeta.get(i));
+                collector.emit(Streams.OldDataRemoval, new Values(removalFileMeta.get(i).getFilename(), columnToBloomFilter));
+            } catch (InterruptedException e1) {
+                e1.printStackTrace();
+            }
+        }
+    }
+
+    private Date buildTime() {
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, 8);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        Date time = calendar.getTime();
+//        if (time.before(new Date())) {
+//            time = addDay(time, 1);
+//        }
+        return time;
+    }
+
+    private Date addDay(Date date, int days) {
+        Calendar startDT = Calendar.getInstance();
+        startDT.setTime(date);
+        startDT.add(Calendar.DAY_OF_MONTH, days);
+        return startDT.getTime();
+    }
+
+    public FilePartitionSchemaManager getFilePartitionSchemaManager(){
+        return filePartitionSchemaManager;
+    }
+
     class StatisticsRequestSendingRunnable implements Runnable {
 
         @Override
         public void run() {
+
 //            while (true) {
             systemState.setLastThroughput(new double[SystemState.NumberOfHistoricThroughputs]);
+
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     Thread.sleep(TopologyConfig.StaticRequestTimeIntervalInSeconds * 1000);
@@ -561,6 +743,7 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
 
                 collector.emit(Streams.StaticsRequestStream,
                         new Values("Statics Request"));
+
             }
         }
 

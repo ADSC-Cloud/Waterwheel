@@ -22,6 +22,12 @@
 
  supervisor.slots.ports:
    - 6700
+
+ ui.port: 8090
+
+ supervisor.cpu.capacity: 1000.0
+ storm.scheduler: "org.apache.storm.scheduler.resource.ResourceAwareScheduler"
+
 # 
 # 
 # ##### These may optionally be filled in:

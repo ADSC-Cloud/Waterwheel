@@ -151,7 +151,7 @@ public class KingBaseTopology {
 
                 GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
                         System.currentTimeMillis() - RecentSecondsOfInterest * 1000,
-                        System.currentTimeMillis(), null, aggregator, null, null);
+                        System.currentTimeMillis(), null, null, aggregator, null,null);
                 long start = System.currentTimeMillis();
                 try {
                     DateFormat dateFormat = new SimpleDateFormat("MM-dd HH:mm:ss");
@@ -243,13 +243,13 @@ public class KingBaseTopology {
                     }
                 } catch (IOException e) {
 //                    if (clientBatchMode.isClosed()) {
-                        try {
-                            System.out.println("try to reconnect....");
-                            clientBatchMode.connectWithTimeout(10000);
-                            System.out.println("connected.");
-                        } catch (IOException e1) {
-                            e1.printStackTrace();
-                        }
+                    try {
+                        System.out.println("try to reconnect....");
+                        clientBatchMode.connectWithTimeout(10000);
+                        System.out.println("connected.");
+                    } catch (IOException e1) {
+                        e1.printStackTrace();
+                    }
 //                    }
                     e.printStackTrace();
                     try {
@@ -339,6 +339,7 @@ public class KingBaseTopology {
         conf.put(Config.WORKER_HEAP_MEMORY_MB, 1024);
         conf.put(Config.STORM_MESSAGING_NETTY_MAX_SLEEP_MS, 1);
 
+
         if (LocalMode) {
             LocalCluster localCluster = new LocalCluster();
             localCluster.submitTopology(TopologyName, conf, topology);
@@ -373,13 +374,6 @@ public class KingBaseTopology {
             case "query": kingBaseTopology.executeQuery(); break;
             default: System.out.println("Invalid command!");
         }
-//        if (command.equals("submit"))
-//            submitTopology();
-//        else if (command.equals("ingest"))
-//            executeIngestion();
-//        else if (command.equals("query"))
-//            executeQuery();
-
     }
 
 

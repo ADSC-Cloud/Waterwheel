@@ -147,7 +147,7 @@ public class BenchmarkTopology {
 
             QueryRequest<Integer> queryRequest = new QueryRequest<>(xLow, xHigh,
                     System.currentTimeMillis() - RecentSecondsOfInterest * 1000,
-                    System.currentTimeMillis(), predicate, aggregator, null, equivalentPredicateHint);
+                    System.currentTimeMillis(), predicate, null, aggregator, null, equivalentPredicateHint);
             long start = System.currentTimeMillis();
             try {
                 DateFormat dateFormat = new SimpleDateFormat("MM-dd HH:mm:ss");

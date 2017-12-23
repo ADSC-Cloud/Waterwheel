@@ -1,7 +1,5 @@
 package indexingTopology.bolt;
 
-import indexingTopology.common.SystemState;
-import indexingTopology.common.aggregator.Aggregator;
 import indexingTopology.api.client.GeoTemporalQueryRequest;
 import indexingTopology.api.client.QueryRequest;
 import indexingTopology.api.client.QueryResponse;
@@ -9,13 +7,14 @@ import indexingTopology.api.server.GeoTemporalQueryHandle;
 import indexingTopology.api.server.QueryHandle;
 import indexingTopology.api.server.Server;
 import indexingTopology.api.server.ServerHandle;
-import indexingTopology.config.TopologyConfig;
+import indexingTopology.common.Query;
+import indexingTopology.common.aggregator.Aggregator;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.PartialQueryResult;
 import indexingTopology.common.logics.DataTupleEquivalentPredicateHint;
 import indexingTopology.common.logics.DataTuplePredicate;
 import indexingTopology.common.logics.DataTupleSorter;
-import indexingTopology.common.Query;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.util.taxi.City;
 import indexingTopology.util.taxi.Interval;
 import indexingTopology.util.taxi.Intervals;
@@ -27,8 +26,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -125,7 +124,7 @@ public class GeoTemporalQueryCoordinatorBoltBolt<T extends Number & Comparable<T
                         request.low, request.high, request.startTime, request.endTime);
                 final List<Query<T>> queryList = new ArrayList<>();
                 queryList.add(new Query(queryid, request.low, request.high, request.startTime,
-                        request.endTime, request.predicate, request.aggregator, request.sorter, request.equivalentPredicate));
+                        request.endTime, request.predicate, request.postPredicate, request.aggregator, request.sorter, request.equivalentPredicate));
                 pendingQueryQueue.put(queryList);
 
                 System.out.println("Admitted a query.  waiting for query results");
@@ -166,6 +165,7 @@ public class GeoTemporalQueryCoordinatorBoltBolt<T extends Number & Comparable<T
                 final long startTimeStamp = clientQueryRequest.startTime;
                 final long endTimeStamp = clientQueryRequest.endTime;
                 final DataTuplePredicate predicate = clientQueryRequest.predicate;
+                final DataTuplePredicate postPredicate = clientQueryRequest.postPredicate;
                 final Aggregator aggregator = clientQueryRequest.aggregator;
                 final DataTupleSorter sorter = clientQueryRequest.sorter;
                 final DataTupleEquivalentPredicateHint equivalentPredicate = clientQueryRequest.equivalentPredicate;
@@ -177,7 +177,7 @@ public class GeoTemporalQueryCoordinatorBoltBolt<T extends Number & Comparable<T
 
                 for (Interval interval: intervals.intervals) {
                     queryList.add(new Query(queryid, interval.low, interval.high, startTimeStamp, endTimeStamp,
-                            predicate, aggregator, sorter, equivalentPredicate));
+                            predicate, postPredicate, aggregator, sorter, equivalentPredicate));
                     LOG.info("A new Query{} ({}, {}, {}, {}) is added to the pending queue.", queryid,
                             interval.low, interval.high, startTimeStamp, endTimeStamp);
                 }

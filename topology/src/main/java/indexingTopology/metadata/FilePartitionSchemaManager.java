@@ -24,6 +24,12 @@ public class FilePartitionSchemaManager {
 //        System.out.println(fileMetaData.startTime + "---->" + fileMetaData.endTime + "###########");
     }
 
+    public void remove(FileMetaData fileMetaData) {
+        tree = tree.delete(fileMetaData, Geometries.rectangle(fileMetaData.keyRangeLowerBound, fileMetaData.startTime,
+                fileMetaData.keyRangeUpperBound, fileMetaData.endTime));
+//        System.out.println(fileMetaData.startTime + "---->" + fileMetaData.endTime + "###########");
+    }
+
     // Retrieve the set of files for a given key range and time duration
     public List<String> search(double keyRangeLowerBound, double keyRangeUpperBound, long startTime,
                                      long endTime) {
@@ -42,6 +48,23 @@ public class FilePartitionSchemaManager {
 
         return ret;
     }
+
+    public List<FileMetaData> searchFileMetaData(double keyRangeLowerBound, double keyRangeUpperBound, long startTime,
+                               long endTime) {
+        List<FileMetaData> ret = new ArrayList<FileMetaData>();
+        try {
+            Observable<Entry<FileMetaData, Rectangle>> result = tree.search(Geometries.rectangle(keyRangeLowerBound,
+                    startTime, keyRangeUpperBound, endTime));
+            for (Entry<FileMetaData, Rectangle> e : result.toBlocking().toIterable()) {
+                ret.add(e.value());
+            }
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        }
+
+        return ret;
+    }
+
 
     //Retrieve the set of files for a given key range
     public List<String> keyRangedSearch(double keyRangeLowerBound, double keyRangeUpperBound) {

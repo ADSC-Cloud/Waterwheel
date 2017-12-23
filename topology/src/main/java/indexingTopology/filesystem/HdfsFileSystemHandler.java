@@ -3,14 +3,13 @@ package indexingTopology.filesystem;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.MemChunk;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.concurrent.*;
 
 /**
@@ -172,6 +171,30 @@ public class HdfsFileSystemHandler implements FileSystemHandler {
         }
     }
 
+//    public ArrayList<String> removeOldData2(String path){
+//        ArrayList<String>  files = new ArrayList<String>();
+//        try {
+//            FileStatus[] fileStatus = fileSystem.listStatus(new Path(this.path + path));
+//            for(FileStatus singleFile : fileStatus){
+//                if(System.currentTimeMillis()-singleFile.getModificationTime() >= 30){
+//                    fileSystem.delete(new Path(this.path + singleFile.getPath().getName()),true);
+////                    files.add(singleFile.getPath().getName());
+//                }
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        return files;
+//    }
+
+    public void removeOldData(Path filePathAndName) throws InterruptedException {
+        try {
+            fileSystem.delete(filePathAndName,true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void readBytesFromFile(int position, byte[] bytes) {
         try {
             fsDataInputStream.readFully(position, bytes);
@@ -205,4 +228,10 @@ public class HdfsFileSystemHandler implements FileSystemHandler {
     public FileSystem getFileSystem() {
         return fileSystem;
     }
+
+    public String getPath() {
+        return path;
+    }
+
+
 }
