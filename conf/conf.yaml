@@ -15,6 +15,15 @@
 # default time for old data time property
  old.data.previous.time: 24
 
+# default topic for kafka
+ topic: "topic"
+
+# default zookeeperIP for kafka
+ ZKhost: ["localhost:2181"]
+
+# default kafkaHost for kafka
+ kafkaHost: ["localhost:9092"]
+
 # the hdfs host. This value can be omitted when strage.file.system is local.
 # the host generally can be obtained by ./hdsf getconf --confKey fs.default.name
  hdfs.host: "hdfs://10.21.25.40:9000/"

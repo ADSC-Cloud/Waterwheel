@@ -3,6 +3,9 @@ package indexingTopology.config;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 
@@ -63,6 +66,19 @@ public class TopologyConfig implements Serializable {
 
     public int previousTime = 24; // Define the time for old data
 
+    public String topic = "topic";
+
+    public ArrayList<String> ZKHost = new ArrayList<String>() {{
+        add("localhost:2181");
+    }};
+
+    public ArrayList<String> kafkaHost = new ArrayList<String>() {{
+        add("localhost:9092");
+    }};
+//    public ArrayList<String> ZKHost = new ArrayList<String>();
+
+//    public List<String> kafkaHost = new ArrayList<String>();
+
     public static final String ZOOKEEPER_HOST = "192.168.0.207";
 
     public final boolean SHUFFLE_GROUPING_FLAG = false;
@@ -97,6 +113,9 @@ public class TopologyConfig implements Serializable {
         ret += String.format("removeIntervalHours: %d\n", removeIntervalHours);
         ret += String.format("previousTime: %d\n", previousTime);
         ret += String.format("HDFS: %s\n", HDFSFlag);
+        ret += String.format("topic: %s\n", topic);
+        ret += String.format("ZKHost: %s\n", ZKHost);
+        ret += String.format("kafkaHost: %s\n", kafkaHost);
         return ret;
     }
 
@@ -130,6 +149,28 @@ public class TopologyConfig implements Serializable {
 
             if (result.containsKey("remove.interval.hours")) {
                 this.removeIntervalHours = (Integer)result.get("remove.interval.hours");
+            }
+
+            if (result.containsKey("topic")) {
+                this.topic = (String) result.get("topic");
+            }
+
+            if (result.containsKey("ZKhost")) {
+                ArrayList<String> Zkhost = (ArrayList<String>)(result.get("ZKhost"));
+                this.ZKHost.remove(0);
+                System.out.println("ZKhost.size:" + Zkhost.size());
+                for(int i = 0; i < Zkhost.size(); i++){
+                    this.ZKHost.add(Zkhost.get(i));
+                }
+            }
+
+            if (result.containsKey("kafkaHost")) {
+                ArrayList<String> kafkaHost = (ArrayList<String>)(result.get("kafkaHost"));
+                this.kafkaHost.remove(0);
+                System.out.println("kafkaHost.size:" + kafkaHost.size());
+                for(int i = 0; i < kafkaHost.size(); i++){
+                    this.kafkaHost.add(kafkaHost.get(i));
+                }
             }
         } catch (FileNotFoundException e) {
             System.err.println("The configure file " + filePath + " is not found. Use default conf instead.");

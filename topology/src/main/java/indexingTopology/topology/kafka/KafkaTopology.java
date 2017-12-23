@@ -2,6 +2,7 @@ package indexingTopology.topology.kafka;
 
 import indexingTopology.api.client.GeoTemporalQueryClient;
 import indexingTopology.api.client.GeoTemporalQueryRequest;
+import indexingTopology.api.client.IngestionKafkaBatchMode;
 import indexingTopology.api.client.QueryResponse;
 import indexingTopology.bolt.*;
 import indexingTopology.common.aggregator.AggregateField;
@@ -13,7 +14,6 @@ import indexingTopology.common.logics.DataTupleEquivalentPredicateHint;
 import indexingTopology.common.logics.DataTupleMapper;
 import indexingTopology.common.logics.DataTuplePredicate;
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.bolt.InputStreamKafkaReceiverBolt;
 import indexingTopology.bolt.InputStreamKafkaReceiverBoltServer;
 import indexingTopology.topology.TopologyGenerator;
 import indexingTopology.util.AvailableSocketPool;
@@ -98,9 +98,9 @@ public class KafkaTopology {
     static final double y2 = 80.614865;
     static final int partitions = 128;
     int totalNumber = 0;
-    Producer<String, String> producer = null;
     AvailableSocketPool socketPool = new AvailableSocketPool();
     int queryPort = socketPool.getAvailablePort();
+    TopologyConfig config;
 
     public void excuteQuery(){
         DataSchema schema = getDataSchema();
@@ -234,10 +234,69 @@ public class KafkaTopology {
 
     }
 
+    public void excuteIngestion(){
+        int total = 100;
+        Thread emittingThread;
+        long start = System.currentTimeMillis();
+        System.out.println("Kafka Producer send msg start,total msgs:"+total);
+//        String topic = "topic";
+//        String kafkaHost = "localhost:9092";
+
+        // set up the producer
+        int brokerNum = 0;
+        while(brokerNum < config.kafkaHost.size()){
+            String currentKafkahost = config.kafkaHost.get(brokerNum);
+            IngestionKafkaBatchMode kafkaBatchMode = new IngestionKafkaBatchMode(currentKafkahost, config.topic);
+            kafkaBatchMode.ingestProducer();
+            TrajectoryGenerator generator = new TrajectoryMovingGenerator(x1, x2, y1, y2, 100000, 45.0);
+
+    //            producer = new KafkaProducer<>(props);
+            emittingThread = new Thread(() -> {
+                while (!Thread.currentThread().isInterrupted()) {
+                    try {
+                        for (int i = 0; i < total; i++) {
+                            Car car = generator.generate();
+                            totalNumber++;
+                            Long timestamp = System.currentTimeMillis();
+                            String locationtime = String.valueOf(new Date(timestamp));
+                            Double lon = Math.random() * 100;
+                            Double lat = Math.random() * 100;
+                            final int id = new Random().nextInt(100);
+                            final String idString = "" + id;
+                            String Msg = "{\"lon\":"+ car.x + ",\"lat\":" + car.y + ",\"devbtype\":"+ 2 +",\"devid\":\"asd\",\"city\":\"4401\",\"locationtime\":" + System.currentTimeMillis() +  "}";
+//                            System.out.println(Msg);
+                            kafkaBatchMode.send(i, Msg);
+    //                        this.producer.send(new ProducerRecord<String, String>("consumer",
+    //                                String.valueOf(i), "{\"employees\":[{\"firstName\":\"John\",\"lastName\":\"Doe\"},{\"firstName\":\"Anna\",\"lastName\":\"Smith\"},{\"firstName\":\"Peter\",\"lastName\":\"Jones\"}]}"));
+                            //                        String.format("{\"type\":\"test\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
+
+                            // every so often send to a different topic
+                            //                if (i % 1000 == 0) {
+                            //                    producer.send(new ProducerRecord<String, String>("test", String.format("{\"type\":\"marker\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
+                            //                    producer.send(new ProducerRecord<String, String>("hello", String.format("{\"type\":\"marker\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
+
+    //                        System.out.println("Sent msg number " + totalNumber);
+                            //                }
+                        }
+                        kafkaBatchMode.flush();
+                        //            producer.close();
+                        System.out.println("Kafka Producer send msg over,cost time:" + (System.currentTimeMillis() - start) + "ms");
+                        Thread.sleep(5000);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                }
+            });
+            emittingThread.start();
+            brokerNum++;
+        }
+    }
+
     public void  submitTopology(){
         DataSchema rawSchema = getRawDataSchema();
         DataSchema schema = getDataSchema();
-        TopologyConfig config = new TopologyConfig();
+        config = new TopologyConfig();
         final boolean enableLoadBalance = false;
 
         City city = new City(x1, x2, y1, y2, partitions);
@@ -246,86 +305,15 @@ public class KafkaTopology {
 //        Integer upperBound = city.getMaxZCode();
         Integer upperBound = 5000;
 
-        if (! confFile.equals("none")) {
-            config.override(confFile);
-            System.out.println("Topology is overridden by " + confFile);
-            System.out.println(config.getCriticalSettings());
-        } else {
-            System.out.println("conf.yaml is not specified, using default instead.");
-        }
+        config.override(confFile);
+        System.out.println("Topology is overridden by " + confFile);
+        System.out.println(config.getCriticalSettings());
+
         //change this one
 //        InputStreamReceiverBolt dataSource = new InputStreamReceiverBoltServer(rawSchema, 10000, config);
 
 
-
-
-
-        int total = 100;
-        Thread emittingThread;
-        long start = System.currentTimeMillis();
-        System.out.println("Kafka Producer send msg start,total msgs:"+total);
-
-        // set up the producer
-        Properties props = new Properties();
-        props.put("bootstrap.servers", "localhost:9092");
-        props.put("group.id", 0);
-        props.put("acks", "all");
-        props.put("retries", "0");
-        props.put("batch.size", 16384);
-        props.put("auto.commit.interval.ms", "1000");
-        props.put("buffer.memory", 33554432);
-        props.put("key.serializer", StringSerializer.class.getName());
-        props.put("value.serializer", StringSerializer.class.getName());
-        producer = new KafkaProducer<String, String>(props);
-        TrajectoryGenerator generator = new TrajectoryMovingGenerator(x1, x2, y1, y2, 100000, 45.0);
-
-//            producer = new KafkaProducer<>(props);
-        emittingThread = new Thread(() -> {
-            while (!Thread.currentThread().isInterrupted()) {
-                try {
-                    for (int i = 0; i < total; i++) {
-                        Car car = generator.generate();
-                        totalNumber++;
-                        Long timestamp = System.currentTimeMillis();
-                        String locationtime = String.valueOf(new Date(timestamp));
-                        Double lon = Math.random() * 100;
-                        Double lat = Math.random() * 100;
-                        int devbtype = (int) (Math.random() * 10);
-                        final int id = new Random().nextInt(100);
-                        final String idString = "" + id;
-//                          int id = (int) (Math.random() * 100);
-//                       "{"devbtype":3,"devid":"asd","timestamp":10086,"id":1}"
-                        this.producer.send(new ProducerRecord<String, String>("consumer",
-                                String.valueOf(i),
-//                                \"timestamp\":"+ timestamp +",
-                                "{\"lon\":"+ lon + ",\"lat\":" + lat + ",\"devbtype\":"+ devbtype +",\"devid\":\"asd\",\"city\": \"4401\",\"locationtime\":" + System.currentTimeMillis() + "}"));
-//                        this.producer.send(new ProducerRecord<String, String>("consumer",
-//                                String.valueOf(i), "{\"employees\":[{\"firstName\":\"John\",\"lastName\":\"Doe\"},{\"firstName\":\"Anna\",\"lastName\":\"Smith\"},{\"firstName\":\"Peter\",\"lastName\":\"Jones\"}]}"));
-                        //                        String.format("{\"type\":\"test\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
-
-                        // every so often send to a different topic
-                        //                if (i % 1000 == 0) {
-                        //                    producer.send(new ProducerRecord<String, String>("test", String.format("{\"type\":\"marker\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
-                        //                    producer.send(new ProducerRecord<String, String>("hello", String.format("{\"type\":\"marker\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
-
-                        this.producer.flush();
-//                        System.out.println("Sent msg number " + totalNumber);
-                        //                }
-                    }
-                    //            producer.close();
-                    System.out.println("Kafka Producer send msg over,cost time:" + (System.currentTimeMillis() - start) + "ms");
-                    Thread.sleep(5000);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-            }
-        });
-        emittingThread.start();
-
-
-
-        InputStreamKafkaReceiverBolt dataSource = new InputStreamKafkaReceiverBoltServer(rawSchema,10000,config);
+        InputStreamKafkaReceiverBoltServer dataSource = new InputStreamKafkaReceiverBoltServer(rawSchema,10000,config,config.topic);
 
 //        QueryCoordinatorBolt<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServerBolt<>(minIndex, maxIndex, queryPort,
 //                config, schema);
@@ -346,7 +334,7 @@ public class KafkaTopology {
 //        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
 //                enableLoadBalance, dataSource, queryCoordinatorBolt, dataTupleMapper, bloomFilterColumns, config);
         List<String> bloomFilterColumns = new ArrayList<>();
-        bloomFilterColumns.add("devid");
+        bloomFilterColumns.add("devbtype");
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
         topologyGenerator.setNumberOfNodes(NumberOfNodes);
@@ -370,6 +358,7 @@ public class KafkaTopology {
         LocalCluster localCluster = new LocalCluster();
         localCluster.submitTopology(TopologyName, conf, topology);
 
+
     }
     public static void main(String[] args) throws InvalidTopologyException, AuthorizationException, AlreadyAliveException {
 
@@ -390,12 +379,12 @@ public class KafkaTopology {
         }
 
         kafkaTopology.submitTopology();
-//        try {
-//            Thread.sleep(10000);
-//            kafkaTopology.excuteQuery();
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
+        try {
+            Thread.sleep(5000);
+            kafkaTopology.excuteIngestion();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
     }
 
@@ -404,12 +393,10 @@ public class KafkaTopology {
         rawSchema.addDoubleField("lon");
         rawSchema.addDoubleField("lat");
         rawSchema.addIntField("devbtype");
-        rawSchema.addVarcharField("devid", 8);
-//        rawSchema.addVarcharField("id", 32);
+        rawSchema.addVarcharField("devid", 32);
         rawSchema.addVarcharField("city",32);
         rawSchema.addLongField("locationtime");
         rawSchema.setTemporalField("locationtime");
-//        rawSchema.addLongField("timestamp");
         return rawSchema;
     }
 
@@ -418,12 +405,10 @@ public class KafkaTopology {
         schema.addDoubleField("lon");
         schema.addDoubleField("lat");
         schema.addIntField("devbtype");
-        schema.addVarcharField("devid", 8);
-//        schema.addVarcharField("id", 32);
+        schema.addVarcharField("devid", 32);
         schema.addVarcharField("city",32);
         schema.addLongField("locationtime");
         schema.setTemporalField("locationtime");
-//        schema.addLongField("timestamp");
         schema.addIntField("zcode");
         schema.setPrimaryIndexField("zcode");
 

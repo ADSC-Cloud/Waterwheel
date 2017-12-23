@@ -17,6 +17,8 @@ import indexingTopology.util.shape.Point;
 import indexingTopology.util.shape.Rectangle;
 import indexingTopology.util.taxi.Car;
 import indexingTopology.util.taxi.City;
+import indexingTopology.util.taxi.TrajectoryGenerator;
+import indexingTopology.util.taxi.TrajectoryMovingGenerator;
 import info.batey.kafka.unit.KafkaUnit;
 import junit.framework.TestCase;
 import kafka.producer.KeyedMessage;
@@ -39,6 +41,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
 
+import org.jets3t.service.multi.ThreadWatcher;
 import org.junit.Test;
 
 
@@ -55,12 +58,15 @@ public class TopologyTest extends TestCase {
 
     Producer<String, String> producer = null;
     int totalNumber = 0;
+    int meetRequirements = 0;
 
     boolean setupDone = false;
 
     boolean tearDownDone = false;
 
     transient KafkaUnit kafkaUnitServer;
+    transient KafkaUnit kafkaUnitServer2;
+    transient KafkaUnit kafkaUnitServer3;
 
     public void setUp() {
         if (!setupDone) {
@@ -117,13 +123,21 @@ public class TopologyTest extends TestCase {
         int kafkaZkport = socketPool.getAvailablePort();
         int kafkaUnitport = socketPool.getAvailablePort();
 
-        kafkaUnitServer = new KafkaUnit("localhost:" + kafkaZkport,"localhost:" + kafkaUnitport);
+        String topic = "topic";
+//        String zookeeperHost = "localhost:2181";
+//        String kafkaHost = "localhost:9092";
+//        kafkaUnitServer = new KafkaUnit("localhost:" + kafkaZkport,"localhost:" + kafkaUnitport);
+//         kafkaUnitServer2 = new KafkaUnit("localhost:" + 2182,"localhost:" + 9093);
+//        kafkaUnitServer3 = new KafkaUnit("localhost:" + 2183,"localhost:" + 9094);
         System.out.println("kafkaZkport: " + kafkaZkport + " " + kafkaUnitport);
-        kafkaUnitServer.startup();
+//        kafkaUnitServer.startup();
+//        kafkaUnitServer2.startup();
+//        kafkaUnitServer3.startup();
+
         Thread.sleep(1000);
-        double x1 = 40.0;
+        double x1 = 80.0;
         double x2 = 90.0;
-        double y1 = 30.0;
+        double y1 = 70.0;
         double y2 = 80.0;
         int partitions = 128;
         City city = new City(x1, x2, y1, y2, partitions);
@@ -135,51 +149,21 @@ public class TopologyTest extends TestCase {
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
+        String confFile = "../conf/confTest.yaml";
+        config.override(confFile);
+        System.out.println("Topology is overridden by " + confFile);
+        System.out.println(config.getCriticalSettings());
         assertTrue(config != null);
 
 
-        int total = 100;
+        int total = 10;
         Thread emittingThread;
         long start = System.currentTimeMillis();
         System.out.println("Kafka Producer send msg start,total msgs:"+total);
 
-//        kafkaUnitServer.createTopic("consumer");
-        // set up the producer
-//        Properties props = new Properties();
-////        props.put("bootstrap.servers", "localhost:9092");
-//        props.put("group.id", 0);
-//        props.put("acks", "all");
-//        props.put("retries", "0");
-//        props.put("batch.size", 16384);
-//        props.put("auto.commit.interval.ms", "1000");
-//        props.put("buffer.memory", 33554432);
-//        props.put("key.serializer", StringSerializer.class.getName());
-//        props.put("value.serializer", StringSerializer.class.getName());
-////        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, LongSerializer.class.getCanonicalName());
-////        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getCanonicalName());
-//        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUnitServer.getKafkaConnect());
-//        producer = new KafkaProducer<String, String>(props);
-        int meetRequirements = 0;
-        for (int i = 0; i < total; i++) {
-            totalNumber++;
-            Long timestamp = System.currentTimeMillis();
-            Double lon = Math.random() * 100;
-            Double lat = Math.random() * 100;
-            final int id = new Random().nextInt(100);
-            final String idString = "" + id;
-            if(lon >= x1 && lon <= x2 && lat >= y1 && lat <= y2){
-                meetRequirements++;
-            }
-            KeyedMessage<String, String> keyedMessage = new KeyedMessage<>("consumer", "key", "{\"lon\":"+ lon + ",\"lat\":" + lat + ",\"devbtype\":"+ totalNumber +",\"devid\":\"asd\",\"id\":"+ idString +"}");
-            kafkaUnitServer.sendMessages(keyedMessage);
-//            this.producer.send(new ProducerRecord<String, String>("consumer",
-//                    String.valueOf(i),
-//                    "{\"lon\":"+ lon + ",\"lat\":" + lat + ",\"devbtype\":"+ totalNumber +",\"devid\":\"asd\",\"id\":"+ idString +"}"));
-//            this.producer.flush();
-        }
-        System.out.println("Kafka Producer send msg over,cost time:" + (System.currentTimeMillis() - start) + "ms");
 
-        FakeKafkaReceiverBolt inputStreamReceiverBolt = new FakeKafkaReceiverBolt(rawSchema, config, kafkaUnitServer, total);
+//        FakeKafkaReceiverBolt inputStreamReceiverBolt = new FakeKafkaReceiverBolt(rawSchema, config, kafkaUnitServer.getKafkaConnect(), "consumer",total);
+        KafkaReceiverBoltTest inputStreamReceiverBolt = new KafkaReceiverBoltTest(rawSchema, config);
 
         QueryCoordinatorBolt<Integer> coordinator = new GeoTemporalQueryCoordinatorBoltBolt<>(lowerBound,
                 upperBound, queryPort, city, config, schema);
@@ -216,10 +200,122 @@ public class TopologyTest extends TestCase {
         // are executed on the nimbus node.
         conf.setTopologyStrategy(org.apache.storm.scheduler.resource.strategies.scheduling.DefaultResourceAwareStrategy.class);
 
-        cluster.submitTopology("testSimpleTopologyKeyRangeQuery", conf, topology);
+        cluster.submitTopology("testKafkaQuery", conf, topology);
 
-        final int tuples = 1000;
 
+
+//        kafkaUnitServer.createTopic("consumer");
+        // set up the producer
+//        Properties props = new Properties();
+////        props.put("bootstrap.servers", "localhost:9092");
+
+//        props.put("key.serializer", StringSerializer.class.getName());
+//        props.put("value.serializer", StringSerializer.class.getName());
+////        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, LongSerializer.class.getCanonicalName());
+////        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getCanonicalName());
+//        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUnitServer.getKafkaConnect());
+//        producer = new KafkaProducer<String, String>(props);
+//        props.put("acks", "all");
+//        props.put("retries", "0");
+//        props.put("batch.size", 16384);
+//        props.put("auto.commit.interval.ms", "1000");
+//        props.put("buffer.memory", 33554432);
+//        props.put("bootstrap.servers", kafkaUnitport);
+
+//        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getCanonicalName());
+//        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getCanonicalName());
+//        props.put("offsets.topic.replication.factor", 1);
+//        props.put("default.replication.factor", 1);
+//        System.out.println("getKafkaConnect : " + kafkaUnitServer.getKafkaConnect());
+
+//        Thread.sleep(10000);
+        int brokerNum = 0;
+        System.out.println("here");
+        while(brokerNum < config.kafkaHost.size()) {
+            String currentKafkahost = config.kafkaHost.get(brokerNum);
+
+            Properties props = new Properties();
+            props.put("group.id", 0);
+            props.put("key.serializer", StringSerializer.class.getName());
+            props.put("value.serializer", StringSerializer.class.getName());
+            props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, currentKafkahost);
+            Producer<String, String> producer = new KafkaProducer<>(props);
+            IngestionKafkaBatchMode kafkaBatchMode = new IngestionKafkaBatchMode(currentKafkahost, config.topic);
+            kafkaBatchMode.ingestProducer();
+            TrajectoryGenerator generator = new TrajectoryMovingGenerator(x1, x2, y1, y2, 100000, 45.0);
+            emittingThread = new Thread(() -> {
+//            while (!Thread.currentThread().isInterrupted()) {
+                try {
+//                    Thread.sleep(5000);
+                    for (int i = 0; i < total; i++) {
+                        DataTuple dataTuple = new DataTuple();
+                        Car car = generator.generate();
+                        totalNumber++;
+                        Long timestamp = System.currentTimeMillis();
+                        String locationtime = String.valueOf(new Date(timestamp));
+                        int devbtype = (int) (Math.random() * 10);
+                        Double lon = Math.random() * 100;
+                        Double lat = Math.random() * 100;
+                        if (car.x >= x1 && car.x <= x2 && car.y >= y1 && car.y <= y2) {
+                            meetRequirements++;
+                        }
+                        final int id = new Random().nextInt(100);
+                        final String idString = "" + id;
+//                        dataTuple.add();
+                        String Msg = "{\"lon\":" + car.x + ",\"lat\":" + car.y + ",\"devbtype\":" + devbtype + ",\"devid\":\"asd\",\"id\":" + idString + ",\"locationtime\":" + System.currentTimeMillis() + "}";
+                        //                          int id = (int) (Math.random() * 100);
+//                       "{"devbtype":3,"devid":"asd","timestamp":10086,"id":1}"
+                        kafkaBatchMode.send(i, Msg);
+//                        this.producer.send(new ProducerRecord<String, String>("consumer",
+//                                String.valueOf(i), "{\"employees\":[{\"firstName\":\"John\",\"lastName\":\"Doe\"},{\"firstName\":\"Anna\",\"lastName\":\"Smith\"},{\"firstName\":\"Peter\",\"lastName\":\"Jones\"}]}"));
+                        //                        String.format("{\"type\":\"test\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
+
+                        // every so often send to a different topic
+                        //                if (i % 1000 == 0) {
+                        //                    producer.send(new ProducerRecord<String, String>("test", String.format("{\"type\":\"marker\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
+                        //                    producer.send(new ProducerRecord<String, String>("hello", String.format("{\"type\":\"marker\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
+
+//                        System.out.println("Sent msg number " + totalNumber);
+                        //                }
+                    }
+                    kafkaBatchMode.flush();
+                    //            producer.close();
+                    System.out.println("Kafka Producer send msg over,cost time:" + (System.currentTimeMillis() - start) + "ms");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+//            }
+            });
+            emittingThread.start();
+            brokerNum++;
+        }
+
+
+
+//        for (int i = 0; i < total; i++) {
+//            totalNumber++;
+//            Long timestamp = System.currentTimeMillis();
+//            int devbtype = (int)(Math.random() * 10);
+//            Double lon = Math.random() * 100;
+//            Double lat = Math.random() * 100;
+//            final int id = new Random().nextInt(100);
+//            final String idString = "" + id;
+//            if(lon >= x1 && lon <= x2 && lat >= y1 && lat <= y2){
+//                meetRequirements++;
+//            }
+////            KeyedMessage<String, String> keyedMessage = new KeyedMessage<>("consumer", "key", "{\"lon\":"+ lon + ",\"lat\":" + lat + ",\"devbtype\":"+ totalNumber +",\"devid\":\"asd\",\"id\":"+ idString +"}");
+////            kafkaUnitServer.sendMessages(keyedMessage);
+//
+//
+//
+//            producer.send(new ProducerRecord<String, String>(topic,
+//                    String.valueOf(i),
+//                    "{\"lon\":"+ lon + ",\"lat\":" + lat + ",\"devbtype\":"+ devbtype +",\"devid\":\"asd\",\"id\":"+ idString + ",\"locationtime\":" + System.currentTimeMillis() +"}"));
+//            producer.flush();
+//            System.out.println();
+//        }
+//        System.out.println("Kafka Producer send msg over,cost time:" + (System.currentTimeMillis() - start) + "ms");
 
         GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient("localhost", queryPort);
 
@@ -236,7 +332,7 @@ public class TopologyTest extends TestCase {
 
         GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(x1, x2, y1, y2,
                 System.currentTimeMillis() - 1000 * 1000,
-                System.currentTimeMillis(), predicate, null, null, null, null);
+                System.currentTimeMillis(), null, null, null, null, null);
 
         ExecutorService executorService = Executors.newCachedThreadPool();
 
@@ -259,11 +355,10 @@ public class TopologyTest extends TestCase {
         }
 
         try {
-            kafkaUnitServer.shutdown();
             queryClient.close();
             KillOptions killOptions = new KillOptions();
             killOptions.set_wait_secs(0);
-            cluster.killTopologyWithOpts("testSimpleTopologyKeyRangeQuery", killOptions);
+            cluster.killTopologyWithOpts("testKafkaQuery", killOptions);
         } catch (IOException e) {
             e.printStackTrace();
         }
