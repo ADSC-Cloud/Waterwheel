@@ -37,7 +37,7 @@ public class IngestionKafkaBatchMode implements IIngestionKafka{
         props.put("acks", "all");
         props.put("retries", "0");
         props.put("batch.size", 16384);
-//        props.put("auto.commit.interval.ms", "1000");
+        props.put("auto.commit.interval.ms", "1000");
         props.put("buffer.memory", 33554432);
         props.put("key.serializer", StringSerializer.class.getName());
         props.put("value.serializer", StringSerializer.class.getName());

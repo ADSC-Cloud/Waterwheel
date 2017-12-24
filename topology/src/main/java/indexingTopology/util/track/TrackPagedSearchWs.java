@@ -1,14 +1,14 @@
 package indexingTopology.util.track;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONException;
+import com.alibaba.fastjson.JSONObject;
 import indexingTopology.api.client.GeoTemporalQueryClient;
 import indexingTopology.api.client.GeoTemporalQueryRequest;
 import indexingTopology.api.client.QueryResponse;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 import indexingTopology.common.logics.DataTuplePredicate;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONException;
-import net.sf.json.JSONObject;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -40,21 +40,21 @@ public class TrackPagedSearchWs implements Serializable{
     public String services(String permissionParams, String businessParams) {
         JSONObject queryResponse = new JSONObject();
         try{
-            JSONObject jsonObject = JSONObject.fromObject(businessParams);
+            JSONObject jsonObject = JSONObject.parseObject(businessParams);
             if(!getQueryJson(jsonObject)){ // query failed,json format is error
                 errorCode = "1102";
 //            errorMsg = Error(errorCode);
-                queryResponse.accumulate("result", null);
-                queryResponse.accumulate("errorCode", errorCode);
-                queryResponse.accumulate("errorMsg", errorMsg);
+                queryResponse.put("result", null);
+                queryResponse.put("errorCode", errorCode);
+                queryResponse.put("errorMsg", errorMsg);
                 return queryResponse.toString();
             }
         }catch (JSONException e){// query failed, json value invalid
             errorCode = "1001";
 //            errorMsg = Error(errorCode);
-            queryResponse.accumulate("result", null);
-            queryResponse.accumulate("errorCode", errorCode);
-            queryResponse.accumulate("errorMsg", errorMsg);
+            queryResponse.put("result", null);
+            queryResponse.put("errorCode", errorCode);
+            queryResponse.put("errorMsg", errorMsg);
             return queryResponse.toString();
         }
 
@@ -86,7 +86,7 @@ public class TrackPagedSearchWs implements Serializable{
 
             int totalPage = tuples.size()/rows;
 
-            queryResponse.accumulate("success", true);
+            queryResponse.put("success", true);
             JSONArray queryResult = new JSONArray();
             if(tuples.size() > 0){
                 for (int i = rows * (page - 1); i < rows * page; i++) {
@@ -98,21 +98,21 @@ public class TrackPagedSearchWs implements Serializable{
                 }
             }
             JSONObject result = new JSONObject();
-            result.accumulate("total", tuples.size());
-            result.accumulate("page",page);
-            result.accumulate("sortName",null);
-            result.accumulate("sortOrder",null);
-            result.accumulate("city",city);
-            result.accumulate("devbtype",devbtype);
-            result.accumulate("devid",devid);
-            result.accumulate("startTime",startTime);
-            result.accumulate("endTime",endTime);
-            result.accumulate("startRowKey",null);
-            result.accumulate("stopRowKey",null);
-            result.accumulate("rows",queryResult);
-            queryResponse.accumulate("result", result);
-            queryResponse.accumulate("errorCode", null);
-            queryResponse.accumulate("errorMsg", null);
+            result.put("total", tuples.size());
+            result.put("page",page);
+            result.put("sortName",null);
+            result.put("sortOrder",null);
+            result.put("city",city);
+            result.put("devbtype",devbtype);
+            result.put("devid",devid);
+            result.put("startTime",startTime);
+            result.put("endTime",endTime);
+            result.put("startRowKey",null);
+            result.put("stopRowKey",null);
+            result.put("rows",queryResult);
+            queryResponse.put("result", result);
+            queryResponse.put("errorCode", null);
+            queryResponse.put("errorMsg", null);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {

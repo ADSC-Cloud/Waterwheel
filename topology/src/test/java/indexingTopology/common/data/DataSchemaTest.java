@@ -1,7 +1,14 @@
 package indexingTopology.common.data;
 
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.serializer.JSONSerializer;
+import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import indexingTopology.util.Json.JsonTest;
 import org.junit.Test;
 
 import java.io.FileNotFoundException;
@@ -96,7 +103,7 @@ public class DataSchemaTest {
         schema.addVarcharField("1", 3);
         schema.addVarcharField("date", 15);
         String jsonStr = "{\"result\":[{\"2\":\"efg\",\"1\":null,\"date\":\"2017-12-01 10:40:00\"},{\"2\":\"efg\",\"1\":null,\"date\":\"2017-12-01 10:40:00\"}]}";
-        JSONObject jsonObject = JSONObject.fromObject(jsonStr);
+        JSONObject jsonObject = JSONObject.parseObject(jsonStr);
         JSONArray array = jsonObject.getJSONArray("result");
         List<DataTuple> list =  schema.getTuplesFromJsonArray(array);
         assertEquals(2, list.size());
@@ -105,15 +112,16 @@ public class DataSchemaTest {
     @Test
     public void getTupleFromJsonAndJsonFromTupleTest() throws FileNotFoundException {
         DataSchema schema = new DataSchema();
-        schema.addVarcharField("2" ,3);
-        schema.addVarcharField("1", 3);
+        schema.addVarcharField("a2" ,3);
+        schema.addVarcharField("a1", 3);
         schema.addVarcharField("date", 15);
-        String jsonStr = "{\"2\":\"efg\",\"1\":null,\"date\":\"2017-12-01 10:40:00\"}";
-        JSONObject jsonObject = JSONObject.fromObject(jsonStr);
+        String jsonStr = "{\"a2\":\"efg\",\"a1\":null,\"date\":\"2017-12-01 10:40:00\"}";
+        JSONObject jsonObject = JSONObject.parseObject(jsonStr);
         DataTuple tuple = schema.getTupleFromJsonObject(jsonObject);
         assertEquals("efg",tuple.get(0));
         jsonObject = schema.getJsonFromDataTuple(tuple);
-        assertEquals("efg", jsonObject.get("2"));
+        assertEquals("efg", jsonObject.get("a2"));
+        assertEquals(null, jsonObject.get("a1"));
     }
 
 }

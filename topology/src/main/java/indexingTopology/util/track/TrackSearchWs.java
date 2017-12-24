@@ -1,14 +1,14 @@
 package indexingTopology.util.track;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONException;
+import com.alibaba.fastjson.JSONObject;
 import indexingTopology.api.client.GeoTemporalQueryClient;
 import indexingTopology.api.client.GeoTemporalQueryRequest;
 import indexingTopology.api.client.QueryResponse;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 import indexingTopology.common.logics.DataTuplePredicate;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONException;
-import net.sf.json.JSONObject;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -42,21 +42,21 @@ public class TrackSearchWs implements Serializable{
     public String services(String permissionParams, String businessParams) {
         JSONObject queryResponse = new JSONObject();
         try{
-            JSONObject jsonObject = JSONObject.fromObject(businessParams);
+            JSONObject jsonObject = JSONObject.parseObject(businessParams);
             if(!getQueryJson(jsonObject)){ // query failed,json format is error
                 errorCode = "1102";
 //            errorMsg = Error(errorCode);
-                queryResponse.accumulate("result", null);
-                queryResponse.accumulate("errorCode", errorCode);
-                queryResponse.accumulate("errorMsg", errorMsg);
+                queryResponse.put("result", null);
+                queryResponse.put("errorCode", errorCode);
+                queryResponse.put("errorMsg", errorMsg);
                 return queryResponse.toString();
             }
         }catch (JSONException e){// query failed, json value invalid
             errorCode = "1001";
 //            errorMsg = Error(errorCode);
-            queryResponse.accumulate("result", null);
-            queryResponse.accumulate("errorCode", errorCode);
-            queryResponse.accumulate("errorMsg", errorMsg);
+            queryResponse.put("result", null);
+            queryResponse.put("errorCode", errorCode);
+            queryResponse.put("errorMsg", errorMsg);
             return queryResponse.toString();
         }
 
@@ -86,15 +86,15 @@ public class TrackSearchWs implements Serializable{
             System.out.println("datatuples : " + response.dataTuples.size());
             List<DataTuple> tuples = response.getTuples();
 
-            queryResponse.accumulate("success", true);
+            queryResponse.put("success", true);
             JSONArray queryResult = new JSONArray();
             for (int i = 0; i < tuples.size(); i++) {
                 queryResult.add(schema.getJsonFromDataTuple(tuples.get(i)));
                 System.out.println(tuples.get(i).toValues());
             }
-            queryResponse.accumulate("result", queryResult);
-            queryResponse.accumulate("errorCode", null);
-            queryResponse.accumulate("errorMsg", null);
+            queryResponse.put("result", queryResult);
+            queryResponse.put("errorCode", null);
+            queryResponse.put("errorMsg", null);
 
 
         } catch (IOException e) {

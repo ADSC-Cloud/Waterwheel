@@ -1,8 +1,8 @@
 package indexingTopology.bolt;
 
+import com.alibaba.fastjson.JSONObject;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.config.TopologyConfig;
-import net.sf.json.JSONObject;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -104,7 +104,7 @@ public class InputStreamKafkaReceiverBoltServer extends InputStreamReceiverBolt 
                         data.put("partition", record.partition());
                         data.put("offset", record.offset());
                         data.put("value", record.value());
-                        JSONObject jsonFromData = JSONObject.fromObject(record.value());
+                        JSONObject jsonFromData = JSONObject.parseObject(record.value());
                         System.out.println(record.value());
 //                        String dateValue = (String)jsonFromData.get("locationtime");
 //                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");

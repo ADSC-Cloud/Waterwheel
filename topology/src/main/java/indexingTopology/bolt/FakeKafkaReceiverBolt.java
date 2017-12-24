@@ -1,11 +1,11 @@
 package indexingTopology.bolt;
 
+import com.alibaba.fastjson.JSONObject;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.streams.Streams;
 import info.batey.kafka.unit.KafkaUnit;
-import net.sf.json.JSONObject;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -76,7 +76,7 @@ public class FakeKafkaReceiverBolt extends InputStreamReceiverBolt {
             data.put("offset", record.offset());
             data.put("value", record.value());
             System.out.println(record.value());
-            JSONObject jsonFromData = JSONObject.fromObject(record.value());
+            JSONObject jsonFromData = JSONObject.parseObject(record.value());
             try {
                 getInputQueue().put(schema.getTupleFromJsonObject(jsonFromData));
             } catch (InterruptedException e) {
@@ -137,7 +137,7 @@ public class FakeKafkaReceiverBolt extends InputStreamReceiverBolt {
                         data.put("offset", record.offset());
                         data.put("value", record.value());
                         System.out.println(record.value());
-                        JSONObject jsonFromData = JSONObject.fromObject(record.value());//
+                        JSONObject jsonFromData = JSONObject.parseObject(record.value());//
 
 //                        String dateValue = (String)jsonFromData.get("locationtime");
 //                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");

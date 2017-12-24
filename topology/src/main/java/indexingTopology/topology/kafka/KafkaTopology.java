@@ -1,5 +1,6 @@
 package indexingTopology.topology.kafka;
 
+import com.alibaba.fastjson.JSONObject;
 import indexingTopology.api.client.GeoTemporalQueryClient;
 import indexingTopology.api.client.GeoTemporalQueryRequest;
 import indexingTopology.api.client.IngestionKafkaBatchMode;
@@ -22,7 +23,6 @@ import indexingTopology.util.taxi.Car;
 import indexingTopology.util.taxi.City;
 import indexingTopology.util.taxi.TrajectoryGenerator;
 import indexingTopology.util.taxi.TrajectoryMovingGenerator;
-import net.sf.json.JSONObject;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -107,7 +107,7 @@ public class KafkaTopology {
         String searchTest = "{\"type\":\"rectangle\",\"leftTop\":\"80,80\",\"rightBottom\":\"90,70\",\"geoStr\":null,\"lon\":null,\"lat\":null,\"radius\":null}";
         String searchTest2 = "{\"type\":\"circle\",\"leftTop\":null,\"rightBottom\":null,\"geoStr\":null,\"lon\":85,\"lat\":75,\"radius\":5}";
         String searchTest3 = "{\"type\":\"polygon\",\"leftTop\":null,\"rightBottom\":null,\"geoStr\":[\"80  75\",\"85  80\",\"90  75\",\"85  70\"],\"lon\":null,\"lat\":null,\"radius\":null}";
-        JSONObject jsonObject = JSONObject.fromObject(searchTest);
+        JSONObject jsonObject = JSONObject.parseObject(searchTest);
         ShapeChecking shapeChecking = new ShapeChecking(jsonObject);
         ArrayList arrayList= shapeChecking.split();
         Point leftTop;

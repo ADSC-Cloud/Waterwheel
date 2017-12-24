@@ -1,5 +1,7 @@
 package indexingTopology.util.track;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import indexingTopology.api.client.GeoTemporalQueryClient;
 import indexingTopology.api.client.GeoTemporalQueryRequest;
 import indexingTopology.api.client.QueryResponse;
@@ -10,8 +12,6 @@ import indexingTopology.util.shape.Circle;
 import indexingTopology.util.shape.Point;
 import indexingTopology.util.shape.Polygon;
 import indexingTopology.util.shape.Rectangle;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
 import org.w3c.dom.css.Rect;
 
 import java.io.IOException;
@@ -34,7 +34,7 @@ public class PosSpacialSearchWs {
 
     public String service(String permissionsParams, String businessParams) {
         DataSchema schema = getDataSchema();
-        JSONObject jsonObject = JSONObject.fromObject(businessParams);
+        JSONObject jsonObject = JSONObject.parseObject(businessParams);
         String type = jsonObject.getString("type");
         Pattern p = null;
         boolean flag = true;
@@ -56,10 +56,10 @@ public class PosSpacialSearchWs {
                 externalRightBottom = new Point(rectangle.getExternalRectangle().getRightBottomX(), rectangle.getExternalRectangle().getRightBottomY());
                 if (externalLeftTop.x > externalRightBottom.x || externalLeftTop.y < externalRightBottom.y) {
                     JSONObject queryResponse = new JSONObject();
-                    queryResponse.accumulate("success", false);
-                    queryResponse.accumulate("result", null);
-                    queryResponse.accumulate("errorCode", 1002);
-                    queryResponse.accumulate("errorMsg", "参数值无效或缺失必填参数");
+                    queryResponse.put("success", false);
+                    queryResponse.put("result", null);
+                    queryResponse.put("errorCode", 1002);
+                    queryResponse.put("errorMsg", "参数值无效或缺失必填参数");
                     System.out.println(queryResponse);
                     return queryResponse.toString();
                 }
@@ -130,15 +130,15 @@ public class PosSpacialSearchWs {
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
-            queryResponse.accumulate("success", true);
-            queryResponse.accumulate("result", queryResult);
-            queryResponse.accumulate("errorCode", null);
-            queryResponse.accumulate("errorMsg", null);
+            queryResponse.put("success", true);
+            queryResponse.put("result", queryResult);
+            queryResponse.put("errorCode", null);
+            queryResponse.put("errorMsg", null);
         }else{
-            queryResponse.accumulate("success", false);
-            queryResponse.accumulate("result", null);
-            queryResponse.accumulate("errorCode","1001");
-            queryResponse.accumulate("errorMsg", "参数解析失败，参数格式存在问题");
+            queryResponse.put("success", false);
+            queryResponse.put("result", null);
+            queryResponse.put("errorCode","1001");
+            queryResponse.put("errorMsg", "参数解析失败，参数格式存在问题");
         }
         System.out.println(queryResponse);
         return queryResponse.toString();

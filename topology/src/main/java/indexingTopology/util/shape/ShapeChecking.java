@@ -1,10 +1,11 @@
 package indexingTopology.util.shape;
 
+import com.alibaba.fastjson.JSONException;
+import com.alibaba.fastjson.JSONObject;
+import indexingTopology.common.data.DataSchema;
+import indexingTopology.common.data.DataTuple;
 import info.batey.kafka.unit.KafkaUnit;
 import kafka.producer.KeyedMessage;
-import net.sf.json.JSON;
-import net.sf.json.JSONException;
-import net.sf.json.JSONObject;
 import org.apache.kafka.common.protocol.types.Field;
 
 import java.util.ArrayList;
@@ -60,7 +61,7 @@ public class ShapeChecking {
             String[] geoToPoint = geoClean.split(",");
 //            System.out.println(geoToPoint[0].split("  ")[1]);
             for(int i = 0;i < geoToPoint.length;i++){
-                String[] splited = geoToPoint[i].split(" ");
+                String[] splited = geoToPoint[i].split("  ");
                 for(int j = 0;j < 2;j++){
                     arrayList.add(splited[j]);
                 }
@@ -120,7 +121,7 @@ public class ShapeChecking {
         System.out.println(String.valueOf(Math.random()));
         String searchTest = "{\"type\":\"rectangle\",\"leftTop\":\"113,24\",\"rightBottom\":\"112,23\",\"geoStr\":null,\"lon\":null,\"lat\":null,\"radius\":null}";
         String searchTest3 = "{\"type\":\"polygon\",\"leftTop\":null,\"rightBottom\":null,\"geoStr\":[\"80  75\",\"85  80\",\"90  75\",\"85  70\"],\"lon\":null,\"lat\":null,\"radius\":null}";
-        JSONObject jsonObject = JSONObject.fromObject(searchTest);
+        JSONObject jsonObject = JSONObject.parseObject(searchTest);
         ShapeChecking shapeChecking = new ShapeChecking(jsonObject);
         ArrayList arrayList = shapeChecking.split();
         if(shapeChecking.getError() == null) {
@@ -134,7 +135,7 @@ public class ShapeChecking {
         System.out.println(Math.random());
         System.out.println(Math.random());
         System.out.println((int) (Math.random() * 100));
-        JSONObject jsonObject3 = JSONObject.fromObject(searchTest3);
+        JSONObject jsonObject3 = JSONObject.parseObject(searchTest3);
         System.out.println(jsonObject3.get("geoStr"));
         String geo = String.valueOf(jsonObject3.get("geoStr"));
         String geoClean = shapeChecking.deleteCharString(geo,'[',']','\"');
@@ -143,12 +144,12 @@ public class ShapeChecking {
                 ArrayList arrayList3 = shapeChecking3.split();
         if(shapeChecking3.getError() == null) {
             for(int i=0;i<arrayList3.size();i++){
-                System.out.print(Integer.valueOf(arrayList3.get(i).toString()) + " ");
+                System.out.print(Integer.valueOf(arrayList3.get(i).toString()) + "  ");
             }
         }
         Object object = new Object();
         String searchTest11 = "{\"type\":\"rectangle\",\"leftTop\":\"113,24\",\"rightBottom\":\"112,23\",\"geoStr\":null,\"lon\":null,\"lat\":null,\"radius\":null}";
-        JSONObject jsonObject1 = JSONObject.fromObject(searchTest11);
+        JSONObject jsonObject1 = JSONObject.parseObject(searchTest11);
         try{
             Double jsonInteger = jsonObject.getDouble("type");
             System.out.println(jsonInteger);
@@ -157,5 +158,38 @@ public class ShapeChecking {
         }
         object = (Object)jsonObject1;
         System.out.println(object);
+
+        DataSchema schema = new DataSchema();
+        schema.addDoubleField("lon");
+        schema.addDoubleField("lat");
+        schema.addIntField("devbtype");
+        schema.addVarcharField("devid", 8);
+        schema.addVarcharField("id", 32);
+        schema.addIntField("zcode");
+        schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
+
+
+
+        int len = schema.getNumberOfFields();
+        DataTuple dataTuple = new DataTuple();
+        String objectStr = "";
+        Object attribute = new Object();
+        attribute = "1";
+        dataTuple.add(attribute);
+        attribute = 2;
+        dataTuple.add(attribute);
+        attribute = "3";
+        dataTuple.add(attribute);
+        attribute = "4";
+        dataTuple.add(attribute);
+        attribute = "5";
+        dataTuple.add(attribute);
+        attribute = "6";
+        dataTuple.add(attribute);
+        attribute = 11.7;
+        dataTuple.add(attribute);
+        JSONObject objectfromTuple= schema.getJsonFromDataTuple(dataTuple);
+        System.out.println(objectfromTuple);
     }
 }

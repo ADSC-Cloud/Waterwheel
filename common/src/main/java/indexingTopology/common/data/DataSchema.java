@@ -1,9 +1,10 @@
 package indexingTopology.common.data;
 
+import com.alibaba.fastjson.JSONObject;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -290,8 +291,13 @@ public class DataSchema implements Serializable {
         String objectStr = "";
         Object attribute = new Object();
         for (int i = 0; i < len; i++) {
-            objectStr = object.get(getFieldName(i)).toString();
-            attribute = dataTypes.get(i).readFromString(objectStr);
+            if(object.get(getFieldName(i)) == null){
+                attribute = null;
+            }
+            else{
+                objectStr = object.get(getFieldName(i)).toString();
+                attribute = dataTypes.get(i).readFromString(objectStr);
+            }
             dataTuple.add(attribute);
         }
         return dataTuple;
@@ -301,7 +307,7 @@ public class DataSchema implements Serializable {
         int len = getNumberOfFields();
         JSONObject jsonObject = new JSONObject();
         for (int i = 0; i < len; i++) {
-            jsonObject.element(getFieldName(i), tuple.get(i));
+            jsonObject.put(getFieldName(i), tuple.get(i));
         }
         return jsonObject;
     }
