@@ -9,7 +9,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import indexingTopology.util.Json.JsonTest;
-import org.junit.Test;
 
 import java.io.FileNotFoundException;
 import java.util.List;
