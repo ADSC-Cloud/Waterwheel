@@ -147,7 +147,10 @@ public class TopologyTest extends TestCase {
         System.out.println("Topology is overridden by " + confFile);
         System.out.println(config.getCriticalSettings());
         assertTrue(config != null);
-
+        config.ZKHost.clear();
+        config.ZKHost.add("localhost:" + String.valueOf(kafkaZkport));
+        config.kafkaHost.clear();
+        config.kafkaHost.add("localhost:" + String.valueOf(kafkaUnitport));
 
         int total = 1000;
         long start = System.currentTimeMillis();
