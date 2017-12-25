@@ -19,10 +19,10 @@
  topic: "topic"
 
 # default zookeeperIP for kafka
- ZKhost: ["localhost:2181"]
+ ZKhost: ["10.21.25.203:2181","10.21.25.204:2181","10.21.25.205:2181"]
 
 # default kafkaHost for kafka
- kafkaHost: ["localhost:9092"]
+ kafkaHost: ["10.21.25.203:9092","10.21.25.204:9092","10.21.25.205:9092"]
 
 # the hdfs host. This value can be omitted when strage.file.system is local.
 # the host generally can be obtained by ./hdsf getconf --confKey fs.default.name

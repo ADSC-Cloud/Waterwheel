@@ -44,6 +44,8 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by billlin on 2017/11/25
@@ -243,9 +245,12 @@ public class KafkaTopology {
 //        String kafkaHost = "localhost:9092";
 
         // set up the producer
-        int brokerNum = 0;
-        while(brokerNum < config.kafkaHost.size()){
-            String currentKafkahost = config.kafkaHost.get(brokerNum);
+//        int brokerNum = 0;
+//        while(brokerNum < config.kafkaHost.size()){
+        String regEx = "[`~!@#$%^&*()+=|{}';'\\[\\]<>/?~！@#�%……&*（）——+|{}【】‘；：”“’。，、？]";
+        Pattern p = Pattern.compile(regEx);
+        Matcher m = p.matcher(config.kafkaHost.toString());
+            String currentKafkahost = m.replaceAll("").trim();
             IngestionKafkaBatchMode kafkaBatchMode = new IngestionKafkaBatchMode(currentKafkahost, config.topic);
             kafkaBatchMode.ingestProducer();
             TrajectoryGenerator generator = new TrajectoryMovingGenerator(x1, x2, y1, y2, 100000, 45.0);
@@ -289,8 +294,8 @@ public class KafkaTopology {
                 }
             });
             emittingThread.start();
-            brokerNum++;
-        }
+//            brokerNum++;
+//        }
     }
 
     public void  submitTopology(){

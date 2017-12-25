@@ -16,6 +16,8 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by billlin on 2017/11/23
@@ -47,17 +49,21 @@ public class InputStreamKafkaReceiverBoltServer extends InputStreamReceiverBolt 
 //        executorService.submit(consumer);
         final List<ConsumerLoop> consumers = new ArrayList<>();
         System.out.println("config.kafkaHost" + config.kafkaHost);
-        for (int i = 0; i < numConsumers; i++) {
-            ConsumerLoop consumer = new ConsumerLoop(i, groupId, topics, config.kafkaHost.get(i));
+        String regEx = "[`~!@#$%^&*()+=|{}';'\\[\\]<>/?~！@#�%……&*（）——+|{}【】‘；：”“’。，、？]";
+        Pattern p = Pattern.compile(regEx);
+        Matcher m = p.matcher(config.kafkaHost.toString());
+        String currentKafkahost = m.replaceAll("").trim();
+//        for (int i = 0; i < numConsumers; i++) {
+            ConsumerLoop consumer = new ConsumerLoop(0, groupId, topics, currentKafkahost);
             consumers.add(consumer);
             executor.submit(consumer);
-        }
+//        }
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
-                for (ConsumerLoop consumer : consumers) {
+//                for (ConsumerLoop consumer : consumers) {
                     consumer.shutdown();
-                }
+//                }
                 executor.shutdown();
                 try {
                     executor.awaitTermination(1000000, TimeUnit.MILLISECONDS);
@@ -80,8 +86,13 @@ public class InputStreamKafkaReceiverBoltServer extends InputStreamReceiverBolt 
 //            props.put("bootstrap.servers", "localhost:9092");
             props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaHost);
 //            props.put("MyTest", 123123);
-            props.put("offsets.topic.replication.factor", 1);
-            props.put("default.replication.factor", 1);
+//            props.put("offsets.topic.replication.factor", 1);
+//            props.put("default.replication.factor", 1);
+            String regEx = "[`~!@#$%^&*()+=|{}';'\\[\\]<>/?~！@#�%……&*（）——+|{}【】‘；：”“’。，、？]";
+            Pattern p = Pattern.compile(regEx);
+            Matcher m = p.matcher(config.kafkaHost.toString());
+            String zkhostList = m.replaceAll("").trim();
+//            props.put("zookeeper.connect",zkhostList);
             props.put("group.id", groupId);
             props.put("key.deserializer", StringDeserializer.class.getName());
             props.put("value.deserializer", StringDeserializer.class.getName());
