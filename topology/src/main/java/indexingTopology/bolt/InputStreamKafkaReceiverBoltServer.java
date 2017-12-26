@@ -105,7 +105,7 @@ public class InputStreamKafkaReceiverBoltServer extends InputStreamReceiverBolt 
                         data.put("offset", record.offset());
                         data.put("value", record.value());
                         JSONObject jsonFromData = JSONObject.parseObject(record.value());
-                        System.out.println(record.value());
+//                        System.out.println(record.value());
 //                        String dateValue = (String)jsonFromData.get("locationtime");
 //                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 //                        Date date = dateFormat.parse(dateValue);

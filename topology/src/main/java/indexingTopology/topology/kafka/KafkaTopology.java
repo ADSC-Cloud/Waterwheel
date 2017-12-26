@@ -235,10 +235,10 @@ public class KafkaTopology {
     }
 
     public void excuteIngestion(){
-        int total = 100;
+        int total = 10000;
         Thread emittingThread;
         long start = System.currentTimeMillis();
-        System.out.println("Kafka Producer send msg start,total msgs:"+total);
+//        System.out.println("Kafka Producer send msg start,total msgs:"+total);
 //        String topic = "topic";
 //        String kafkaHost = "localhost:9092";
 
@@ -281,7 +281,7 @@ public class KafkaTopology {
                         kafkaBatchMode.flush();
                         //            producer.close();
                         System.out.println("Kafka Producer send msg over,cost time:" + (System.currentTimeMillis() - start) + "ms");
-                        Thread.sleep(5000);
+                        Thread.sleep(2000);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }

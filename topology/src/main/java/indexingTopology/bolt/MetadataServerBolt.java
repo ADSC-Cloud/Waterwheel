@@ -639,18 +639,20 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
     public void searchHDFSOldData(HdfsFileSystemHandler fileSystemHandler,String relativePath,int removeHours, boolean isMetadata) throws InterruptedException, IOException {
         FileStatus[] fileStatus = fileSystemHandler.getFileSystem().listStatus(new Path(relativePath));
         List<FileMetaData> removalFileMeta = filePartitionSchemaManager.searchFileMetaData(Double.MIN_VALUE, Double.MAX_VALUE, 0, System.currentTimeMillis() - 3600 * 1000 * removeHours);
-        for(int i = 0; i < removalFileMeta.size(); i++){
-            if(removalFileMeta.get(i).getEndTime() > System.currentTimeMillis() - 3600 * 1000 * removeHours){
-                removalFileMeta.remove(i);
+        if(removalFileMeta.size() != 0) {
+            for (int i = 0; i < removalFileMeta.size(); i++) {
+                if (removalFileMeta.get(i).getEndTime() > System.currentTimeMillis() - 3600 * 1000 * removeHours) {
+                    removalFileMeta.remove(i);
+                }
             }
-        }
-        for(int i = 0; i < removalFileMeta.size(); i++){
-            try {
-                fileSystemHandler.removeOldData(new Path(relativePath + "/" + removalFileMeta.get(i).getFilename()));
-                filePartitionSchemaManager.remove(removalFileMeta.get(i));
-                collector.emit(Streams.OldDataRemoval, new Values(removalFileMeta.get(i).getFilename(), columnToBloomFilter));
-            } catch (InterruptedException e1) {
-                e1.printStackTrace();
+            for (int i = 0; i < removalFileMeta.size(); i++) {
+                try {
+                    fileSystemHandler.removeOldData(new Path(relativePath + "/" + removalFileMeta.get(i).getFilename()));
+                    filePartitionSchemaManager.remove(removalFileMeta.get(i));
+                    collector.emit(Streams.OldDataRemoval, new Values(removalFileMeta.get(i).getFilename(), columnToBloomFilter));
+                } catch (InterruptedException e1) {
+                    e1.printStackTrace();
+                }
             }
         }
 //        for(FileStatus singleFile : fileStatus) {
@@ -664,22 +666,26 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
     public void searchLocalOldData(File folder,LocalFileSystemHandler localFileSystemHandler,int removeHours, boolean isMetadata){
 //        System.out.println(folder);
 
-        List<FileMetaData> removalFileMeta = filePartitionSchemaManager.searchFileMetaData(Double.MIN_VALUE, Double.MAX_VALUE, 0, System.currentTimeMillis() - 3600 * 1000 * removeHours);
-        System.out.println(System.currentTimeMillis() - 3600 * 1000 * removeHours + "    " + removalFileMeta.get(0).getStartTime());
-        for(int i = 0; i < removalFileMeta.size(); i++){
-//            if(removalFileMeta.get(i).getEndTime() > System.currentTimeMillis() - 1000 * 30){
-            if(removalFileMeta.get(i).getEndTime() > System.currentTimeMillis() - 3600 * 1000 * removeHours){
-                removalFileMeta.remove(i);
+//        List<FileMetaData> removalFileMeta = filePartitionSchemaManager.searchFileMetaData(Double.MIN_VALUE, Double.MAX_VALUE, 0, System.currentTimeMillis() - 3600 * 1000 * removeHours);
+        List<FileMetaData> removalFileMeta = filePartitionSchemaManager.searchFileMetaData(Double.MIN_VALUE, Double.MAX_VALUE, 0, System.currentTimeMillis() - 30 * 1000);
+        System.out.println("removalFileMeta:" + removalFileMeta.size());
+        if(removalFileMeta.size() != 0){
+            System.out.println(System.currentTimeMillis() - 3600 * 1000 * removeHours + "    " + removalFileMeta.get(0).getStartTime());
+            for(int i = 0; i < removalFileMeta.size(); i++){
+            if(removalFileMeta.get(i).getEndTime() > System.currentTimeMillis() - 1000 * 30){
+//                if(removalFileMeta.get(i).getEndTime() > System.currentTimeMillis() - 3600 * 1000 * removeHours){
+                    removalFileMeta.remove(i);
+                }
             }
-        }
-        for(int i = 0; i < removalFileMeta.size(); i++){
+            for(int i = 0; i < removalFileMeta.size(); i++){
 //            System.out.println("removalFile : " + removalFileMeta.get(i).getFilename());
-            try {
-                localFileSystemHandler.removeOldData(folder.getPath() + "/" + removalFileMeta.get(i).getFilename());
-                filePartitionSchemaManager.remove(removalFileMeta.get(i));
-                collector.emit(Streams.OldDataRemoval, new Values(removalFileMeta.get(i).getFilename(), columnToBloomFilter));
-            } catch (InterruptedException e1) {
-                e1.printStackTrace();
+                try {
+                    localFileSystemHandler.removeOldData(folder.getPath() + "/" + removalFileMeta.get(i).getFilename());
+                    filePartitionSchemaManager.remove(removalFileMeta.get(i));
+                    collector.emit(Streams.OldDataRemoval, new Values(removalFileMeta.get(i).getFilename(), columnToBloomFilter));
+                } catch (InterruptedException e1) {
+                    e1.printStackTrace();
+                }
             }
         }
     }

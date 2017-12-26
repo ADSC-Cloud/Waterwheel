@@ -1,8 +1,12 @@
 package indexingTopology.util.track;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import indexingTopology.api.client.GeoTemporalQueryClient;
 import indexingTopology.api.client.GeoTemporalQueryRequest;
 import indexingTopology.api.client.QueryResponse;
+import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 
 import java.io.IOException;
@@ -23,6 +27,7 @@ public class PosNonSpacialSearchWs {
     private double Selectivity = 1;
 
     public String services(String permissionsParams, String businessParams) {
+        DataSchema schema = new DataSchema();
         double selectivityOnOneDimension = Math.sqrt(Selectivity);
         Random random = new Random();
         double x = x1 + (x2 - x1) * (1 - selectivityOnOneDimension) * random.nextDouble();
@@ -32,6 +37,8 @@ public class PosNonSpacialSearchWs {
         final double xHigh = x + selectivityOnOneDimension * (x2 - x1);
         final double yLow = y;
         final double yHigh = y + selectivityOnOneDimension * (y2 - y1);
+        JSONObject queryResponse = new JSONObject();
+        JSONArray queryResult = null;
         GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient(QueryServerIp, 10001);
         try {
             queryClient.connectWithTimeout(10000);
@@ -45,15 +52,27 @@ public class PosNonSpacialSearchWs {
             QueryResponse response = queryClient.query(queryRequest);
             List<DataTuple> tuples = response.getTuples();
             for (DataTuple tuple : tuples) {
-
+                queryResult.add(schema.getJsonFromDataTupleWithoutZcode(tuple));
                 System.out.println(tuple);
             }
+
+//            queryResponse.put("success", false);
+//            queryResponse.put("result", null);
+//            queryResponse.put("errorCode","1001");
+//            queryResponse.put("errorMsg", "参数解析失败，参数格式存在问题");
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
-        return null;
+
+        queryResponse.put("success", true);
+        queryResponse.put("result", queryResult);
+        queryResponse.put("errorCode", null);
+        queryResponse.put("errorMsg", null);
+        String result = JSONObject.toJSONString(queryResponse, SerializerFeature.WriteMapNullValue);
+        System.out.println(result);
+        return result;
     }
 
     public static void main(String[] args) {

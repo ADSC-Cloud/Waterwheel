@@ -10,11 +10,11 @@ public class searchTest {
         long endTime = System.currentTimeMillis();
         String businessParams = "{\"city\":\"4401\",\"devbtype\":2,\"devid\":\"asd\",\"startTime\":" + startTime + ",\"endTime\":" + endTime + "}";
         String businessParamsPaged = "{\"city\":\"4401\",\"devbtype\":2,\"devid\":\"asd\",\"startTime\":" + startTime + ",\"endTime\":" + endTime + ",\"page\":2,\"rows\":10}";
-        TrackSearchWs trackSearchWs = new TrackSearchWs();
-        String queryResult = trackSearchWs.services(permissionParams, businessParams);
-        System.out.println(queryResult);
-//        TrackPagedSearchWs trackPagedSearchWs = new TrackPagedSearchWs();
-//        String queryResultPaged = trackPagedSearchWs.services(permissionParams, businessParamsPaged);
-//        System.out.println(queryResultPaged);
+//        TrackSearchWs trackSearchWs = new TrackSearchWs();
+//        String queryResult = trackSearchWs.services(permissionParams, businessParams);
+//        System.out.println(queryResult);
+        TrackPagedSearchWs trackPagedSearchWs = new TrackPagedSearchWs();
+        String queryResultPaged = trackPagedSearchWs.services(permissionParams, businessParamsPaged);
+        System.out.println(queryResultPaged);
     }
 }

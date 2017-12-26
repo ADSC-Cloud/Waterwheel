@@ -2,6 +2,7 @@ package indexingTopology.util.track;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import indexingTopology.api.client.GeoTemporalQueryClient;
 import indexingTopology.api.client.GeoTemporalQueryRequest;
 import indexingTopology.api.client.QueryResponse;
@@ -122,7 +123,7 @@ public class PosSpacialSearchWs {
                 List<DataTuple> tuples = response.getTuples();
                 queryResult = new JSONArray();
                 for (DataTuple tuple : tuples){
-                    queryResult.add(schema.getJsonFromDataTuple(tuple));
+                    queryResult.add(schema.getJsonFromDataTupleWithoutZcode(tuple));
                     System.out.println(tuple.toValues());
                 }
             } catch (IOException e) {
@@ -140,8 +141,9 @@ public class PosSpacialSearchWs {
             queryResponse.put("errorCode","1001");
             queryResponse.put("errorMsg", "参数解析失败，参数格式存在问题");
         }
-        System.out.println(queryResponse);
-        return queryResponse.toString();
+        String result = JSONObject.toJSONString(queryResponse, SerializerFeature.WriteMapNullValue);
+        System.out.println(result);
+        return result;
     }
 
     Polygon initPolygon(JSONArray geoArray) {
@@ -183,7 +185,7 @@ public class PosSpacialSearchWs {
         rawSchema.addDoubleField("lat");
         rawSchema.addIntField("devbtype");
         rawSchema.addVarcharField("devid", 8);
-        rawSchema.addVarcharField("id", 32);
+        rawSchema.addVarcharField("city", 32);
         return rawSchema;
     }
 
@@ -197,6 +199,6 @@ public class PosSpacialSearchWs {
         String searchTest3 = "{\"type\":\"polygon\",\"leftTop\":null,\"rightBottom\":null,\"geoStr\":null,\"lon\":null,\"lat\":null,\"radius\":null}";
         String businessParams = "{\"type\":\"polygon\",\"leftTop\":null,\"rightBottom\":null,\"geoStr\":[\"1 3\",\"2 8\",\"5 4\",\"5 9\",\"7 5\"],\"longitude\":null,\"latitude\":null,\"radius\":null}";
         PosSpacialSearchWs posSpacialSearchWs = new PosSpacialSearchWs();
-        posSpacialSearchWs.service(null, searchTest);
+        posSpacialSearchWs.service(null, businessParams);
     }
 }

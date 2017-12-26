@@ -313,4 +313,16 @@ public class DataSchema implements Serializable {
     }
 
 
+    public JSONObject getJsonFromDataTupleWithoutZcode(DataTuple tuple) {
+        int len = getNumberOfFields();
+        JSONObject jsonObject = new JSONObject();
+        for (int i = 0; i < len; i++) {
+            if(getFieldName(i).equals("zcode")){
+                continue;
+            }
+            jsonObject.put(getFieldName(i), tuple.get(i));
+        }
+        return jsonObject;
+    }
+
 }

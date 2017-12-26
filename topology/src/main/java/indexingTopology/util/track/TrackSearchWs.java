@@ -3,6 +3,7 @@ package indexingTopology.util.track;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import indexingTopology.api.client.GeoTemporalQueryClient;
 import indexingTopology.api.client.GeoTemporalQueryRequest;
 import indexingTopology.api.client.QueryResponse;
@@ -89,7 +90,7 @@ public class TrackSearchWs implements Serializable{
             queryResponse.put("success", true);
             JSONArray queryResult = new JSONArray();
             for (int i = 0; i < tuples.size(); i++) {
-                queryResult.add(schema.getJsonFromDataTuple(tuples.get(i)));
+                queryResult.add(schema.getJsonFromDataTupleWithoutZcode(tuples.get(i)));
                 System.out.println(tuples.get(i).toValues());
             }
             queryResponse.put("result", queryResult);
@@ -107,7 +108,9 @@ public class TrackSearchWs implements Serializable{
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return queryResponse.toString();
+        String result = JSONObject.toJSONString(queryResponse, SerializerFeature.WriteMapNullValue);
+        System.out.println(result);
+        return result;
     }
 
     public boolean getQueryJson(JSONObject businessParams){
