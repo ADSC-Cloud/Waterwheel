@@ -276,7 +276,7 @@ public class DataSchema implements Serializable {
     }
 
 
-    public List<DataTuple> getTuplesFromJsonArray(JSONArray array) {
+    public List<DataTuple> getTuplesFromJsonArray(JSONArray array) throws ParseException{
         List<DataTuple> dataTuples = new ArrayList<>();
         for (Object jsonObject : array) {
             DataTuple dataTuple = getTupleFromJsonObject((JSONObject) jsonObject);
@@ -285,7 +285,7 @@ public class DataSchema implements Serializable {
         return dataTuples;
     }
 
-    public DataTuple getTupleFromJsonObject(JSONObject object) {
+    public DataTuple getTupleFromJsonObject(JSONObject object) throws ParseException{
         int len = getNumberOfFields();
         DataTuple dataTuple = new DataTuple();
         String objectStr = "";

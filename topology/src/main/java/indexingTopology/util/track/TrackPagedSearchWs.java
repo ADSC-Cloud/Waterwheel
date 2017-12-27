@@ -42,21 +42,38 @@ public class TrackPagedSearchWs implements Serializable{
         JSONObject queryResponse = new JSONObject();
         try{
             JSONObject jsonObject = JSONObject.parseObject(businessParams);
-            if(!getQueryJson(jsonObject)){ // query failed,json format is error
-                errorCode = "1102";
-//            errorMsg = Error(errorCode);
+            try{
+                getQueryJson(jsonObject); // query failed,json format is error
+            }
+            catch (JSONException e){
                 queryResponse.put("result", null);
-                queryResponse.put("errorCode", errorCode);
-                queryResponse.put("errorMsg", errorMsg);
-                return queryResponse.toString();
+                queryResponse.put("errorCode", "1002");
+                queryResponse.put("errorMsg", "参数值无效或者缺失必填参数");
+                String result = JSONObject.toJSONString(queryResponse, SerializerFeature.WriteMapNullValue);
+                return result;
+            }
+            catch (NullPointerException e){
+                queryResponse.put("result", null);
+                queryResponse.put("errorCode", "1002");
+                queryResponse.put("errorMsg", "参数值无效或者缺失必填参数");
+                String result = JSONObject.toJSONString(queryResponse, SerializerFeature.WriteMapNullValue);
+                return result;
+            }
+            catch (IllegalArgumentException e){
+                queryResponse.put("result", null);
+                queryResponse.put("errorCode", "1");
+                queryResponse.put("errorMsg", "参数值无效或者缺失必填参数");
+                String result = JSONObject.toJSONString(queryResponse, SerializerFeature.WriteMapNullValue);
+                return result;
             }
         }catch (JSONException e){// query failed, json value invalid
             errorCode = "1001";
 //            errorMsg = Error(errorCode);
             queryResponse.put("result", null);
             queryResponse.put("errorCode", errorCode);
-            queryResponse.put("errorMsg", errorMsg);
-            return queryResponse.toString();
+            queryResponse.put("errorMsg", "参数解析失败，参数格式存在问题");
+            String result = JSONObject.toJSONString(queryResponse, SerializerFeature.WriteMapNullValue);
+            return result;
         }
 
         // query success
@@ -68,20 +85,18 @@ public class TrackPagedSearchWs implements Serializable{
         }
         DataSchema schema = getDataSchema();
         DataTuplePredicate predicate;
-        System.out.println("city : " + city);
-        System.out.println("devbtype : " + devbtype);
-        System.out.println("devid : " + devid);
-        System.out.println("startTime : " + startTime);
-        System.out.println("endTime : " + endTime);
+//        System.out.println("city : " + city);
+//        System.out.println("devbtype : " + devbtype);
+//        System.out.println("devid : " + devid);
+//        System.out.println("startTime : " + startTime);
+//        System.out.println("endTime : " + endTime);
         predicate = t -> CheckEqual((String)schema.getValue("city", t),(int)schema.getValue("devbtype", t),(String)schema.getValue("devid", t));
         GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(Double.MIN_VALUE, Double.MAX_VALUE, Double.MIN_VALUE, Double.MAX_VALUE,
                 startTime,
                 endTime, predicate, null, null, null, null);
         try {
-            System.out.println(queryRequest.startTime);
             QueryResponse response = queryClient.query(queryRequest);
             DataSchema outputSchema = response.getSchema();
-            System.out.println(outputSchema.getFieldNames());
             System.out.println("datatuples : " + response.dataTuples.size());
             List<DataTuple> tuples = response.getTuples();
 
@@ -89,13 +104,12 @@ public class TrackPagedSearchWs implements Serializable{
 
             queryResponse.put("success", true);
             JSONArray queryResult = new JSONArray();
-            if(tuples.size() > 0){
+            if(tuples.size() > 0 && tuples.size() > rows){
                 for (int i = rows * (page - 1); i < rows * page; i++) {
                     if(i >= tuples.size()){
                         break;
                     }
                     queryResult.add(schema.getJsonFromDataTupleWithoutZcode(tuples.get(i)));
-                    System.out.println(tuples.get(i).toValues());
                 }
             }
             JSONObject result = new JSONObject();
@@ -125,12 +139,11 @@ public class TrackPagedSearchWs implements Serializable{
             e.printStackTrace();
         }
         String result = JSONObject.toJSONString(queryResponse, SerializerFeature.WriteMapNullValue);
-        System.out.println(result);
         return result;
     }
 
-    public boolean getQueryJson(JSONObject businessParams){
-        try {
+    public boolean getQueryJson(JSONObject businessParams) throws JSONException, NullPointerException{
+//        try {
             this.city = (String)businessParams.get("city");
             this.devbtype = (int)businessParams.get("devbtype");
             this.devid = (String)businessParams.get("devid");
@@ -138,9 +151,9 @@ public class TrackPagedSearchWs implements Serializable{
             this.endTime = (long)businessParams.get("endTime");
             this.page = (int)businessParams.get("page");
             this.rows = (int)businessParams.get("rows");
-        }catch (JSONException e){ // jsonObject value format is wrong
-            return false;
-        }
+            if(city == null || devid == null || businessParams.size() > 7){
+                throw new IllegalArgumentException();
+            }
         return true;
     }
 
@@ -152,51 +165,57 @@ public class TrackPagedSearchWs implements Serializable{
             return false;
     }
 
-//    static private DataSchema getDataSchema() {
-//        DataSchema schema = new DataSchema();
-//
-//        schema.addIntField("devbtype");
-//        schema.addVarcharField("devstype",32);
-//        schema.addVarcharField("devid", 32);
-//        schema.addVarcharField("city", 32);
-//        schema.addDoubleField("longitude");
-//        schema.addDoubleField("latitude");
-//        schema.addDoubleField("altitude");
-//        schema.addDoubleField("speed");
-//        schema.addIntField("direction");
-//        schema.addVarcharField("locationtime", 32);
-//        schema.addIntField("workstate");
-//        schema.addVarcharField("clzl", 32);
-//        schema.addVarcharField("hphm", 32);
-//        schema.addIntField("jzix");
-//        schema.addVarcharField("jybh", 32);
-//        schema.addVarcharField("jymc", 32);
-//        schema.addVarcharField("lxdh", 32);
-//        schema.addVarcharField("ssdwdm", 32);
-//        schema.addVarcharField("ssdwmc", 32);
-//        schema.addVarcharField("teamno", 32);
-//        schema.addVarcharField("dth", 32);
-//        schema.addVarcharField("reserve1", 32);
-//        schema.addVarcharField("reserve2", 32);
-//        schema.addVarcharField("reserve3", 32);
-//        return schema;
-//    }
-
     static private DataSchema getDataSchema() {
         DataSchema schema = new DataSchema();
-        schema.addDoubleField("lon");
-        schema.addDoubleField("lat");
+
         schema.addIntField("devbtype");
-        schema.addVarcharField("devid", 8);
-//        schema.addVarcharField("id", 32);
-        schema.addVarcharField("city",32);
+        schema.addVarcharField("devstype", 32);
+        schema.addVarcharField("devid", 32);
+        schema.addVarcharField("city", 32);
+        schema.addDoubleField("longitude");
+        schema.addDoubleField("latitude");
+        schema.addDoubleField("altitude");
+        schema.addDoubleField("speed");
+        schema.addDoubleField("direction");
         schema.addLongField("locationtime");
+        schema.addIntField("workstate");
+        schema.addVarcharField("clzl", 32);
+        schema.addVarcharField("hphm", 32);
+        schema.addIntField("jzlx");
+        schema.addVarcharField("jybh", 32);
+        schema.addVarcharField("jymc", 32);
+        schema.addVarcharField("lxdh", 32);
+        schema.addVarcharField("ssdwdm", 32);
+        schema.addVarcharField("ssdwmc", 32);
+        schema.addVarcharField("teamno", 32);
+        schema.addVarcharField("dth", 32);
+        schema.addVarcharField("reserve1", 32);
+        schema.addVarcharField("reserve2", 32);
+        schema.addVarcharField("reserve3", 32);
         schema.setTemporalField("locationtime");
-//        schema.addLongField("timestamp");
         schema.addIntField("zcode");
         schema.setPrimaryIndexField("zcode");
-
         return schema;
     }
+
+
+
+
+//    static private DataSchema getDataSchema() {
+//        DataSchema schema = new DataSchema();
+//        schema.addDoubleField("lon");
+//        schema.addDoubleField("lat");
+//        schema.addIntField("devbtype");
+//        schema.addVarcharField("devid", 8);
+////        schema.addVarcharField("id", 32);
+//        schema.addVarcharField("city",32);
+//        schema.addLongField("locationtime");
+//        schema.setTemporalField("locationtime");
+////        schema.addLongField("timestamp");
+//        schema.addIntField("zcode");
+//        schema.setPrimaryIndexField("zcode");
+//
+//        return schema;
+//    }
 
 }

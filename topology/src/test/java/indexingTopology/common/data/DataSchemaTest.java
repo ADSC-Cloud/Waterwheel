@@ -11,6 +11,7 @@ import com.google.gson.JsonObject;
 import org.junit.Test;
 
 import java.io.FileNotFoundException;
+import java.text.ParseException;
 import java.util.List;
 
 import static junit.framework.TestCase.assertEquals;
@@ -96,7 +97,7 @@ public class DataSchemaTest {
     }
 
     @Test
-    public void getTuplesFromJsonTest() throws FileNotFoundException {
+    public void getTuplesFromJsonTest() throws FileNotFoundException, ParseException{
         DataSchema schema = new DataSchema();
         schema.addVarcharField("2" ,3);
         schema.addVarcharField("1", 3);
@@ -116,11 +117,15 @@ public class DataSchemaTest {
         schema.addVarcharField("date", 15);
         String jsonStr = "{\"a2\":\"efg\",\"a1\":null,\"date\":\"2017-12-01 10:40:00\"}";
         JSONObject jsonObject = JSONObject.parseObject(jsonStr);
-        DataTuple tuple = schema.getTupleFromJsonObject(jsonObject);
-        assertEquals("efg",tuple.get(0));
-        jsonObject = schema.getJsonFromDataTuple(tuple);
-        assertEquals("efg", jsonObject.get("a2"));
-        assertEquals(null, jsonObject.get("a1"));
+        try{
+            DataTuple tuple = schema.getTupleFromJsonObject(jsonObject);
+            assertEquals("efg",tuple.get(0));
+            jsonObject = schema.getJsonFromDataTuple(tuple);
+            assertEquals("efg", jsonObject.get("a2"));
+            assertEquals(null, jsonObject.get("a1"));
+        }catch (ParseException e){
+            e.printStackTrace();
+        }
     }
 
 }

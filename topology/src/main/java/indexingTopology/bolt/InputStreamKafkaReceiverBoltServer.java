@@ -12,6 +12,7 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 
+import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -123,10 +124,14 @@ public class InputStreamKafkaReceiverBoltServer extends InputStreamReceiverBolt 
 //                        jsonFromData.accumulate("timestamp", date.getTime());
 
                         //template replace
-                        long dataValue = (long)jsonFromData.get("locationtime");
-//                        jsonFromData.accumulate("timestamp", dataValue);
-
-                        getInputQueue().put(schema.getTupleFromJsonObject(jsonFromData));
+//                        Date dataValue = (Date)jsonFromData.get("locationtime");
+//                        jsonFromData.remove("locationtime");
+//                        jsonFromData.put("locationtime", dataValue.getTime());
+                        try{
+                            getInputQueue().put(schema.getTupleFromJsonObject(jsonFromData));
+                        }catch (ParseException e){
+                            e.printStackTrace();
+                        }
                     }
 //                        JsonParser parser = new JsonParser();
 //                        JsonObject object = (JsonObject) parser.parse(record.value());

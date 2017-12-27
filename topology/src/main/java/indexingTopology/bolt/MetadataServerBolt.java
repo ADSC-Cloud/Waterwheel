@@ -632,8 +632,8 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
             }
         };
         Timer timer = new Timer();
-        timer.schedule(task, buildTime(), 1000 * 30);
-//        timer.schedule(task, buildTime(), 3600 * 1000 * intervalTime);
+//        timer.schedule(task, buildTime(), 1000 * 30);
+        timer.schedule(task, buildTime(), 3600 * 1000 * intervalTime);
     }
 
     public void searchHDFSOldData(HdfsFileSystemHandler fileSystemHandler,String relativePath,int removeHours, boolean isMetadata) throws InterruptedException, IOException {
@@ -666,14 +666,14 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
     public void searchLocalOldData(File folder,LocalFileSystemHandler localFileSystemHandler,int removeHours, boolean isMetadata){
 //        System.out.println(folder);
 
-//        List<FileMetaData> removalFileMeta = filePartitionSchemaManager.searchFileMetaData(Double.MIN_VALUE, Double.MAX_VALUE, 0, System.currentTimeMillis() - 3600 * 1000 * removeHours);
-        List<FileMetaData> removalFileMeta = filePartitionSchemaManager.searchFileMetaData(Double.MIN_VALUE, Double.MAX_VALUE, 0, System.currentTimeMillis() - 30 * 1000);
+        List<FileMetaData> removalFileMeta = filePartitionSchemaManager.searchFileMetaData(Double.MIN_VALUE, Double.MAX_VALUE, 0, System.currentTimeMillis() - 3600 * 1000 * removeHours);
+//        List<FileMetaData> removalFileMeta = filePartitionSchemaManager.searchFileMetaData(Double.MIN_VALUE, Double.MAX_VALUE, 0, System.currentTimeMillis() - 30 * 1000);
         System.out.println("removalFileMeta:" + removalFileMeta.size());
         if(removalFileMeta.size() != 0){
             System.out.println(System.currentTimeMillis() - 3600 * 1000 * removeHours + "    " + removalFileMeta.get(0).getStartTime());
             for(int i = 0; i < removalFileMeta.size(); i++){
-            if(removalFileMeta.get(i).getEndTime() > System.currentTimeMillis() - 1000 * 30){
-//                if(removalFileMeta.get(i).getEndTime() > System.currentTimeMillis() - 3600 * 1000 * removeHours){
+//            if(removalFileMeta.get(i).getEndTime() > System.currentTimeMillis() - 1000 * 30){
+                if(removalFileMeta.get(i).getEndTime() > System.currentTimeMillis() - 3600 * 1000 * removeHours){
                     removalFileMeta.remove(i);
                 }
             }

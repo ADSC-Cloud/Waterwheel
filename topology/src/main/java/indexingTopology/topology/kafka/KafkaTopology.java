@@ -237,7 +237,7 @@ public class KafkaTopology {
     }
 
     public void excuteIngestion(){
-        int total = 10000;
+        int total = 5;
         Thread emittingThread;
         long start = System.currentTimeMillis();
 //        System.out.println("Kafka Producer send msg start,total msgs:"+total);
@@ -262,14 +262,17 @@ public class KafkaTopology {
                         for (int i = 0; i < total; i++) {
                             Car car = generator.generate();
                             totalNumber++;
-                            Long timestamp = System.currentTimeMillis();
-                            String locationtime = String.valueOf(new Date(timestamp));
                             Double lon = Math.random() * 100;
                             Double lat = Math.random() * 100;
+                            int devbtype = (int)(Math.random() * 100);
                             final int id = new Random().nextInt(100);
                             final String idString = "" + id;
-                            String Msg = "{\"lon\":"+ car.x + ",\"lat\":" + car.y + ",\"devbtype\":"+ 2 +",\"devid\":\"asd\",\"city\":\"4401\",\"locationtime\":" + System.currentTimeMillis() +  "}";
-//                            System.out.println(Msg);
+                            System.out.println(devbtype);
+//                            String Msg = "{\"lon\":"+ car.x + ",\"lat\":" + car.y + ",\"devbtype\":"+ devbtype +",\"devid\":\"asd\",\"city\":\"4401\",\"locationtime\":" + System.currentTimeMillis() +  "}";
+                          String Msg = "{\"devbtype\":" + devbtype + ",\"devstype\":\"350M\",\"devid\":\"0x0101\",\"city\":\"4401\",\"longitude\":"+ car.x + ",\"latitude\":" + car.y + ",\"altitude\":2000.0," +
+                            "\"speed\":50.0,\"direction\":40.0,\"locationtime\":" + System.currentTimeMillis() +",\"workstate\":1,\"clzl\":\"巡逻车\",\"hphm\":\"粤A39824\",\"jzlx\":0,\"jybh\":\"100011\"," +
+                                    "\"jymc\":\"陈国基\",\"lxdh\":\"13576123212\",\"dth\":\"SG0000000352\",\"reserve1\":\"\",\"reserve2\":\"\",\"reserve3\":\"\",\"ssdwdm\":\"440100000000\"," +
+                                    "\"ssdwmc\":\"广州市\",\"teamno\":\"44010001\"}";
                             kafkaBatchMode.send(i, Msg);
     //                        this.producer.send(new ProducerRecord<String, String>("consumer",
     //                                String.valueOf(i), "{\"employees\":[{\"firstName\":\"John\",\"lastName\":\"Doe\"},{\"firstName\":\"Anna\",\"lastName\":\"Smith\"},{\"firstName\":\"Peter\",\"lastName\":\"Jones\"}]}"));
@@ -286,7 +289,7 @@ public class KafkaTopology {
                         kafkaBatchMode.flush();
                         //            producer.close();
                         System.out.println("Kafka Producer send msg over,cost time:" + (System.currentTimeMillis() - start) + "ms");
-                        Thread.sleep(2000);
+                        Thread.sleep(5000);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -294,8 +297,6 @@ public class KafkaTopology {
                 }
             });
             emittingThread.start();
-//            brokerNum++;
-//        }
     }
 
     public void  submitTopology(){
@@ -326,8 +327,8 @@ public class KafkaTopology {
                 upperBound, 10001, city, config, schema);
 
         DataTupleMapper dataTupleMapper = new DataTupleMapper(rawSchema, (Serializable & Function<DataTuple, DataTuple>) t -> {
-            double lon = (double)schema.getValue("lon", t);
-            double lat = (double)schema.getValue("lat", t);
+            double lon = (double)schema.getValue("longitude", t);
+            double lat = (double)schema.getValue("latitude", t);
             int zcode = city.getZCodeForALocation(lon, lat);
             t.add(zcode);
 //            t.add(System.currentTimeMillis());
@@ -394,29 +395,94 @@ public class KafkaTopology {
     }
 
     static private DataSchema getRawDataSchema() {
-        DataSchema rawSchema = new DataSchema();
-        rawSchema.addDoubleField("lon");
-        rawSchema.addDoubleField("lat");
-        rawSchema.addIntField("devbtype");
-        rawSchema.addVarcharField("devid", 32);
-        rawSchema.addVarcharField("city",32);
-        rawSchema.addLongField("locationtime");
-        rawSchema.setTemporalField("locationtime");
-        return rawSchema;
+        DataSchema schema = new DataSchema();
+
+        schema.addIntField("devbtype");
+        schema.addVarcharField("devstype", 32);
+        schema.addVarcharField("devid", 32);
+        schema.addVarcharField("city", 32);
+        schema.addDoubleField("longitude");
+        schema.addDoubleField("latitude");
+        schema.addDoubleField("altitude");
+        schema.addDoubleField("speed");
+        schema.addDoubleField("direction");
+        schema.addLongField("locationtime");
+        schema.addIntField("workstate");
+        schema.addVarcharField("clzl", 32);
+        schema.addVarcharField("hphm", 32);
+        schema.addIntField("jzlx");
+        schema.addVarcharField("jybh", 32);
+        schema.addVarcharField("jymc", 32);
+        schema.addVarcharField("lxdh", 32);
+        schema.addVarcharField("ssdwdm", 32);
+        schema.addVarcharField("ssdwmc", 32);
+        schema.addVarcharField("teamno", 32);
+        schema.addVarcharField("dth", 32);
+        schema.addVarcharField("reserve1", 32);
+        schema.addVarcharField("reserve2", 32);
+        schema.addVarcharField("reserve3", 32);
+        schema.setTemporalField("locationtime");
+        return schema;
     }
 
     static private DataSchema getDataSchema() {
         DataSchema schema = new DataSchema();
-        schema.addDoubleField("lon");
-        schema.addDoubleField("lat");
+
         schema.addIntField("devbtype");
+        schema.addVarcharField("devstype", 32);
         schema.addVarcharField("devid", 32);
-        schema.addVarcharField("city",32);
+        schema.addVarcharField("city", 32);
+        schema.addDoubleField("longitude");
+        schema.addDoubleField("latitude");
+        schema.addDoubleField("altitude");
+        schema.addDoubleField("speed");
+        schema.addDoubleField("direction");
         schema.addLongField("locationtime");
+        schema.addIntField("workstate");
+        schema.addVarcharField("clzl", 32);
+        schema.addVarcharField("hphm", 32);
+        schema.addIntField("jzlx");
+        schema.addVarcharField("jybh", 32);
+        schema.addVarcharField("jymc", 32);
+        schema.addVarcharField("lxdh", 32);
+        schema.addVarcharField("ssdwdm", 32);
+        schema.addVarcharField("ssdwmc", 32);
+        schema.addVarcharField("teamno", 32);
+        schema.addVarcharField("dth", 32);
+        schema.addVarcharField("reserve1", 32);
+        schema.addVarcharField("reserve2", 32);
+        schema.addVarcharField("reserve3", 32);
         schema.setTemporalField("locationtime");
         schema.addIntField("zcode");
         schema.setPrimaryIndexField("zcode");
-
         return schema;
     }
+
+
+//    static private DataSchema getRawDataSchema() {
+//        DataSchema rawSchema = new DataSchema();
+//        rawSchema.addDoubleField("lon");
+//        rawSchema.addDoubleField("lat");
+//        rawSchema.addIntField("devbtype");
+//        rawSchema.addVarcharField("devid", 32);
+//        rawSchema.addVarcharField("city",32);
+//        rawSchema.addLongField("locationtime");
+//        rawSchema.setTemporalField("locationtime");
+//        return rawSchema;
+//    }
+//
+//    static private DataSchema getDataSchema() {
+//        DataSchema schema = new DataSchema();
+//        schema.addDoubleField("lon");
+//        schema.addDoubleField("lat");
+//        schema.addIntField("devbtype");
+//        schema.addVarcharField("devid", 32);
+//        schema.addVarcharField("city",32);
+//        schema.addLongField("locationtime");
+//        schema.setTemporalField("locationtime");
+//        schema.addIntField("zcode");
+//        schema.setPrimaryIndexField("zcode");
+//
+//        return schema;
+//    }
 }

@@ -21,6 +21,7 @@ import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.tuple.Fields;
 
+import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -81,6 +82,9 @@ public class FakeKafkaReceiverBolt extends InputStreamReceiverBolt {
                 getInputQueue().put(schema.getTupleFromJsonObject(jsonFromData));
             } catch (InterruptedException e) {
                 e.printStackTrace();
+            }
+            catch (ParseException e) {
+            e.printStackTrace();
             }
         }
 //        try {

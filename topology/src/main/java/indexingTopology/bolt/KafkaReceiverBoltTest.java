@@ -66,7 +66,7 @@ public class KafkaReceiverBoltTest extends InputStreamReceiverBolt {
 //                }
                 executor.shutdown();
                 try {
-                    executor.awaitTermination(1000000, TimeUnit.MILLISECONDS);
+                    executor.awaitTermination(10000, TimeUnit.MILLISECONDS);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }

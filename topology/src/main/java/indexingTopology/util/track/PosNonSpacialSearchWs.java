@@ -27,7 +27,7 @@ public class PosNonSpacialSearchWs {
     private double Selectivity = 1;
 
     public String services(String permissionsParams, String businessParams) {
-        DataSchema schema = new DataSchema();
+        DataSchema schema = getDataSchema();
         double selectivityOnOneDimension = Math.sqrt(Selectivity);
         Random random = new Random();
         double x = x1 + (x2 - x1) * (1 - selectivityOnOneDimension) * random.nextDouble();
@@ -38,7 +38,7 @@ public class PosNonSpacialSearchWs {
         final double yLow = y;
         final double yHigh = y + selectivityOnOneDimension * (y2 - y1);
         JSONObject queryResponse = new JSONObject();
-        JSONArray queryResult = null;
+        JSONArray queryResult = new JSONArray();
         GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient(QueryServerIp, 10001);
         try {
             queryClient.connectWithTimeout(10000);
@@ -55,7 +55,6 @@ public class PosNonSpacialSearchWs {
                 queryResult.add(schema.getJsonFromDataTupleWithoutZcode(tuple));
                 System.out.println(tuple);
             }
-
 //            queryResponse.put("success", false);
 //            queryResponse.put("result", null);
 //            queryResponse.put("errorCode","1001");
@@ -71,12 +70,45 @@ public class PosNonSpacialSearchWs {
         queryResponse.put("errorCode", null);
         queryResponse.put("errorMsg", null);
         String result = JSONObject.toJSONString(queryResponse, SerializerFeature.WriteMapNullValue);
-        System.out.println(result);
         return result;
+    }
+
+
+    static private DataSchema getDataSchema() {
+        DataSchema schema = new DataSchema();
+        schema.addIntField("devbtype");
+        schema.addVarcharField("devstype", 32);
+        schema.addVarcharField("devid", 32);
+        schema.addVarcharField("city", 32);
+        schema.addDoubleField("longitude");
+        schema.addDoubleField("latitude");
+        schema.addDoubleField("altitude");
+        schema.addDoubleField("speed");
+        schema.addDoubleField("direction");
+        schema.addLongField("locationtime");
+        schema.addIntField("workstate");
+        schema.addVarcharField("clzl", 32);
+        schema.addVarcharField("hphm", 32);
+        schema.addIntField("jzlx");
+        schema.addVarcharField("jybh", 32);
+        schema.addVarcharField("jymc", 32);
+        schema.addVarcharField("lxdh", 32);
+        schema.addVarcharField("ssdwdm", 32);
+        schema.addVarcharField("ssdwmc", 32);
+        schema.addVarcharField("teamno", 32);
+        schema.addVarcharField("dth", 32);
+        schema.addVarcharField("reserve1", 32);
+        schema.addVarcharField("reserve2", 32);
+        schema.addVarcharField("reserve3", 32);
+        schema.setTemporalField("locationtime");
+        schema.addIntField("zcode");
+        schema.setPrimaryIndexField("zcode");
+        return schema;
     }
 
     public static void main(String[] args) {
         PosNonSpacialSearchWs posNonSpacialSearchWs = new PosNonSpacialSearchWs();
-        posNonSpacialSearchWs.services(null, null);
+        String result = posNonSpacialSearchWs.services(null, null);
+        System.out.println(result);
     }
 }

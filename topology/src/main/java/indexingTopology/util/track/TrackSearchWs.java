@@ -23,9 +23,31 @@ import java.util.List;
  */
 public class TrackSearchWs implements Serializable{
 
-    private String city;
     private int devbtype;
+    private String devstype;
     private String devid;
+    private String city;
+    private double longitude;
+    private double latidute;
+    private double altitude;
+    private double speed;
+    private double direction;
+    private long locationtime;
+    private int workstate;
+    private String clzl;
+    private String hphm;
+    private int jzlx;
+    private String jybh;
+    private String jymc;
+    private String lxdh;
+    private String ssdwdm;
+    private String ssdwmc;
+    private String teamno;
+    private String dth;
+    private String reserve1;
+    private String reserve2;
+    private String reserve3;
+
     private long startTime;
     private long endTime;
     private String errorCode;
@@ -44,23 +66,35 @@ public class TrackSearchWs implements Serializable{
         JSONObject queryResponse = new JSONObject();
         try{
             JSONObject jsonObject = JSONObject.parseObject(businessParams);
-            if(!getQueryJson(jsonObject)){ // query failed,json format is error
-                errorCode = "1102";
-//            errorMsg = Error(errorCode);
+            try{
+                getQueryJson(jsonObject); // query failed,json format is error
+            }catch (JSONException e){
                 queryResponse.put("result", null);
-                queryResponse.put("errorCode", errorCode);
-                queryResponse.put("errorMsg", errorMsg);
-                return queryResponse.toString();
+                queryResponse.put("errorCode", "1002");
+                queryResponse.put("errorMsg", "参数值无效或者缺失必填参数");
+                String result = JSONObject.toJSONString(queryResponse, SerializerFeature.WriteMapNullValue);
+                return result;
+            }catch (NullPointerException e){
+                queryResponse.put("result", null);
+                queryResponse.put("errorCode", "1002");
+                queryResponse.put("errorMsg", "参数值无效或者缺失必填参数");
+                String result = JSONObject.toJSONString(queryResponse, SerializerFeature.WriteMapNullValue);
+                return result;
+            }catch (IllegalArgumentException e){
+                queryResponse.put("result", null);
+                queryResponse.put("errorCode", "1002");
+                queryResponse.put("errorMsg", "参数值无效或者缺失必填参数");
+                String result = JSONObject.toJSONString(queryResponse, SerializerFeature.WriteMapNullValue);
+                return result;
             }
         }catch (JSONException e){// query failed, json value invalid
             errorCode = "1001";
-//            errorMsg = Error(errorCode);
             queryResponse.put("result", null);
             queryResponse.put("errorCode", errorCode);
-            queryResponse.put("errorMsg", errorMsg);
-            return queryResponse.toString();
+            queryResponse.put("errorMsg", "参数解析失败，参数格式存在问题");
+            String result = JSONObject.toJSONString(queryResponse, SerializerFeature.WriteMapNullValue);
+            return result;
         }
-
         // query success
         GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient("localhost", 10001);
         try {
@@ -80,10 +114,8 @@ public class TrackSearchWs implements Serializable{
                 startTime,
                 endTime, predicate, null, null, null, null);
         try {
-            System.out.println(queryRequest.startTime);
             QueryResponse response = queryClient.query(queryRequest);
             DataSchema outputSchema = response.getSchema();
-            System.out.println(outputSchema.getFieldNames());
             System.out.println("datatuples : " + response.dataTuples.size());
             List<DataTuple> tuples = response.getTuples();
 
@@ -109,21 +141,18 @@ public class TrackSearchWs implements Serializable{
             e.printStackTrace();
         }
         String result = JSONObject.toJSONString(queryResponse, SerializerFeature.WriteMapNullValue);
-        System.out.println(result);
         return result;
     }
 
-    public boolean getQueryJson(JSONObject businessParams){
-        try {
-            this.city = (String)businessParams.get("city");
-            this.devbtype = (int)businessParams.get("devbtype");
-            this.devid = (String)businessParams.get("devid");
-            this.startTime = (long)businessParams.get("startTime");
-            this.endTime = (long)businessParams.get("endTime");
-        }catch (JSONException e){ // jsonObject value format is wrong
-            return false;
+    public void getQueryJson(JSONObject businessParams) throws JSONException, NullPointerException{
+        this.devbtype = (int)businessParams.get("devbtype");
+        this.devid = (String)businessParams.get("devid");
+        this.city = (String)businessParams.get("city");
+        this.startTime = (long)businessParams.get("startTime");
+        this.endTime = (long)businessParams.get("endTime");
+        if(city == null ||  devid == null){
+            throw new IllegalArgumentException("Missing required parameters");
         }
-        return true;
     }
 
     public boolean CheckEqual(String city, int devbtype, String devid) {
@@ -134,50 +163,53 @@ public class TrackSearchWs implements Serializable{
             return false;
     }
 
-//    static private DataSchema getDataSchema() {
-//        DataSchema schema = new DataSchema();
-//
-//        schema.addIntField("devbtype");
-////        schema.addVarcharField("devstype",32);
-//        schema.addVarcharField("devid", 32);
-//        schema.addVarcharField("city", 32);
-//        schema.addDoubleField("longitude");
-//        schema.addDoubleField("latitude");
-////        schema.addDoubleField("altitude");
-////        schema.addDoubleField("speed");
-////        schema.addIntField("direction");
-//        schema.addVarcharField("locationtime", 32);
-////        schema.addIntField("workstate");
-////        schema.addVarcharField("clzl", 32);
-////        schema.addVarcharField("hphm", 32);
-////        schema.addIntField("jzix");
-////        schema.addVarcharField("jybh", 32);
-////        schema.addVarcharField("jymc", 32);
-////        schema.addVarcharField("lxdh", 32);
-////        schema.addVarcharField("ssdwdm", 32);
-////        schema.addVarcharField("ssdwmc", 32);
-////        schema.addVarcharField("teamno", 32);
-////        schema.addVarcharField("dth", 32);
-////        schema.addVarcharField("reserve1", 32);
-////        schema.addVarcharField("reserve2", 32);
-////        schema.addVarcharField("reserve3", 32);
-//        return schema;
-//    }
-
     static private DataSchema getDataSchema() {
         DataSchema schema = new DataSchema();
-        schema.addDoubleField("lon");
-        schema.addDoubleField("lat");
+
         schema.addIntField("devbtype");
-        schema.addVarcharField("devid", 8);
-//        schema.addVarcharField("id", 32);
-        schema.addVarcharField("city",32);
+        schema.addVarcharField("devstype", 32);
+        schema.addVarcharField("devid", 32);
+        schema.addVarcharField("city", 32);
+        schema.addDoubleField("longitude");
+        schema.addDoubleField("latitude");
+        schema.addDoubleField("altitude");
+        schema.addDoubleField("speed");
+        schema.addDoubleField("direction");
         schema.addLongField("locationtime");
-//        schema.addLongField("timestamp");
+        schema.addIntField("workstate");
+        schema.addVarcharField("clzl", 32);
+        schema.addVarcharField("hphm", 32);
+        schema.addIntField("jzlx");
+        schema.addVarcharField("jybh", 32);
+        schema.addVarcharField("jymc", 32);
+        schema.addVarcharField("lxdh", 32);
+        schema.addVarcharField("ssdwdm", 32);
+        schema.addVarcharField("ssdwmc", 32);
+        schema.addVarcharField("teamno", 32);
+        schema.addVarcharField("dth", 32);
+        schema.addVarcharField("reserve1", 32);
+        schema.addVarcharField("reserve2", 32);
+        schema.addVarcharField("reserve3", 32);
+        schema.setTemporalField("locationtime");
         schema.addIntField("zcode");
         schema.setPrimaryIndexField("zcode");
-
         return schema;
     }
+
+//    static private DataSchema getDataSchema() {
+//        DataSchema schema = new DataSchema();
+//        schema.addDoubleField("lon");
+//        schema.addDoubleField("lat");
+//        schema.addIntField("devbtype");
+//        schema.addVarcharField("devid", 8);
+////        schema.addVarcharField("id", 32);
+//        schema.addVarcharField("city",32);
+//        schema.addLongField("locationtime");
+////        schema.addLongField("timestamp");
+//        schema.addIntField("zcode");
+//        schema.setPrimaryIndexField("zcode");
+//
+//        return schema;
+//    }
 
 }
