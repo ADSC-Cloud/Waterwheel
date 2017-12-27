@@ -152,7 +152,7 @@ public class TopologyTest extends TestCase {
         config.kafkaHost.clear();
         config.kafkaHost.add("localhost:" + String.valueOf(kafkaUnitport));
 
-        int total = 100000;
+        int total = 100;
         long start = System.currentTimeMillis();
         HashMap matchDataTuple = new HashMap();
         System.out.println("Kafka Producer send msg start,total msgs:"+total);
