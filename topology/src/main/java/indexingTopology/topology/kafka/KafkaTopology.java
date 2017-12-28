@@ -29,6 +29,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
+import org.apache.storm.StormSubmitter;
 import org.apache.storm.generated.AlreadyAliveException;
 import org.apache.storm.generated.AuthorizationException;
 import org.apache.storm.generated.InvalidTopologyException;
@@ -361,9 +362,25 @@ public class KafkaTopology {
         conf.setTopologyStrategy(org.apache.storm.scheduler.resource.strategies.scheduling.DefaultResourceAwareStrategy.class);
 
 
-        LocalCluster localCluster = new LocalCluster();
-        localCluster.submitTopology(TopologyName, conf, topology);
+//        LocalCluster localCluster = new LocalCluster();
+//        localCluster.submitTopology(TopologyName, conf, topology);
 
+        if (LocalMode) {
+            LocalCluster localCluster = new LocalCluster();
+            localCluster.submitTopology(TopologyName, conf, topology);
+        } else {
+            try {
+                StormSubmitter.submitTopology(TopologyName, conf, topology);
+            } catch (AlreadyAliveException e) {
+                e.printStackTrace();
+            } catch (InvalidTopologyException e) {
+                e.printStackTrace();
+            } catch (AuthorizationException e) {
+                e.printStackTrace();
+            }
+            System.out.println("Topology is successfully submitted to the cluster!");
+            System.out.println(config.getCriticalSettings());
+        }
 
     }
     public static void main(String[] args) throws InvalidTopologyException, AuthorizationException, AlreadyAliveException {

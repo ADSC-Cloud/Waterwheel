@@ -66,7 +66,7 @@ public class TopologyConfig implements Serializable {
 
     public int previousTime = 24; // Define the time for old data
 
-    public String topic = "topic";
+    public String topic = "gpis";
 
     public ArrayList<String> ZKHost = new ArrayList<String>() {{
         add("localhost:2181");
