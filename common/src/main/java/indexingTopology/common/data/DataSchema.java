@@ -126,16 +126,34 @@ public class DataSchema implements Serializable {
         Output output = new Output(1000, 2000000);
         for (int i = 0; i < dataTypes.size(); i++) {
             if (dataTypes.get(i).type.equals(Double.class)) {
-                output.writeDouble((double)t.get(i));
+                if(t.get(i) == null){
+                    output.writeDouble(0);
+                }else{
+                    output.writeDouble((double)t.get(i));
+                }
             } else if (dataTypes.get(i).type.equals(String.class)) {
 //                output.writeString((String)t.get(i));
-                byte[] bytes = ((String) t.get(i)).getBytes();
-                output.writeInt(bytes.length);
-                output.write(bytes);
+                if(t.get(i) == null){
+                    output.writeInt(0);
+                    output.write(0);
+                }
+                else{
+                    byte[] bytes = ((String) t.get(i)).getBytes();
+                    output.writeInt(bytes.length);
+                    output.write(bytes);
+                }
             } else if (dataTypes.get(i).type.equals(Integer.class)) {
-                output.writeInt((int)t.get(i));
+                if(t.get(i) == null){
+                    output.writeDouble(0);
+                }else{
+                    output.writeInt((int)t.get(i));
+                }
             } else if (dataTypes.get(i).type.equals(Long.class)) {
-                output.writeLong((long)t.get(i));
+                if(t.get(i) == null){
+                    output.writeDouble(0);
+                }else{
+                    output.writeLong((long)t.get(i));
+                }
             } else {
                 throw new RuntimeException("Not supported data type!" );
             }
@@ -320,7 +338,11 @@ public class DataSchema implements Serializable {
             if(getFieldName(i).equals("zcode")){
                 continue;
             }
-            jsonObject.put(getFieldName(i), tuple.get(i));
+            if(tuple.get(i).equals("") || tuple.get(i) == null || tuple.get(i).equals(0)){
+                jsonObject.put(getFieldName(i),null);
+            }else{
+                jsonObject.put(getFieldName(i), tuple.get(i));
+            }
         }
         return jsonObject;
     }

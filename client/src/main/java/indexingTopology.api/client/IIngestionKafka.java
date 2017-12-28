@@ -8,5 +8,5 @@ interface IIngestionKafka {
     void send(int i, String Msg);
     void ingestProducer();
     void flush();
-
+    void close();
 }

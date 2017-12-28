@@ -271,7 +271,7 @@ public class KafkaTopology {
 //                            String Msg = "{\"lon\":"+ car.x + ",\"lat\":" + car.y + ",\"devbtype\":"+ devbtype +",\"devid\":\"asd\",\"city\":\"4401\",\"locationtime\":" + System.currentTimeMillis() +  "}";
                           String Msg = "{\"devbtype\":" + devbtype + ",\"devstype\":\"350M\",\"devid\":\"0x0101\",\"city\":\"4401\",\"longitude\":"+ car.x + ",\"latitude\":" + car.y + ",\"altitude\":2000.0," +
                             "\"speed\":50.0,\"direction\":40.0,\"locationtime\":" + System.currentTimeMillis() +",\"workstate\":1,\"clzl\":\"巡逻车\",\"hphm\":\"粤A39824\",\"jzlx\":0,\"jybh\":\"100011\"," +
-                                    "\"jymc\":\"陈国基\",\"lxdh\":\"13576123212\",\"dth\":\"SG0000000352\",\"reserve1\":\"\",\"reserve2\":\"\",\"reserve3\":\"\",\"ssdwdm\":\"440100000000\"," +
+                                    "\"jymc\":\"陈国基\",\"lxdh\":\"13576123212\",\"dth\":\"SG0000000352\",\"reserve1\":null,\"reserve2\":\"\",\"reserve3\":\"\",\"ssdwdm\":\"440100000000\"," +
                                     "\"ssdwmc\":\"广州市\",\"teamno\":\"44010001\"}";
                             kafkaBatchMode.send(i, Msg);
     //                        this.producer.send(new ProducerRecord<String, String>("consumer",

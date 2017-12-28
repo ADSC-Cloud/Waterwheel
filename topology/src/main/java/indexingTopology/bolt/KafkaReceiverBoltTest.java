@@ -119,6 +119,7 @@ public class KafkaReceiverBoltTest extends InputStreamReceiverBolt {
                 System.out.println("consumer start failed2!");
                 e.printStackTrace();
             } finally {
+                System.out.println("consumer close");
                 consumer.close();
             }
         }

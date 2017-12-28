@@ -53,7 +53,7 @@ public class PosNonSpacialSearchWs {
             List<DataTuple> tuples = response.getTuples();
             for (DataTuple tuple : tuples) {
                 queryResult.add(schema.getJsonFromDataTupleWithoutZcode(tuple));
-                System.out.println(tuple);
+//                System.out.println(tuple);
             }
 //            queryResponse.put("success", false);
 //            queryResponse.put("result", null);

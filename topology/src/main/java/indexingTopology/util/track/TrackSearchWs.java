@@ -104,11 +104,11 @@ public class TrackSearchWs implements Serializable{
         }
         DataSchema schema = getDataSchema();
         DataTuplePredicate predicate;
-        System.out.println("city : " + city);
-        System.out.println("devbtype : " + devbtype);
-        System.out.println("devid : " + devid);
-        System.out.println("startTime : " + startTime);
-        System.out.println("endTime : " + endTime);
+//        System.out.println("city : " + city);
+//        System.out.println("devbtype : " + devbtype);
+//        System.out.println("devid : " + devid);
+//        System.out.println("startTime : " + startTime);
+//        System.out.println("endTime : " + endTime);
         predicate = t -> CheckEqual((String)schema.getValue("city", t),(int)schema.getValue("devbtype", t),(String)schema.getValue("devid", t));
         GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(Double.MIN_VALUE, Double.MAX_VALUE, Double.MIN_VALUE, Double.MAX_VALUE,
                 startTime,

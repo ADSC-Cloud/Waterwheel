@@ -49,5 +49,8 @@ public class IngestionKafkaBatchMode implements IIngestionKafka{
         producer.flush();
     }
 
-
+    @Override
+    public void close(){
+        producer.close();
+    }
 }
