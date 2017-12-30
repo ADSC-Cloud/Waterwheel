@@ -27,6 +27,7 @@ public class IngestionKafkaBatchMode implements IIngestionKafka{
     @Override
     public void send(int i, String Msg) {
         this.producer.send(new ProducerRecord<String, String>(topic, String.valueOf(i), Msg));
+//        System.out.println("?");
     }
 
     @Override

@@ -77,7 +77,7 @@ public class KafkaTopology {
     private int NumberOfNodes = 1;
 
     @Option(name = "--local", usage = "run the topology in local cluster")
-    private boolean LocalMode = true;
+    private boolean LocalMode = false;
 
     /**
      * query api configuration
@@ -276,7 +276,7 @@ public class KafkaTopology {
                             SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                             Date date = formatter.parse(sDateTime); // 把String类型转换为Date类型
                             String currentTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(date);
-//                            System.out.println(devbtype);
+                            System.out.println(devbtype);
 //                            String Msg = "{\"lon\":"+ car.x + ",\"lat\":" + car.y + ",\"devbtype\":"+ devbtype +",\"devid\":\"asd\",\"city\":\"4401\",\"locationtime\":" + System.currentTimeMillis() +  "}";
                             if(i == 0) {
                                 String Msg = jsonTest.CheckJingyiJson(2);
@@ -434,7 +434,7 @@ public class KafkaTopology {
 //        LocalCluster localCluster = new LocalCluster();
 //        localCluster.submitTopology(TopologyName, conf, topology);
 
-        if (LocalMode) {
+        if (config.HDFSFlag == false) {
             LocalCluster localCluster = new LocalCluster();
             localCluster.submitTopology(TopologyName, conf, topology);
         } else {
