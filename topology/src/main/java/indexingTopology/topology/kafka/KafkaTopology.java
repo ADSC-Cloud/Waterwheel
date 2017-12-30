@@ -18,6 +18,7 @@ import indexingTopology.config.TopologyConfig;
 import indexingTopology.bolt.InputStreamKafkaReceiverBoltServer;
 import indexingTopology.topology.TopologyGenerator;
 import indexingTopology.util.AvailableSocketPool;
+import indexingTopology.util.Json.JsonTest;
 import indexingTopology.util.shape.*;
 import indexingTopology.util.taxi.Car;
 import indexingTopology.util.taxi.City;
@@ -42,6 +43,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.net.SocketTimeoutException;
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.Function;
@@ -75,7 +77,7 @@ public class KafkaTopology {
     private int NumberOfNodes = 1;
 
     @Option(name = "--local", usage = "run the topology in local cluster")
-    private boolean LocalMode = false;
+    private boolean LocalMode = true;
 
     /**
      * query api configuration
@@ -238,9 +240,10 @@ public class KafkaTopology {
     }
 
     public void excuteIngestion(){
-        int total = 5;
+        int total = 50;
         Thread emittingThread;
         long start = System.currentTimeMillis();
+        JsonTest jsonTest = new JsonTest();
 //        System.out.println("Kafka Producer send msg start,total msgs:"+total);
 //        String topic = "topic";
 //        String kafkaHost = "localhost:9092";
@@ -268,13 +271,23 @@ public class KafkaTopology {
                             int devbtype = (int)(Math.random() * 100);
                             final int id = new Random().nextInt(100);
                             final String idString = "" + id;
-                            System.out.println(devbtype);
+                            Date dateOld = new Date(System.currentTimeMillis()); // 根据long类型的毫秒数生命一个date类型的时间
+                            String sDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(dateOld); // 把date类型的时间转换为string
+                            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                            Date date = formatter.parse(sDateTime); // 把String类型转换为Date类型
+                            String currentTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(date);
+//                            System.out.println(devbtype);
 //                            String Msg = "{\"lon\":"+ car.x + ",\"lat\":" + car.y + ",\"devbtype\":"+ devbtype +",\"devid\":\"asd\",\"city\":\"4401\",\"locationtime\":" + System.currentTimeMillis() +  "}";
-                          String Msg = "{\"devbtype\":" + devbtype + ",\"devstype\":\"350M\",\"devid\":\"0x0101\",\"city\":\"4401\",\"longitude\":"+ car.x + ",\"latitude\":" + car.y + ",\"altitude\":2000.0," +
-                            "\"speed\":50.0,\"direction\":40.0,\"locationtime\":" + System.currentTimeMillis() +",\"workstate\":1,\"clzl\":\"巡逻车\",\"hphm\":\"粤A39824\",\"jzlx\":0,\"jybh\":\"100011\"," +
-                                    "\"jymc\":\"陈国基\",\"lxdh\":\"13576123212\",\"dth\":\"SG0000000352\",\"reserve1\":null,\"reserve2\":\"\",\"reserve3\":\"\",\"ssdwdm\":\"440100000000\"," +
-                                    "\"ssdwmc\":\"广州市\",\"teamno\":\"44010001\"}";
-                            kafkaBatchMode.send(i, Msg);
+                            if(i == 0) {
+                                String Msg = jsonTest.CheckJingyiJson(2);
+                                kafkaBatchMode.send(i, Msg);
+                            }else{
+                                String Msg = "{\"devbtype\":" + devbtype + ",\"devstype\":\"123\",\"devid\":\"0x0101\",\"city\":\"4401\",\"longitude\":"+ car.x + ",\"latitude\":" + car.y + ",\"altitude\":2000.0," +
+                                        "\"speed\":50.0,\"direction\":40.0,\"locationtime\":\"" + currentTime + "\",\"workstate\":1,\"clzl\":\"巡逻车\",\"hphm\":\"粤A39824\",\"jzlx\":1,\"jybh\":\"100011\"," +
+                                        "\"jymc\":\"陈国基\",\"lxdh\":\"13576123212\",\"dth\":\"SG0000000352\",\"reserve1\":null,\"reserve2\":\"\",\"reserve3\":\"\",\"ssdwdm\":\"440100000000\"," +
+                                        "\"ssdwmc\":\"【】%测试*\",\"teamno\":\"44010001\"}";
+                                kafkaBatchMode.send(i, Msg);
+                            }
     //                        this.producer.send(new ProducerRecord<String, String>("consumer",
     //                                String.valueOf(i), "{\"employees\":[{\"firstName\":\"John\",\"lastName\":\"Doe\"},{\"firstName\":\"Anna\",\"lastName\":\"Smith\"},{\"firstName\":\"Peter\",\"lastName\":\"Jones\"}]}"));
                             //                        String.format("{\"type\":\"test\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
@@ -328,9 +341,65 @@ public class KafkaTopology {
                 upperBound, 10001, city, config, schema);
 
         DataTupleMapper dataTupleMapper = new DataTupleMapper(rawSchema, (Serializable & Function<DataTuple, DataTuple>) t -> {
-            double lon = (double)schema.getValue("longitude", t);
-            double lat = (double)schema.getValue("latitude", t);
-            int zcode = city.getZCodeForALocation(lon, lat);
+            int devbtype = (int)schema.getValue("devbtype", t);
+            String devstype = (String)schema.getValue("devstype", t);
+            String devid = (String)schema.getValue("devid", t);
+            String cityStr = (String)schema.getValue("city", t);
+            double longitude = (double)schema.getValue("longitude", t);
+            double latitude = (double)schema.getValue("latitude", t);
+            double altitude = (double)schema.getValue("altitude", t);
+            double speed = (double)schema.getValue("speed", t);
+            double direction = (double)schema.getValue("direction", t);
+            long locationtime = (long)schema.getValue("locationtime", t);
+            int workstate = (int)schema.getValue("workstate", t);
+            String clzl = (String)schema.getValue("clzl", t);
+            String hphm = (String)schema.getValue("hphm", t);
+            int jzlx = (int)schema.getValue("jzlx", t);
+
+            String jybh = (String)schema.getValue("jybh", t);
+            String jymc = (String)schema.getValue("jymc", t);
+            String lxdh = (String)schema.getValue("lxdh", t);
+            String ssdwdm = (String)schema.getValue("ssdwdm", t);
+            String ssdwmc = (String)schema.getValue("ssdwmc", t);
+            String teamno = (String)schema.getValue("teamno", t);
+            String dth = (String)schema.getValue("dth", t);
+            String reserve1 = (String)schema.getValue("reserve1", t);
+            String reserve2 = (String)schema.getValue("reserve2", t);
+            String reserve3 = (String)schema.getValue("reserve3", t);
+            int zcode = city.getZCodeForALocation(longitude, latitude);
+            t.clear();
+            t.add(devbtype);
+            t.add(devstype);
+            t.add(devid);
+            t.add(cityStr);
+            t.add(longitude);
+            t.add(latitude);
+            t.add(altitude);
+            t.add(speed);
+            t.add(direction);
+            t.add(locationtime);
+//            try {
+//                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+//                Date date = dateFormat.parse(dateStr);
+//                t.add(date.getTime());
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//                t.add(null);
+//            }
+            t.add(workstate);
+            t.add(clzl);
+            t.add(hphm);
+            t.add(jzlx);
+            t.add(jybh);
+            t.add(jymc);
+            t.add(lxdh);
+            t.add(ssdwdm);
+            t.add(ssdwmc);
+            t.add(teamno);
+            t.add(dth);
+            t.add(reserve1);
+            t.add(reserve2);
+            t.add(reserve3);
             t.add(zcode);
 //            t.add(System.currentTimeMillis());
             return t;
@@ -402,12 +471,12 @@ public class KafkaTopology {
         }
 
         kafkaTopology.submitTopology();
-        try {
-            Thread.sleep(5000);
-            kafkaTopology.excuteIngestion();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            Thread.sleep(1000);
+//            kafkaTopology.excuteIngestion();
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
 
     }
 
@@ -469,8 +538,9 @@ public class KafkaTopology {
         schema.addVarcharField("reserve1", 32);
         schema.addVarcharField("reserve2", 32);
         schema.addVarcharField("reserve3", 32);
-        schema.setTemporalField("locationtime");
         schema.addIntField("zcode");
+
+        schema.setTemporalField("locationtime");
         schema.setPrimaryIndexField("zcode");
         return schema;
     }

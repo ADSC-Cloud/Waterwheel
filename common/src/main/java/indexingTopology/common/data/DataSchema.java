@@ -146,7 +146,12 @@ public class DataSchema implements Serializable {
                 if(t.get(i) == null){
                     output.writeDouble(0);
                 }else{
-                    output.writeInt((int)t.get(i));
+                    try{
+                        output.writeInt((int)t.get(i));
+                    }catch (ClassCastException e){
+                        System.out.println("getFieldName:" + getFieldName(i));
+                        System.out.println(t.get(i));
+                    }
                 }
             } else if (dataTypes.get(i).type.equals(Long.class)) {
                 if(t.get(i) == null){

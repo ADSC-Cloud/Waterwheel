@@ -48,12 +48,13 @@ public class PosNonSpacialSearchWs {
         GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(Double.MIN_VALUE, Double.MAX_VALUE, Double.MIN_VALUE, Double.MAX_VALUE,
                 System.currentTimeMillis() - 120 * 1000,
                 System.currentTimeMillis(), null, null,null, null, null);
+        System.out.println(System.currentTimeMillis() - 120*1000 + "  " +System.currentTimeMillis());
         try {
             QueryResponse response = queryClient.query(queryRequest);
             List<DataTuple> tuples = response.getTuples();
             for (DataTuple tuple : tuples) {
                 queryResult.add(schema.getJsonFromDataTupleWithoutZcode(tuple));
-//                System.out.println(tuple);
+                System.out.println(tuple);
             }
 //            queryResponse.put("success", false);
 //            queryResponse.put("result", null);

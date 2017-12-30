@@ -1,8 +1,10 @@
 package indexingTopology.bolt;
 
+import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.config.TopologyConfig;
+import indexingTopology.common.data.KafkaDataSchema;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -13,6 +15,7 @@ import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,6 +32,8 @@ public class InputStreamKafkaReceiverBoltServer extends InputStreamReceiverBolt 
     private int port;
     private String topic;
     TopologyConfig config;
+    KafkaDataSchema kafkaDataSchema;
+    int total = 0;
 
     public InputStreamKafkaReceiverBoltServer(DataSchema schema, int port, TopologyConfig config, String topic) {
         super(schema, config);
@@ -36,6 +41,7 @@ public class InputStreamKafkaReceiverBoltServer extends InputStreamReceiverBolt 
         this.config = config;
         this.port = port;
         this.topic = topic;
+        kafkaDataSchema = new KafkaDataSchema();
     }
 
     @Override
@@ -67,7 +73,7 @@ public class InputStreamKafkaReceiverBoltServer extends InputStreamReceiverBolt 
 //                }
                 executor.shutdown();
                 try {
-                    executor.awaitTermination(1000000, TimeUnit.MILLISECONDS);
+                    executor.awaitTermination(100000, TimeUnit.MILLISECONDS);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -85,7 +91,6 @@ public class InputStreamKafkaReceiverBoltServer extends InputStreamReceiverBolt 
             this.topics = topics;
             Properties props = new Properties();
 //            props.put("bootstrap.servers", "localhost:9092");
-            props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaHost);
 //            props.put("MyTest", 123123);
 //            props.put("offsets.topic.replication.factor", 1);
 //            props.put("default.replication.factor", 1);
@@ -94,6 +99,10 @@ public class InputStreamKafkaReceiverBoltServer extends InputStreamReceiverBolt 
             Matcher m = p.matcher(config.kafkaHost.toString());
             String zkhostList = m.replaceAll("").trim();
 //            props.put("zookeeper.connect",zkhostList);
+
+
+
+            props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaHost);
             props.put("group.id", groupId);
             props.put("key.deserializer", StringDeserializer.class.getName());
             props.put("value.deserializer", StringDeserializer.class.getName());
@@ -103,49 +112,63 @@ public class InputStreamKafkaReceiverBoltServer extends InputStreamReceiverBolt 
 
         @Override
         public void run() {
-            try {
-                consumer.subscribe(topics);
-                System.out.println("topics : " + topics);
-                while (true) {
+            while (true) {
+                try {
+                    consumer.subscribe(topics);
+//                    System.out.println("topics : " + topics);
                     // the consumer whill bolck until the records coming
                     ConsumerRecords<String, String> records = consumer.poll(Long.MAX_VALUE);
-//                    System.out.println("records.count : " + records.count());
+                    //                    System.out.println("records.count : " + records.count());
 
-                    for (ConsumerRecord<String, String> record : records){
+                    for (ConsumerRecord<String, String> record : records) {
                         Map<String, Object> data = new HashMap<>();
                         data.put("partition", record.partition());
                         data.put("offset", record.offset());
                         data.put("value", record.value());
-                        JSONObject jsonFromData = JSONObject.parseObject(record.value());
-//                        System.out.println(record.value());
-//                        String dateValue = (String)jsonFromData.get("locationtime");
-//                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-//                        Date date = dateFormat.parse(dateValue);
-//                        jsonFromData.accumulate("timestamp", date.getTime());
-
-                        //template replace
-//                        Date dataValue = (Date)jsonFromData.get("locationtime");
-//                        jsonFromData.remove("locationtime");
-//                        jsonFromData.put("locationtime", dataValue.getTime());
+//                        if (total <= 100) {
+//                            System.out.println(record.value());
+//                            total++;
+//                        }
                         try{
-                            getInputQueue().put(schema.getTupleFromJsonObject(jsonFromData));
-                        }catch (ParseException e){
+                            JSONObject jsonFromData = JSONObject.parseObject(record.value());
+                            String dateValue = (String) jsonFromData.get("locationtime");
+                            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                            Date date = dateFormat.parse(dateValue);
+                            jsonFromData.remove("locationtime");
+                            jsonFromData.put("locationtime", date.getTime());
+                                kafkaDataSchema.checkDataIntegrity(jsonFromData);
+                                getInputQueue().put(schema.getTupleFromJsonObject(jsonFromData));
+                        } catch (ParseException e){
+                            e.printStackTrace();
+                        } catch (JSONException e){
+                            e.printStackTrace();
+                        } catch (NullPointerException e){
+                            e.printStackTrace();
+                        } catch (Exception e){
+                            System.out.println("Unexpected Exception,Consumer record wrong!");
                             e.printStackTrace();
                         }
+
+                        //template replace
+                        //                        Date date = ""
+                        //                        Date dataValue = (Date)jsonFromData.get("locationtime");
+                        //                        jsonFromData.remove("locationtime");
+                        //                        jsonFromData.put("locationtime", dataValue.getTime());
+
                     }
-//                        JsonParser parser = new JsonParser();
-//                        JsonObject object = (JsonObject) parser.parse(record.value());
-//                        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+                    //                        JsonParser parser = new JsonParser();
+                    //                        JsonObject object = (JsonObject) parser.parse(record.value());
+                    //                        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+                } catch (WakeupException e) {
+                    System.out.println("Consumer poll stop!");
+                    e.printStackTrace();
+                    // ignore for shutdown
+                } catch (Exception e) {
+                    System.out.println("Consumer exception!");
+                    e.printStackTrace();
                 }
-            } catch (WakeupException e) {
-                System.out.println("consumer start failed1!");
-                // ignore for shutdown
-            } catch (Exception e) {
-                System.out.println("consumer start failed2!");
-                e.printStackTrace();
-            } finally {
-                consumer.close();
             }
+
         }
 
         public void shutdown() {
