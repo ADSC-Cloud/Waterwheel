@@ -10,6 +10,9 @@ import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Random;
 
@@ -45,16 +48,41 @@ public class PosNonSpacialSearchWs {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        long timeMillis = System.currentTimeMillis();
+        long timeMillis2 = System.currentTimeMillis() - 600 * 1000;
         GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(Double.MIN_VALUE, Double.MAX_VALUE, Double.MIN_VALUE, Double.MAX_VALUE,
-                System.currentTimeMillis() - 120 * 1000,
-                System.currentTimeMillis(), null, null,null, null, null);
-        System.out.println(System.currentTimeMillis() - 120*1000 + "  " +System.currentTimeMillis());
+                timeMillis2,
+                timeMillis, null, null,null, null, null);
+        Date dateOld = new Date(timeMillis); // 根据long类型的毫秒数生命一个date类型的时间
+        String sDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(dateOld); // 把date类型的时间转换为string
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Date date = null; // 把String类型转换为Date类型
+        try {
+            date = formatter.parse(sDateTime);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        String currentTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(date);
+
+
+        Date dateOld2 = new Date(timeMillis2); // 根据long类型的毫秒数生命一个date类型的时间
+        String sDateTime2 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(dateOld2); // 把date类型的时间转换为string
+        SimpleDateFormat formatter2 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Date date2 = null; // 把String类型转换为Date类型
+        try {
+            date2 = formatter2.parse(sDateTime2);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        String currentTime2 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(date2);
+
+        System.out.println(currentTime2 + "  " + currentTime);
         try {
             QueryResponse response = queryClient.query(queryRequest);
             List<DataTuple> tuples = response.getTuples();
             for (DataTuple tuple : tuples) {
                 queryResult.add(schema.getJsonFromDataTupleWithoutZcode(tuple));
-                System.out.println(tuple);
+                System.out.println(schema.getJsonFromDataTupleWithoutZcode(tuple));
             }
 //            queryResponse.put("success", false);
 //            queryResponse.put("result", null);

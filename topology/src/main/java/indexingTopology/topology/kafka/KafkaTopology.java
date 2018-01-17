@@ -68,7 +68,7 @@ public class KafkaTopology {
      * topology configuration
      */
     @Option(name = "--topology-name", aliases = "-t", usage = "topology name")
-    private String TopologyName = "T0";
+    private String TopologyName = "T1231";
 
     @Option(name = "--config-file", aliases = {"-f"}, usage = "conf.yaml to override default configs")
     private String confFile = "conf/conf.yaml";
@@ -77,7 +77,7 @@ public class KafkaTopology {
     private int NumberOfNodes = 1;
 
     @Option(name = "--local", usage = "run the topology in local cluster")
-    private boolean LocalMode = false;
+    private boolean LocalMode = true;
 
     /**
      * query api configuration

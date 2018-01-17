@@ -21,7 +21,7 @@ public class searchTest {
             String  querySelect = scanner.next();
             switch (querySelect){
                 case "1" : {
-                    long startTime = System.currentTimeMillis() - 1000 * 1000;
+                    long startTime = System.currentTimeMillis() - 10000 * 1000;
                     long endTime = System.currentTimeMillis();
                     String businessParams = "{\"city\":\"4401\",\"devbtype\":2,\"devid\":\"0x0101\",\"startTime\":" + startTime + ",\"endTime\":" + endTime + "}";
                     TrackSearchWs trackSearchWs = new TrackSearchWs();
@@ -30,7 +30,7 @@ public class searchTest {
                     break;
                 }
                 case "2" : {
-                    long startTime = System.currentTimeMillis() - 1000 * 1000;
+                    long startTime = System.currentTimeMillis() - 10000 * 1000;
                     long endTime = System.currentTimeMillis();
                     String businessParamsPaged = "{\"city\":\"4401\",\"devbtype\":2,\"devid\":\"0x0101\",\"startTime\":" + startTime + ",\"endTime\":" + endTime + ",\"page\":2,\"rows\":10}";
                     TrackPagedSearchWs trackPagedSearchWs = new TrackPagedSearchWs();

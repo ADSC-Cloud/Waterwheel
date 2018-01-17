@@ -30,7 +30,8 @@ public class KafkaSourceTest {
         Pattern p = Pattern.compile(regEx);
         Matcher m = p.matcher("[\"10.21.25.203:9092\",\"10.21.25.204:9092\",\"10.21.25.205:9092\"]");
         String currentKafkahost = m.replaceAll("").trim();
-        IngestionKafkaBatchMode kafkaBatchMode = new IngestionKafkaBatchMode("10.21.25.203:9092,10.21.25.203:9092,10.21.25.203:9092", "gpis");
+//        IngestionKafkaBatchMode kafkaBatchMode = new IngestionKafkaBatchMode("10.21.25.203:9092,10.21.25.203:9092,10.21.25.203:9092", "gpis");
+        IngestionKafkaBatchMode kafkaBatchMode = new IngestionKafkaBatchMode("localhost:9092", "0116");
         kafkaBatchMode.ingestProducer();
         int total = 20;
         Thread emittingThread = null;
@@ -52,7 +53,7 @@ public class KafkaSourceTest {
 //                            System.out.println(devbtype);
 //                            String Msg = "{\"lon\":"+ car.x + ",\"lat\":" + car.y + ",\"devbtype\":"+ devbtype +",\"devid\":\"asd\",\"city\":\"4401\",\"locationtime\":" + System.currentTimeMillis() +  "}";
                         if (i == 0) {
-                            String Msg = jsonTest.CheckJingyiJson(2);
+                            String Msg = jsonTest.CheckJingyiJson(13);
                             kafkaBatchMode.send(i, Msg);
                         } else {
                             String Msg = "{\"devbtype\":" + devbtype + ",\"devstype\":\"123\",\"devid\":\"0x0101\",\"city\":\"4401\",\"longitude\":" + car.x + ",\"latitude\":" + car.y + ",\"altitude\":2000.0," +
@@ -67,7 +68,7 @@ public class KafkaSourceTest {
                         //                                String.valueOf(i), "{\"employees\":[{\"firstName\":\"John\",\"lastName\":\"Doe\"},{\"firstName\":\"Anna\",\"lastName\":\"Smith\"},{\"firstName\":\"Peter\",\"lastName\":\"Jones\"}]}"));
                         //                        String.format("{\"type\":\"test\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
 
-                        // every so often send to a different topic
+                        // every so often send to a different topicxing
                         //                if (i % 1000 == 0) {
                         //                    producer.send(new ProducerRecord<String, String>("test", String.format("{\"type\":\"marker\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
                         //                    producer.send(new ProducerRecord<String, String>("hello", String.format("{\"type\":\"marker\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));
@@ -78,7 +79,7 @@ public class KafkaSourceTest {
                     kafkaBatchMode.flush();
                     //            producer.close();
                     System.out.println("Kafka Producer send msg over,cost time:" + (System.currentTimeMillis() - start) + "ms");
-                    Thread.sleep(1000);
+                    Thread.sleep(5000);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

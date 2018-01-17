@@ -5,7 +5,7 @@
 # the path where the metadata will be stored
  metadata.local.storage.path: "metadata"
 # default file system for storage: hdfs/local.
- storage.file.system: "hdfs"
+ storage.file.system: "local"
 
 # default time to remove old data
  remove.interval.hours: 6
@@ -14,20 +14,22 @@
  old.data.previous.time: 24
 
 # default topic for kafka
- topic: "gpis"
+ topic: "0116"
 
 # default zookeeperIP for kafka
- ZKhost: ["10.21.25.203:2181","10.21.25.204:2181","10.21.25.205:2181"]
-# ZKhost: ["68.28.7.80:2181","68.2.6.194:2181","68.28.6.195:2181"]
+# ZKhost: ["Master:2181","Slave1:2181","Slave2:2181"]
+# ZKhost: ["10.21.25.203:2181","10.21.25.204:2181","10.21.25.205:2181"]
+# ZKhost: ["68.28.7.80:2181","68.28.6.194:2181","68.28.6.195:2181"]
 # kafkaHost: ["68.28.7.80:9092","68.2.6.194:9092","68.28.6.195:9092"]
 
 
-# ZKhost: ["localhost:2181"]
+ ZKhost: ["localhost:2181"]
 
 # default kafkaHost for kafka
- kafkaHost: ["10.21.25.203:9092","10.21.25.204:9092","10.21.25.205:9092"]
+# kafkaHost: ["Master:9092","Slave1:9092","Slave2:9092"]
+# kafkaHost: ["10.21.25.203:9092","10.21.25.204:9092","10.21.25.205:9092"]
 # kafkaHost: ["68.28.7.80:9092","68.2.6.194:9092","68.28.6.195:9092"]
-# kafkaHost: ["localhost:9092"]
+ kafkaHost: ["localhost:9092"]
 
 # the hdfs host. This value can be omitted when strage.file.system is local.
 # the host generally can be obtained by ./hdsf getconf --confKey fs.default.name

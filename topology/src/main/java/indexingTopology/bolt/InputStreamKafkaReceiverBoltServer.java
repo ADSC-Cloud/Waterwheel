@@ -48,7 +48,7 @@ public class InputStreamKafkaReceiverBoltServer extends InputStreamReceiverBolt 
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         super.prepare(map, topologyContext, outputCollector);
         int numConsumers = config.kafkaHost.size();
-        String groupId = "consumer-group";
+        String groupId = "consumer-1231";
         List<String> topics = Arrays.asList(topic);
         ExecutorService executor = Executors.newFixedThreadPool(numConsumers);
         ExecutorService executorService = Executors.newSingleThreadExecutor();
