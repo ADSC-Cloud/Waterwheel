@@ -25,11 +25,7 @@
 
 
 # topology.component.cpu.pcore.percent: 400.0
-<<<<<<< HEAD
  supervisor.cpu.capacity: 325.0
-=======
- supervisor.cpu.capacity: 300.0
->>>>>>> adsc/master
 
 # 
 # 
