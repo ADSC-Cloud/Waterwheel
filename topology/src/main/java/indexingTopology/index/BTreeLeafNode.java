@@ -1,5 +1,7 @@
 package indexingTopology.index;
 
+import indexingTopology.common.data.DataSchema;
+import indexingTopology.common.data.DataTuple;
 import indexingTopology.exception.UnsupportedGenericException;
 
 import java.io.*;
@@ -8,15 +10,17 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey> implements Serializable {
     protected ArrayList<ArrayList<byte []>> tuples;
+    protected ArrayList<ArrayList<DataTuple>> dataTuples;
     protected ArrayList<ArrayList<Integer>> offsets;
-    protected AtomicLong atomicKeyCount;
+    protected AtomicLong atomicTupleCount;
 
     public BTreeLeafNode(int order) {
         super(order);
         this.keys = new ArrayList<>(order);
-        this.tuples = new ArrayList<>(order + 1);
-        this.offsets = new ArrayList<>(order + 1);
-        atomicKeyCount = new AtomicLong(0);
+        this.dataTuples = new ArrayList<>(order + 1);
+//        this.tuples = new ArrayList<>(order + 1);
+//        this.offsets = new ArrayList<>(order + 1);
+        atomicTupleCount = new AtomicLong(0);
     }
 
     public boolean validateParentReference() {
@@ -43,11 +47,21 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
     }
 
     public void setTupleList(int index, ArrayList<byte[]> tuples) {
-        this.atomicKeyCount.addAndGet(tuples.size());
+        this.atomicTupleCount.addAndGet(tuples.size());
         if (index < this.tuples.size())
             this.tuples.set(index, tuples);
         else if (index == this.tuples.size()) {
             this.tuples.add(index, tuples);
+        } else
+            throw new ArrayIndexOutOfBoundsException("index out of bounds");
+    }
+
+    public void setDataTupleList(int index, ArrayList<DataTuple> dataTuples) {
+        this.atomicTupleCount.addAndGet(dataTuples.size());
+        if (index < this.dataTuples.size())
+            this.dataTuples.set(index, dataTuples);
+        else if (index == this.dataTuples.size()) {
+            this.dataTuples.add(index, dataTuples);
         } else
             throw new ArrayIndexOutOfBoundsException("index out of bounds");
     }
@@ -132,9 +146,35 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
             ++this.keyCount;
         }
 
-        atomicKeyCount.incrementAndGet();
+        atomicTupleCount.incrementAndGet();
         this.tuples.get(index).add(serilizedTuple);
         this.offsets.get(index).add(serilizedTuple.length);
+
+
+
+        if (!templateMode && isOverflow()) {
+            node = dealOverflow();
+        }
+
+        return node;
+    }
+
+    public BTreeNode insertKeyTuples(TKey key, DataTuple tuple, boolean templateMode) throws UnsupportedGenericException{
+        BTreeNode node = null;
+
+        int index = searchMinIndex(key);
+
+        if (!(index < this.keys.size() && this.getKey(index).compareTo(key) == 0)) {
+            this.keys.add(index, key);
+            this.dataTuples.add(index, new ArrayList<DataTuple>());
+//            this.offsets.add(index, new ArrayList<Integer>());
+            ++this.keyCount;
+        }
+
+        atomicTupleCount.incrementAndGet();
+        this.dataTuples.get(index).add(tuple);
+//        this.tuples.get(index).add(serilizedTuple);
+//        this.offsets.get(index).add(serilizedTuple.length);
 
 
 
@@ -162,11 +202,12 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
                 e.printStackTrace();
             }
 
-            newRNode.setTupleList(i - midIndex, this.getTuplesWithSpecificIndex(i));
-            newRNode.setOffsetList(i - midIndex, this.getOffsets(i));
+//            newRNode.setTupleList(i - midIndex, this.getTuplesWithSpecificIndex(i));
+            newRNode.setDataTupleList(i - midIndex, this.getTuplesWithSpecificIndex(i));
+//            newRNode.setOffsetList(i - midIndex, this.getOffsets(i));
 
 //            this.atomicKeyCount.addAndGet(-this.getTuplesWithSpecificIndex(i).size());
-            this.atomicKeyCount.decrementAndGet();
+            this.atomicTupleCount.decrementAndGet();
         }
 
         newRNode.keyCount = this.getKeyCount() - midIndex;
@@ -187,22 +228,24 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
     private void deleteAt(int index) {
         this.keys.remove(index);
 
-        this.tuples.remove(index);
+        this.dataTuples.remove(index);
+//        this.tuples.remove(index);
 
-        this.offsets.remove(index);
+//        this.offsets.remove(index);
         --this.keyCount;
     }
 
     protected void clearNode() {
         this.keys.clear();
 
-        this.tuples.clear();
+//        this.tuples.clear();
+        this.dataTuples.clear();
 
-        this.offsets.clear();
+//        this.offsets.clear();
 
         this.keyCount = 0;
 
-        atomicKeyCount.set(0);
+        atomicTupleCount.set(0);
     }
 
     @Override
@@ -228,11 +271,11 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
         this.tuples = tuples;
     }
 
-    public long getAtomicKeyCount() {
-        return atomicKeyCount.get();
+    public long getAtomicTupleCount() {
+        return atomicTupleCount.get();
     }
 
-    public ArrayList<byte[]> getTuplesWithSpecificIndex(int index) {
+    public ArrayList<byte[]> getSerializedTuplesWithSpecificIndex(int index) {
         if (index < getKeyCount()) {
             ArrayList<byte[]> tuples;
             tuples = this.tuples.get(index);
@@ -241,13 +284,38 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
         return new ArrayList<>();
     }
 
+    public ArrayList<DataTuple> getTuplesWithSpecificIndex(int index) {
+        if (index < getKeyCount()) {
+            ArrayList<DataTuple> tuples;
+            tuples = this.dataTuples.get(index);
+            return tuples;
+        }
+        return new ArrayList<>();
+    }
+
     /* The code below is used to support search operation.*/
     @SuppressWarnings("unchecked")
-    public ArrayList<byte[]> getTuplesWithinKeyRange(TKey leftKey, TKey rightKey) {
+    public ArrayList<byte[]> getSerializedTuplesWithinKeyRange(TKey leftKey, TKey rightKey) {
         ArrayList<byte[]> tuples = new ArrayList<>();
 
         int startIndex = searchMinIndex(leftKey);
         int endIndex = searchLargestIndex(rightKey);
+
+        for (int index = startIndex; index <= endIndex; ++index) {
+            if (keys.get(index).compareTo(leftKey) >=0 && keys.get(index).compareTo(rightKey) <=0) {
+                tuples.addAll(getSerializedTuplesWithSpecificIndex(index));
+            }
+        }
+
+        return tuples;
+    }
+
+    public ArrayList<DataTuple> getTuplesWithinKeyRange(TKey leftKey, TKey rightKey) {
+        ArrayList<DataTuple> tuples = new ArrayList<>();
+
+        int startIndex = searchMinIndex(leftKey);
+        int endIndex = searchLargestIndex(rightKey);
+
 
         for (int index = startIndex; index <= endIndex; ++index) {
             if (keys.get(index).compareTo(leftKey) >=0 && keys.get(index).compareTo(rightKey) <=0) {
@@ -257,4 +325,25 @@ public class BTreeLeafNode<TKey extends Comparable<TKey>> extends BTreeNode<TKey
 
         return tuples;
     }
+
+    public void serializeDataTuples(DataSchema schema) {
+        ArrayList<ArrayList<byte[]>> serilizedDataTuples = new ArrayList<>();
+        ArrayList<ArrayList<Integer>> offsets = new ArrayList<>();
+        for (int i = 0; i < dataTuples.size(); ++i) {
+            List<DataTuple> tuples = dataTuples.get(i);
+            ArrayList<byte[]> partialSerilizedDataTuples = new ArrayList<>();;
+            ArrayList<Integer> partialOffsets = new ArrayList<>();;
+            for (int j = 0; j < tuples.size(); ++j) {
+                byte[] serilizedDataTuple = schema.serializeTuple(tuples.get(j));
+                int offset = serilizedDataTuple.length;
+                partialSerilizedDataTuples.add(serilizedDataTuple);
+                partialOffsets.add(offset);
+            }
+            serilizedDataTuples.add(partialSerilizedDataTuples);
+            offsets.add(partialOffsets);
+        }
+        this.tuples = serilizedDataTuples;
+        this.offsets = offsets;
+    }
+
 }

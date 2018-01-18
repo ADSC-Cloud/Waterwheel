@@ -754,7 +754,7 @@ public class IndexerCopy {
 
 //        indexedData.printBtree();
 
-        byte[] leavesInBytes = indexedData.serializeLeaves();
+        byte[] leavesInBytes = indexedData.serializeLeaves(schema);
 
         kryo.writeObject(output, indexedData);
 
