@@ -25,8 +25,9 @@
 
  ui.port: 8090
 
- supervisor.cpu.capacity: 1000.0
+ supervisor.cpu.capacity: 1475.0
  storm.scheduler: "org.apache.storm.scheduler.resource.ResourceAwareScheduler"
+ topology.scheduler.strategy: "indexingTopology.scheduler.FFDStrategyByCPU"
 
 # 
 # 

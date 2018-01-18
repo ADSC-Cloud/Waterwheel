@@ -15,6 +15,7 @@
         <module>topology</module>
         <module>client</module>
         <module>web</module>
+        <module>scheduler</module>
     </modules>
 
     <!--use shade plugin for uber jar-->

@@ -40,13 +40,11 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
         TopologyBuilder builder = new TopologyBuilder();
 
         builder.setSpout("dummy", new DummySpout(), 1)
-                .setCPULoad(1)
-                .setMemoryLoad(1);
+                .setCPULoad(1);
         builder.setBolt(TupleGenerator, dataSource, 1)
                 .directGrouping(IndexerBolt, Streams.AckStream)
                 .shuffleGrouping("dummy")
-                .setCPULoad(400)
-                .setMemoryLoad(1);
+                .setCPULoad(350);
 
         builder.setBolt(RangeQueryDispatcherBolt, new DispatcherServerBolt<>(dataSchema, lowerBound, upperBound,
                 enableLoadBalance, false, dataTupleMapper, config), numberOfNodes)
@@ -54,16 +52,14 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
                 .localOrShuffleGrouping(TupleGenerator, Streams.IndexStream)
                 .allGrouping(MetadataServer, Streams.IntervalPartitionUpdateStream)
                 .allGrouping(MetadataServer, Streams.StaticsRequestStream)
-                .setMemoryLoad(1)
-                .setCPULoad(1);
+                .setCPULoad(100);
 
         builder.setBolt(IndexerBolt, new IndexingServerBolt(dataSchema, bloomFilterColumns, config), config.INSERTION_SERVER_PER_NODE * numberOfNodes)
                 .directGrouping(RangeQueryDispatcherBolt, Streams.IndexStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryStream)
                 .directGrouping(RangeQueryDecompositionBolt, Streams.TreeCleanStream)
                 .allGrouping(LogWriter, Streams.ThroughputRequestStream)
-                .setMemoryLoad(1)
-                .setCPULoad(1);
+                .setCPULoad(100 / config.INSERTION_SERVER_PER_NODE);
 
 //        builder.setBolt(RangeQueryDecompositionBolt, new QueryCoordinatorWithQueryGenerator<>(lowerBound, upperBound), 1)
         builder.setBolt(RangeQueryDecompositionBolt, queryCoordinatorBolt, 1)
@@ -76,8 +72,7 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
                 .shuffleGrouping(MetadataServer, Streams.TimestampUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.LocationInfoUpdateStream)
                 .shuffleGrouping(MetadataServer, Streams.DDLResponseStream)
-                .setCPULoad(400)
-                .setMemoryLoad(1);
+                .setCPULoad(350);
 
 
         if (config.SHUFFLE_GROUPING_FLAG) {
@@ -85,15 +80,12 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
 //                .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream)
                     .directGrouping(ResultMergeBolt, Streams.SubQueryReceivedStream)
                     .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream)
-                    .setCPULoad(1) //make comparision with our method.
-                    .setMemoryLoad(1);
+                    .setCPULoad(100 / config.CHUNK_SCANNER_PER_NODE); //make comparision with our method.
         } else {
             builder.setBolt(RangeQueryChunkScannerBolt, new QueryServerBolt<Key>(dataSchema, config), config.CHUNK_SCANNER_PER_NODE * numberOfNodes)
                     .directGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryStream)
                     .directGrouping(ResultMergeBolt, Streams.SubQueryReceivedStream)
-                    .setCPULoad(1)
-                    .setMemoryLoad(1);
-
+                    .setCPULoad(100 / config.CHUNK_SCANNER_PER_NODE);
         }
 
         builder.setBolt(ResultMergeBolt, new ResultMergerBolt(dataSchema), 1)
@@ -102,8 +94,7 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.BPlusTreeQueryInformationStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.FileSystemQueryInformationStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.PartialQueryResultReceivedStream)
-                .setCPULoad(1)
-                .setMemoryLoad(1);
+                .setCPULoad(1);
 
         builder.setBolt(MetadataServer, new MetadataServerBolt<>(lowerBound, upperBound, dataSchema, config), 1)
                 .shuffleGrouping(RangeQueryDispatcherBolt, Streams.StatisticsReportStream)
@@ -113,15 +104,13 @@ public class TopologyGenerator<Key extends Number & Comparable<Key> >{
                 .shuffleGrouping(IndexerBolt, Streams.LocationInfoUpdateStream)
                 .shuffleGrouping(RangeQueryChunkScannerBolt, Streams.LocationInfoUpdateStream)
                 .shuffleGrouping(RangeQueryDecompositionBolt, Streams.DDLRequestStream)
-                .setCPULoad(1)
-                .setMemoryLoad(1);
+                .setCPULoad(350);
 
         builder.setBolt(LogWriter, new LoggingBolt(), 1)
 //                .shuffleGrouping(RangeQueryDispatcherBolt, Streams.ThroughputReportStream)
                 .shuffleGrouping(IndexerBolt, Streams.ThroughputReportStream)
                 .shuffleGrouping(MetadataServer, Streams.LoadBalanceStream)
-                .setCPULoad(1)
-                .setMemoryLoad(1);
+                .setCPULoad(1);
 
         return builder.createTopology();
     }
