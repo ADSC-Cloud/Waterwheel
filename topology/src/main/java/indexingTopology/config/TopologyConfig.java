@@ -9,9 +9,12 @@ import java.util.Map;
 public class TopologyConfig implements Serializable {
     public final double REBUILD_TEMPLATE_THRESHOLD = 10.0;
 
+
+
     public String dataChunkDir = "/home/hadoop/dataDir";
 
     public String metadataDir = "/home/hadoop/dataDir";
+
 
 
     public String HDFS_HOST = "hdfs://192.168.0.237:54310/";
