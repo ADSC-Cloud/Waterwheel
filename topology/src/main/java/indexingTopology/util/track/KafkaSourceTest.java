@@ -54,15 +54,15 @@ public class KafkaSourceTest {
 //                            String Msg = "{\"lon\":"+ car.x + ",\"lat\":" + car.y + ",\"devbtype\":"+ devbtype +",\"devid\":\"asd\",\"city\":\"4401\",\"locationtime\":" + System.currentTimeMillis() +  "}";
                         if (i  < total/2) {
 //                        if(i < 0){
-                            String Msg = jsonTest.CheckJingyiJson(9);
+                            String Msg = jsonTest.CheckJingyiJson(15);
 //                            String Msg = "{\"asd\":\"\",\"reserve1\":\"1\",\"reserve2\":\"\",\"reserve3\":\"\",\"ssdwdm\":\"440100000000\"," +
 //                                    "\"ssdwmc\":\"字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数\",\"teamno\":\"44010001\",}";
                             kafkaBatchMode.send(i, Msg);
                         } else {
-                            String Msg = "{\"devbtype\":" + 11 + ",\"devstype\":\"350M\",\"devid\":\"75736331\",\"city\":\"4406\",\"longitude\":" + 100.048633 + ",\"latitude\":" + 70.874917
+                            String Msg = "{\"devbtype\":" + 11 + ",\"devstype\":\"350M\",\"devid\":\"75736331\",\"city\":\"4406\",\"longitude\":" + 112.048633 + ",\"latitude\":" + 22.874917
                                     + ",\"altitude\":\"0\"," +
                                     "\"speed\":\"0\",\"direction\":\"0\",\"locationtime\":\"" + currentTime + "\",\"workstate\":\"1\",\"clzl\":\"\",\"hphm\":\"\",\"jzlx\":\"7\",\"jybh\":\"100011\"," +
-                                    "\"jymc\":\"陈国基\",\"lxdh\":\"13576123212\",\"dth\":\"\",\"reserve1\":\"1\",\"reserve2\":\"\",\"reserve3\":\"\",\"ssdwdm\":\"440100000000\"," +
+                                    "\"jymc\":\"陈国基陈国基陈国基陈国基陈国基陈国基陈国基陈国基陈国基陈国基\",\"lxdh\":\"13576123212\",\"dth\":\"\",\"reserve1\":\"1\",\"reserve2\":\"\",\"reserve3\":\"\",\"ssdwdm\":\"440100000000\"," +
                                     "\"ssdwmc\":\"a\",\"teamno\":\"44010001\"}";
 //                            String Msg = "{\"devbtype\":" + 10 + ",\"devstyaasdpe\":\"123\",\"devid\":\"0x0101\",\"city\":\"4401\",\"longitude\":"+ 80.8888888888 + ",\"latitude\":" + 80.8888888888 + ",\"altitude\":2000.0," +
 //                                    "\"speed\":50.0,\"direction\":40.0,\"locationtime\":\""+ currentTime +"\",\"workstate\":1,\"clzl\":\"巡逻车\",\"hphm\":\"粤A39824\",\"jzlx\":1,\"jybh\":\"100011\"," +

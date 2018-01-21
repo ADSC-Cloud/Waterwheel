@@ -3,8 +3,8 @@ package indexingTopology.bolt;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import indexingTopology.common.data.DataSchema;
+import indexingTopology.common.data.KafkaDataFromPoliceSchema;
 import indexingTopology.config.TopologyConfig;
-import indexingTopology.common.data.KafkaDataSchema;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -15,7 +15,6 @@ import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -32,7 +31,7 @@ public class InputStreamKafkaReceiverBoltServer extends InputStreamReceiverBolt 
     private int port;
     private String topic;
     TopologyConfig config;
-    KafkaDataSchema kafkaDataSchema;
+    KafkaDataFromPoliceSchema kafkaDataSchema;
     int total = 0;
 
     public InputStreamKafkaReceiverBoltServer(DataSchema schema, int port, TopologyConfig config, String topic) {
@@ -41,7 +40,7 @@ public class InputStreamKafkaReceiverBoltServer extends InputStreamReceiverBolt 
         this.config = config;
         this.port = port;
         this.topic = topic;
-        kafkaDataSchema = new KafkaDataSchema();
+        kafkaDataSchema = new KafkaDataFromPoliceSchema();
     }
 
     @Override
@@ -132,16 +131,10 @@ public class InputStreamKafkaReceiverBoltServer extends InputStreamReceiverBolt 
                         try{
                             JSONObject jsonFromData = JSONObject.parseObject(record.value());
 //                            System.out.println(record.value());
-                            if(jsonFromData.get("locationtime") != null){
-                                String dateValue = (String) jsonFromData.get("locationtime");
-                                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
-                                Date date = dateFormat.parse(dateValue);
-                                jsonFromData.remove("locationtime");
-                                jsonFromData.put("locationtime", date.getTime());
+                            boolean checkRecord = kafkaDataSchema.checkDataIntegrity(jsonFromData);
+                            if(checkRecord == true){ // filter incomplete data
+                                getInputQueue().put(schema.getTupleFromJsonObject(jsonFromData));
                             }
-//                                kafkaDataSchema.checkDataIntegrity(jsonFromData); // filter incomplete data
-                            getInputQueue().put(schema.getTupleFromJsonObject(jsonFromData));
                         } catch (ParseException e){
                             e.printStackTrace();
                         } catch (JSONException e){

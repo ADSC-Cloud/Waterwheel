@@ -162,7 +162,6 @@ public class TrackSearchWs implements Serializable{
 
 
     public boolean CheckEqual(Object city, Object devbtype, Object devid) {
-        System.out.println("city:" + city + ",devbtype: " + devbtype);
         if(city == null || devbtype == null ||devid == null ){
             return false;
         }

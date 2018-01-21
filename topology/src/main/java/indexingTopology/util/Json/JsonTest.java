@@ -34,7 +34,7 @@ public class JsonTest {
                         "\"ssdwmc\":\"广州市\",\"teamno\":\"44010001\"}";
                 break;
             }case 3 : { // devbtype int to String
-                Msg = "{\"devbtype\":\"asd\",\"devstype\":\"123\",\"devid\":\"0x0101\",\"city\":\"4401\",\"longitude\":"+ 80.8888888888 + ",\"latitude\":" + 80.8888888888 + ",\"altitude\":2000.0," +
+                Msg = "{\"devbtype\":\"11\",\"devstype\":\"123\",\"devid\":\"75736331\",\"city\":\"4406\",\"longitude\":"+ 80.8888888888 + ",\"latitude\":" + 80.8888888888 + ",\"altitude\":2000.0," +
                         "\"speed\":50.0,\"direction\":40.0,\"locationtime\":\""+ currentTime +"\",\"workstate\":1,\"clzl\":\"巡逻车\",\"hphm\":\"粤A39824\",\"jzlx\":1,\"jybh\":\"100011\"," +
                         "\"jymc\":\"陈国基\",\"lxdh\":\"13576123212\",\"dth\":\"SG0000000352\",\"reserve1\":null,\"reserve2\":\"\",\"reserve3\":\"\",\"ssdwdm\":\"440100000000\"," +
                         "\"ssdwmc\":\"广州市\",\"teamno\":\"44010001\"}";
@@ -66,8 +66,8 @@ public class JsonTest {
                         "\"jymc\":\"陈国基\",\"lxdh\":\"13576123212\",\"dth\":\"SG0000000352\",\"reserve1\":null,\"reserve2\":\"\",\"reserve3\":\"\",\"ssdwdm\":\"440100000000\"," +
                         "\"ssdwmc\":\"广州市\",\"teamno\":\"44010001\"}";
                 break;
-            }case 9 : { //error attribute
-                Msg = "{\"devbtype\":" + 10 + ",\"devstyaasdpe\":\"123\",\"devid\":\"0x0101\",\"city\":\"4401\",\"longitude\":"+ 80.8888888888 + ",\"latitude\":" + 80.8888888888 + ",\"altitude\":2000.0," +
+            }case 9 : { //error important attribute devbtype
+                Msg = "{\"devbasdtype\":" + 10 + ",\"devstype\":\"123\",\"devid\":\"0x0101\",\"city\":\"4401\",\"longitude\":"+ 80.8888888888 + ",\"latitude\":" + 80.8888888888 + ",\"altitude\":2000.0," +
                         "\"speed\":50.0,\"direction\":40.0,\"locationtime\":\""+ currentTime +"\",\"workstate\":1,\"clzl\":\"巡逻车\",\"hphm\":\"粤A39824\",\"jzlx\":1,\"jybh\":\"100011\"," +
                         "\"jymc\":\"陈国基\",\"lxdh\":\"13576123212\",\"dth\":\"SG0000000352\",\"reserve1\":null,\"reserve2\":\"\",\"reserve3\":\"\",\"ssdwdm\":\"440100000000\"," +
                         "\"ssdwmc\":\"广州市\",\"teamno\":\"44010001\"}";
@@ -82,13 +82,19 @@ public class JsonTest {
                 Msg = "{\"devbtype\":\"【】%测试*\"}";
                 break;
             }case 13 : { //Chinese characters
-                Msg = "{\"devbtype\":" + 11 + ",\"devstype\":\"123\",\"devid\":\"0x0101\",\"city\":\"4401\",\"longitude\":"+ 80.8888888888 + ",\"latitude\":" + 80.8888888888 + ",\"altitude\":2000.0," +
+                Msg = "{\"devbtype\":" + 10 + ",\"devstype\":\"123\",\"devid\":\"0x0101\",\"city\":\"4401\",\"longitude\":"+ 80.8888888888 + ",\"latitude\":" + 80.8888888888 + ",\"altitude\":2000.0," +
                         "\"speed\":50.0,\"direction\":40.0,\"locationtime\":\"" + currentTime + "\",\"workstate\":1,\"clzl\":\"巡逻车\",\"hphm\":\"粤A39824\",\"jzlx\":1,\"jybh\":\"100011\"," +
                         "\"jymc\":\"陈国基\",\"lxdh\":\"13576123212\",\"dth\":\"SG0000000352\",\"reserve1\":null,\"reserve2\":\"\",\"reserve3\":\"\",\"ssdwdm\":\"440100000000\"," +
                         "\"ssdwmc\":\"【】%测试*\",\"teamno\":\"44010001\"}";
                 break;
             }case 14 : { // less attribute
                 Msg = "{\"devbtype\":" + 10 + ",\"devstype\":\"123\"}";
+                break;
+            }case 15 : { //error unimportant attribute
+                Msg = "{\"devbtype\":" + 10 + ",\"devstyaasdpe\":\"123\",\"devid\":\"0x0101\",\"city\":\"4401\",\"longitude\":"+ 110.8888888888 + ",\"latitude\":" + 20.8888888888 + ",\"altitude\":2000.0," +
+                        "\"speed\":50.0,\"direction\":40.0,\"locationtime\":\""+ currentTime +"\",\"workstate\":1,\"clzl\":\"巡逻车\",\"hphm\":\"粤A39824\",\"jzlx\":1,\"jybh\":\"100011\"," +
+                        "\"jymc\":\"陈国基\",\"lxdh\":\"13576123212\",\"dth\":\"SG0000000352\",\"reserve1\":null,\"reserve2\":\"\",\"reserve3\":\"\",\"ssdwdm\":\"440100000000\"," +
+                        "\"ssdwmc\":\"广州市\",\"teamno\":\"44010001\"}";
                 break;
             }
             default:break;

@@ -7,7 +7,7 @@ import org.kohsuke.args4j.Option;
 /**
  * Created by zelin on 2017/1/11
  */
-public class searchTest2 {
+public class SearchTest2 {
     @Option(name = "--mode", aliases = {"-m"}, usage = "trackSearch|trackPagedSearch|posNonSpacialSearch|posSpacialSearch")
     private String Mode = "Not Given";
 
@@ -43,9 +43,9 @@ public class searchTest2 {
 
     public static void main(String[] args) {
 
-        searchTest2 searchTest2 = new searchTest2();
+        SearchTest2 SearchTest2 = new SearchTest2();
 
-        CmdLineParser parser = new CmdLineParser(searchTest2);
+        CmdLineParser parser = new CmdLineParser(SearchTest2);
 
         try {
             parser.parseArgument(args);
@@ -55,18 +55,18 @@ public class searchTest2 {
         }
 
         long start = System.currentTimeMillis();
-        switch (searchTest2.Mode) {
+        switch (SearchTest2.Mode) {
             case "trackSearch":
-                searchTest2.TrackSearchTest();
+                SearchTest2.TrackSearchTest();
                 break;
             case "trackPagedSearch":
-                searchTest2.TrackPagedSearchTest();
+                SearchTest2.TrackPagedSearchTest();
                 break;
             case "posNonSpacialSearch":
-                searchTest2.PosNonSpacialSearchTest();
+                SearchTest2.PosNonSpacialSearchTest();
                 break;
             case "posSpacialSearch":
-                searchTest2.PosSpacialSearchTest();
+                SearchTest2.PosSpacialSearchTest();
                 break;
             default:
                 System.out.println("Invalid command!");
@@ -94,7 +94,7 @@ public class searchTest2 {
     void TrackPagedSearchTest() {
         long startTime = System.currentTimeMillis() - TimeRange;
         long endTime = System.currentTimeMillis();
-        String businessParamsPaged = "{\"city\":\"4401\",\"devbtype\":2,\"devid\":\"0x0101\",\"startTime\":"
+        String businessParamsPaged = "{\"city\":\"4406\",\"devbtype\":11,\"devid\":\"75736331\",\"startTime\":"
                 + startTime + ",\"endTime\":" + endTime + ",\"page\":" + Page + ",\"rows\":" + Row + "}";
         TrackPagedSearchWs trackPagedSearchWs = new TrackPagedSearchWs();
         String queryResultPaged = trackPagedSearchWs.services(null, businessParamsPaged);
