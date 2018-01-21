@@ -26,6 +26,7 @@ public class PosNonSpacialSearchWs {
     static final double x2 = 40.023983;
     static final double y1 = 116.292677;
     static final double y2 = 116.614865;
+    private String hdfsIP = "68.28.8.91";
 
     private double Selectivity = 1;
 
@@ -106,9 +107,9 @@ public class PosNonSpacialSearchWs {
     static private DataSchema getDataSchema() {
         DataSchema schema = new DataSchema();
         schema.addIntField("devbtype");
-        schema.addVarcharField("devstype", 32);
-        schema.addVarcharField("devid", 32);
-        schema.addVarcharField("city", 32);
+        schema.addVarcharField("devstype", 64);
+        schema.addVarcharField("devid", 64);
+        schema.addVarcharField("city", 64);
         schema.addDoubleField("longitude");
         schema.addDoubleField("latitude");
         schema.addDoubleField("altitude");
@@ -116,19 +117,19 @@ public class PosNonSpacialSearchWs {
         schema.addDoubleField("direction");
         schema.addLongField("locationtime");
         schema.addIntField("workstate");
-        schema.addVarcharField("clzl", 32);
-        schema.addVarcharField("hphm", 32);
+        schema.addVarcharField("clzl", 64);
+        schema.addVarcharField("hphm", 64);
         schema.addIntField("jzlx");
-        schema.addVarcharField("jybh", 32);
-        schema.addVarcharField("jymc", 32);
-        schema.addVarcharField("lxdh", 32);
-        schema.addVarcharField("ssdwdm", 32);
-        schema.addVarcharField("ssdwmc", 32);
-        schema.addVarcharField("teamno", 32);
-        schema.addVarcharField("dth", 32);
-        schema.addVarcharField("reserve1", 32);
-        schema.addVarcharField("reserve2", 32);
-        schema.addVarcharField("reserve3", 32);
+        schema.addVarcharField("jybh", 64);
+        schema.addVarcharField("jymc", 64);
+        schema.addVarcharField("lxdh", 64);
+        schema.addVarcharField("ssdwdm", 64);
+        schema.addVarcharField("ssdwmc", 64);
+        schema.addVarcharField("teamno", 64);
+        schema.addVarcharField("dth", 64);
+        schema.addVarcharField("reserve1", 64);
+        schema.addVarcharField("reserve2", 64);
+        schema.addVarcharField("reserve3", 64);
         schema.setTemporalField("locationtime");
         schema.addIntField("zcode");
         schema.setPrimaryIndexField("zcode");

@@ -14,10 +14,10 @@
  old.data.previous.time: 24
 
 # default topic for kafka
- topic: "0116"
+ topic: "gpis"
 
 # default zookeeperIP for kafka
-# ZKhost: ["Master:2181","Slave1:2181","Slave2:2181"]
+# ZKhost: ["Slave2:2181","Slave3:2181"]
 # ZKhost: ["10.21.25.203:2181","10.21.25.204:2181","10.21.25.205:2181"]
 # ZKhost: ["68.28.7.80:2181","68.28.6.194:2181","68.28.6.195:2181"]
 # kafkaHost: ["68.28.7.80:9092","68.2.6.194:9092","68.28.6.195:9092"]
@@ -26,7 +26,7 @@
  ZKhost: ["localhost:2181"]
 
 # default kafkaHost for kafka
-# kafkaHost: ["Master:9092","Slave1:9092","Slave2:9092"]
+# kafkaHost: ["Slave2:9092","Slave3:9092"]
 # kafkaHost: ["10.21.25.203:9092","10.21.25.204:9092","10.21.25.205:9092"]
 # kafkaHost: ["68.28.7.80:9092","68.2.6.194:9092","68.28.6.195:9092"]
  kafkaHost: ["localhost:9092"]

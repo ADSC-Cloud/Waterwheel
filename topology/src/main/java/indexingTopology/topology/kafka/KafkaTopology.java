@@ -341,65 +341,68 @@ public class KafkaTopology {
                 upperBound, 10001, city, config, schema);
 
         DataTupleMapper dataTupleMapper = new DataTupleMapper(rawSchema, (Serializable & Function<DataTuple, DataTuple>) t -> {
-            int devbtype = (int)schema.getValue("devbtype", t);
-            String devstype = (String)schema.getValue("devstype", t);
-            String devid = (String)schema.getValue("devid", t);
-            String cityStr = (String)schema.getValue("city", t);
-            double longitude = (double)schema.getValue("longitude", t);
-            double latitude = (double)schema.getValue("latitude", t);
-            double altitude = (double)schema.getValue("altitude", t);
-            double speed = (double)schema.getValue("speed", t);
-            double direction = (double)schema.getValue("direction", t);
-            long locationtime = (long)schema.getValue("locationtime", t);
-            int workstate = (int)schema.getValue("workstate", t);
-            String clzl = (String)schema.getValue("clzl", t);
-            String hphm = (String)schema.getValue("hphm", t);
-            int jzlx = (int)schema.getValue("jzlx", t);
-
-            String jybh = (String)schema.getValue("jybh", t);
-            String jymc = (String)schema.getValue("jymc", t);
-            String lxdh = (String)schema.getValue("lxdh", t);
-            String ssdwdm = (String)schema.getValue("ssdwdm", t);
-            String ssdwmc = (String)schema.getValue("ssdwmc", t);
-            String teamno = (String)schema.getValue("teamno", t);
-            String dth = (String)schema.getValue("dth", t);
-            String reserve1 = (String)schema.getValue("reserve1", t);
-            String reserve2 = (String)schema.getValue("reserve2", t);
-            String reserve3 = (String)schema.getValue("reserve3", t);
-            int zcode = city.getZCodeForALocation(longitude, latitude);
-            t.clear();
-            t.add(devbtype);
-            t.add(devstype);
-            t.add(devid);
-            t.add(cityStr);
-            t.add(longitude);
-            t.add(latitude);
-            t.add(altitude);
-            t.add(speed);
-            t.add(direction);
-            t.add(locationtime);
-//            try {
-//                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-//                Date date = dateFormat.parse(dateStr);
-//                t.add(date.getTime());
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                t.add(null);
-//            }
-            t.add(workstate);
-            t.add(clzl);
-            t.add(hphm);
-            t.add(jzlx);
-            t.add(jybh);
-            t.add(jymc);
-            t.add(lxdh);
-            t.add(ssdwdm);
-            t.add(ssdwmc);
-            t.add(teamno);
-            t.add(dth);
-            t.add(reserve1);
-            t.add(reserve2);
-            t.add(reserve3);
+//            int devbtype = (int)schema.getValue("devbtype", t);
+//            String devstype = (String)schema.getValue("devstype", t);
+//            String devid = (String)schema.getValue("devid", t);
+//            String cityStr = (String)schema.getValue("city", t);
+            Object longitude = schema.getValue("longitude", t);
+            Object latitude = schema.getValue("latitude", t);
+//            double altitude = (double)schema.getValue("altitude", t);
+//            double speed = (double)schema.getValue("speed", t);
+//            double direction = (double)schema.getValue("direction", t);
+//            long locationtime = (long)schema.getValue("locationtime", t);
+//            int workstate = (int)schema.getValue("workstate", t);
+//            String clzl = (String)schema.getValue("clzl", t);
+//            String hphm = (String)schema.getValue("hphm", t);
+//            int jzlx = (int)schema.getValue("jzlx", t);
+//
+//            String jybh = (String)schema.getValue("jybh", t);
+//            String jymc = (String)schema.getValue("jymc", t);
+//            String lxdh = (String)schema.getValue("lxdh", t);
+//            String ssdwdm = (String)schema.getValue("ssdwdm", t);
+//            String ssdwmc = (String)schema.getValue("ssdwmc", t);
+//            String teamno = (String)schema.getValue("teamno", t);
+//            String dth = (String)schema.getValue("dth", t);
+//            String reserve1 = (String)schema.getValue("reserve1", t);
+//            String reserve2 = (String)schema.getValue("reserve2", t);
+//            String reserve3 = (String)schema.getValue("reserve3", t);
+            int zcode = 0;
+            if(longitude != null || latitude != null){
+                city.getZCodeForALocation((Double)longitude,(Double)latitude);
+            }
+//            t.clear();
+//            t.add(devbtype);
+//            t.add(devstype);
+//            t.add(devid);
+//            t.add(cityStr);
+//            t.add(longitude);
+//            t.add(latitude);
+//            t.add(altitude);
+//            t.add(speed);
+//            t.add(direction);
+//            t.add(locationtime);
+////            try {
+////                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+////                Date date = dateFormat.parse(dateStr);
+////                t.add(date.getTime());
+////            } catch (Exception e) {
+////                e.printStackTrace();
+////                t.add(null);
+////            }
+//            t.add(workstate);
+//            t.add(clzl);
+//            t.add(hphm);
+//            t.add(jzlx);
+//            t.add(jybh);
+//            t.add(jymc);
+//            t.add(lxdh);
+//            t.add(ssdwdm);
+//            t.add(ssdwmc);
+//            t.add(teamno);
+//            t.add(dth);
+//            t.add(reserve1);
+//            t.add(reserve2);
+//            t.add(reserve3);
             t.add(zcode);
 //            t.add(System.currentTimeMillis());
             return t;
@@ -410,7 +413,7 @@ public class KafkaTopology {
 //        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
 //                enableLoadBalance, dataSource, queryCoordinatorBolt, dataTupleMapper, bloomFilterColumns, config);
         List<String> bloomFilterColumns = new ArrayList<>();
-        bloomFilterColumns.add("devbtype");
+        bloomFilterColumns.add("longitude");
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
         topologyGenerator.setNumberOfNodes(NumberOfNodes);
@@ -484,9 +487,9 @@ public class KafkaTopology {
         DataSchema schema = new DataSchema();
 
         schema.addIntField("devbtype");
-        schema.addVarcharField("devstype", 32);
-        schema.addVarcharField("devid", 32);
-        schema.addVarcharField("city", 32);
+        schema.addVarcharField("devstype", 64);
+        schema.addVarcharField("devid", 64);
+        schema.addVarcharField("city", 64);
         schema.addDoubleField("longitude");
         schema.addDoubleField("latitude");
         schema.addDoubleField("altitude");
@@ -494,19 +497,19 @@ public class KafkaTopology {
         schema.addDoubleField("direction");
         schema.addLongField("locationtime");
         schema.addIntField("workstate");
-        schema.addVarcharField("clzl", 32);
-        schema.addVarcharField("hphm", 32);
+        schema.addVarcharField("clzl", 64);
+        schema.addVarcharField("hphm", 64);
         schema.addIntField("jzlx");
-        schema.addVarcharField("jybh", 32);
-        schema.addVarcharField("jymc", 32);
-        schema.addVarcharField("lxdh", 32);
-        schema.addVarcharField("ssdwdm", 32);
-        schema.addVarcharField("ssdwmc", 32);
-        schema.addVarcharField("teamno", 32);
-        schema.addVarcharField("dth", 32);
-        schema.addVarcharField("reserve1", 32);
-        schema.addVarcharField("reserve2", 32);
-        schema.addVarcharField("reserve3", 32);
+        schema.addVarcharField("jybh", 64);
+        schema.addVarcharField("jymc", 64);
+        schema.addVarcharField("lxdh", 64);
+        schema.addVarcharField("ssdwdm", 64);
+        schema.addVarcharField("ssdwmc", 64);
+        schema.addVarcharField("teamno", 64);
+        schema.addVarcharField("dth", 64);
+        schema.addVarcharField("reserve1", 64);
+        schema.addVarcharField("reserve2", 64);
+        schema.addVarcharField("reserve3", 64);
         schema.setTemporalField("locationtime");
         return schema;
     }
@@ -515,9 +518,9 @@ public class KafkaTopology {
         DataSchema schema = new DataSchema();
 
         schema.addIntField("devbtype");
-        schema.addVarcharField("devstype", 32);
-        schema.addVarcharField("devid", 32);
-        schema.addVarcharField("city", 32);
+        schema.addVarcharField("devstype", 64);
+        schema.addVarcharField("devid", 64);
+        schema.addVarcharField("city", 64);
         schema.addDoubleField("longitude");
         schema.addDoubleField("latitude");
         schema.addDoubleField("altitude");
@@ -525,19 +528,19 @@ public class KafkaTopology {
         schema.addDoubleField("direction");
         schema.addLongField("locationtime");
         schema.addIntField("workstate");
-        schema.addVarcharField("clzl", 32);
-        schema.addVarcharField("hphm", 32);
+        schema.addVarcharField("clzl", 64);
+        schema.addVarcharField("hphm", 64);
         schema.addIntField("jzlx");
-        schema.addVarcharField("jybh", 32);
-        schema.addVarcharField("jymc", 32);
-        schema.addVarcharField("lxdh", 32);
-        schema.addVarcharField("ssdwdm", 32);
-        schema.addVarcharField("ssdwmc", 32);
-        schema.addVarcharField("teamno", 32);
-        schema.addVarcharField("dth", 32);
-        schema.addVarcharField("reserve1", 32);
-        schema.addVarcharField("reserve2", 32);
-        schema.addVarcharField("reserve3", 32);
+        schema.addVarcharField("jybh", 64);
+        schema.addVarcharField("jymc", 64);
+        schema.addVarcharField("lxdh", 64);
+        schema.addVarcharField("ssdwdm", 64);
+        schema.addVarcharField("ssdwmc", 64);
+        schema.addVarcharField("teamno", 64);
+        schema.addVarcharField("dth", 64);
+        schema.addVarcharField("reserve1", 64);
+        schema.addVarcharField("reserve2", 64);
+        schema.addVarcharField("reserve3", 64);
         schema.addIntField("zcode");
 
         schema.setTemporalField("locationtime");
@@ -551,8 +554,8 @@ public class KafkaTopology {
 //        rawSchema.addDoubleField("lon");
 //        rawSchema.addDoubleField("lat");
 //        rawSchema.addIntField("devbtype");
-//        rawSchema.addVarcharField("devid", 32);
-//        rawSchema.addVarcharField("city",32);
+//        rawSchema.addVarcharField("devid",64);
+//        rawSchema.addVarcharField("city"64);
 //        rawSchema.addLongField("locationtime");
 //        rawSchema.setTemporalField("locationtime");
 //        return rawSchema;
@@ -563,8 +566,8 @@ public class KafkaTopology {
 //        schema.addDoubleField("lon");
 //        schema.addDoubleField("lat");
 //        schema.addIntField("devbtype");
-//        schema.addVarcharField("devid", 32);
-//        schema.addVarcharField("city",32);
+//        schema.addVarcharField("devid",64);
+//        schema.addVarcharField("city"64);
 //        schema.addLongField("locationtime");
 //        schema.setTemporalField("locationtime");
 //        schema.addIntField("zcode");

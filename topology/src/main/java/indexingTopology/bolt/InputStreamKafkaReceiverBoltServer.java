@@ -131,13 +131,17 @@ public class InputStreamKafkaReceiverBoltServer extends InputStreamReceiverBolt 
 //                        }
                         try{
                             JSONObject jsonFromData = JSONObject.parseObject(record.value());
-                            String dateValue = (String) jsonFromData.get("locationtime");
-                            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                            Date date = dateFormat.parse(dateValue);
-                            jsonFromData.remove("locationtime");
-                            jsonFromData.put("locationtime", date.getTime());
-                                kafkaDataSchema.checkDataIntegrity(jsonFromData);
-                                getInputQueue().put(schema.getTupleFromJsonObject(jsonFromData));
+//                            System.out.println(record.value());
+                            if(jsonFromData.get("locationtime") != null){
+                                String dateValue = (String) jsonFromData.get("locationtime");
+                                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+                                Date date = dateFormat.parse(dateValue);
+                                jsonFromData.remove("locationtime");
+                                jsonFromData.put("locationtime", date.getTime());
+                            }
+//                                kafkaDataSchema.checkDataIntegrity(jsonFromData); // filter incomplete data
+                            getInputQueue().put(schema.getTupleFromJsonObject(jsonFromData));
                         } catch (ParseException e){
                             e.printStackTrace();
                         } catch (JSONException e){

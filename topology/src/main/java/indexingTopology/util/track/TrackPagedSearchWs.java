@@ -28,6 +28,8 @@ public class TrackPagedSearchWs implements Serializable{
     private int rows;
     private String errorCode;
     private String errorMsg;
+    private String hdfsIP = "68.28.8.91";
+    private String QueryServerIp = "localhost";
 
     public TrackPagedSearchWs(){
 
@@ -77,7 +79,7 @@ public class TrackPagedSearchWs implements Serializable{
         }
 
         // query success
-        GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient("localhost", 10001);
+        GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient(QueryServerIp, 10001);
         try {
             queryClient.connectWithTimeout(10000);
         } catch (IOException e) {
@@ -85,12 +87,7 @@ public class TrackPagedSearchWs implements Serializable{
         }
         DataSchema schema = getDataSchema();
         DataTuplePredicate predicate;
-//        System.out.println("city : " + city);
-//        System.out.println("devbtype : " + devbtype);
-//        System.out.println("devid : " + devid);
-//        System.out.println("startTime : " + startTime);
-//        System.out.println("endTime : " + endTime);
-        predicate = t -> CheckEqual((String)schema.getValue("city", t),(int)schema.getValue("devbtype", t),(String)schema.getValue("devid", t));
+        predicate = t -> CheckEqual(schema.getValue("city", t),schema.getValue("devbtype", t),schema.getValue("devid", t));
         GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(Double.MIN_VALUE, Double.MAX_VALUE, Double.MIN_VALUE, Double.MAX_VALUE,
                 startTime,
                 endTime, predicate, null, null, null, null);
@@ -104,12 +101,14 @@ public class TrackPagedSearchWs implements Serializable{
 
             queryResponse.put("success", true);
             JSONArray queryResult = new JSONArray();
-            if(tuples.size() > 0 && tuples.size() > rows){
+            if(tuples.size() > 0 && tuples.size() > rows * (page - 1)){
                 for (int i = rows * (page - 1); i < rows * page; i++) {
                     if(i >= tuples.size()){
                         break;
                     }
-                    queryResult.add(schema.getJsonFromDataTupleWithoutZcode(tuples.get(i)));
+                    JSONObject jsonFromTuple = schema.getJsonFromDataTupleWithoutZcode(tuples.get(i));
+                    queryResult.add(jsonFromTuple);
+                    System.out.println(jsonFromTuple);
                 }
             }
             JSONObject result = new JSONObject();
@@ -157,8 +156,23 @@ public class TrackPagedSearchWs implements Serializable{
         return true;
     }
 
-    public boolean CheckEqual(String city, int devbtype, String devid) {
-        if (this.city.equals(city) && this.devbtype == devbtype && this.devid.equals(devid)) {
+//    public boolean CheckEqual(String city, int devbtype, String devid) {
+//        if (this.city.equals(city) && this.devbtype == devbtype && this.devid.equals(devid)) {
+//            return true;
+//        }
+//        else
+//            return false;
+//    }
+
+
+    public boolean CheckEqual(Object city, Object devbtype, Object devid) {
+        if(city == null || devbtype == null ||devid == null ){
+            return false;
+        }
+        String cityStr = (String) city;
+        int devbtypeInt = (int) devbtype;
+        String devidStr = (String) devid;
+        if (this.city.equals(cityStr) && this.devbtype == devbtypeInt && this.devid.equals(devidStr)) {
             return true;
         }
         else
@@ -169,9 +183,9 @@ public class TrackPagedSearchWs implements Serializable{
         DataSchema schema = new DataSchema();
 
         schema.addIntField("devbtype");
-        schema.addVarcharField("devstype", 32);
-        schema.addVarcharField("devid", 32);
-        schema.addVarcharField("city", 32);
+        schema.addVarcharField("devstype", 64);
+        schema.addVarcharField("devid", 64);
+        schema.addVarcharField("city", 64);
         schema.addDoubleField("longitude");
         schema.addDoubleField("latitude");
         schema.addDoubleField("altitude");
@@ -179,19 +193,19 @@ public class TrackPagedSearchWs implements Serializable{
         schema.addDoubleField("direction");
         schema.addLongField("locationtime");
         schema.addIntField("workstate");
-        schema.addVarcharField("clzl", 32);
-        schema.addVarcharField("hphm", 32);
+        schema.addVarcharField("clzl", 64);
+        schema.addVarcharField("hphm", 64);
         schema.addIntField("jzlx");
-        schema.addVarcharField("jybh", 32);
-        schema.addVarcharField("jymc", 32);
-        schema.addVarcharField("lxdh", 32);
-        schema.addVarcharField("ssdwdm", 32);
-        schema.addVarcharField("ssdwmc", 32);
-        schema.addVarcharField("teamno", 32);
-        schema.addVarcharField("dth", 32);
-        schema.addVarcharField("reserve1", 32);
-        schema.addVarcharField("reserve2", 32);
-        schema.addVarcharField("reserve3", 32);
+        schema.addVarcharField("jybh", 64);
+        schema.addVarcharField("jymc", 64);
+        schema.addVarcharField("lxdh", 64);
+        schema.addVarcharField("ssdwdm", 64);
+        schema.addVarcharField("ssdwmc", 64);
+        schema.addVarcharField("teamno", 64);
+        schema.addVarcharField("dth", 64);
+        schema.addVarcharField("reserve1", 64);
+        schema.addVarcharField("reserve2", 64);
+        schema.addVarcharField("reserve3", 64);
         schema.setTemporalField("locationtime");
         schema.addIntField("zcode");
         schema.setPrimaryIndexField("zcode");
@@ -207,8 +221,8 @@ public class TrackPagedSearchWs implements Serializable{
 //        schema.addDoubleField("lat");
 //        schema.addIntField("devbtype");
 //        schema.addVarcharField("devid", 8);
-////        schema.addVarcharField("id", 32);
-//        schema.addVarcharField("city",32);
+////        schema.addVarcharField("id", 64);
+//        schema.addVarcharField("city",64);
 //        schema.addLongField("locationtime");
 //        schema.setTemporalField("locationtime");
 ////        schema.addLongField("timestamp");

@@ -33,6 +33,7 @@ public class PosSpacialSearchWs {
     private Point circle;
     private double radius;
     private Point externalLeftTop, externalRightBottom;
+    private String hdfsIP = "68.28.8.91";
 
     public String service(String permissionsParams, String businessParams) {
         DataSchema schema = getDataSchema();
@@ -66,7 +67,7 @@ public class PosSpacialSearchWs {
                         System.out.println(queryResponse);
                         return queryResponse.toString();
                     }
-                    predicate = t -> rectangle.checkIn(new Point((Double)schema.getValue("longitude", t),(Double)schema.getValue("longitude", t)));
+                    predicate = t -> rectangle.checkIn(new Point((Double)schema.getValue("longitude", t),(Double)schema.getValue("latitude", t)));
                     break;
                 }
                 case "polygon" : {
@@ -80,7 +81,7 @@ public class PosSpacialSearchWs {
                     Polygon polygon = initPolygon(geoArray);
                     externalLeftTop = new Point(polygon.getExternalRectangle().getLeftTopX(), polygon.getExternalRectangle().getLeftTopY());
                     externalRightBottom = new Point(polygon.getExternalRectangle().getRightBottomX(), polygon.getExternalRectangle().getRightBottomY());
-                    predicate = t -> polygon.checkIn(new Point((Double)schema.getValue("longitude", t),(Double)schema.getValue("longitude", t)));
+                    predicate = t -> polygon.checkIn(new Point((Double)schema.getValue("longitude", t),(Double)schema.getValue("latitude", t)));
                     break;
                 }
                 case "circle" : {
@@ -98,7 +99,7 @@ public class PosSpacialSearchWs {
                     Circle circle = initCircle(longitude, latitude, circleradius);
                     externalLeftTop = new Point(circle.getExternalRectangle().getLeftTopX(), circle.getExternalRectangle().getLeftTopY());
                     externalRightBottom = new Point(circle.getExternalRectangle().getRightBottomX(), circle.getExternalRectangle().getRightBottomY());
-                    predicate = t -> circle.checkIn(new Point((Double)schema.getValue("longitude", t),(Double)schema.getValue("longitude", t)));
+                    predicate = t -> circle.checkIn(new Point((Double)schema.getValue("longitude", t),(Double)schema.getValue("latitude", t)));
                     break;
                 }
                 default: break;
@@ -106,9 +107,9 @@ public class PosSpacialSearchWs {
             JSONObject queryResponse = new JSONObject();
             if (flag == true) {
                 final double xLow = externalLeftTop.x;
-                final double xHigh =externalRightBottom.x;
+                final double xHigh = externalRightBottom.x;
                 final double yLow = externalRightBottom.y;
-                final double yHigh =externalLeftTop.y;
+                final double yHigh = externalLeftTop.y;
                 JSONArray queryResult = null;
                 GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient(QueryServerIp, 10001);
                 try {
@@ -116,16 +117,19 @@ public class PosSpacialSearchWs {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(xLow, xHigh, yLow, yHigh,
-                        System.currentTimeMillis() - 120 * 1000,
+                GeoTemporalQueryRequest queryRequest = new GeoTemporalQueryRequest<>(Double.MIN_VALUE, Double.MAX_VALUE, Double.MIN_VALUE, Double.MAX_VALUE,
+                        System.currentTimeMillis() - 30 * 1000,
                         System.currentTimeMillis(), predicate, null,null, null, null);
+                System.out.println("xLow:" + xLow + " " + xHigh + " " +yLow + " " + yHigh);
                 try {
                     QueryResponse response = queryClient.query(queryRequest);
                     List<DataTuple> tuples = response.getTuples();
+                    System.out.println(tuples.size());
                     queryResult = new JSONArray();
                     for (DataTuple tuple : tuples){
-                        queryResult.add(schema.getJsonFromDataTupleWithoutZcode(tuple));
-                        System.out.println(tuple.toValues());
+                        JSONObject jsonFromTuple = schema.getJsonFromDataTupleWithoutZcode(tuple);
+                        queryResult.add(jsonFromTuple);
+                        System.out.println(jsonFromTuple);
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -154,7 +158,7 @@ public class PosSpacialSearchWs {
             queryResponse.put("success", false);
             queryResponse.put("result", null);
             queryResponse.put("errorCode", 1002);
-            queryResponse.put("errorMsg", "参数值无效或缺失必填参数");
+            queryResponse.put("errorMsg", "参数值无效或缺失必填参数22");
             String result = JSONObject.toJSONString(queryResponse, SerializerFeature.WriteMapNullValue);
             return result;
         }catch (JSONException e){
@@ -162,7 +166,7 @@ public class PosSpacialSearchWs {
             queryResponse.put("success", false);
             queryResponse.put("result", null);
             queryResponse.put("errorCode", 1002);
-            queryResponse.put("errorMsg", "参数值无效或缺失必填参数");
+            queryResponse.put("errorMsg", "参数值无效或缺失必填参数33");
             String result = JSONObject.toJSONString(queryResponse, SerializerFeature.WriteMapNullValue);
             return result;
         }
@@ -207,9 +211,9 @@ public class PosSpacialSearchWs {
         DataSchema schema = new DataSchema();
 
         schema.addIntField("devbtype");
-        schema.addVarcharField("devstype", 32);
-        schema.addVarcharField("devid", 32);
-        schema.addVarcharField("city", 32);
+        schema.addVarcharField("devstype", 64);
+        schema.addVarcharField("devid", 64);
+        schema.addVarcharField("city", 64);
         schema.addDoubleField("longitude");
         schema.addDoubleField("latitude");
         schema.addDoubleField("altitude");
@@ -217,19 +221,19 @@ public class PosSpacialSearchWs {
         schema.addDoubleField("direction");
         schema.addLongField("locationtime");
         schema.addIntField("workstate");
-        schema.addVarcharField("clzl", 32);
-        schema.addVarcharField("hphm", 32);
+        schema.addVarcharField("clzl", 64);
+        schema.addVarcharField("hphm", 64);
         schema.addIntField("jzlx");
-        schema.addVarcharField("jybh", 32);
-        schema.addVarcharField("jymc", 32);
-        schema.addVarcharField("lxdh", 32);
-        schema.addVarcharField("ssdwdm", 32);
-        schema.addVarcharField("ssdwmc", 32);
-        schema.addVarcharField("teamno", 32);
-        schema.addVarcharField("dth", 32);
-        schema.addVarcharField("reserve1", 32);
-        schema.addVarcharField("reserve2", 32);
-        schema.addVarcharField("reserve3", 32);
+        schema.addVarcharField("jybh", 64);
+        schema.addVarcharField("jymc", 64);
+        schema.addVarcharField("lxdh", 64);
+        schema.addVarcharField("ssdwdm", 64);
+        schema.addVarcharField("ssdwmc", 64);
+        schema.addVarcharField("teamno", 64);
+        schema.addVarcharField("dth", 64);
+        schema.addVarcharField("reserve1", 64);
+        schema.addVarcharField("reserve2", 64);
+        schema.addVarcharField("reserve3", 64);
         schema.setTemporalField("locationtime");
         schema.addIntField("zcode");
         schema.setPrimaryIndexField("zcode");
@@ -241,12 +245,12 @@ public class PosSpacialSearchWs {
 
     public static void main(String[] args) {
 
-        String searchTest = "{\"type\":\"rectangle\",\"leftTop\":\"80,100\",\"rightBottom\":\"90,80\",\"geoStr\":null,\"longitude\":null,\"latitude\":null,\"radius\":null}";
-        String searchTest2 = "{\"type\":\"circle\",\"leftTop\":null,\"rightBottom\":null,\"geoStr\":null,\"longitude\":80,\"latitude\":75,\"radius\":5}";
+        String searchTest = "{\"type\":\"rectangle\",\"leftTop\":\"50,100\",\"rightBottom\":\"150,10\",\"geoStr\":null,\"longitude\":null,\"latitude\":null,\"radius\":null}";
+        String searchTest2 = "{\"type\":\"circle\",\"leftTop\":null,\"rightBottom\":null,\"geoStr\":null,\"longitude\":100,\"latitude\":70,\"radius\":10}";
         String searchTest3 = "{\"type\":\"polygon\",\"leftTop\":null,\"rightBottom\":null,\"geoStr\":[\"1 3\",\"2 8\",\"5 4\",\"5 9\",\"7 5\"],\"longitude\":null,\"latitude\":null,\"radius\":null}";
         String businessParams = "{\"type\":\"polygon\",\"leftTop\":null,\"rightBottom\":null,\"geoStr\":[\"1 3\",\"2 8\",\"5 4\",\"5 9\",\"7 5\"],\"longitude\":null,\"latitude\":null,\"radius\":null}";
         PosSpacialSearchWs posSpacialSearchWs = new PosSpacialSearchWs();
-        String result = posSpacialSearchWs.service(null, searchTest3);
+        String result = posSpacialSearchWs.service(null, searchTest2);
         System.out.println(result);
     }
 }
