@@ -80,7 +80,7 @@ public class SearchTest2 {
     void TrackSearchTest () {
         for (int time = 0; time < TimeRange; time += TimeRange/5) {
             long start = System.currentTimeMillis();
-            long startTime = System.currentTimeMillis() - TimeRange;
+            long startTime = System.currentTimeMillis() - time;
             long endTime = System.currentTimeMillis();
             String businessParams = "{\"city\":\"4401\",\"devbtype\":2,\"devid\":\"0x0101\",\"startTime\":" + startTime + ",\"endTime\":" + endTime + "}";
             TrackSearchWs trackSearchWs = new TrackSearchWs();
@@ -110,7 +110,7 @@ public class SearchTest2 {
         String result = null;
         switch (Shape) {
             case "rectangle": {
-                for (int i = 0; i < 100; i += 20){
+                for (int i = 0; i < 5; i += 1){
                     long start = System.currentTimeMillis();
                     double leftTop_1 = Double.parseDouble(LeftTop.split(",")[0]) - i;
                     double leftTop_2 = Double.parseDouble(LeftTop.split(",")[1]) + i;

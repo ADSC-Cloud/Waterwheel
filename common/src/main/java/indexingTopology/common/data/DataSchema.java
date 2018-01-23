@@ -422,7 +422,7 @@ public class DataSchema implements Serializable {
                 continue;
             }
             if(getFieldName(i).equals(temporalField)){
-                Date dateOld = new Date(System.currentTimeMillis()); // 根据long类型的毫秒数生命一个date类型的时间
+                Date dateOld = new Date((long)tuple.get(i)); // 根据long类型的毫秒数生命一个date类型的时间
                 String sDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(dateOld); // 把date类型的时间转换为string
                 SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 Date date = null; // 把String类型转换为Date类型
