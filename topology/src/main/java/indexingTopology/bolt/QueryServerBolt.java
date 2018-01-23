@@ -543,7 +543,7 @@ public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends Bas
 
         List<DataTuple> result =
                 tuples.stream().filter(p -> {
-                    Long timestamp = (Long) schema.getValue("timestamp", p);
+                    Long timestamp = (Long) schema.getValue(schema.getTemporalField(), p);
                     return timestampLowerBound <= timestamp && timestampUpperBound >= timestamp;
                 }).collect(Collectors.toList());
         tuples.clear();

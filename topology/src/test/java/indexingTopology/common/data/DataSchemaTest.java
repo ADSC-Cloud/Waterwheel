@@ -63,7 +63,7 @@ public class DataSchemaTest {
         assertEquals("", dataTupleDeserialized.get(6));
         Date dateOld = new Date(System.currentTimeMillis()); // 根据long类型的毫秒数生命一个date类型的时间
         System.out.println(dateOld);
-        String dateValue = "asd";
+        String dateValue = "2018-01-23 16:01:01";
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         Date date = null;
         try {

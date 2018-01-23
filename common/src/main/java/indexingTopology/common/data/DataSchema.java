@@ -131,7 +131,7 @@ public class DataSchema implements Serializable {
     public byte[] serializeTuple(DataTuple t)  throws KryoException{
         Output output = new Output(1000, 2000000);
         for (int i = 0; i < dataTypes.size(); i++) { // if value is null,go else
-            try{
+//            try{
                 if (dataTypes.get(i).type.equals(Double.class)) {
                     if(t.get(i) == null){
                         output.writeDouble(-1.0);
@@ -171,9 +171,9 @@ public class DataSchema implements Serializable {
                 } else {
                     throw new RuntimeException("Not supported data type!" );
                 }
-            }catch (KryoException e){
-                return null;
-            }
+//            }catch (Exception e){
+//                return null;
+//            }
         }
         byte[] bytes = output.toBytes();
         output.close();
@@ -184,7 +184,7 @@ public class DataSchema implements Serializable {
         DataTuple dataTuple = new DataTuple();
         Input input = new Input(b);
         for (int i = 0; i < dataTypes.size(); i++) {
-            try{
+//            try{
 
                 if (dataTypes.get(i).type.equals(Double.class)) {
                     double byteToDouble = input.readDouble();
@@ -229,9 +229,9 @@ public class DataSchema implements Serializable {
                 } else {
                     throw new RuntimeException("Only classes supported till now are string and double");
                 }
-            }catch (KryoException e){
-                return null;
-            }
+//            }catch (KryoException e){
+//                return null;
+//            }
         }
         return dataTuple;
     }
@@ -284,18 +284,33 @@ public class DataSchema implements Serializable {
     }
 
     public Object getValue(String fieldName, DataTuple dataTuple) {
-        final int offset = dataFieldNameToIndex.get(fieldName);
-        return dataTuple.get(offset);
+        try{
+            final int offset = dataFieldNameToIndex.get(fieldName);
+            return dataTuple.get(offset);
+        }catch (Exception e){
+            System.out.println("The fieldName " + fieldName + " value is null!return null");
+            return null;
+        }
     }
 
     public Object getIndexValue(DataTuple dataTuple) {
-        final int indexOffset = dataFieldNameToIndex.get(indexField);
-        return dataTuple.get(indexOffset);
+        try{
+            final int indexOffset = dataFieldNameToIndex.get(indexField);
+            return dataTuple.get(indexOffset);
+        }catch (Exception e){
+            System.out.println("The indexField " + indexField + " value is null!return null");
+            return null;
+        }
     }
 
     public Object getTemporalValue(DataTuple dataTuple){
-        final int temporalOffset = dataFieldNameToIndex.get(temporalField);
-        return dataTuple.get(temporalOffset);
+        try{
+            final int temporalOffset = dataFieldNameToIndex.get(temporalField);
+            return dataTuple.get(temporalOffset);
+        }catch (Exception e){
+            System.out.println("The temporalField " + temporalField + " value is null!return null");
+            return null;
+        }
     }
 
     public int getTupleLength() {
