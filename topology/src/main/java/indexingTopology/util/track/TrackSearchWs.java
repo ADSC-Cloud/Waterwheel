@@ -53,6 +53,7 @@ public class TrackSearchWs implements Serializable{
     private String errorCode;
     private String errorMsg;
     private String hdfsIP = "68.28.8.91";
+    private String QueryServerIp = "68.28.8.91";
 
     public TrackSearchWs(){
 
@@ -97,7 +98,7 @@ public class TrackSearchWs implements Serializable{
             return result;
         }
         // query success
-        GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient("localhost", 10001);
+        GeoTemporalQueryClient queryClient = new GeoTemporalQueryClient(QueryServerIp, 10001);
         try {
             queryClient.connectWithTimeout(10000);
         } catch (IOException e) {

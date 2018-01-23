@@ -21,7 +21,7 @@ import java.util.Random;
  **/
 public class PosNonSpacialSearchWs {
 
-    private String QueryServerIp = "localhost";
+    private String QueryServerIp = "68.28.8.91";
     static final double x1 = 40.012928;
     static final double x2 = 40.023983;
     static final double y1 = 116.292677;

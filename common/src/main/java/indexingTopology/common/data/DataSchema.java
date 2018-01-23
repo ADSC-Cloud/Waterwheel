@@ -26,7 +26,7 @@ public class DataSchema implements Serializable {
 
 
 
-        Object readFromString(String string) {
+        Object readFromString(String string) throws Exception{
             if (type.equals(Integer.class)) {
                 return Integer.parseInt(string);
             }else if(type.equals(Double.class)) {
@@ -131,44 +131,48 @@ public class DataSchema implements Serializable {
     public byte[] serializeTuple(DataTuple t)  throws KryoException{
         Output output = new Output(1000, 2000000);
         for (int i = 0; i < dataTypes.size(); i++) { // if value is null,go else
-            if (dataTypes.get(i).type.equals(Double.class)) {
-                if(t.get(i) == null){
-                    output.writeDouble(-1.0);
-                }else{
-                    output.writeDouble((double)t.get(i));
-                }
-            } else if (dataTypes.get(i).type.equals(String.class)) {
-                if(t.get(i) == null){
-                    String nullTobyte = "null";
-                    byte[] bytes = nullTobyte.getBytes();
-                    output.writeInt(bytes.length);
-                    output.write(bytes);
-                }
-                else{
-                    byte[] bytes = ((String) t.get(i)).getBytes();
-                    if(bytes.length == 0){
-                        output.writeInt(0);
-                        output.write(0);
+            try{
+                if (dataTypes.get(i).type.equals(Double.class)) {
+                    if(t.get(i) == null){
+                        output.writeDouble(-1.0);
                     }else{
-                        bytes = ((String) t.get(i)).getBytes();
+                        output.writeDouble((double)t.get(i));
+                    }
+                } else if (dataTypes.get(i).type.equals(String.class)) {
+                    if(t.get(i) == null){
+                        String nullTobyte = "null";
+                        byte[] bytes = nullTobyte.getBytes();
                         output.writeInt(bytes.length);
                         output.write(bytes);
                     }
+                    else{
+                        byte[] bytes = ((String) t.get(i)).getBytes();
+                        if(bytes.length == 0){
+                            output.writeInt(0);
+                            output.write(0);
+                        }else{
+                            bytes = ((String) t.get(i)).getBytes();
+                            output.writeInt(bytes.length);
+                            output.write(bytes);
+                        }
+                    }
+                } else if (dataTypes.get(i).type.equals(Integer.class)) {
+                    if(t.get(i) == null){
+                        output.writeInt(-1);
+                    }else{
+                        output.writeInt((int)t.get(i));
+                    }
+                } else if (dataTypes.get(i).type.equals(Long.class)) {
+                    if(t.get(i) == null){
+                        output.writeLong(-1);
+                    }else{
+                        output.writeLong((long)t.get(i));
+                    }
+                } else {
+                    throw new RuntimeException("Not supported data type!" );
                 }
-            } else if (dataTypes.get(i).type.equals(Integer.class)) {
-                if(t.get(i) == null){
-                    output.writeInt(-1);
-                }else{
-                    output.writeInt((int)t.get(i));
-                }
-            } else if (dataTypes.get(i).type.equals(Long.class)) {
-                if(t.get(i) == null){
-                    output.writeLong(-1);
-                }else{
-                    output.writeLong((long)t.get(i));
-                }
-            } else {
-                throw new RuntimeException("Not supported data type!" );
+            }catch (KryoException e){
+                return null;
             }
         }
         byte[] bytes = output.toBytes();
@@ -180,49 +184,53 @@ public class DataSchema implements Serializable {
         DataTuple dataTuple = new DataTuple();
         Input input = new Input(b);
         for (int i = 0; i < dataTypes.size(); i++) {
+            try{
 
-            if (dataTypes.get(i).type.equals(Double.class)) {
-                double byteToDouble = input.readDouble();
-                if(byteToDouble == -1.0){
-                    dataTuple.add(null);
-                }else{
-                    dataTuple.add(byteToDouble);
-                }
-            } else if (dataTypes.get(i).type.equals(String.class)) {
-                int length = input.readInt();
-                byte[] bytes;
-                if(length == 0){
-                    bytes = input.readBytes(1);
-                    dataTuple.add("");
-                }
-                else{
-//                    System.out.println("attribute :" + getFieldName(i));
-//                    System.out.println("length :"+length);
-                    bytes = input.readBytes(length);
-                    String buteToString = new String(bytes);
-                    if(buteToString.equals("null")){
+                if (dataTypes.get(i).type.equals(Double.class)) {
+                    double byteToDouble = input.readDouble();
+                    if(byteToDouble == -1.0){
                         dataTuple.add(null);
+                    }else{
+                        dataTuple.add(byteToDouble);
+                    }
+                } else if (dataTypes.get(i).type.equals(String.class)) {
+                    int length = input.readInt();
+                    byte[] bytes;
+                    if(length == 0){
+                        bytes = input.readBytes(1);
+                        dataTuple.add("");
                     }
                     else{
-                        dataTuple.add(buteToString);
+//                    System.out.println("attribute :" + getFieldName(i));
+//                    System.out.println("length :"+length);
+                        bytes = input.readBytes(length);
+                        String buteToString = new String(bytes);
+                        if(buteToString.equals("null")){
+                            dataTuple.add(null);
+                        }
+                        else{
+                            dataTuple.add(buteToString);
+                        }
                     }
+                } else if (dataTypes.get(i).type.equals(Integer.class)) {
+                    int byteToInt = input.readInt();
+                    if(byteToInt == -1){
+                        dataTuple.add(null);
+                    }else{
+                        dataTuple.add(byteToInt);
+                    }
+                } else if (dataTypes.get(i).type.equals(Long.class)) {
+                    long byteToLong = input.readLong();
+                    if(byteToLong == -1){
+                        dataTuple.add(null);
+                    }else{
+                        dataTuple.add(byteToLong);
+                    }
+                } else {
+                    throw new RuntimeException("Only classes supported till now are string and double");
                 }
-            } else if (dataTypes.get(i).type.equals(Integer.class)) {
-                int byteToInt = input.readInt();
-                if(byteToInt == -1){
-                    dataTuple.add(null);
-                }else{
-                    dataTuple.add(byteToInt);
-                }
-            } else if (dataTypes.get(i).type.equals(Long.class)) {
-                long byteToLong = input.readLong();
-                if(byteToLong == -1){
-                    dataTuple.add(null);
-                }else{
-                    dataTuple.add(byteToLong);
-                }
-            } else {
-                throw new RuntimeException("Only classes supported till now are string and double");
+            }catch (KryoException e){
+                return null;
             }
         }
         return dataTuple;
@@ -349,13 +357,26 @@ public class DataSchema implements Serializable {
         DataTuple dataTuple = new DataTuple();
         String objectStr = "";
         Object attribute = new Object();
+        Set set = object.keySet();
+        Iterator iterator = set.iterator();
+        while (iterator.hasNext()){
+            String obj = (String)iterator.next();
+            if(!dataFieldNameToIndex.containsKey(obj)){
+                return null;
+            }
+        }
         for (int i = 0; i < len; i++) {
             if(object.get(getFieldName(i)) == null){
                 attribute = null;
             }
             else{
                 objectStr = object.get(getFieldName(i)).toString();
-                attribute = dataTypes.get(i).readFromString(objectStr);
+                try {
+                    attribute = dataTypes.get(i).readFromString(objectStr);
+                } catch (Exception e) {
+                    System.out.println("get tuple from json failed!The json is :" + object);
+                    return null;
+                }
             }
             dataTuple.add(attribute);
         }

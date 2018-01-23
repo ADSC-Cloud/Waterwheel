@@ -31,7 +31,7 @@ public class KafkaSourceTest {
         Matcher m = p.matcher("[\"10.21.25.203:9092\",\"10.21.25.204:9092\",\"10.21.25.205:9092\"]");
         String currentKafkahost = m.replaceAll("").trim();
 //        IngestionKafkaBatchMode kafkaBatchMode = new IngestionKafkaBatchMode("10.21.25.203:9092,10.21.25.203:9092,10.21.25.203:9092", "gpis");
-        IngestionKafkaBatchMode kafkaBatchMode = new IngestionKafkaBatchMode("localhost:9092", "gpis");
+        IngestionKafkaBatchMode kafkaBatchMode = new IngestionKafkaBatchMode("68.28.7.80:9092", "gpis");
         kafkaBatchMode.ingestProducer();
         int total = 10;
         Thread emittingThread = null;
@@ -54,12 +54,12 @@ public class KafkaSourceTest {
 //                            String Msg = "{\"lon\":"+ car.x + ",\"lat\":" + car.y + ",\"devbtype\":"+ devbtype +",\"devid\":\"asd\",\"city\":\"4401\",\"locationtime\":" + System.currentTimeMillis() +  "}";
                         if (i  < total/2) {
 //                        if(i < 0){
-                            String Msg = jsonTest.CheckJingyiJson(15);
+                            String Msg = jsonTest.CheckJingyiJson(1);
 //                            String Msg = "{\"asd\":\"\",\"reserve1\":\"1\",\"reserve2\":\"\",\"reserve3\":\"\",\"ssdwdm\":\"440100000000\"," +
 //                                    "\"ssdwmc\":\"字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数\",\"teamno\":\"44010001\",}";
                             kafkaBatchMode.send(i, Msg);
                         } else {
-                            String Msg = "{\"devbtype\":" + 11 + ",\"devstype\":\"350M\",\"devid\":\"75736331\",\"city\":\"4406\",\"longitude\":" + 112.048633 + ",\"latitude\":" + 22.874917
+                            String Msg = "{\"devbtype\":" + 11 + ",\"devstype\":" + 123 + ",\"devid\":\"75736331\",\"city\":\"4406\",\"longitude\":" + 112.123123 + ",\"latitude\":" + 22.874917
                                     + ",\"altitude\":\"0\"," +
                                     "\"speed\":\"0\",\"direction\":\"0\",\"locationtime\":\"" + currentTime + "\",\"workstate\":\"1\",\"clzl\":\"\",\"hphm\":\"\",\"jzlx\":\"7\",\"jybh\":\"100011\"," +
                                     "\"jymc\":\"陈国基陈国基陈国基陈国基陈国基陈国基陈国基陈国基陈国基陈国基\",\"lxdh\":\"13576123212\",\"dth\":\"\",\"reserve1\":\"1\",\"reserve2\":\"\",\"reserve3\":\"\",\"ssdwdm\":\"440100000000\"," +

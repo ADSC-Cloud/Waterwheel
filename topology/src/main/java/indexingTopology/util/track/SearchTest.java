@@ -13,18 +13,18 @@ public class SearchTest {
             String  querySelect = scanner.next();
             switch (querySelect){
                 case "1" : {
-                    long startTime = System.currentTimeMillis() - 10 * 1000;
+                    long startTime = System.currentTimeMillis() - 30 * 1000;
                     long endTime = System.currentTimeMillis();
-                    String businessParams = "{\"city\":\"4401\",\"devbtype\":10,\"devid\":\"0x0101\",\"startTime\":" + startTime + ",\"endTime\":" + endTime + "}";
+                    String businessParams = "{\"city\":\"4403\",\"devbtype\":1,\"devid\":\"75736331\",\"startTime\":" + startTime + ",\"endTime\":" + endTime + "}";
                     TrackSearchWs trackSearchWs = new TrackSearchWs();
                     String queryResult = trackSearchWs.services(permissionParams, businessParams);
                     System.out.println(queryResult);
                     break;
                 }
                 case "2" : {
-                    long startTime = System.currentTimeMillis() - 10 * 1000;
+                    long startTime = System.currentTimeMillis() - 30 * 1000;
                     long endTime = System.currentTimeMillis();
-                    String businessParamsPaged = "{\"city\":\"4401\",\"devbtype\":10,\"devid\":\"0x0101\",\"startTime\":" + startTime + ",\"endTime\":" + endTime + ",\"page\":1,\"rows\":10}";
+                    String businessParamsPaged = "{\"city\":\"4403\",\"devbtype\":1,\"devid\":\"75736331\",\"startTime\":" + startTime + ",\"endTime\":" + endTime + ",\"page\":1,\"rows\":10}";
                     TrackPagedSearchWs trackPagedSearchWs = new TrackPagedSearchWs();
                     String queryResultPaged = trackPagedSearchWs.services(permissionParams, businessParamsPaged);
                     System.out.println(queryResultPaged);
@@ -37,7 +37,7 @@ public class SearchTest {
                     break;
                 }
                 case "4" : {
-                    String searcRectangle = "{\"type\":\"rectangle\",\"leftTop\":\"50,100\",\"rightBottom\":\"150,10\",\"geoStr\":null,\"longitude\":null,\"latitude\":null,\"radius\":null}";
+                    String searcRectangle = "{\"type\":\"rectangle\",\"leftTop\":\"10,1000\",\"rightBottom\":\"1000,10\",\"geoStr\":null,\"longitude\":null,\"latitude\":null,\"radius\":null}";
                     PosSpacialSearchWs posSpacialSearchWs = new PosSpacialSearchWs();
                     String result = posSpacialSearchWs.service(null, searcRectangle);
                     System.out.println(result);

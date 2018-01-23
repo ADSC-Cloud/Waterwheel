@@ -129,9 +129,11 @@ public class KafkaDataFromPoliceSchema implements Serializable {
                 this.reserve3 = jsonObject.getString("reserve3");
             }
         }catch(NullPointerException e){
-            e.printStackTrace();
+            System.out.println("Record error : Some json attribute is null!!The record is : "+ jsonObject);
+            return false;
         }catch(NumberFormatException e){
             System.out.println("Record error : consumer record value format exception!The record is :" + jsonObject);
+//            e.printStackTrace();
             return false;
         }
         return true;

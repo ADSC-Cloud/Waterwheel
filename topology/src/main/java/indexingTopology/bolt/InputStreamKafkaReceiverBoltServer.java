@@ -3,6 +3,7 @@ package indexingTopology.bolt;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import indexingTopology.common.data.DataSchema;
+import indexingTopology.common.data.DataTuple;
 import indexingTopology.common.data.KafkaDataFromPoliceSchema;
 import indexingTopology.config.TopologyConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -13,12 +14,14 @@ import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
+import org.slf4j.LoggerFactory;
 
 import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -133,17 +136,27 @@ public class InputStreamKafkaReceiverBoltServer extends InputStreamReceiverBolt 
 //                            System.out.println(record.value());
                             boolean checkRecord = kafkaDataSchema.checkDataIntegrity(jsonFromData);
                             if(checkRecord == true){ // filter incomplete data
-                                getInputQueue().put(schema.getTupleFromJsonObject(jsonFromData));
+                                DataTuple dataTuple = schema.getTupleFromJsonObject(jsonFromData);
+                                if(dataTuple != null){
+                                    getInputQueue().put(dataTuple);
+                                    System.out.println("Filter datatuple success: " + record.value());
+                                }
                             }
                         } catch (ParseException e){
                             e.printStackTrace();
+                            continue;
                         } catch (JSONException e){
-                            e.printStackTrace();
+                            System.out.println("Record error : Json format exception!The json is " + record.value());
+//                            e.printStackTrace();
+                            continue;
                         } catch (NullPointerException e){
-                            e.printStackTrace();
+                            System.out.println("Record error : Some json attribute is null!!The json is " + record.value());
+//                            e.printStackTrace();
+                            continue;
                         } catch (Exception e){
-                            System.out.println("Unexpected Exception,Consumer record wrong!");
-                            e.printStackTrace();
+                            System.out.println("Record error : Unexpected Exception,Consumer record wrong!The json is " + record.value());
+//                            e.printStackTrace();
+                            continue;
                         }
 
                         //template replace

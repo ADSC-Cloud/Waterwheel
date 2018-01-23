@@ -131,7 +131,7 @@ public class DataSchemaTest {
         schema.addVarcharField("2" ,3);
         schema.addVarcharField("1", 3);
         schema.addVarcharField("date", 15);
-        String jsonStr = "{\"result\":[{\"2\":\"efg\",\"1\":null,\"date\":\"2017-12-01 10:40:00\"},{\"2\":\"efg\",\"1\":null,\"date\":\"2017-12-01 10:40:00\"}]}";
+        String jsonStr = "{\"result\":[{\"\":\"\",\"1\":null,\"date\":\"2017-12-01 10:40:00\"},{\"2\":\"efg\",\"1\":null,\"date\":\"2017-12-01 10:40:00\"}]}";
         JSONObject jsonObject = JSONObject.parseObject(jsonStr);
         JSONArray array = jsonObject.getJSONArray("result");
         List<DataTuple> list =  schema.getTuplesFromJsonArray(array);
@@ -144,7 +144,7 @@ public class DataSchemaTest {
         schema.addVarcharField("a2" ,3);
         schema.addVarcharField("a1", 3);
         schema.addVarcharField("date", 15);
-        String jsonStr = "{\"a2\":\"efg\",\"a1\":null,\"date\":\"2017-12-01 10:40:00\"}";
+        String jsonStr = "{\"\":\"\",\"a1\":null,\"date\":\"2017-12-01 10:40:00\"}";
         JSONObject jsonObject = JSONObject.parseObject(jsonStr);
         try{
             DataTuple tuple = schema.getTupleFromJsonObject(jsonObject);

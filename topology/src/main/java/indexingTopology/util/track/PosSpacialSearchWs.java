@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
  **/
 public class PosSpacialSearchWs {
 
-    private String QueryServerIp = "localhost";
+    private String QueryServerIp = "68.28.8.91";
     private Point leftTop, rightBottom;
     private Point[] geoStr;
     private Point circle;
