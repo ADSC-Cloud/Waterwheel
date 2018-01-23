@@ -372,6 +372,9 @@ public class DataSchema implements Serializable {
         DataTuple dataTuple = new DataTuple();
         String objectStr = "";
         Object attribute = new Object();
+        if(object == null){
+            return null;
+        }
         Set set = object.keySet();
         Iterator iterator = set.iterator();
         while (iterator.hasNext()){

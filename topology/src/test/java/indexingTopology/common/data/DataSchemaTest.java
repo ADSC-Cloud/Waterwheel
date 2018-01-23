@@ -144,14 +144,16 @@ public class DataSchemaTest {
         schema.addVarcharField("a2" ,3);
         schema.addVarcharField("a1", 3);
         schema.addVarcharField("date", 15);
-        String jsonStr = "{\"\":\"\",\"a1\":null,\"date\":\"2017-12-01 10:40:00\"}";
+        String jsonStr = "{\"a1\":null,\"date\":\"2017-12-01 10:40:00\"}";
         JSONObject jsonObject = JSONObject.parseObject(jsonStr);
         try{
-            DataTuple tuple = schema.getTupleFromJsonObject(jsonObject);
-            assertEquals("efg",tuple.get(0));
+            DataTuple tuple = schema.getTupleFromJsonObject(null);
+            assertEquals(null,tuple);
+            tuple = schema.getTupleFromJsonObject(jsonObject);
             jsonObject = schema.getJsonFromDataTuple(tuple);
-            assertEquals("efg", jsonObject.get("a2"));
+            assertEquals(null, jsonObject.get("a2"));
             assertEquals(null, jsonObject.get("a1"));
+            assertEquals("2017-12-01 10:40:00", jsonObject.get("date"));
         }catch (ParseException e){
             e.printStackTrace();
         }
