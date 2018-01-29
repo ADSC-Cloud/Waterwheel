@@ -2,35 +2,26 @@ package indexingTopology.index;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
-import indexingTopology.common.data.DataTuple;
-import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.DataSchema;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
-import indexingTopology.index.BTree;
-import indexingTopology.index.BTreeLeafNode;
-import indexingTopology.index.KryoLeafNodeSerializer;
-import indexingTopology.index.TemplateUpdater;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by acelzj on 21/12/16.
  */
 public class BTreeTest {
-    DataSchema schema = new DataSchema();
-    public void setUp() {
-        schema.addDoubleField("a1");
-        schema.setPrimaryIndexField("a1");
-    }
 
     TopologyConfig config = new TopologyConfig();
-
 
     @Test
     public void testGetTemplate() throws Exception, UnsupportedGenericException {
@@ -41,15 +32,25 @@ public class BTreeTest {
 
         Random random = new Random();
 
-        List<Double> keys = new ArrayList<>();
+        List<Integer> keys = new ArrayList<>();
 
         for (int i = 0; i < numberOfTuples; ++i) {
-            keys.add(i * 1.0);
+//            Integer key = random.nextInt();
+//            while (keys.contains(key)) {
+//                key = random.nextInt();
+//            }
+//            keys.add(key);
+            keys.add(i);
         }
 
-        for (Double key : keys) {
-            DataTuple dataTuple = new DataTuple(key);
-            bTree.insert(key, dataTuple);
+        for (Integer key : keys) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) key);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            bTree.insert((double) key, bytes);
         }
 
         BTreeLeafNode leaf = bTree.getLeftMostLeaf();
@@ -61,8 +62,8 @@ public class BTreeTest {
 
 //        bTree.printBtree();
 
-        for (Double key : keys) {
-            assertEquals(1, bTree.searchRange(key, key).size());
+        for (Integer key : keys) {
+            assertEquals(1, bTree.searchRange((double) key, (double) key).size());
         }
 
         BTree template = bTree.getTemplate();
@@ -71,7 +72,7 @@ public class BTreeTest {
         bTree.getRoot().keys = null;
 
 
-        for (Double key : keys) {
+        for (Integer key : keys) {
             assertEquals(0, template.searchRange((double) key, (double) key).size());
         }
 
@@ -88,9 +89,9 @@ public class BTreeTest {
         leaf = template.getLeftMostLeaf();
         while (leaf != null) {
             assertEquals(0, leaf.keyCount);
-            assertEquals(0, leaf.dataTuples.size());
-            assertEquals(0, leaf.atomicTupleCount.get());
-
+            assertEquals(0, leaf.atomicKeyCount.get());
+            assertEquals(0, leaf.tuples.size());
+            assertEquals(0, leaf.offsets.size());
             leaf = (BTreeLeafNode) leaf.rightSibling;
             ++count;
         }
@@ -107,21 +108,26 @@ public class BTreeTest {
 
         Random random = new Random();
 
-        List<Double> keys = new ArrayList<>();
+        List<Integer> keys = new ArrayList<>();
 
         for (int i = 0; i < numberOfTuples; ++i) {
 //            Integer key = random.nextInt();
-            keys.add(i * 1.0);
+            keys.add(i);
         }
 
         Collections.shuffle(keys);
 
-        for (Double key : keys) {
-            DataTuple dataTuple = new DataTuple(key);
-            bTree.insert(key, dataTuple);
+        for (Integer key : keys) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) key);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            bTree.insert((double) key, bytes);
         }
 
-        byte[] serializedLeaves = bTree.serializeLeaves(schema);
+        byte[] serializedLeaves = bTree.serializeLeaves();
 
         Input input;
         if (config.ChunkOrientedCaching) {
@@ -151,18 +157,23 @@ public class BTreeTest {
 
         Random random = new Random();
 
-        List<Double> keys = new ArrayList<>();
+        List<Integer> keys = new ArrayList<>();
 
         for (int i = 0; i < numberOfTuples; ++i) {
 //            Integer key = random.nextInt();
-            keys.add(i * 1.0);
+            keys.add(i);
         }
 
         Collections.shuffle(keys);
 
-        for (Double key : keys) {
-            DataTuple dataTuple = new DataTuple(key);
-            bTree.insert(key, dataTuple);
+        for (Integer key : keys) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) key);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            bTree.insert((double) key, bytes);
         }
 
     }
@@ -171,6 +182,7 @@ public class BTreeTest {
             "date", "time", "latitude", "longitude"));
     private ArrayList valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
             Double.class, Double.class, Double.class, Double.class, Double.class));
+    private DataSchema schema = new DataSchema(fieldNames, valueTypes, "user_id","time");
 
 
     @Test
@@ -182,24 +194,29 @@ public class BTreeTest {
 
         Random random = new Random();
 
-        List<Double> keys = new ArrayList<>();
+        List<Integer> keys = new ArrayList<>();
 
         for (int i = 0; i < numberOfTuples; ++i) {
-            keys.add(i * 1.0);
+            keys.add(i);
         }
 
         Collections.shuffle(keys);
 
-        for (Double key : keys) {
-            DataTuple dataTuple = new DataTuple(key);
-            bTree.insert(key, dataTuple);
+        for (Integer key : keys) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) key);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            bTree.insert(key, bytes);
         }
 
         Collections.sort(keys);
 
         BTreeLeafNode leaf = bTree.getLeftMostLeaf();
 
-        for (Double key : keys) {
+        for (Integer key : keys) {
             if (leaf != null) {
                 if (leaf.search(key) < 0) {
                     leaf = (BTreeLeafNode) leaf.rightSibling;
@@ -218,24 +235,29 @@ public class BTreeTest {
 
         Random random = new Random();
 
-        List<Double> keys = new ArrayList<>();
+        List<Integer> keys = new ArrayList<>();
 
         for (int i = 0; i < numberOfTuples; ++i) {
 //            Integer key = random.nextInt();
-            keys.add(i * 1.0);
+            keys.add(i);
         }
 
         Collections.shuffle(keys);
 
-        for (Double key : keys) {
-            DataTuple dataTuple = new DataTuple(key);
-            bTree.insert(key, dataTuple);
+        for (Integer key : keys) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) key);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            bTree.insert(key*1.0, bytes);
         }
 
 //        bTree.printBtree();
 
-        for (Double key : keys) {
-            assertEquals(1, bTree.searchRange(key, key).size());
+        for (Integer key : keys) {
+            assertEquals(1, bTree.searchRange(key * 1.0, key * 1.0).size());
         }
         //Test template mode
        bTree.clearPayload();
@@ -245,12 +267,17 @@ public class BTreeTest {
 //            keys.add(i + 100);
 //        }
 
-        for (Double key : keys) {
-            DataTuple dataTuple = new DataTuple(key);
-            bTree.insert(key, dataTuple);
+        for (Integer key : keys) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) key);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            bTree.insert(key*1.0, bytes);
         }
 
-        for (Double key : keys) {
+        for (Integer key : keys) {
             assertEquals(1, bTree.searchRange(key*1.0, key*1.0).size());
         }
     }
@@ -264,25 +291,30 @@ public class BTreeTest {
 
         Random random = new Random();
 
-        List<Double> keys = new ArrayList<>();
+        List<Integer> keys = new ArrayList<>();
 
         for (int i = 0; i < numberOfTuples; ++i) {
 //            Integer key = random.nextInt();
-            keys.add(i * 1.0);
+            keys.add(i);
         }
 
 //        Collections.shuffle(keys);
 
-        for (Double key : keys) {
-            DataTuple dataTuple = new DataTuple(key);
-            bTree.insert(key*1.0, dataTuple);
-            bTree.insert(key*1.0, dataTuple);
+        for (Integer key : keys) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) key);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            bTree.insert(key*1.0, bytes);
+            bTree.insert(key*1.0, bytes);
         }
 
 //        bTree.printBtree();
 
-        for (Double key : keys) {
-            assertEquals(2, bTree.searchRange(key , key).size());
+        for (Integer key : keys) {
+            assertEquals(2, bTree.searchRange(key * 1.0, key * 1.0).size());
         }
         //Test template mode
         bTree.clearPayload();
@@ -292,13 +324,18 @@ public class BTreeTest {
 //            keys.add(i + 100);
 //        }
 
-        for (Double key : keys) {
-            DataTuple dataTuple = new DataTuple(key);
-            bTree.insert(key*1.0, dataTuple);
-            bTree.insert(key*1.0, dataTuple);
+        for (Integer key : keys) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) key);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            bTree.insert(key*1.0, bytes);
+            bTree.insert(key*1.0, bytes);
         }
 
-        for (Double key : keys) {
+        for (Integer key : keys) {
             assertEquals(2, bTree.searchRange(key*1.0, key*1.0).size());
         }
     }
@@ -312,35 +349,43 @@ public class BTreeTest {
 
         Random random = new Random();
 
-        List<Double> keys = new ArrayList<>();
+        List<Integer> keys = new ArrayList<>();
 
         for (int i = 0; i < numberOfTuples; ++i) {
-            keys.add(i * 1.0);
+            keys.add(i);
         }
 
         Collections.shuffle(keys);
 
-        for (Double key : keys) {
-
-            DataTuple dataTuple = new DataTuple(key);
-            bTree.insert(key*1.0, dataTuple);
+        for (Integer key : keys) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) key);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            bTree.insert(key*1.0, bytes);
         }
 
-        for (Double key : keys) {
+        for (Integer key : keys) {
             assertEquals(1, bTree.searchRange(key*1.0, key*1.0).size());
         }
 
         //Test template mode
         bTree.clearPayload();
 
-        for (Double key : keys) {
-
-            DataTuple dataTuple = new DataTuple(key);
-            bTree.insert(key*1.0, dataTuple);
+        for (Integer key : keys) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) key);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            bTree.insert(key*1.0, bytes);
         }
 
-        for (Double key : keys) {
-            assertEquals(1, bTree.searchRange(key, key).size());
+        for (Integer key : keys) {
+            assertEquals(1, bTree.searchRange(key*1.0, key*1.0).size());
         }
 
     }
@@ -353,17 +398,22 @@ public class BTreeTest {
 
         int numberOfTuples = 32;
 
-        List<Double> keys = new ArrayList<>();
+        List<Integer> keys = new ArrayList<>();
 
         for (int i = 0; i < numberOfTuples; ++i) {
-            keys.add(i * 1.0);
+            keys.add(i);
         }
 
         Collections.shuffle(keys);
 
-        for (Double key : keys) {
-            DataTuple dataTuple = new DataTuple(key);
-            bTree.insert(key, dataTuple);
+        for (Integer key : keys) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) key);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            bTree.insert(key*1.0, bytes);
         }
 
 //        bTree.printBtree();
@@ -373,9 +423,14 @@ public class BTreeTest {
         //Test template mode
         bTree.clearPayload();
 
-        for (Double key : keys) {
-            DataTuple dataTuple = new DataTuple(key);
-            bTree.insert(key, dataTuple);
+        for (Integer key : keys) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) key);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            bTree.insert(key*1.0, bytes);
         }
 
         assertEquals(numberOfTuples, bTree.searchRange(0.0, numberOfTuples*1.0).size());
@@ -391,21 +446,26 @@ public class BTreeTest {
 
         Random random = new Random();
 
-        List<Double> keys = new ArrayList<>();
+        List<Integer> keys = new ArrayList<>();
 
-        Double min = Double.MAX_VALUE;
+        Integer min = Integer.MAX_VALUE;
 
-        Double max = Double.MIN_VALUE;
+        Integer max = Integer.MIN_VALUE;
 
         for (int i = 0; i < numberOfTuples; ++i) {
-            keys.add(i * 1.0);
+            keys.add(i);
         }
 
         Collections.shuffle(keys);
 
-        for (Double key : keys) {
-            DataTuple dataTuple = new DataTuple(key);
-            bTree.insert(key, dataTuple);
+        for (Integer key : keys) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) key);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            bTree.insert(key*1.0, bytes);
         }
 
         Collections.sort(keys);
@@ -413,6 +473,9 @@ public class BTreeTest {
 //        bTree.printBtree();
 
         List<byte[]> tuples = bTree.searchRange(keys.get(300)*1.0, keys.get(512)*1.0);
+//        for (int i = 0; i < tuples.size(); ++i) {
+//            System.out.println(deserialize(tuples.get(i)));
+//        }
         assertEquals(213, tuples.size());
 
         tuples = bTree.searchRange(keys.get(1022)*1.0, keys.get(1023)*1.0);
@@ -432,23 +495,29 @@ public class BTreeTest {
 
         Random random = new Random();
 
-        List<Double> keys = new ArrayList<>();
+        List<Integer> keys = new ArrayList<>();
 
         for (int i = 0; i < numberOfTuples; ++i) {
             Integer key = random.nextInt();
-            keys.add(key * 1.0);
+            keys.add(key);
         }
 
-        for (Double key : keys) {
-            DataTuple dataTuple = new DataTuple(key);
-            bTree.insert(key, dataTuple);
+        for (Integer key : keys) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) key);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            bTree.insert(key, bytes);
         }
 
         bTree.clearPayload();
         BTreeLeafNode leaf = bTree.getLeftMostLeaf();
         while (leaf != null) {
             assertEquals(0, leaf.keyCount);
-            assertEquals(0, leaf.dataTuples.size());
+            assertEquals(0, leaf.tuples.size());
+            assertEquals(0, leaf.offsets.size());
             leaf = (BTreeLeafNode) leaf.rightSibling;
         }
     }
@@ -462,16 +531,21 @@ public class BTreeTest {
 
         Random random = new Random();
 
-        List<Double> keys = new ArrayList<>();
+        List<Integer> keys = new ArrayList<>();
 
         for (int i = 0; i < numberOfTuples; ++i) {
             Integer key = random.nextInt();
-            keys.add(key * 1.0);
+            keys.add(key);
         }
 
-        for (Double key : keys) {
-            DataTuple dataTuple = new DataTuple(key);
-            bTree.insert(key, dataTuple);
+        for (Integer key : keys) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) key);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            bTree.insert(key, bytes);
         }
 
 //        bTree.clearPayload();
@@ -494,7 +568,8 @@ public class BTreeTest {
         BTreeLeafNode leaf = bTree.getLeftMostLeaf();
         while (leaf != null) {
             assertEquals(0, leaf.keyCount);
-            assertEquals(0, leaf.dataTuples.size());
+            assertEquals(0, leaf.tuples.size());
+            assertEquals(0, leaf.offsets.size());
             leaf = (BTreeLeafNode) leaf.rightSibling;
         }
 

@@ -3,12 +3,8 @@ package indexingTopology.index;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import indexingTopology.common.data.DataSchema;
-import indexingTopology.common.data.DataTuple;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
-import indexingTopology.index.BTreeLeafNode;
-import indexingTopology.index.KryoLeafNodeSerializer;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
 
@@ -25,11 +21,6 @@ import static org.junit.Assert.assertEquals;
  * Created by acelzj on 1/4/17.
  */
 public class KryoLeafNodeSerializerTest {
-    DataSchema schema = new DataSchema();
-    public void setUp() {
-        schema.addIntField("a1");
-        schema.setPrimaryIndexField("a1");
-    }
 
     private List<String> fieldNames = new ArrayList<String>(Arrays.asList("user_id", "id_1", "id_2", "ts_epoch",
             "date", "time", "latitude", "longitude"));
@@ -47,18 +38,16 @@ public class KryoLeafNodeSerializerTest {
         BTreeLeafNode leaf = new BTreeLeafNode(config.BTREE_ORDER);
 
         for (int i = 0; i < 4; ++i) {
-//            List<Double> values = new ArrayList<>();
+            List<Double> values = new ArrayList<>();
 
-//            for (int j = 0; j < fieldNames.size(); ++j) {
-//                values.add((double) j);
-//            }
+            for (int j = 0; j < fieldNames.size(); ++j) {
+                values.add((double) j);
+            }
 
 
-//            byte[] bytes = serializeIndexValue(values);
+            byte[] bytes = serializeIndexValue(values);
 
-//            leaf.insertKeyTuples((double) i, bytes ,false);
-            DataTuple dataTuple = new DataTuple((double) i);
-            leaf.insertKeyTuples((double) i, dataTuple, false);
+            leaf.insertKeyTuples((double) i, bytes ,false);
         }
 
 
@@ -67,8 +56,6 @@ public class KryoLeafNodeSerializerTest {
 //        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
         Output output = new Output(200000, 2000000);
-
-        leaf.serializeDataTuples(schema);
 
         kryo.writeObject(output, leaf);
 
@@ -80,7 +67,7 @@ public class KryoLeafNodeSerializerTest {
 
         for (int i = 0; i < 1024; ++i) {
             leaf.acquireReadLock();
-            List<DataTuple> dataTuples = leaf.getSerializedTuplesWithinKeyRange((double) i, (double) i);
+            List<byte[]> serializedTuples = leaf.getTuplesWithinKeyRange((double) i, (double) i);
 //            leaf.releaseReadLock();
 //            for (int j = 0; j < serializedTuples.size(); ++j) {
 //                System.out.println(deserialize(serializedTuples.get(j)));
@@ -98,22 +85,18 @@ public class KryoLeafNodeSerializerTest {
         BTreeLeafNode leaf = new BTreeLeafNode(config.BTREE_ORDER);
 
         for (int i = 0; i < 64; ++i) {
-//            List<Double> values = new ArrayList<>();
-//
-//            for (int j = 0; j < fieldNames.size(); ++j) {
-//                values.add((double) j);
-//            }
+            List<Double> values = new ArrayList<>();
+
+            for (int j = 0; j < fieldNames.size(); ++j) {
+                values.add((double) j);
+            }
 
 
-//            byte[] bytes = serializeIndexValue(values);
-            DataTuple dataTuple = new DataTuple((double) i);
-            leaf.insertKeyTuples((double) i, dataTuple, false);
-            leaf.insertKeyTuples((double) i, dataTuple, false);
-            leaf.insertKeyTuples((double) i, dataTuple, false);
+            byte[] bytes = serializeIndexValue(values);
 
-//            leaf.insertKeyTuples((double) i, bytes ,false);
-//            leaf.insertKeyTuples((double) i, bytes ,false);
-//            leaf.insertKeyTuples((double) i, bytes ,false);
+            leaf.insertKeyTuples((double) i, bytes ,false);
+            leaf.insertKeyTuples((double) i, bytes ,false);
+            leaf.insertKeyTuples((double) i, bytes ,false);
         }
 
 
@@ -122,8 +105,6 @@ public class KryoLeafNodeSerializerTest {
 //        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
         Output output = new Output(200000, 2000000);
-
-        leaf.serializeDataTuples(schema);
 
         kryo.writeObject(output, leaf);
 
@@ -137,13 +118,13 @@ public class KryoLeafNodeSerializerTest {
 
         for (int i = 0; i < 64; ++i) {
             leaf.acquireReadLock();
-            List<byte[]> serializedTuples = leaf.getSerializedTuplesWithinKeyRange((double) i, (double) i);
+            List<byte[]> serializedTuples = leaf.getTuplesWithinKeyRange((double) i, (double) i);
 
             assertEquals(3, serializedTuples.size());
 
-//            for (int j = 0; j < serializedTuples.size(); ++j) {
-//                deserialize(serializedTuples.get(j));
-//            }
+            for (int j = 0; j < serializedTuples.size(); ++j) {
+                deserialize(serializedTuples.get(j));
+            }
 //            leaf.releaseReadLock();
 //            for (int j = 0; j < serializedTuples.size(); ++j) {
 //                System.out.println(deserialize(serializedTuples.get(j)));

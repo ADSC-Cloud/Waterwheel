@@ -29,7 +29,6 @@ public class OldDataRemovalTest {
         if (folder.exists()) {
             File[] files = folder.listFiles();
             if (files.length == 0) {
-                System.out.println("Folder empty");
                 return;
             }
             else {
@@ -49,9 +48,6 @@ public class OldDataRemovalTest {
                     }
                 }
             }
-        }
-        else{
-            System.out.println("Can not find Folders");
         }
     }
 
