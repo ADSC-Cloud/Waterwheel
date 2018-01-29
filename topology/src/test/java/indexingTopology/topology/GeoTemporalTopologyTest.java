@@ -56,6 +56,7 @@ public class GeoTemporalTopologyTest extends TestCase {
             config.metadataDir = "./target/tmp";
             config.HDFSFlag = false;
             config.CHUNK_SIZE = 1024 * 1024;
+            config.previousTime = Integer.MAX_VALUE;
             System.out.println("dataChunkDir is set to " + config.dataChunkDir);
             cluster = new LocalCluster();
             setupDone = true;
@@ -83,6 +84,7 @@ public class GeoTemporalTopologyTest extends TestCase {
         rawSchema.addDoubleField("x");
         rawSchema.addDoubleField("y");
         rawSchema.addLongField("timestamp");
+        rawSchema.setTemporalField("timestamp");
 
         DataSchema schema = rawSchema.duplicate();
         schema.addIntField("zcode");
@@ -236,7 +238,8 @@ public class GeoTemporalTopologyTest extends TestCase {
         rawSchema.addIntField("id");
         rawSchema.addDoubleField("x");
         rawSchema.addDoubleField("y");
-        rawSchema.addLongField("timestamp");
+        rawSchema.addLongField("timestamp");;
+        rawSchema.setTemporalField("timestamp");
 
         DataSchema schema = rawSchema.duplicate();
         schema.addIntField("zcode");

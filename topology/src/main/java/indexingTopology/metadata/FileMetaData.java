@@ -19,4 +19,16 @@ public class FileMetaData {
         this.keyRangeUpperBound = keyRangeUpperBound;
         this.keyRangeLowerBound = keyRangeLowerBound;
     }
+
+    public long getEndTime(){
+        return endTime;
+    }
+
+    public long getStartTime(){
+        return startTime;
+    }
+
+    public String getFilename(){
+        return filename;
+    }
 }

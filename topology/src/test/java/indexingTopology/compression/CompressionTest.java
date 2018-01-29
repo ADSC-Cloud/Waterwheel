@@ -22,5 +22,14 @@ public class CompressionTest extends TestCase {
         byte[] decompressed = decompressor.decompress(compressed);
 
         assertTrue(Arrays.equals(bytes, decompressed));
+
+        Compressor compressorWithLz4 = CompressorFactory.compressor(CompressorFactory.Algorithm.Snappy);
+        byte[] compressedWithLz4 = compressorWithLz4.compress(bytes);
+
+        Decompressor decompressorWithLz4 = CompressorFactory.decompressor(CompressorFactory.Algorithm.Snappy);
+
+        byte[] decompressedWithLz4 = decompressorWithLz4.decompress(compressedWithLz4);
+
+        assertTrue(Arrays.equals(bytes, decompressedWithLz4));
     }
 }

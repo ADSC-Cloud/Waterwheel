@@ -1,14 +1,10 @@
 package indexingTopology.topology;
 
-import indexingTopology.bolt.QueryCoordinatorWithQueryReceiverServerBolt;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers;
+import indexingTopology.api.client.*;
+import indexingTopology.bolt.*;
+
 import indexingTopology.common.aggregator.*;
-import indexingTopology.api.client.IngestionClientBatchMode;
-import indexingTopology.api.client.QueryClient;
-import indexingTopology.api.client.QueryRequest;
-import indexingTopology.api.client.QueryResponse;
-import indexingTopology.bolt.InputStreamReceiverBolt;
-import indexingTopology.bolt.InputStreamReceiverBoltServer;
-import indexingTopology.bolt.QueryCoordinatorBolt;
 import indexingTopology.common.logics.DataTupleEquivalentPredicateHint;
 import indexingTopology.common.logics.DataTupleMapper;
 import indexingTopology.common.logics.DataTuplePredicate;
@@ -17,7 +13,21 @@ import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 import indexingTopology.util.*;
+import indexingTopology.util.shape.Point;
+import indexingTopology.util.shape.Rectangle;
+import indexingTopology.util.taxi.Car;
+import indexingTopology.util.taxi.City;
+import indexingTopology.util.taxi.TrajectoryGenerator;
+import indexingTopology.util.taxi.TrajectoryMovingGenerator;
+import info.batey.kafka.unit.KafkaUnit;
 import junit.framework.TestCase;
+import kafka.producer.KeyedMessage;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.LongSerializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
 import org.apache.storm.generated.KillOptions;
@@ -26,12 +36,12 @@ import org.apache.storm.generated.StormTopology;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
 
+import org.jets3t.service.multi.ThreadWatcher;
 import org.junit.Test;
 
 
@@ -46,9 +56,17 @@ public class TopologyTest extends TestCase {
 
     LocalCluster cluster;
 
+    Producer<String, String> producer = null;
+    int totalNumber = 0;
+    int meetRequirements = 0;
+
     boolean setupDone = false;
 
     boolean tearDownDone = false;
+
+    transient KafkaUnit kafkaUnitServer;
+    transient KafkaUnit kafkaUnitServer2;
+    transient KafkaUnit kafkaUnitServer3;
 
     public void setUp() {
         if (!setupDone) {
@@ -62,6 +80,7 @@ public class TopologyTest extends TestCase {
             config.CHUNK_SIZE = 2 * 1024 * 1024;
             config.HDFSFlag = false;
             config.HDFSFlag = false;
+            config.previousTime = Integer.MAX_VALUE;
             System.out.println("dataChunkDir is set to " + config.dataChunkDir);
             cluster = new LocalCluster();
             setupDone = true;
@@ -79,12 +98,17 @@ public class TopologyTest extends TestCase {
             tearDownDone = true;
         }
     }
+
+
+
+
     @Test
     public void testSimpleTopologyKeyRangeQuery() throws InterruptedException {
         DataSchema schema = new DataSchema();
         schema.addIntField("a1");
         schema.addDoubleField("a2");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.addVarcharField("a4", 100);
         schema.setPrimaryIndexField("a1");
 
@@ -97,6 +121,8 @@ public class TopologyTest extends TestCase {
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
 
         assertTrue(config != null);
+
+
 
         InputStreamReceiverBolt inputStreamReceiverBolt = new InputStreamReceiverBoltServer(schema, ingestionPort, config);
         QueryCoordinatorBolt<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServerBolt<>(minIndex, maxIndex, queryPort,
@@ -121,13 +147,13 @@ public class TopologyTest extends TestCase {
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(50000);
+            ingestionClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
         final QueryClient queryClient = new QueryClient("localhost", queryPort);
         try {
-            queryClient.connectWithTimeout(50000);
+            queryClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -204,6 +230,7 @@ public class TopologyTest extends TestCase {
         schema.addIntField("a1");
         schema.addDoubleField("a2");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.addVarcharField("a4", 100);
         schema.setPrimaryIndexField("a1");
 
@@ -238,13 +265,13 @@ public class TopologyTest extends TestCase {
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(50000);
+            ingestionClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
         final QueryClient queryClient = new QueryClient("localhost", queryPort);
         try {
-            queryClient.connectWithTimeout(50000);
+            queryClient.connectWithTimeout(20000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -320,6 +347,7 @@ public class TopologyTest extends TestCase {
         schema.addIntField("a1");
         schema.addDoubleField("a2");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.addVarcharField("a4", 100);
         schema.setPrimaryIndexField("a1");
 
@@ -356,13 +384,13 @@ public class TopologyTest extends TestCase {
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(50000);
+            ingestionClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
         final QueryClient queryClient = new QueryClient("localhost", queryPort);
         try {
-            queryClient.connectWithTimeout(50000);
+            queryClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -469,6 +497,7 @@ public class TopologyTest extends TestCase {
         schema.addIntField("a1");
         schema.addDoubleField("a2");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.addVarcharField("a4", 100);
         schema.setPrimaryIndexField("a1");
 
@@ -505,13 +534,13 @@ public class TopologyTest extends TestCase {
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(50000);
+            ingestionClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
         final QueryClient queryClient = new QueryClient("localhost", queryPort);
         try {
-            queryClient.connectWithTimeout(50000);
+            queryClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -619,6 +648,7 @@ public class TopologyTest extends TestCase {
         schema.addIntField("a1");
         schema.addDoubleField("a2");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.addVarcharField("a4", 100);
         schema.setPrimaryIndexField("a1");
 
@@ -655,13 +685,13 @@ public class TopologyTest extends TestCase {
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(50000);
+            ingestionClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
         final QueryClient queryClient = new QueryClient("localhost", queryPort);
         try {
-            queryClient.connectWithTimeout(50000);
+            queryClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -760,6 +790,7 @@ public class TopologyTest extends TestCase {
         rawSchema.addIntField("a1");
         rawSchema.addDoubleField("a2");
         rawSchema.addLongField("timestamp");
+        rawSchema.setTemporalField("timestamp");
         rawSchema.addVarcharField("a4", 100);
         rawSchema.setPrimaryIndexField("a1");
 
@@ -799,13 +830,13 @@ public class TopologyTest extends TestCase {
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, rawSchema, 1024);
         try {
-            ingestionClient.connectWithTimeout(50000);
+            ingestionClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
         final QueryClient queryClient = new QueryClient("localhost", queryPort);
         try {
-            queryClient.connectWithTimeout(50000);
+            queryClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -902,6 +933,7 @@ public class TopologyTest extends TestCase {
         schema.addIntField("a1");
         schema.addDoubleField("a2");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.addVarcharField("a4", 100);
         schema.setPrimaryIndexField("a1");
 
@@ -936,13 +968,13 @@ public class TopologyTest extends TestCase {
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(50000);
+            ingestionClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
         final QueryClient queryClient = new QueryClient("localhost", queryPort);
         try {
-            queryClient.connectWithTimeout(50000);
+            queryClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -1032,6 +1064,7 @@ public class TopologyTest extends TestCase {
         schema.addIntField("a1");
         schema.addDoubleField("a2");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.addVarcharField("a4", 100);
         schema.setPrimaryIndexField("a1");
 
@@ -1066,13 +1099,13 @@ public class TopologyTest extends TestCase {
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(50000);
+            ingestionClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
         final QueryClient queryClient = new QueryClient("localhost", queryPort);
         try {
-            queryClient.connectWithTimeout(50000);
+            queryClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -1151,6 +1184,7 @@ public class TopologyTest extends TestCase {
         schema.addIntField("a1");
         schema.addDoubleField("a2");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.addVarcharField("a4", 100);
         schema.setPrimaryIndexField("a1");
 
@@ -1181,7 +1215,7 @@ public class TopologyTest extends TestCase {
         cluster.submitTopology("testSimpleTopologyTemporalQuery", conf, topology);
 
         QueryClient client = new QueryClient("localhost", queryPort);
-        client.connectWithTimeout(50000);
+        client.connectWithTimeout(10000);
         DataSchema querySchema = client.querySchema();
 
         assertEquals(schema.toString(), querySchema.toString());
@@ -1191,7 +1225,7 @@ public class TopologyTest extends TestCase {
         KillOptions killOptions = new KillOptions();
         killOptions.set_wait_secs(0);
         cluster.killTopologyWithOpts("testSimpleTopologyTemporalQuery", killOptions);
-
+        client.close();
         socketPool.returnPort(ingestionPort);
         socketPool.returnPort(queryPort);
     }
@@ -1202,6 +1236,7 @@ public class TopologyTest extends TestCase {
         schema.addIntField("a1");
         schema.addDoubleField("a2");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.addVarcharField("a4", 100);
         schema.setPrimaryIndexField("a1");
 
@@ -1238,13 +1273,13 @@ public class TopologyTest extends TestCase {
 
         final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, schema, 1024);
         try {
-            ingestionClient.connectWithTimeout(50000);
+            ingestionClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }
         final QueryClient queryClient = new QueryClient("localhost", queryPort);
         try {
-            queryClient.connectWithTimeout(50000);
+            queryClient.connectWithTimeout(10000);
         } catch (IOException e) {
             e.printStackTrace();
         }

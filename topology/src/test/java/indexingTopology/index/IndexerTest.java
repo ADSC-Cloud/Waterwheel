@@ -61,9 +61,10 @@ public class IndexerTest extends TestCase implements Observer{
         schema.addIntField("zcode");
         schema.addVarcharField("payload", payloadSize);
         schema.setPrimaryIndexField("zcode");
+        schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
 
         DataSchema schemaWithTimestamp = schema.duplicate();
-        schemaWithTimestamp.addLongField("timestamp");
 
         Indexer indexer = indexerBuilder
                 .setTaskId(0)
@@ -115,8 +116,9 @@ public class IndexerTest extends TestCase implements Observer{
         schema.addVarcharField("payload", payloadSize);
         schema.setPrimaryIndexField("zcode");
 
+        schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         DataSchema schemaWithTimestamp = schema.duplicate();
-        schemaWithTimestamp.addLongField("timestamp");
 
         Indexer indexer = indexerBuilder
                 .setTaskId(0)

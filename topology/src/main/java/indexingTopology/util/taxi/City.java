@@ -33,12 +33,23 @@ public class City implements Serializable {
     }
 
     public Intervals getZCodeIntervalsInARectagle(double x1, double x2, double y1, double y2) {
-        if(x1 > x2 || y1 > y2)
-            throw new IllegalArgumentException("Illegal argument for a rectangle.");
-        final int xPartition1 = xRangePartition.getPartition(x1);
-        final int xPartition2 = xRangePartition.getPartition(x2);
-        final int yPartition1 = yRangePartition.getPartition(y1);
-        final int yPartition2 = yRangePartition.getPartition(y2);
+        final int xPartition1;
+        final int xPartition2;
+        final int yPartition1;
+        final int yPartition2;
+        if(x1 > x2 && y1 < y2){
+            xPartition1 = xRangePartition.getPartition(x2);
+            xPartition2 = xRangePartition.getPartition(x1);
+            yPartition1 = yRangePartition.getPartition(y2);
+            yPartition2 = yRangePartition.getPartition(y1);
+        }
+        else{
+            xPartition1 = xRangePartition.getPartition(x1);
+            xPartition2 = xRangePartition.getPartition(x2);
+            yPartition1 = yRangePartition.getPartition(y1);
+            yPartition2 = yRangePartition.getPartition(y2);
+        }
+//            throw new IllegalArgumentException("Illegal argument for a rectangle.");
         return zOrderCoding.getIntervalsOfCodesInRectangle(xPartition1, xPartition2, yPartition1, yPartition2);
     }
 

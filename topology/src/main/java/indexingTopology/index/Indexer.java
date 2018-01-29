@@ -73,6 +73,8 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
     private String indexField;
 
+    private String temporalField;
+
     private Kryo kryo;
 
     private Double minIndexValue;
@@ -148,6 +150,8 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
         queryThreads = new ArrayList<>();
 
         this.indexField = schema.getIndexField();
+
+        this.temporalField = schema.getTemporalField();
 
         this.schema = schema.duplicate();
 
@@ -489,7 +493,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
                 for (DataTuple dataTuple: drainer) {
                     try {
-                        Long timeStamp = (Long) schema.getValue("timestamp", dataTuple);
+                        Long timeStamp = (Long) schema.getTemporalValue(dataTuple);
 
                         DataType indexValue = (DataType) schema.getIndexValue(dataTuple);
 
@@ -713,7 +717,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
                 for (int i = 0; i < serializedTuples.size(); ++i) {
                     DataTuple dataTuple = schema.deserializeToDataTuple(serializedTuples.get(i));
-                    Long timestamp = (Long) schema.getValue("timestamp", dataTuple);
+                    Long timestamp = (Long) schema.getTemporalValue(dataTuple);
                     if (timestamp >= startTimestamp && timestamp <= endTimestamp) {
                         if (predicate == null || predicate.test(dataTuple)) {
                             dataTuples.add(dataTuple);
