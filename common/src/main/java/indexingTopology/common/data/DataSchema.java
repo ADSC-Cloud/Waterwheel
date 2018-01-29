@@ -1,9 +1,11 @@
 package indexingTopology.common.data;
 
+import com.alibaba.fastjson.JSONObject;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -24,7 +26,7 @@ public class DataSchema implements Serializable {
 
 
 
-        Object readFromString(String string) {
+        Object readFromString(String string) throws Exception{
             if (type.equals(Integer.class)) {
                 return Integer.parseInt(string);
             }else if(type.equals(Double.class)) {
@@ -52,7 +54,7 @@ public class DataSchema implements Serializable {
 
     private int tupleLength = 0;
 
-    public DataSchema(List<String> fieldNames,List<Class> valueTypes, String indexField) {
+    public DataSchema(List<String> fieldNames,List<Class> valueTypes, String indexField, String temporalField) {
         assert fieldNames.size()==valueTypes.size() : "number of fields should be " +
                 "same as the number of value types provided";
         for(int i = 0; i < valueTypes.size(); i++) {
@@ -67,16 +69,24 @@ public class DataSchema implements Serializable {
             }
         }
         this.indexField = indexField;
+        this.temporalField = temporalField;
     }
 
     private final Map<String, Integer> dataFieldNameToIndex = new HashMap<>();
     private final List<String> fieldNames = new ArrayList<>();
     private final List<DataType> dataTypes = new ArrayList<>();
     private String indexField;
+    private String temporalField;
+    private List<Boolean> valuesNull  = new ArrayList<>();
 
     public void setPrimaryIndexField(String name) {
         indexField = name;
     }
+
+    public void setTemporalField(String name){
+        temporalField = name;
+    }
+
 
     public void addDoubleField(String name) {
         final DataType dataType = new DataType(Double.class, Double.BYTES);
@@ -114,55 +124,124 @@ public class DataSchema implements Serializable {
         dataTypes.add(dataType);
     }
 
-    public byte[] serializeTuple(DataTuple t) {
+    public boolean checkValueNull(){
+        return true;
+    }
+
+    public byte[] serializeTuple(DataTuple t)  throws KryoException{
         Output output = new Output(1000, 2000000);
-        for (int i = 0; i < dataTypes.size(); i++) {
-            if (dataTypes.get(i).type.equals(Double.class)) {
-                output.writeDouble((double)t.get(i));
-            } else if (dataTypes.get(i).type.equals(String.class)) {
-//                output.writeString((String)t.get(i));
-                byte[] bytes = ((String) t.get(i)).getBytes();
-                output.writeInt(bytes.length);
-                output.write(bytes);
-            } else if (dataTypes.get(i).type.equals(Integer.class)) {
-                output.writeInt((int)t.get(i));
-            } else if (dataTypes.get(i).type.equals(Long.class)) {
-                output.writeLong((long)t.get(i));
-            } else {
-                throw new RuntimeException("Not supported data type!" );
-            }
+        for (int i = 0; i < dataTypes.size(); i++) { // if value is null,go else
+//            try{
+                if (dataTypes.get(i).type.equals(Double.class)) {
+                    if(t.get(i) == null){
+                        output.writeDouble(-1.0);
+                    }else{
+                        output.writeDouble((double)t.get(i));
+                    }
+                } else if (dataTypes.get(i).type.equals(String.class)) {
+                    if(t.get(i) == null){
+                        String nullTobyte = "null";
+                        byte[] bytes = nullTobyte.getBytes();
+                        output.writeInt(bytes.length);
+                        output.write(bytes);
+                    }
+                    else{
+                        byte[] bytes = ((String) t.get(i)).getBytes();
+                        if(bytes.length == 0){
+                            output.writeInt(0);
+                            output.write(0);
+                        }else{
+                            bytes = ((String) t.get(i)).getBytes();
+                            output.writeInt(bytes.length);
+                            output.write(bytes);
+                        }
+                    }
+                } else if (dataTypes.get(i).type.equals(Integer.class)) {
+                    if(t.get(i) == null){
+                        output.writeInt(-1);
+                    }else{
+                        output.writeInt((int)t.get(i));
+                    }
+                } else if (dataTypes.get(i).type.equals(Long.class)) {
+                    if(t.get(i) == null){
+                        output.writeLong(-1);
+                    }else{
+                        output.writeLong((long)t.get(i));
+                    }
+                } else {
+                    throw new RuntimeException("Not supported data type!" );
+                }
+//            }catch (Exception e){
+//                return null;
+//            }
         }
         byte[] bytes = output.toBytes();
         output.close();
         return bytes;
     }
 
-    public DataTuple deserializeToDataTuple(byte[] b) {
+    public DataTuple deserializeToDataTuple(byte[] b) throws KryoException{
         DataTuple dataTuple = new DataTuple();
         Input input = new Input(b);
         for (int i = 0; i < dataTypes.size(); i++) {
+//            try{
 
-            if (dataTypes.get(i).type.equals(Double.class)) {
-                dataTuple.add(input.readDouble());
-            } else if (dataTypes.get(i).type.equals(String.class)) {
-//                dataTuple.add(input.readString());
-                int length = input.readInt();
-                byte[] bytes = input.readBytes(length);
-                dataTuple.add(new String(bytes));
-//                dataTuple.add(input.re);
-            } else if (dataTypes.get(i).type.equals(Integer.class)) {
-                dataTuple.add(input.readInt());
-            } else if (dataTypes.get(i).type.equals(Long.class)) {
-                dataTuple.add(input.readLong());
-            } else {
-                throw new RuntimeException("Only classes supported till now are string and double");
-            }
+                if (dataTypes.get(i).type.equals(Double.class)) {
+                    double byteToDouble = input.readDouble();
+                    if(byteToDouble == -1.0){
+                        dataTuple.add(null);
+                    }else{
+                        dataTuple.add(byteToDouble);
+                    }
+                } else if (dataTypes.get(i).type.equals(String.class)) {
+                    int length = input.readInt();
+                    byte[] bytes;
+                    if(length == 0){
+                        bytes = input.readBytes(1);
+                        dataTuple.add("");
+                    }
+                    else{
+//                    System.out.println("attribute :" + getFieldName(i));
+//                    System.out.println("length :"+length);
+                        bytes = input.readBytes(length);
+                        String buteToString = new String(bytes);
+                        if(buteToString.equals("null")){
+                            dataTuple.add(null);
+                        }
+                        else{
+                            dataTuple.add(buteToString);
+                        }
+                    }
+                } else if (dataTypes.get(i).type.equals(Integer.class)) {
+                    int byteToInt = input.readInt();
+                    if(byteToInt == -1){
+                        dataTuple.add(null);
+                    }else{
+                        dataTuple.add(byteToInt);
+                    }
+                } else if (dataTypes.get(i).type.equals(Long.class)) {
+                    long byteToLong = input.readLong();
+                    if(byteToLong == -1){
+                        dataTuple.add(null);
+                    }else{
+                        dataTuple.add(byteToLong);
+                    }
+                } else {
+                    throw new RuntimeException("Only classes supported till now are string and double");
+                }
+//            }catch (KryoException e){
+//                return null;
+//            }
         }
         return dataTuple;
     }
 
     public String getIndexField() {
         return indexField;
+    }
+
+    public String getTemporalField(){
+        return temporalField;
     }
 
     public String getFieldName(int index) {
@@ -182,6 +261,10 @@ public class DataSchema implements Serializable {
         return getDataType(indexField);
     }
 
+    public DataType getTemporalType(){
+        return getDataType(temporalField);
+    }
+
     public int getFieldIndex(String fieldName) {
         return dataFieldNameToIndex.get(fieldName);
     }
@@ -194,19 +277,40 @@ public class DataSchema implements Serializable {
         DataSchema ret = new DataSchema();
         ret.dataTypes.addAll(dataTypes);
         ret.indexField = indexField;
+        ret.temporalField = temporalField;
         ret.dataFieldNameToIndex.putAll(dataFieldNameToIndex);
         ret.fieldNames.addAll(fieldNames);
         return ret;
     }
 
     public Object getValue(String fieldName, DataTuple dataTuple) {
-        final int offset = dataFieldNameToIndex.get(fieldName);
-        return dataTuple.get(offset);
+        try{
+            final int offset = dataFieldNameToIndex.get(fieldName);
+            return dataTuple.get(offset);
+        }catch (Exception e){
+            System.out.println("The fieldName " + fieldName + " value is null!return null");
+            return null;
+        }
     }
 
     public Object getIndexValue(DataTuple dataTuple) {
-        final int indexOffset = dataFieldNameToIndex.get(indexField);
-        return dataTuple.get(indexOffset);
+        try{
+            final int indexOffset = dataFieldNameToIndex.get(indexField);
+            return dataTuple.get(indexOffset);
+        }catch (Exception e){
+            System.out.println("The indexField " + indexField + " value is null!return null");
+            return null;
+        }
+    }
+
+    public Object getTemporalValue(DataTuple dataTuple){
+        try{
+            final int temporalOffset = dataFieldNameToIndex.get(temporalField);
+            return dataTuple.get(temporalOffset);
+        }catch (Exception e){
+            System.out.println("The temporalField " + temporalField + " value is null!return null");
+            return null;
+        }
     }
 
     public int getTupleLength() {
@@ -223,6 +327,7 @@ public class DataSchema implements Serializable {
                     dataTypes.get(i).length);
         }
         ret += String.format("index field: %s\n", indexField);
+        ret += String.format("temporal field: %s\n", temporalField);
         return ret;
     }
 
@@ -246,12 +351,14 @@ public class DataSchema implements Serializable {
 
         if (this.indexField != null && schema.indexField !=null && ! this.indexField.equals(schema.indexField))
             return false;
+        if (this.temporalField != null && schema.temporalField !=null && ! this.temporalField.equals(schema.temporalField))
+            return false;
 
         return true;
     }
 
 
-    public List<DataTuple> getTuplesFromJsonArray(JSONArray array) {
+    public List<DataTuple> getTuplesFromJsonArray(JSONArray array) throws ParseException{
         List<DataTuple> dataTuples = new ArrayList<>();
         for (Object jsonObject : array) {
             DataTuple dataTuple = getTupleFromJsonObject((JSONObject) jsonObject);
@@ -260,16 +367,43 @@ public class DataSchema implements Serializable {
         return dataTuples;
     }
 
-    public DataTuple getTupleFromJsonObject(JSONObject object) {
+    public DataTuple getTupleFromJsonObject(JSONObject object) throws ParseException{
         int len = getNumberOfFields();
         DataTuple dataTuple = new DataTuple();
         String objectStr = "";
         Object attribute = new Object();
+        if(object == null){
+            return null;
+        }
+        Set set = object.keySet();
+        Iterator iterator = set.iterator();
+        while (iterator.hasNext()){
+            String obj = (String)iterator.next();
+            if(!dataFieldNameToIndex.containsKey(obj)){
+                return null;
+            }
+        }
         for (int i = 0; i < len; i++) {
-            objectStr = object.get(getFieldName(i)).toString();
-            attribute = dataTypes.get(i).readFromString(objectStr);
+            if(object.get(getFieldName(i)) == null){
+                attribute = null;
+            }
+            else{
+                objectStr = object.get(getFieldName(i)).toString();
+                try {
+                    attribute = dataTypes.get(i).readFromString(objectStr);
+                } catch (Exception e) {
+                    System.out.println("get tuple from json failed!The json is :" + object);
+                    return null;
+                }
+            }
             dataTuple.add(attribute);
         }
+        return dataTuple;
+    }
+
+    public DataTuple addTupleAttributeZcode(DataTuple dataTuple) throws ParseException{
+        int len = getNumberOfFields();
+
         return dataTuple;
     }
 
@@ -277,10 +411,37 @@ public class DataSchema implements Serializable {
         int len = getNumberOfFields();
         JSONObject jsonObject = new JSONObject();
         for (int i = 0; i < len; i++) {
-            jsonObject.element(getFieldName(i), tuple.get(i));
+            jsonObject.put(getFieldName(i), tuple.get(i));
         }
         return jsonObject;
     }
 
+
+    public JSONObject getJsonFromDataTupleWithoutZcode(DataTuple tuple) { // filter zcode attribute and alter timestamp schema
+        int len = getNumberOfFields();
+        JSONObject jsonObject = new JSONObject();
+        for (int i = 0; i < len; i++) {
+            if(getFieldName(i).equals("zcode")){
+                continue;
+            }
+            if(getFieldName(i).equals(temporalField)){
+                Date dateOld = new Date((long)tuple.get(i)); // 根据long类型的毫秒数生命一个date类型的时间
+                String sDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(dateOld); // 把date类型的时间转换为string
+                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                Date date = null; // 把String类型转换为Date类型
+                try {
+                    date = formatter.parse(sDateTime);
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+                String currentTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(date);
+                jsonObject.put(getFieldName(i), currentTime);
+            }
+            else{
+                jsonObject.put(getFieldName(i), tuple.get(i));
+            }
+        }
+        return jsonObject;
+    }
 
 }
