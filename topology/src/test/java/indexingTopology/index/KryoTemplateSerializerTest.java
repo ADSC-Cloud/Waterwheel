@@ -3,14 +3,13 @@ package indexingTopology.index;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import indexingTopology.common.data.DataTuple;
-import indexingTopology.config.TopologyConfig;
+import indexingTopology.common.MemChunk;
 import indexingTopology.common.data.DataSchema;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.filesystem.FileSystemHandler;
 import indexingTopology.filesystem.HdfsFileSystemHandler;
 import indexingTopology.filesystem.LocalFileSystemHandler;
-import indexingTopology.common.MemChunk;
 import indexingTopology.util.taxi.Car;
 import indexingTopology.util.taxi.City;
 import indexingTopology.util.taxi.TrajectoryGenerator;
@@ -27,14 +26,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-
 /**
  * Created by acelzj on 1/4/17.
  */
 public class KryoTemplateSerializerTest extends TestCase {
-
-    DataSchema schema = new DataSchema();
 
     List<String> fieldNames = new ArrayList<String>(Arrays.asList("id", "zcode", "payload"));
     List<Class> valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, String.class));
@@ -42,8 +37,6 @@ public class KryoTemplateSerializerTest extends TestCase {
     private TopologyConfig config = new TopologyConfig();
 
     public void setUp() {
-        schema.addIntField("a1");
-        schema.setPrimaryIndexField("a1");
         try {
             Runtime.getRuntime().exec("mkdir -p ./target/tmp");
         } catch (IOException e) {
@@ -118,20 +111,17 @@ public class KryoTemplateSerializerTest extends TestCase {
         for (int i = 0; i < numTuples; ++i) {
             List<Object> values = new ArrayList<>();
             Car car = generator.generate();
-//            values.add((double) car.id);
-//            values.add((double) city.getZCodeForALocation(car.x, car.y));
-//            values.add(new String(new char[payloadSize]));
-//            values.add(timestamp);
-//            byte[] bytes = null;
-//            bytes = serializeIndexValue(values);
-            int zcode = city.getZCodeForALocation(car.x, car.y);
-            DataTuple dataTuple = new DataTuple(zcode);
-            indexedData.insert(zcode, dataTuple);
-//            indexedData.insert((double) car.id, bytes);
+            values.add((double) car.id);
+            values.add((double) city.getZCodeForALocation(car.x, car.y));
+            values.add(new String(new char[payloadSize]));
+            values.add(timestamp);
+            byte[] bytes = null;
+            bytes = serializeIndexValue(values);
+            indexedData.insert((double) car.id, bytes);
         }
 
 
-        indexedData.serializeLeaves(schema);
+        indexedData.serializeLeaves();
 
         Output output = new Output(500000);
 
@@ -153,18 +143,19 @@ public class KryoTemplateSerializerTest extends TestCase {
     public void testTemplateAndLeaveDeserialization() throws IOException, UnsupportedGenericException {
 
 
-//        DataSchema schema = new DataSchema();
-//        schema.addVarcharField("id", 32);
-//        schema.addVarcharField("veh_no", 10);
-//        schema.addDoubleField("lon");
-//        schema.addDoubleField("lat");
-//        schema.addIntField("car_status");
-//        schema.addDoubleField("speed");
-//        schema.addVarcharField("position_type", 10);
-//        schema.addVarcharField("update_time", 32);
-//        schema.addIntField("zcode");
-//        schema.addLongField("timestamp");
-//        schema.setPrimaryIndexField("zcode");
+        DataSchema schema = new DataSchema();
+        schema.addVarcharField("id", 32);
+        schema.addVarcharField("veh_no", 10);
+        schema.addDoubleField("lon");
+        schema.addDoubleField("lat");
+        schema.addIntField("car_status");
+        schema.addDoubleField("speed");
+        schema.addVarcharField("position_type", 10);
+        schema.addVarcharField("update_time", 32);
+        schema.addIntField("zcode");
+        schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
+        schema.setPrimaryIndexField("zcode");
 
 
         final int payloadSize = 10;
@@ -197,20 +188,17 @@ public class KryoTemplateSerializerTest extends TestCase {
             BTree indexedData = new BTree(config.BTREE_ORDER, config);
 
             for (int i = 0; i < numTuples; ++i) {
-//                List<Object> values = new ArrayList<>();
+                List<Object> values = new ArrayList<>();
                 Car car = generator.generate();
-//                values.add((double) car.id);
+                values.add((double) car.id);
 //                values.add((double) city.getZCodeForALocation(car.x, car.y));
-//                values.add((double) i);
-//                values.add(new String(new char[payloadSize]));
-//                values.add(timestamp);
-//                byte[] bytes = null;
-//                bytes = serializeIndexValue(values);
+                values.add((double) i);
+                values.add(new String(new char[payloadSize]));
+                values.add(timestamp);
+                byte[] bytes = null;
+                bytes = serializeIndexValue(values);
 //                indexedData.insert((double) city.getZCodeForALocation(car.x, car.y), bytes);
-//                indexedData.insert(i, bytes);
-                int zcode = city.getZCodeForALocation(car.x, car.y);
-                DataTuple dataTuple = new DataTuple(zcode);
-                indexedData.insert(zcode, dataTuple);
+                indexedData.insert(i, bytes);
             }
 
 //            System.out.println("Used : " + (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()));
@@ -219,7 +207,7 @@ public class KryoTemplateSerializerTest extends TestCase {
 
 
 
-            byte[] leavesInBytes = indexedData.serializeLeaves(schema);
+            byte[] leavesInBytes = indexedData.serializeLeaves();
 
             Output output = new Output(5000000, 20000000);
 
@@ -364,18 +352,18 @@ public class KryoTemplateSerializerTest extends TestCase {
 
                 long tuplgGetStart = System.currentTimeMillis();
 
-                List<byte[]> tuplesInKeyRange = leafNode.getSerializedTuplesWithinKeyRange(0, 100000);
+                List<byte[]> tuplesInKeyRange = leafNode.getTuplesWithinKeyRange(0, 100000);
 
 //                System.out.println(offset);
 
                 for (int i = 0 ; i < tuplesInKeyRange.size(); ++i) {
-                    schema.deserializeToDataTuple(tuplesInKeyRange.get(i));
+                    deserialize(tuplesInKeyRange.get(i));
 //                    schema.deserializeToDataTuple(tuplesInKeyRange.get(i)).toDataTypes();
                 }
 
 //                System.out.println("******");
 
-                list.addAll(leafNode.getSerializedTuplesWithinKeyRange(Integer.MIN_VALUE, Integer.MAX_VALUE));
+                list.addAll(leafNode.getTuplesWithinKeyRange(Integer.MIN_VALUE, Integer.MAX_VALUE));
 
                 getTupleTime += (System.currentTimeMillis() - tuplgGetStart);
             }
@@ -460,26 +448,24 @@ public class KryoTemplateSerializerTest extends TestCase {
         BTree indexedData = new BTree(config.BTREE_ORDER, config);
 
         for (int i = 0; i < numTuples; ++i) {
-//            List<Object> values = new ArrayList<>();
+            List<Object> values = new ArrayList<>();
             Car car = generator.generate();
-//            values.add((double) car.id);
+            values.add((double) car.id);
 //                values.add((double) city.getZCodeForALocation(car.x, car.y));
-//            values.add((double) i);
-//            values.add(new String(new char[payloadSize]));
-//            values.add(timestamp);
-//            byte[] bytes = null;
-//            bytes = serializeIndexValue(values);
+            values.add((double) i);
+            values.add(new String(new char[payloadSize]));
+            values.add(timestamp);
+            byte[] bytes = null;
+            bytes = serializeIndexValue(values);
 //                indexedData.insert((double) city.getZCodeForALocation(car.x, car.y), bytes);
-//            indexedData.insert(i, bytes);
-            DataTuple dataTuple = new DataTuple(i);
-            indexedData.insert(i, dataTuple);
+            indexedData.insert(i, bytes);
         }
 
 //            System.out.println("Used : " + (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()));
 
 //            indexedData.printBtree();
 
-        byte[] leavesInBytes = indexedData.serializeLeaves(schema);
+        byte[] leavesInBytes = indexedData.serializeLeaves();
 
         Output output = new Output(500000, 20000000);
 
@@ -592,7 +578,7 @@ public class KryoTemplateSerializerTest extends TestCase {
 
             long tuplgGetStart = System.currentTimeMillis();
 
-            list.addAll(leafNode.getSerializedTuplesWithinKeyRange(0, 50));
+            list.addAll(leafNode.getTuplesWithinKeyRange(0, 50));
 
         }
 

@@ -73,6 +73,8 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
     private String indexField;
 
+    private String temporalField;
+
     private Kryo kryo;
 
     private Double minIndexValue;
@@ -85,7 +87,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
     private int taskId;
 
-//    private Semaphore processQuerySemaphore;
+    //    private Semaphore processQuerySemaphore;
     private Lock lock;
 
     private TimeDomain timeDomain;
@@ -148,6 +150,8 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
         queryThreads = new ArrayList<>();
 
         this.indexField = schema.getIndexField();
+
+        this.temporalField = schema.getTemporalField();
 
         this.schema = schema.duplicate();
 
@@ -489,7 +493,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
                 for (DataTuple dataTuple: drainer) {
                     try {
-                        Long timeStamp = (Long) schema.getValue("timestamp", dataTuple);
+                        Long timeStamp = (Long) schema.getTemporalValue(dataTuple);
 
                         DataType indexValue = (DataType) schema.getIndexValue(dataTuple);
 
@@ -589,11 +593,10 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                         final DataType indexValue = (DataType) schema.getIndexValue(tuple);
                         final byte[] serializedTuple = schema.serializeTuple(tuple);
 
-//                        final DataTuple deserializedDataTuple = schema.deserializeToDataTuple(serializedTuple);
+                        final DataTuple deserializedDataTuple = schema.deserializeToDataTuple(serializedTuple);
 
 
-//                        bTree.insert((Comparable) indexValue, serializedTuple);
-                        bTree.insert((Comparable) indexValue, tuple);
+                        bTree.insert((Comparable) indexValue, serializedTuple);
 
                         // update the bloom filter upon the arrival of a new tuple.
                         for(String column: bloomFilterIndexedColumns) {
@@ -687,8 +690,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                 Long endTimestamp = subQuery.getEndTimestamp();
                 DataTuplePredicate predicate = subQuery.getPredicate();
                 debugger.info = "Indexer: B3";
-//                List<byte[]> serializedTuples = new ArrayList<>();
-                List<DataTuple> serializedTuples = new ArrayList<>();
+                List<byte[]> serializedTuples = new ArrayList<>();
                 lock.lock();
                 timeMetrics.endEvent("prepare");
                 try {
@@ -714,9 +716,8 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
 
                 for (int i = 0; i < serializedTuples.size(); ++i) {
-//                    DataTuple dataTuple = schema.deserializeToDataTuple(serializedTuples.get(i));
-                    DataTuple dataTuple = serializedTuples.get(i);
-                    Long timestamp = (Long) schema.getValue("timestamp", dataTuple);
+                    DataTuple dataTuple = schema.deserializeToDataTuple(serializedTuples.get(i));
+                    Long timestamp = (Long) schema.getTemporalValue(dataTuple);
                     if (timestamp >= startTimestamp && timestamp <= endTimestamp) {
                         if (predicate == null || predicate.test(dataTuple)) {
                             dataTuples.add(dataTuple);
@@ -819,7 +820,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
             Output output = new Output(6000000, 500000000);
 
-            byte[] leafBytesToWrite = bTree.serializeLeaves(schema);
+            byte[] leafBytesToWrite = bTree.serializeLeaves();
 
             kryo.writeObject(output, bTree);
             byte[] templateBytesToWrite = output.toBytes();
@@ -847,7 +848,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
         } else {
             Output output = new Output(6000000, 500000000);
 
-            byte[] leafBytesToWrite = bTree.serializeLeaves(schema);
+            byte[] leafBytesToWrite = bTree.serializeLeaves();
 
             kryo.writeObject(output, bTree);
             byte[] templateBytesToWrite = output.toBytes();
@@ -872,7 +873,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
     public byte[] getTreeBytes() {
         Output output = new Output(6000000, 500000000);
 
-        byte[] leafBytesToWrite = bTree.serializeLeaves(schema);
+        byte[] leafBytesToWrite = bTree.serializeLeaves();
 
         kryo.writeObject(output, bTree);
         byte[] templateBytesToWrite = output.toBytes();

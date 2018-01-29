@@ -84,6 +84,7 @@ public class GeoTemporalTopologyTest extends TestCase {
         rawSchema.addDoubleField("x");
         rawSchema.addDoubleField("y");
         rawSchema.addLongField("timestamp");
+        rawSchema.setTemporalField("timestamp");
 
         DataSchema schema = rawSchema.duplicate();
         schema.addIntField("zcode");
@@ -237,7 +238,8 @@ public class GeoTemporalTopologyTest extends TestCase {
         rawSchema.addIntField("id");
         rawSchema.addDoubleField("x");
         rawSchema.addDoubleField("y");
-        rawSchema.addLongField("timestamp");
+        rawSchema.addLongField("timestamp");;
+        rawSchema.setTemporalField("timestamp");
 
         DataSchema schema = rawSchema.duplicate();
         schema.addIntField("zcode");

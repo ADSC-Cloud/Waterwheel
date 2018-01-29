@@ -1,15 +1,20 @@
 package indexingTopology.util.shape;
 
+import com.alibaba.fastjson.JSONException;
+import com.alibaba.fastjson.JSONObject;
+import indexingTopology.common.data.DataSchema;
+import indexingTopology.common.data.DataTuple;
 import info.batey.kafka.unit.KafkaUnit;
 import kafka.producer.KeyedMessage;
-import net.sf.json.JSON;
-import net.sf.json.JSONObject;
 import org.apache.kafka.common.protocol.types.Field;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /**
  * Created by billlin on 2017/12/4
@@ -28,7 +33,7 @@ public class ShapeChecking {
     public ArrayList split(){
         String type = String.valueOf(jsonObject.get("type"));
         if(type.equals("rectangle")){
-            if(!jsonObject.get("geoStr").equals(null) || !jsonObject.get("lon").equals(null) || !jsonObject.get("lat").equals(null) || !jsonObject.get("radius").equals(null)){
+            if(jsonObject.get("geoStr") == null /*|| !jsonObject.get("lon").equals(null) || !jsonObject.get("lat").equals(null) || !jsonObject.get("radius").equals(null)*/){
                 error = "102";
                 return null;
             }
@@ -104,6 +109,16 @@ public class ShapeChecking {
     }
 
 
+    // 过滤特殊字符
+    public static String StringFilter(String str) throws PatternSyntaxException {
+        // 只允许字母和数字 // String regEx = "[^a-zA-Z0-9]";
+        // 清除掉所有特殊字符
+        String regEx = "[`~!@#$%^&*()+=|{}';'\\[\\]<>/?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？]";
+        Pattern p = Pattern.compile(regEx);
+        Matcher m = p.matcher(str);
+        return m.replaceAll("").trim();
+    }
+
 
     public static void main(String[] args) {
         Random random = new Random();
@@ -119,8 +134,9 @@ public class ShapeChecking {
         System.out.println(String.valueOf(Math.random()));
         String searchTest = "{\"type\":\"rectangle\",\"leftTop\":\"113,24\",\"rightBottom\":\"112,23\",\"geoStr\":null,\"lon\":null,\"lat\":null,\"radius\":null}";
         String searchTest3 = "{\"type\":\"polygon\",\"leftTop\":null,\"rightBottom\":null,\"geoStr\":[\"80  75\",\"85  80\",\"90  75\",\"85  70\"],\"lon\":null,\"lat\":null,\"radius\":null}";
-        JSONObject jsonObject = JSONObject.fromObject(searchTest);
+        JSONObject jsonObject = JSONObject.parseObject(searchTest);
         ShapeChecking shapeChecking = new ShapeChecking(jsonObject);
+        System.out.println(jsonObject);
         ArrayList arrayList = shapeChecking.split();
         if(shapeChecking.getError() == null) {
             for(int i=0;i<arrayList.size();i++){
@@ -133,7 +149,7 @@ public class ShapeChecking {
         System.out.println(Math.random());
         System.out.println(Math.random());
         System.out.println((int) (Math.random() * 100));
-        JSONObject jsonObject3 = JSONObject.fromObject(searchTest3);
+        JSONObject jsonObject3 = JSONObject.parseObject(searchTest3);
         System.out.println(jsonObject3.get("geoStr"));
         String geo = String.valueOf(jsonObject3.get("geoStr"));
         String geoClean = shapeChecking.deleteCharString(geo,'[',']','\"');
@@ -142,13 +158,63 @@ public class ShapeChecking {
                 ArrayList arrayList3 = shapeChecking3.split();
         if(shapeChecking3.getError() == null) {
             for(int i=0;i<arrayList3.size();i++){
-                System.out.print(Integer.valueOf(arrayList3.get(i).toString()) + " ");
+                System.out.print(Integer.valueOf(arrayList3.get(i).toString()) + "  ");
             }
         }
         Object object = new Object();
         String searchTest11 = "{\"type\":\"rectangle\",\"leftTop\":\"113,24\",\"rightBottom\":\"112,23\",\"geoStr\":null,\"lon\":null,\"lat\":null,\"radius\":null}";
-        JSONObject jsonObject1 = JSONObject.fromObject(searchTest);
+        JSONObject jsonObject1 = JSONObject.parseObject(searchTest11);
+//        try{
+//            Double jsonInteger = jsonObject.getDouble("type");
+//            System.out.println(jsonInteger);
+//        }catch (JSONException e){
+//            System.out.println("Error !");;
+//        }
         object = (Object)jsonObject1;
         System.out.println(object);
+
+        DataSchema schema = new DataSchema();
+        schema.addDoubleField("lon");
+        schema.addDoubleField("lat");
+        schema.addIntField("devbtype");
+        schema.addVarcharField("devid", 8);
+        schema.addVarcharField("id", 32);
+        schema.addIntField("zcode");
+        schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
+
+
+
+        int len = schema.getNumberOfFields();
+        DataTuple dataTuple = new DataTuple();
+        String objectStr = "";
+        Object attribute = new Object();
+        attribute = "1";
+        dataTuple.add(attribute);
+        attribute = 2;
+        dataTuple.add(attribute);
+        attribute = "3";
+        dataTuple.add(attribute);
+        attribute = "4";
+        dataTuple.add(attribute);
+        attribute = "5";
+        dataTuple.add(attribute);
+        attribute = "6";
+        dataTuple.add(attribute);
+        attribute = 11.7;
+        dataTuple.add(attribute);
+        JSONObject objectfromTuple= schema.getJsonFromDataTuple(dataTuple);
+        System.out.println(objectfromTuple);
+
+        ArrayList<String> list = new ArrayList<>();
+        list.add("1");
+        list.add("2");
+        list.add("3");
+        System.out.println(list.toString());
+        String str = "*adCVs*34_a _09_b5*[/435^*&城池()^$$&*).{}+.|.)%%*(*.中国}34{45[]12.fd'*&999下面是中文的字符￥……{}【】。，；’“‘”？";
+        String s = "<script>alert(1).</script>";
+        String ll = "[10.21.25.203:9092, 10.21.25.204:9092, 10.21.25.205:9092]";
+        System.out.println(ll);
+        System.out.println(StringFilter(ll));
     }
 }

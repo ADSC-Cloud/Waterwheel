@@ -387,7 +387,7 @@ public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends Bas
 //            totalLeafRead += (System.currentTimeMillis() - readLeaveStart);
 
                 long tupleGetStart = System.currentTimeMillis();
-                ArrayList<byte[]> tuplesInKeyRange = leaf.getSerializedTuplesWithinKeyRange(leftKey, rightKey);
+                ArrayList<byte[]> tuplesInKeyRange = leaf.getTuplesWithinKeyRange(leftKey, rightKey);
                 debugInfo.runningPosition = String.format("breakpoint 8.%d.3", count);
                 //deserialize
                 tuplesInKeyRange.stream().forEach(e -> dataTuplesInKeyRange.add(schema.deserializeToDataTuple(e)));
@@ -543,7 +543,7 @@ public class QueryServerBolt<TKey extends Number & Comparable<TKey>> extends Bas
 
         List<DataTuple> result =
                 tuples.stream().filter(p -> {
-                    Long timestamp = (Long) schema.getValue("timestamp", p);
+                    Long timestamp = (Long) schema.getValue(schema.getTemporalField(), p);
                     return timestampLowerBound <= timestamp && timestampUpperBound >= timestamp;
                 }).collect(Collectors.toList());
         tuples.clear();

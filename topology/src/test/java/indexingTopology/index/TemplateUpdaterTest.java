@@ -1,12 +1,8 @@
 package indexingTopology.index;
 
 import indexingTopology.common.data.DataSchema;
-import indexingTopology.common.data.DataTuple;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
-import indexingTopology.index.BTree;
-import indexingTopology.index.BTreeLeafNode;
-import indexingTopology.index.TemplateUpdater;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -14,25 +10,18 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by acelzj on 12/21/16.
  */
 public class TemplateUpdaterTest {
 
-    DataSchema schema = new DataSchema();
-    public void setUp() {
-        schema.addIntField("a1");
-        schema.setPrimaryIndexField("a1");
-    }
-
-
     private List<String> fieldNames = new ArrayList<String>(Arrays.asList("user_id", "id_1", "id_2", "ts_epoch",
             "date", "time", "latitude", "longitude"));
     private ArrayList valueTypes = new ArrayList<Class>(Arrays.asList(Double.class, Double.class, Double.class,
             Double.class, Double.class, Double.class, Double.class, Double.class));
-//    private DataSchema schema = new DataSchema(fieldNames, valueTypes, "user_id");
+    private DataSchema schema = new DataSchema(fieldNames, valueTypes, "user_id","time");
 
     private TopologyConfig config = new TopologyConfig();
 
@@ -58,8 +47,13 @@ public class TemplateUpdaterTest {
         Collections.shuffle(keys);
 
         for (Integer key : keys) {
-            DataTuple dataTuple = new DataTuple(key);
-            bTree.insert(key, dataTuple);
+            List<Double> values = new ArrayList<>();
+            values.add((double) key);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
+            bTree.insert(key, bytes);
         }
 
 //        bTree.printBtree();
@@ -68,7 +62,6 @@ public class TemplateUpdaterTest {
 
         Long start = System.currentTimeMillis();
         BTree newTree = templateUpdater.createTreeWithBulkLoading(bTree);
-
 
 
 //        newTree.printBtree();
@@ -82,8 +75,8 @@ public class TemplateUpdaterTest {
         while (leaf != null) {
 //            leaf.print();
 //            System.out.println(leaf.atomicKeyCount.get());
-            total += leaf.getAtomicTupleCount();
-            assertEquals(leaf.getKeyCount(), leaf.getAtomicTupleCount());
+            total += leaf.getAtomicKeyCount();
+            assertEquals(leaf.getKeyCount(), leaf.getAtomicKeyCount());
             leaf = (BTreeLeafNode) leaf.rightSibling;
         }
 
@@ -104,20 +97,29 @@ public class TemplateUpdaterTest {
 
         Random random = new Random();
 
-        List<Double> keys = new ArrayList<>();
+        List<Integer> keys = new ArrayList<>();
 
         for (int i = 0; i < numberOfTuples; ++i) {
-            keys.add(i * 1.0);
+//            Integer key = random.nextInt();
+//            while (keys.contains(key)) {
+//                key = random.nextInt();
+//            }
+            keys.add(i);
         }
 
         Collections.shuffle(keys);
 
         int duplicatedTime = 5;
 
-        for (Double key : keys) {
-            DataTuple dataTuple = new DataTuple(key);
+        for (Integer key : keys) {
+            List<Double> values = new ArrayList<>();
+            values.add((double) key);
+            for (int j = 0; j < fieldNames.size() + 1; ++j) {
+                values.add((double) j);
+            }
+            byte[] bytes = serializeIndexValue(values);
             for (int i = 0; i < duplicatedTime; ++i) {
-                bTree.insert(key, dataTuple);
+                bTree.insert(key*1.0, bytes);
             }
         }
 
@@ -132,15 +134,15 @@ public class TemplateUpdaterTest {
 
 //        newTree.printBtree();
 
-        for (Double key : keys) {
-            assertEquals(duplicatedTime, newTree.searchRange(key, key).size());
+        for (Integer key : keys) {
+            assertEquals(duplicatedTime, newTree.searchRange(key*1.0, key*1.0).size());
         }
 
         BTreeLeafNode leaf = newTree.getLeftMostLeaf();
         while (leaf != null) {
 //            leaf.print();
 //            System.out.println(leaf.atomicKeyCount.get());
-            assertEquals(duplicatedTime * leaf.getKeyCount(), leaf.getAtomicTupleCount());
+            assertEquals(duplicatedTime * leaf.getKeyCount(), leaf.getAtomicKeyCount());
             leaf = (BTreeLeafNode) leaf.rightSibling;
         }
 

@@ -72,6 +72,7 @@ public class TopologyOverallTest extends TestCase {
         schema.addDoubleField("f2");
         schema.addDoubleField("f3");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.setPrimaryIndexField("f1");
 
         int ingestionPort = socketPool.getAvailablePort();
@@ -111,7 +112,7 @@ public class TopologyOverallTest extends TestCase {
         try {
 //            Thread.sleep(10000);
             IngestionClient oneTuplePerTransferIngestionClient = new IngestionClient("localhost", ingestionPort);
-            oneTuplePerTransferIngestionClient.connectWithTimeout(10000);
+            oneTuplePerTransferIngestionClient.connectWithTimeout(30000);
             for (int i = 0; i < numberOfTuples; i++) {
                 oneTuplePerTransferIngestionClient.append(new DataTuple(start + step * i, 0.0, 0.0, System.currentTimeMillis()));
             }
@@ -119,7 +120,7 @@ public class TopologyOverallTest extends TestCase {
             Thread.sleep(1000);
 
             QueryClient queryClient = new QueryClient("localhost", queryPort);
-            queryClient.connectWithTimeout(10000);
+            queryClient.connectWithTimeout(30000);
             QueryResponse response = queryClient.temporalRangeQuery(0.0, 10000.0, 0, Long.MAX_VALUE);
 
             assertEquals(numberOfTuples, response.dataTuples.size());
@@ -152,6 +153,7 @@ public class TopologyOverallTest extends TestCase {
         schema.addIntField("f2");
         schema.addIntField("f3");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.setPrimaryIndexField("f1");
 
         int ingestionPort = socketPool.getAvailablePort();
@@ -190,7 +192,7 @@ public class TopologyOverallTest extends TestCase {
         try {
 //            Thread.sleep(10000);
             IngestionClient oneTuplePerTransferIngestionClient = new IngestionClient("localhost", ingestionPort);
-            oneTuplePerTransferIngestionClient.connectWithTimeout(10000);
+            oneTuplePerTransferIngestionClient.connectWithTimeout(30000);
             for (int i = 0; i < numberOfTuples; i++) {
                 oneTuplePerTransferIngestionClient.append(new DataTuple(start + step * i, 0, 0, System.currentTimeMillis()));
             }
@@ -198,7 +200,7 @@ public class TopologyOverallTest extends TestCase {
             Thread.sleep(1000);
 
             QueryClient queryClient = new QueryClient("localhost", queryPort);
-            queryClient.connectWithTimeout(10000);
+            queryClient.connectWithTimeout(30000);
             QueryResponse response = queryClient.temporalRangeQuery(0, 40, 0, Long.MAX_VALUE);
 
             assertEquals(41, response.dataTuples.size());
@@ -230,6 +232,7 @@ public class TopologyOverallTest extends TestCase {
         schema.addDoubleField("f2");
         schema.addDoubleField("f3");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.setPrimaryIndexField("f1");
 
         int ingestionPort = socketPool.getAvailablePort();
@@ -268,7 +271,7 @@ public class TopologyOverallTest extends TestCase {
         try {
 //            Thread.sleep(10000);
             IngestionClient oneTuplePerTransferIngestionClient = new IngestionClient("localhost", ingestionPort);
-            oneTuplePerTransferIngestionClient.connectWithTimeout(10000);
+            oneTuplePerTransferIngestionClient.connectWithTimeout(30000);
             for (int i = 0; i < numberOfTuples; i++) {
                 oneTuplePerTransferIngestionClient.append(new DataTuple(start + step * i, 0.0, 0.0, System.currentTimeMillis()));
             }
@@ -276,7 +279,7 @@ public class TopologyOverallTest extends TestCase {
             Thread.sleep(1000);
 
             QueryClient queryClient = new QueryClient("localhost", queryPort);
-            queryClient.connectWithTimeout(10000);
+            queryClient.connectWithTimeout(30000);
             QueryResponse response = queryClient.temporalRangeQuery(0.0, 9.5, 0, Long.MAX_VALUE);
 
             assertEquals(5, response.dataTuples.size());
@@ -306,6 +309,7 @@ public class TopologyOverallTest extends TestCase {
         schema.addDoubleField("f2");
         schema.addDoubleField("f3");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.setPrimaryIndexField("f1");
 
         int ingestionPort = socketPool.getAvailablePort();
@@ -344,7 +348,7 @@ public class TopologyOverallTest extends TestCase {
         try {
 //            Thread.sleep(10000);
             IngestionClient oneTuplePerTransferIngestionClient = new IngestionClient("localhost", ingestionPort);
-            oneTuplePerTransferIngestionClient.connectWithTimeout(10000);
+            oneTuplePerTransferIngestionClient.connectWithTimeout(30000);
             for (int i = 0; i < numberOfTuples; i++) {
                 oneTuplePerTransferIngestionClient.append(new DataTuple(start + step * i, 0.0, 0.0, System.currentTimeMillis()));
             }
@@ -352,7 +356,7 @@ public class TopologyOverallTest extends TestCase {
             Thread.sleep(1000);
 
             QueryClient queryClient = new QueryClient("localhost", queryPort);
-            queryClient.connectWithTimeout(10000);
+            queryClient.connectWithTimeout(30000);
 //            QueryResponse response = queryClient.temporalRangeQuery(0.0, 9.5, 0, Long.MAX_VALUE);
             QueryResponse response = queryClient.query(new QueryRequest<>(0.0, 9.5, 0, Long.MAX_VALUE, t -> (Double)schema.getValue("f1", t) > 5, null));
 
@@ -384,6 +388,7 @@ public class TopologyOverallTest extends TestCase {
         schema.addIntField("f2");
         schema.addIntField("f3");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.setPrimaryIndexField("f1");
 
         int ingestionPort = socketPool.getAvailablePort();
@@ -422,7 +427,7 @@ public class TopologyOverallTest extends TestCase {
         try {
 //            Thread.sleep(10000);
             IngestionClient oneTuplePerTransferIngestionClient = new IngestionClient("localhost", ingestionPort);
-            oneTuplePerTransferIngestionClient.connectWithTimeout(10000);
+            oneTuplePerTransferIngestionClient.connectWithTimeout(30000);
             for (int i = 0; i < numberOfTuples; i++) {
                 oneTuplePerTransferIngestionClient.append(new DataTuple(start + step * i, i % 10, 4, System.currentTimeMillis()));
             }
@@ -430,7 +435,7 @@ public class TopologyOverallTest extends TestCase {
             Thread.sleep(1000);
 
             QueryClient queryClient = new QueryClient("localhost", queryPort);
-            queryClient.connectWithTimeout(10000);
+            queryClient.connectWithTimeout(30000);
 
             Aggregator<Integer> aggregator = new Aggregator<>(schema, "f2", new AggregateField[]{
                     new AggregateField(new Sum(), "f3"), new AggregateField(new Count(), "f3")
@@ -475,6 +480,7 @@ public class TopologyOverallTest extends TestCase {
         schema.addIntField("f2");
         schema.addIntField("f3");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.setPrimaryIndexField("f1");
 
         int ingestionPort = socketPool.getAvailablePort();
@@ -515,7 +521,7 @@ public class TopologyOverallTest extends TestCase {
         try {
 //            Thread.sleep(10000);
             IngestionClient oneTuplePerTransferIngestionClient = new IngestionClient("localhost", ingestionPort);
-            oneTuplePerTransferIngestionClient.connectWithTimeout(10000);
+            oneTuplePerTransferIngestionClient.connectWithTimeout(30000);
             for (int i = 0; i < numberOfTuples; i++) {
                 oneTuplePerTransferIngestionClient.append(new DataTuple(start + step * i, 0, 0, System.currentTimeMillis()));
             }
@@ -523,7 +529,7 @@ public class TopologyOverallTest extends TestCase {
             Thread.sleep(1000);
 
             QueryClient queryClient = new QueryClient("localhost", queryPort);
-            queryClient.connectWithTimeout(10000);
+            queryClient.connectWithTimeout(30000);
             QueryResponse response = queryClient.temporalRangeQuery(0, 40, 0, Long.MAX_VALUE);
 
             assertEquals(41, response.dataTuples.size());
@@ -553,6 +559,7 @@ public class TopologyOverallTest extends TestCase {
         schema.addIntField("f2");
         schema.addIntField("f3");
         schema.addLongField("timestamp");
+        schema.setTemporalField("timestamp");
         schema.setPrimaryIndexField("f1");
 
         int ingestionPort = socketPool.getAvailablePort();
@@ -591,7 +598,7 @@ public class TopologyOverallTest extends TestCase {
 
 
             QueryClient queryClient = new QueryClient("localhost", queryPort);
-            queryClient.connectWithTimeout(10000);
+            queryClient.connectWithTimeout(30000);
 
             DataSchema queriedSchema = queryClient.querySchema("default");
             DataSchema queriedSchema2 = queryClient.querySchema();
