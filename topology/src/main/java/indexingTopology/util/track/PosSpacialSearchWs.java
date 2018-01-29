@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
  **/
 public class PosSpacialSearchWs {
 
-    private String QueryServerIp = "68.28.8.91";
+    private String QueryServerIp = "localhost";
     private Point leftTop, rightBottom;
     private Point[] geoStr;
     private Point circle;
@@ -129,8 +129,9 @@ public class PosSpacialSearchWs {
                     for (DataTuple tuple : tuples){
                         JSONObject jsonFromTuple = schema.getJsonFromDataTupleWithoutZcode(tuple);
                         queryResult.add(jsonFromTuple);
-                        System.out.println(jsonFromTuple);
+//                        System.out.println(jsonFromTuple);
                     }
+                    System.out.println(tuples.size() + " tuples.");
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (ClassNotFoundException e) {

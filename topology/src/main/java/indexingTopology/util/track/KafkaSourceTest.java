@@ -2,10 +2,12 @@ package indexingTopology.util.track;
 
 import indexingTopology.api.client.IngestionKafkaBatchMode;
 import indexingTopology.config.TopologyConfig;
+import indexingTopology.util.FrequencyRestrictor;
 import indexingTopology.util.Json.JsonTest;
 import indexingTopology.util.taxi.Car;
 import indexingTopology.util.taxi.TrajectoryGenerator;
 import indexingTopology.util.taxi.TrajectoryMovingGenerator;
+import org.apache.storm.metric.internal.RateTracker;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -31,14 +33,18 @@ public class KafkaSourceTest {
         Matcher m = p.matcher("[\"10.21.25.203:9092\",\"10.21.25.204:9092\",\"10.21.25.205:9092\"]");
         String currentKafkahost = m.replaceAll("").trim();
 //        IngestionKafkaBatchMode kafkaBatchMode = new IngestionKafkaBatchMode("10.21.25.203:9092,10.21.25.203:9092,10.21.25.203:9092", "gpis");
-        IngestionKafkaBatchMode kafkaBatchMode = new IngestionKafkaBatchMode("68.28.7.80:9092", "gpis");
+        IngestionKafkaBatchMode kafkaBatchMode = new IngestionKafkaBatchMode("127.0.0.1:9092", "gpis");
         kafkaBatchMode.ingestProducer();
         int total = 10;
+        FrequencyRestrictor restrictor = new FrequencyRestrictor(1000, 5);
+        RateTracker rateTracker = new RateTracker(1000, 5);
         Thread emittingThread = null;
         emittingThread = new Thread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     for (int i = 0; i < total; i++) {
+                        restrictor.getPermission();
+                        rateTracker.notify(1);
                         Car car = generator.generate();
                         Double lon = Math.random() * 100;
                         Double lat = Math.random() * 100;
@@ -69,7 +75,7 @@ public class KafkaSourceTest {
 //                                    "\"jymc\":\"陈国基\",\"lxdh\":\"13576123212\",\"dth\":\"SG0000000352\",\"reserve1\":null,\"reserve2\":\"\",\"reserve3\":\"\",\"ssdwdm\":\"440100000000\"," +
 //                                    "\"ssdwmc\":\"广州市\",\"teamno\":\"44010001\"}";
 //                            String   Msg = "{\"devbtype\":" + 10 + ",\"devstype\":\"123\"}";
-                            System.out.println(currentTime);
+//                            System.out.println(currentTime);
                             kafkaBatchMode.send(i, Msg);
                         }
                         //                        this.producer.send(new ProducerRecord<String, String>("consumer",
@@ -86,14 +92,26 @@ public class KafkaSourceTest {
                     }
                     kafkaBatchMode.flush();
                     //            producer.close();
-                    System.out.println("Kafka Producer send msg over,cost time:" + (System.currentTimeMillis() - start) + "ms");
-                    Thread.sleep(500000);
+//                    System.out.println("Kafka Producer send msg over,cost time:" + (System.currentTimeMillis() - start) + "ms");
+//                    Thread.sleep(500000);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         });
         emittingThread.start();
+
+        new Thread(() -> {
+            while(true) {
+                try {
+                    Thread.sleep(1000);
+                    System.out.println(String.format("%.1f tuples / s.", rateTracker.reportRate()));
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    break;
+                }
+            }
+        }).start();
     }
 
     public static void main(String[] args) {

@@ -119,7 +119,7 @@ public class InputStreamKafkaReceiverBoltServer extends InputStreamReceiverBolt 
                     consumer.subscribe(topics);
 //                    System.out.println("topics : " + topics);
                     // the consumer whill bolck until the records coming
-                    ConsumerRecords<String, String> records = consumer.poll(Long.MAX_VALUE);
+                    ConsumerRecords<String, String> records = consumer.poll(1000);
                     //                    System.out.println("records.count : " + records.count());
 
                     for (ConsumerRecord<String, String> record : records) {
@@ -139,7 +139,7 @@ public class InputStreamKafkaReceiverBoltServer extends InputStreamReceiverBolt 
                                 DataTuple dataTuple = schema.getTupleFromJsonObject(jsonFromData);
                                 if(dataTuple != null){
                                     getInputQueue().put(dataTuple);
-                                    System.out.println("Filter datatuple success: " + record.value());
+//                                    System.out.println("Filter datatuple success: " + record.value());
                                 }
                             }
                         } catch (ParseException e){
@@ -172,6 +172,8 @@ public class InputStreamKafkaReceiverBoltServer extends InputStreamReceiverBolt 
                 } catch (WakeupException e) {
                     System.out.println("Consumer poll stop!");
                     e.printStackTrace();
+                    // break the loop here to avoid the extremely long waiting time in case of shutdown
+                    break;
                     // ignore for shutdown
                 } catch (Exception e) {
                     System.out.println("Consumer exception!");
