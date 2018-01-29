@@ -3,9 +3,6 @@ package indexingTopology.index;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
-import indexingTopology.index.BTree;
-import indexingTopology.index.BTreeLeafNode;
-import indexingTopology.index.TemplateUpdater;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -13,7 +10,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by acelzj on 12/21/16.

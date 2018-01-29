@@ -12,6 +12,8 @@ import java.util.Map;
 public class TopologyConfig implements Serializable {
     public final double REBUILD_TEMPLATE_THRESHOLD = 10.0;
 
+
+
     public String dataChunkDir = "/home/hadoop/dataDir";
 
     public String metadataDir = "/home/hadoop/dataDir";

@@ -186,7 +186,6 @@ public class InputStreamKafkaReceiverBoltServer extends InputStreamReceiverBolt 
         }
     }
 
-
     @Override
     public void cleanup() {
         super.cleanup();

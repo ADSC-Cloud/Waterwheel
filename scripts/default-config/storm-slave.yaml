@@ -25,7 +25,7 @@
 
 
 # topology.component.cpu.pcore.percent: 400.0
-  supervisor.cpu.capacity: 400
+ supervisor.cpu.capacity: 325.0
 
 # 
 # 

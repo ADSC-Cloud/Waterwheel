@@ -5,8 +5,6 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import indexingTopology.config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
-import indexingTopology.index.BTreeLeafNode;
-import indexingTopology.index.KryoLeafNodeSerializer;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
 

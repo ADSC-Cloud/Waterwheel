@@ -3,13 +3,13 @@ package indexingTopology.index;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import indexingTopology.config.TopologyConfig;
+import indexingTopology.common.MemChunk;
 import indexingTopology.common.data.DataSchema;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
 import indexingTopology.filesystem.FileSystemHandler;
 import indexingTopology.filesystem.HdfsFileSystemHandler;
 import indexingTopology.filesystem.LocalFileSystemHandler;
-import indexingTopology.common.MemChunk;
 import indexingTopology.util.taxi.Car;
 import indexingTopology.util.taxi.City;
 import indexingTopology.util.taxi.TrajectoryGenerator;
@@ -25,8 +25,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * Created by acelzj on 1/4/17.

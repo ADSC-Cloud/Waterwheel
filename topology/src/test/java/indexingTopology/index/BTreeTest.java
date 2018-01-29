@@ -2,21 +2,19 @@ package indexingTopology.index;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
-import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.DataSchema;
+import indexingTopology.config.TopologyConfig;
 import indexingTopology.exception.UnsupportedGenericException;
-import indexingTopology.index.BTree;
-import indexingTopology.index.BTreeLeafNode;
-import indexingTopology.index.KryoLeafNodeSerializer;
-import indexingTopology.index.TemplateUpdater;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by acelzj on 21/12/16.

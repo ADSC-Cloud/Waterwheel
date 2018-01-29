@@ -1,17 +1,20 @@
 package indexingTopology.index;
 
 import indexingTopology.common.*;
-import indexingTopology.config.TopologyConfig;
 import indexingTopology.common.data.DataSchema;
 import indexingTopology.common.data.DataTuple;
 import indexingTopology.common.data.TrackedDataTuple;
+import indexingTopology.config.TopologyConfig;
 import javafx.util.Pair;
 import junit.framework.TestCase;
 import org.apache.storm.shade.org.eclipse.jetty.util.ConcurrentHashSet;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.Observable;
+import java.util.Observer;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 

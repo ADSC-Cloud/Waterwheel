@@ -20,7 +20,6 @@ import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.tuple.Fields;
-
 import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.*;

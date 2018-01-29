@@ -13,7 +13,7 @@ import java.util.*;
 
 /**
  * A B+ tree
- * Since the structures and behaviors between internal node and external node are different, 
+ * Since the structures and behaviors between internal node and external node are different,
  * so there are two different classes for each kind of node.
  * @param <TKey> the data type of the key
  */
@@ -77,27 +77,27 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	 * @return tuples of the corresponding key.
 	 */
 
-    public List<byte[]> searchRange(TKey leftKey, TKey rightKey) {
-        assert leftKey.compareTo(rightKey) <= 0 : "leftKey provided is greater than the right key";
-        List<byte[]> tuples = new ArrayList<>();
+	public List<byte[]> searchRange(TKey leftKey, TKey rightKey) {
+		assert leftKey.compareTo(rightKey) <= 0 : "leftKey provided is greater than the right key";
+		List<byte[]> tuples = new ArrayList<>();
 
-        if (!templateMode) {
-            BTreeNode tmpRoot = root;
-            tmpRoot.acquireReadLock();
-            while (tmpRoot != root) {
-                tmpRoot.releaseReadLock();
-                tmpRoot = root;
-                root.acquireReadLock();
-            }
-            tuples.addAll(searchRangeInBaseline(leftKey, rightKey));
-        } else {
-            tuples.addAll(searchRangeInTemplate(leftKey, rightKey));
-        }
+		if (!templateMode) {
+			BTreeNode tmpRoot = root;
+			tmpRoot.acquireReadLock();
+			while (tmpRoot != root) {
+				tmpRoot.releaseReadLock();
+				tmpRoot = root;
+				root.acquireReadLock();
+			}
+			tuples.addAll(searchRangeInBaseline(leftKey, rightKey));
+		} else {
+			tuples.addAll(searchRangeInTemplate(leftKey, rightKey));
+		}
 
-        return tuples;
-    }
+		return tuples;
+	}
 
-    public List<byte[]> searchRangeInBaseline(TKey leftKey, TKey rightKey) {
+	public List<byte[]> searchRangeInBaseline(TKey leftKey, TKey rightKey) {
 		assert leftKey.compareTo(rightKey) <= 0 : "leftKey provided is greater than the right key";
 		List<byte[]> tuples = new ArrayList<>();
 		BTreeNode currentNode = root;
@@ -150,22 +150,22 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	}
 
 
-    public List<byte[]> searchRangeInTemplate(TKey leftKey, TKey rightKey) {
-        assert leftKey.compareTo(rightKey) <= 0 : "leftKey provided is greater than the right key";
-        List<byte[]> tuples = new ArrayList<>();
-        BTreeLeafNode leafLeft;
-        BTreeLeafNode leafRight;
-        leafLeft = this.findLeafNodeShouldContainKeyInTemplate(leftKey);
-        leafRight = this.findLeafNodeShouldContainKeyInTemplate(rightKey);
-        BTreeLeafNode currLeaf = leafLeft;
-        while (currLeaf != leafRight.rightSibling) {
-            currLeaf.acquireReadLock();
-            tuples.addAll(currLeaf.getTuplesWithinKeyRange(leftKey, rightKey));
-            currLeaf.releaseReadLock();
-            currLeaf = (BTreeLeafNode) currLeaf.rightSibling;
-        }
-        return tuples;
-    }
+	public List<byte[]> searchRangeInTemplate(TKey leftKey, TKey rightKey) {
+		assert leftKey.compareTo(rightKey) <= 0 : "leftKey provided is greater than the right key";
+		List<byte[]> tuples = new ArrayList<>();
+		BTreeLeafNode leafLeft;
+		BTreeLeafNode leafRight;
+		leafLeft = this.findLeafNodeShouldContainKeyInTemplate(leftKey);
+		leafRight = this.findLeafNodeShouldContainKeyInTemplate(rightKey);
+		BTreeLeafNode currLeaf = leafLeft;
+		while (currLeaf != leafRight.rightSibling) {
+			currLeaf.acquireReadLock();
+			tuples.addAll(currLeaf.getTuplesWithinKeyRange(leftKey, rightKey));
+			currLeaf.releaseReadLock();
+			currLeaf = (BTreeLeafNode) currLeaf.rightSibling;
+		}
+		return tuples;
+	}
 
 
 
@@ -189,35 +189,35 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	 * @return the leaf node that contains the key
 	 */
 	private BTreeLeafNode<TKey> findLeafNodeShouldContainKeyInUpdaterWithProtocolTwo(TKey key) {
-        BTreeNode tmpRoot = root;
-        root.acquireReadLock();
-        while (tmpRoot != root) {
-            tmpRoot.releaseReadLock();
-            tmpRoot = root;
-            root.acquireReadLock();
-        }
+		BTreeNode tmpRoot = root;
+		root.acquireReadLock();
+		while (tmpRoot != root) {
+			tmpRoot.releaseReadLock();
+			tmpRoot = root;
+			root.acquireReadLock();
+		}
 
-        if (root instanceof BTreeLeafNode) {
-            tmpRoot.releaseReadLock();
-            return null;
-        }
+		if (root instanceof BTreeLeafNode) {
+			tmpRoot.releaseReadLock();
+			return null;
+		}
 
-        BTreeNode<TKey> currentNode = this.root;
-        while (currentNode.getNodeType() == TreeNodeType.InnerNode) {
-            BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChildShouldContainKey(key);
-            if (node.getNodeType() == TreeNodeType.InnerNode) {
-                node.acquireReadLock();
-            } else {
-                node.acquireWriteLock();
-            }
-            currentNode.releaseReadLock();
-            currentNode = node;
-        }
-        if (!currentNode.isSafe()) {
-            currentNode.releaseWriteLock();
-            return null;
-        }
-        return (BTreeLeafNode<TKey>) currentNode;
+		BTreeNode<TKey> currentNode = this.root;
+		while (currentNode.getNodeType() == TreeNodeType.InnerNode) {
+			BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChildShouldContainKey(key);
+			if (node.getNodeType() == TreeNodeType.InnerNode) {
+				node.acquireReadLock();
+			} else {
+				node.acquireWriteLock();
+			}
+			currentNode.releaseReadLock();
+			currentNode = node;
+		}
+		if (!currentNode.isSafe()) {
+			currentNode.releaseWriteLock();
+			return null;
+		}
+		return (BTreeLeafNode<TKey>) currentNode;
 	}
 
 	/**
@@ -227,27 +227,27 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	 * @return the leaf node
 	 */
 	private BTreeLeafNode findLeafNodeShouldContainKeyInUpdaterWithProtocolOne(TKey key, List<BTreeNode> ancestorsOfCurrentNode) {
-        BTreeNode tmpRoot = root;
-        root.acquireWriteLock();
-        while (tmpRoot != root) {
-            tmpRoot.releaseWriteLock();
-            tmpRoot = root;
-            root.acquireWriteLock();
-        }
+		BTreeNode tmpRoot = root;
+		root.acquireWriteLock();
+		while (tmpRoot != root) {
+			tmpRoot.releaseWriteLock();
+			tmpRoot = root;
+			root.acquireWriteLock();
+		}
 
-        BTreeNode<TKey> currentNode = this.root;
-        while (currentNode.getNodeType() == TreeNodeType.InnerNode) {
-            BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChildShouldContainKey(key);
-            ancestorsOfCurrentNode.add(currentNode);
-            node.acquireWriteLock();
-            if (node.isSafe()) {
-                for (BTreeNode ancestor : ancestorsOfCurrentNode) {
-                    ancestor.releaseWriteLock();
-                }
-                ancestorsOfCurrentNode.clear();
-            }
-            currentNode = node;
-        }
+		BTreeNode<TKey> currentNode = this.root;
+		while (currentNode.getNodeType() == TreeNodeType.InnerNode) {
+			BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChildShouldContainKey(key);
+			ancestorsOfCurrentNode.add(currentNode);
+			node.acquireWriteLock();
+			if (node.isSafe()) {
+				for (BTreeNode ancestor : ancestorsOfCurrentNode) {
+					ancestor.releaseWriteLock();
+				}
+				ancestorsOfCurrentNode.clear();
+			}
+			currentNode = node;
+		}
 		return (BTreeLeafNode) currentNode;
 
 	}
@@ -302,24 +302,24 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 		BTree bTree = null;
 //		try {
 //			bTree = (BTree) super.getTemplate();
-			bTree = new BTree(config.BTREE_ORDER, config);
+		bTree = new BTree(config.BTREE_ORDER, config);
 
-			List<BTreeNode> leafNodes = new ArrayList<>();
+		List<BTreeNode> leafNodes = new ArrayList<>();
 
-			bTree.root = this.root.deepCopy(leafNodes);
+		bTree.root = this.root.deepCopy(leafNodes);
 
-			int count = 0;
-			BTreeNode preNode = null;
-			for (BTreeNode node : leafNodes) {
-			    if (count == 0) {
-			        preNode = node;
-                } else {
-			        node.leftSibling = preNode;
-			        preNode.rightSibling = node;
-			        preNode = node;
-                }
-                ++count;
-            }
+		int count = 0;
+		BTreeNode preNode = null;
+		for (BTreeNode node : leafNodes) {
+			if (count == 0) {
+				preNode = node;
+			} else {
+				node.leftSibling = preNode;
+				preNode.rightSibling = node;
+				preNode = node;
+			}
+			++count;
+		}
 //		} catch (CloneNotSupportedException e) {
 //			e.printStackTrace();
 //		}
@@ -421,7 +421,7 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 
 			metrics.startEvent("serialize");
 			Output leafOutput = new Output(650000, 500000000);
-            kryo.writeObject(leafOutput, leaf);
+			kryo.writeObject(leafOutput, leaf);
 			metrics.endEvent("serialize");
 
 			byte[] bytesToWrite = leafOutput.toBytes();
@@ -502,14 +502,14 @@ public class BTree <TKey extends Comparable<TKey>,TValue> implements Serializabl
 	}
 
 	public int getHeight() {
-	    int height = 1;
-        BTreeNode<TKey> currentNode = this.root;
-        while (currentNode.getNodeType() == TreeNodeType.InnerNode) {
-            BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChild(0);
-            currentNode = node;
-            ++height;
-        }
-        return height;
-    }
+		int height = 1;
+		BTreeNode<TKey> currentNode = this.root;
+		while (currentNode.getNodeType() == TreeNodeType.InnerNode) {
+			BTreeNode<TKey> node = ((BTreeInnerNode<TKey>) currentNode).getChild(0);
+			currentNode = node;
+			++height;
+		}
+		return height;
+	}
 }
 

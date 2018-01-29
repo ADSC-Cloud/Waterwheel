@@ -338,10 +338,7 @@ public class KingBaseTopology {
         conf.put(Config.WORKER_CHILDOPTS, "-Xmx1024m");
         conf.put(Config.WORKER_HEAP_MEMORY_MB, 1024);
         conf.put(Config.STORM_MESSAGING_NETTY_MAX_SLEEP_MS, 1);
-
-        // use ResourceAwareScheduler with some magic configurations to ensure that QueryCoordinator and Sink
-        // are executed on the nimbus node.
-        conf.setTopologyStrategy(org.apache.storm.scheduler.resource.strategies.scheduling.DefaultResourceAwareStrategy.class);
+        conf.setTopologyStrategy(waterwheel.scheduler.FFDStrategyByCPU.class);
 
         if (LocalMode) {
             LocalCluster localCluster = new LocalCluster();

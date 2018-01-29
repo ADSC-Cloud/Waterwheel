@@ -87,7 +87,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
 
     private int taskId;
 
-//    private Semaphore processQuerySemaphore;
+    //    private Semaphore processQuerySemaphore;
     private Lock lock;
 
     private TimeDomain timeDomain;

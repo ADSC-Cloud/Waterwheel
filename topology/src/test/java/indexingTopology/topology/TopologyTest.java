@@ -100,8 +100,6 @@ public class TopologyTest extends TestCase {
     }
 
 
-
-
     @Test
     public void testSimpleTopologyKeyRangeQuery() throws InterruptedException {
         DataSchema schema = new DataSchema();
