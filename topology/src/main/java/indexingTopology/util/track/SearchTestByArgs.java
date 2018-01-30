@@ -1,8 +1,14 @@
 package indexingTopology.util.track;
 
+import indexingTopology.util.shape.Point;
+import indexingTopology.util.shape.Rectangle;
+import org.eclipse.jdt.internal.core.SourceType;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
+
+import javax.xml.bind.SchemaOutputResolver;
+import java.util.Random;
 
 /**
  * Created by zelin on 2017/1/11
@@ -18,19 +24,19 @@ public class SearchTestByArgs {
     private String Shape = "Not Given";
 
     @Option(name = "--longitude", aliases = {"-lo"}, usage = "longitude of circle")
-    private String Longitude = "Not Given";
+    private String Longitude = "113.0";
 
     @Option(name = "--latitude", aliases = {"-la"}, usage = "latitude of circle")
-    private String Latitude = "Not Given";
+    private String Latitude = "23.0";
 
     @Option(name = "--radius", usage = "radius of circle")
-    private String Radius = "Not Given";
+    private String Radius = "1.0";
 
     @Option(name = "--lefttop", usage = "lefttop of rectangle")
-    private String LeftTop = "Not Given";
+    private String LeftTop = "111.012928,25.292677";
 
     @Option(name = "--rightbottom", usage = "rightbottom of rectangle")
-    private String RightBottom = "Not Given";
+    private String RightBottom = "115.023983,21.614865";
 
     @Option(name = "--geostr", usage = "geostr of polygon")
     private String Geostr = "Not Given";
@@ -49,6 +55,15 @@ public class SearchTestByArgs {
 
     @Option(name = "--devid", aliases = {"-devid"}, usage = "row of page search")
     private String Devid = "0x0101";
+
+    @Option(name = "--percent", aliases = {"-p"}, usage = "percentage of the shape search")
+    private String Percent = "-1";
+
+
+    static final double x1 = 111.012928;
+    static final double x2 = 115.023983;
+    static final double y1 = 25.292677;
+    static final double y2 = 21.614865;
 
     public static void main(String[] args) {
 
@@ -118,31 +133,46 @@ public class SearchTestByArgs {
 
     void PosSpacialSearchTest() {
         PosSpacialSearchWs posSpacialSearchWs = new PosSpacialSearchWs();
+        long startTime = System.currentTimeMillis() - TimeRange;
+        long endTime = System.currentTimeMillis();
         String result = null;
         switch (Shape) {
             case "rectangle": {
-                for (int i = 0; i < 10; i += 1){
-                    long start = System.currentTimeMillis();
-                    double leftTop_1 = Double.parseDouble(LeftTop.split(",")[0]) - i;
-                    double leftTop_2 = Double.parseDouble(LeftTop.split(",")[1]) + i;
-                    double rightBottom_1 = Double.parseDouble(RightBottom.split(",")[0]) + i;
-                    double rightBottom_2 = Double.parseDouble(RightBottom.split(",")[1]) - i;
-                    LeftTop = leftTop_1 + "," + leftTop_2;
-                    RightBottom = rightBottom_1 + "," + rightBottom_2;
+                for (int i = 0; i < 10; i++){
+                    Rectangle rectangle = GetPercentRect();
+                    LeftTop = rectangle.getLeftTopX() + "," + rectangle.getLeftTopY();
+                    RightBottom = rectangle.getRightBottomX() + "," + rectangle.getRightBottomY();
+                    System.out.println("     " + LeftTop + "     " + RightBottom + "   ");
                     String searchRectangle = "{\"type\":\"rectangle\",\"leftTop\":\"" + LeftTop + "\",\"rightBottom\":\"" + RightBottom
-                            + "\",\"geoStr\":null,\"longitude\":null,\"latitude\":null,\"radius\":null}";
+                            + "\",\"geoStr\":null,\"longitude\":null,\"latitude\":null,\"radius\":null,\"startTime\":" + startTime +
+                            ",\"endTime\":" + endTime + "}";
+                    long start = System.currentTimeMillis();
                     posSpacialSearchWs.service(null, searchRectangle);
                     long end = System.currentTimeMillis();
                     long useTime = end - start;
                     System.out.println("耗时： " + useTime + "ms");
+
                 }
             }break;
             case "circle": {
-                for (int i = 0; i < 10; i += 1) {
-                    long start = System.currentTimeMillis();
-                    double radius = Double.parseDouble(Radius) + i;
+                for (int i = 0; i < 10; i ++) {
+                    double longitude = Double.parseDouble(Longitude);
+                    double latitude = Double.parseDouble(Latitude);
+                    double radius = Double.parseDouble(Radius);
+                    if (Double.parseDouble(Percent) >= 0 && Double.parseDouble(Percent) < 1) {
+                        Rectangle rectangle = GetPercentRect();
+                        double xLen = rectangle.getRightBottomX() - rectangle.getLeftTopX();
+                        double yLen = rectangle.getLeftTopY() - rectangle.getRightBottomY();
+                        double len = xLen < yLen ? xLen : yLen;
+                        radius = len / 2;
+                        longitude = rectangle.getLeftTopX() + radius;
+                        latitude = rectangle.getLeftTopY() - radius;
+                    }
                     String searchCircle = "{\"type\":\"circle\",\"leftTop\":null,\"rightBottom\":null,\"geoStr\":null,\"longitude\":"
-                            + Longitude + ",\"latitude\":" + Latitude + ",\"radius\":" + Radius + "}";
+                            + longitude + ",\"latitude\":" + latitude + ",\"radius\":" + radius + ",\"startTime\":" + startTime +
+                            ",\"endTime\":" + endTime + "}";
+                    System.out.println("   " + longitude + "  ss " + latitude + "  " + radius );
+                    long start = System.currentTimeMillis();
                     posSpacialSearchWs.service(null, searchCircle);
                     long end = System.currentTimeMillis();
                     long useTime = end - start;
@@ -162,7 +192,8 @@ public class SearchTestByArgs {
                 geostr += "]";
                 System.out.println(geostr);
                 String searchPolygon = "{\"type\":\"polygon\",\"leftTop\":null,\"rightBottom\":null,\"geoSt" +
-                        "r\":" + geostr + ",\"lon\":null,\"lat\":null,\"radius\":null}";
+                        "r\":" + geostr + ",\"lon\":null,\"lat\":null,\"radius\":null,\"startTime\":" + startTime +
+                        ",\"endTime\":" + endTime + "}";
                 result = posSpacialSearchWs.service(null, searchPolygon);
                 System.out.println(result);
                 long end = System.currentTimeMillis();
@@ -172,5 +203,36 @@ public class SearchTestByArgs {
             default: System.out.println("Invalid command!");
         }
 
+    }
+
+    Rectangle GetPercentRect () {
+        double leftTop_x = Double.parseDouble(LeftTop.split(",")[0]);
+        double leftTop_y = Double.parseDouble(LeftTop.split(",")[1]);
+        double rightBottom_x = Double.parseDouble(RightBottom.split(",")[0]);
+        double rightBottom_y = Double.parseDouble(RightBottom.split(",")[1]);
+        double percent = Double.parseDouble(Percent);
+        double xLen = (x2 - x1) * (1 - percent);
+        double yLen = (y1 - y2) * (1 - percent);
+        double S = (x2 - x1) * (y1 - y2);
+        while (percent >= 0 && percent < 1) {
+            double random = Math.random();
+            leftTop_x = x1 + random * xLen;
+            leftTop_y = y1 - random * yLen;
+            System.out.println("ssssdsdsd:" + leftTop_y + "   " + random * yLen);
+            rightBottom_x = leftTop_x + random * (x2 - x1) * 4;
+
+            if (rightBottom_x <= x2) {
+                rightBottom_y = leftTop_y - S * percent / (rightBottom_x - leftTop_x);
+                System.out.println("      " + rightBottom_y + "  " + S * percent / (rightBottom_x - leftTop_x));
+                if (rightBottom_y >= y2) {
+                    break;
+                } else {
+                    continue;
+                }
+            } else {
+                continue;
+            }
+        }
+        return new Rectangle(new Point(leftTop_x, leftTop_y), new Point(rightBottom_x, rightBottom_y));
     }
 }
