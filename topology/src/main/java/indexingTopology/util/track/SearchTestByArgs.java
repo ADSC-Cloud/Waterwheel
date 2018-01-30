@@ -65,6 +65,11 @@ public class SearchTestByArgs {
     static final double y1 = 25.292677;
     static final double y2 = 21.614865;
 
+    double leftTop_x;
+    double leftTop_y;
+    double rightBottom_x;
+    double rightBottom_y;
+
     public static void main(String[] args) {
 
         SearchTestByArgs SearchTestByArgs = new SearchTestByArgs();
@@ -139,10 +144,16 @@ public class SearchTestByArgs {
         switch (Shape) {
             case "rectangle": {
                 for (int i = 0; i < 10; i++){
-                    Rectangle rectangle = GetPercentRect();
+                    double leftTop_x = Double.parseDouble(LeftTop.split(",")[0]) - 1;
+                    double leftTop_y = Double.parseDouble(LeftTop.split(",")[1]) + 1;
+                    double rightBottom_x = Double.parseDouble(RightBottom.split(",")[0]) + 1;
+                    double rightBottom_y = Double.parseDouble(RightBottom.split(",")[1]) - 1;
+                    Rectangle rectangle = new Rectangle(new Point(leftTop_x, leftTop_y), new Point(rightBottom_x, rightBottom_y));
+                    if (Double.parseDouble(Percent) >= 0 && Double.parseDouble(Percent) < 1) {
+                        rectangle = GetPercentRect();
+                    }
                     LeftTop = rectangle.getLeftTopX() + "," + rectangle.getLeftTopY();
                     RightBottom = rectangle.getRightBottomX() + "," + rectangle.getRightBottomY();
-                    System.out.println("     " + LeftTop + "     " + RightBottom + "   ");
                     String searchRectangle = "{\"type\":\"rectangle\",\"leftTop\":\"" + LeftTop + "\",\"rightBottom\":\"" + RightBottom
                             + "\",\"geoStr\":null,\"longitude\":null,\"latitude\":null,\"radius\":null,\"startTime\":" + startTime +
                             ",\"endTime\":" + endTime + "}";
@@ -158,7 +169,7 @@ public class SearchTestByArgs {
                 for (int i = 0; i < 10; i ++) {
                     double longitude = Double.parseDouble(Longitude);
                     double latitude = Double.parseDouble(Latitude);
-                    double radius = Double.parseDouble(Radius);
+                    double radius = Double.parseDouble(Radius) + i;
                     if (Double.parseDouble(Percent) >= 0 && Double.parseDouble(Percent) < 1) {
                         Rectangle rectangle = GetPercentRect();
                         double xLen = rectangle.getRightBottomX() - rectangle.getLeftTopX();
@@ -171,7 +182,6 @@ public class SearchTestByArgs {
                     String searchCircle = "{\"type\":\"circle\",\"leftTop\":null,\"rightBottom\":null,\"geoStr\":null,\"longitude\":"
                             + longitude + ",\"latitude\":" + latitude + ",\"radius\":" + radius + ",\"startTime\":" + startTime +
                             ",\"endTime\":" + endTime + "}";
-                    System.out.println("   " + longitude + "  ss " + latitude + "  " + radius );
                     long start = System.currentTimeMillis();
                     posSpacialSearchWs.service(null, searchCircle);
                     long end = System.currentTimeMillis();
@@ -206,24 +216,18 @@ public class SearchTestByArgs {
     }
 
     Rectangle GetPercentRect () {
-        double leftTop_x = Double.parseDouble(LeftTop.split(",")[0]);
-        double leftTop_y = Double.parseDouble(LeftTop.split(",")[1]);
-        double rightBottom_x = Double.parseDouble(RightBottom.split(",")[0]);
-        double rightBottom_y = Double.parseDouble(RightBottom.split(",")[1]);
         double percent = Double.parseDouble(Percent);
         double xLen = (x2 - x1) * (1 - percent);
         double yLen = (y1 - y2) * (1 - percent);
         double S = (x2 - x1) * (y1 - y2);
-        while (percent >= 0 && percent < 1) {
+        while (true) {
             double random = Math.random();
             leftTop_x = x1 + random * xLen;
             leftTop_y = y1 - random * yLen;
-            System.out.println("ssssdsdsd:" + leftTop_y + "   " + random * yLen);
             rightBottom_x = leftTop_x + random * (x2 - x1) * 4;
 
             if (rightBottom_x <= x2) {
                 rightBottom_y = leftTop_y - S * percent / (rightBottom_x - leftTop_x);
-                System.out.println("      " + rightBottom_y + "  " + S * percent / (rightBottom_x - leftTop_x));
                 if (rightBottom_y >= y2) {
                     break;
                 } else {
