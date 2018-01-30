@@ -29,7 +29,7 @@ public class TrackPagedSearchWs implements Serializable{
     private String errorCode;
     private String errorMsg;
     private String hdfsIP = "68.28.8.91";
-    private String QueryServerIp = "68.28.8.91";
+    private String QueryServerIp = "localhost";
 
     public TrackPagedSearchWs(){
 
