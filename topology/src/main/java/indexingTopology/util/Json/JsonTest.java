@@ -22,7 +22,7 @@ public class JsonTest {
         String currentTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(date);
         switch (caseNum){
             case 1 : { // without necessary attribute devbtype
-                Msg = "{\"devbtype\":" + 11 + ",\"devstype\":\"123\",\"devid\":\"75736331\",\"city\":\"4406\",\"longitude\":"+ 80.8888888888 + ",\"latitude\":" + 80.8888888888 + ",\"altitude\":2000.0," +
+                Msg = "{\"devbtype\":" + 11 + ",\"devstype\":\"123\",\"devid\":\"75736331\",\"city\":\"4406\",\"longitude\":"+ 113.123123 + ",\"latitude\":" + 23.874917 + ",\"altitude\":2000.0," +
                         "\"speed\":50.0,\"direction\":40.0,\"locationtime\":\""+ currentTime +"\",\"workstate\":1,\"clzl\":\"巡逻车\",\"hphm\":\"粤A39824\",\"jzlx\":1,\"jybh\":\"100011\"," +
                         "\"jymc\":\"陈国基\",\"lxdh\":\"13576123212\",\"dth\":\"SG0000000352\",\"reserve1\":null,\"reserve2\":\"\",\"reserve3\":\"\",\"ssdwdm\":\"440100000000\"," +
                         "\"ssdwmc\":\"广州市\",\"teamno\":\"44010001\"}";

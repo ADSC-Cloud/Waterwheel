@@ -27,13 +27,14 @@ import java.util.regex.Pattern;
  **/
 public class PosSpacialSearchWs {
 
-    private String QueryServerIp = "68.28.8.91";
+    private String QueryServerIp = "localhost";
     private Point leftTop, rightBottom;
     private Point[] geoStr;
     private Point circle;
     private double radius;
     private Point externalLeftTop, externalRightBottom;
     private String hdfsIP = "68.28.8.91";
+
 
     public String service(String permissionsParams, String businessParams) {
         DataSchema schema = getDataSchema();
