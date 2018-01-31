@@ -35,6 +35,7 @@ public class PosSpacialSearchWs {
     private Point externalLeftTop, externalRightBottom;
     private String hdfsIP = "68.28.8.91";
 
+
     public String service(String permissionsParams, String businessParams) {
         DataSchema schema = getDataSchema();
         try{
