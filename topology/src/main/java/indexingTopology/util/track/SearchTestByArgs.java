@@ -102,7 +102,7 @@ public class SearchTestByArgs {
         }
         long end = System.currentTimeMillis();
         long useTime = end - start;
-        System.out.println("总耗时： " + useTime + "ms");
+        System.out.println("Overall Response time: " + useTime + "ms");
 
     }
 
@@ -117,8 +117,8 @@ public class SearchTestByArgs {
             String queryResult = trackSearchWs.services(null, businessParams);
             long end = System.currentTimeMillis();
             long useTime = end - start;
-            System.out.println(queryResult);
-            System.out.println("耗时： " + useTime + "ms");
+//            System.out.println(queryResult);
+            System.out.println("Response time: " + useTime + "ms");
         }
     }
 
@@ -161,8 +161,7 @@ public class SearchTestByArgs {
                     posSpacialSearchWs.service(null, searchRectangle);
                     long end = System.currentTimeMillis();
                     long useTime = end - start;
-                    System.out.println("耗时： " + useTime + "ms");
-
+                    System.out.println("Response time: " + useTime + "ms");
                 }
             }break;
             case "circle": {
@@ -186,7 +185,7 @@ public class SearchTestByArgs {
                     posSpacialSearchWs.service(null, searchCircle);
                     long end = System.currentTimeMillis();
                     long useTime = end - start;
-                    System.out.println("耗时： " + useTime + "ms");
+                    System.out.println("Response time: " + useTime + "ms");
                 }
             }break;
             case "polygon": {
@@ -208,7 +207,7 @@ public class SearchTestByArgs {
                 System.out.println(result);
                 long end = System.currentTimeMillis();
                 long useTime = end - start;
-                System.out.println("耗时： " + useTime + "ms");
+                System.out.println("Response time: " + useTime + "ms");
             }break;
             default: System.out.println("Invalid command!");
         }

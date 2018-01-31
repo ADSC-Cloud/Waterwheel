@@ -130,8 +130,9 @@ public class PosSpacialSearchWs {
                     for (DataTuple tuple : tuples){
                         JSONObject jsonFromTuple = schema.getJsonFromDataTupleWithoutZcode(tuple);
                         queryResult.add(jsonFromTuple);
-                        System.out.println(jsonFromTuple);
+//                        System.out.println(jsonFromTuple);
                     }
+                    System.out.println(tuples.size() + " tuples.");
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (ClassNotFoundException e) {
