@@ -135,7 +135,7 @@ public class InputStreamKafkaReceiverBoltServer extends InputStreamReceiverBolt 
                             JSONObject jsonFromData = JSONObject.parseObject(record.value());
 //                            System.out.println(record.value());
                             boolean checkRecord = kafkaDataSchema.checkDataIntegrity(jsonFromData);
-                            if(checkRecord == true){ // filter incomplete data
+                            if(checkRecord){ // filter incomplete data
                                 DataTuple dataTuple = schema.getTupleFromJsonObject(jsonFromData);
                                 if(dataTuple != null){
                                     getInputQueue().put(dataTuple);

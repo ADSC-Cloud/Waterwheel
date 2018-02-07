@@ -184,7 +184,7 @@ public class GeoTemporalQueryCoordinatorBoltBolt<T extends Number & Comparable<T
 
                 pendingQueryQueue.put(queryList);
 
-//                System.out.println("Admitted a query.  waiting for query results");
+                System.out.println("Admitted a query.  waiting for query results");
                 boolean eof = false;
                 while(!eof) {
 //                    System.out.println("Before take!");

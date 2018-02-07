@@ -68,7 +68,7 @@ public class KafkaTopology {
      * topology configuration
      */
     @Option(name = "--topology-name", aliases = "-t", usage = "topology name")
-    private String TopologyName = "T1231";
+    private String TopologyName = "waterwheel";
 
     @Option(name = "--config-file", aliases = {"-f"}, usage = "conf.yaml to override default configs")
     private String confFile = "conf/conf.yaml";
@@ -315,8 +315,8 @@ public class KafkaTopology {
         City city = new City(x1, x2, y1, y2, partitions);
 
         Integer lowerBound = 0;
-//        Integer upperBound = city.getMaxZCode();
-        Integer upperBound = 5000;
+        Integer upperBound = city.getMaxZCode();
+//        Integer upperBound = 5000;
 
         config.override(confFile);
         System.out.println("Topology is overridden by " + confFile);
@@ -349,7 +349,8 @@ public class KafkaTopology {
 //        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, lowerBound, upperBound,
 //                enableLoadBalance, dataSource, queryCoordinatorBolt, dataTupleMapper, bloomFilterColumns, config);
         List<String> bloomFilterColumns = new ArrayList<>();
-        bloomFilterColumns.add("longitude");
+        bloomFilterColumns.add("devid");
+//        bloomFilterColumns.add("longitude");
 
         TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
         topologyGenerator.setNumberOfNodes(NumberOfNodes);
@@ -367,8 +368,7 @@ public class KafkaTopology {
 
         // use ResourceAwareScheduler with some magic configurations to ensure that QueryCoordinator and Sink
         // are executed on the nimbus node.
-        conf.setTopologyStrategy(org.apache.storm.scheduler.resource.strategies.scheduling.DefaultResourceAwareStrategy.class);
-
+        conf.setTopologyStrategy(waterwheel.scheduler.FFDStrategyByCPU.class);
 
 //        LocalCluster localCluster = new LocalCluster();
 //        localCluster.submitTopology(TopologyName, conf, topology);

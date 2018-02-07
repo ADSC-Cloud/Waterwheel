@@ -714,16 +714,20 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
                 debugger.info = "Indexer: B6";
                 List<DataTuple> dataTuples = new ArrayList<>();
 
-
+                System.out.println("Before filtering: " + serializedTuples.size());
+                int predicateFailCount = 0;
                 for (int i = 0; i < serializedTuples.size(); ++i) {
                     DataTuple dataTuple = schema.deserializeToDataTuple(serializedTuples.get(i));
                     Long timestamp = (Long) schema.getTemporalValue(dataTuple);
                     if (timestamp >= startTimestamp && timestamp <= endTimestamp) {
                         if (predicate == null || predicate.test(dataTuple)) {
                             dataTuples.add(dataTuple);
-                        }
+                        } else
+                            predicateFailCount++;
                     }
                 }
+                System.out.println("After filtering: " + dataTuples.size());
+                System.out.println(String.format("Predicate fails: %d", predicateFailCount));
                 timeMetrics.endEvent("time and udf filtering");
                 debugger.info = "Indexer: B7";
                 timeMetrics.startEvent("aggregator");

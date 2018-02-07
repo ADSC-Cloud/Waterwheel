@@ -11,10 +11,10 @@ public class Rectangle implements Shape, Serializable{
     private double rightBottomX, rightBottomY;
 
     public Rectangle(Point leftTop, Point rightBottom) {
-        this.leftTopX = leftTop.x;
-        this.leftTopY = leftTop.y;
-        this.rightBottomX = rightBottom.x;
-        this.rightBottomY = rightBottom.y;
+        this.leftTopX = Math.min(leftTop.x, rightBottom.x);
+        this.leftTopY = Math.max(leftTop.y, rightBottom.y);
+        this.rightBottomX = Math.max(leftTop.x, rightBottom.x);
+        this.rightBottomY = Math.min(leftTop.y, rightBottom.y);
     }
 
     public double getLeftTopX() {

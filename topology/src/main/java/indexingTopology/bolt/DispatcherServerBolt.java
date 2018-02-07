@@ -99,7 +99,10 @@ public class DispatcherServerBolt<IndexType extends Number> extends BaseRichBolt
             if (tupleMapper != null) {
                 dataTuple = tupleMapper.map(dataTuple);
             }
-
+//            System.out.println("Schema: " + outputSchema.toString());
+//            System.out.println("after map: " + dataTuple.toString());
+//
+//            System.out.println("Current time: " + System.currentTimeMillis());
             IndexType indexValue = (IndexType) outputSchema.getIndexValue(dataTuple);
 
             balancedPartition.record(indexValue);

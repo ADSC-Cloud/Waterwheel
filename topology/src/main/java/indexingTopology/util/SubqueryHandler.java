@@ -161,13 +161,13 @@ public class SubqueryHandler<TKey extends Number & Comparable<TKey>> {
 
 
                 //filter by predicate
-//            System.out.println("Before predicates: " + dataTuples.size());
+            System.out.println("Before predicates: " + dataTuples.size());
                 startTime = System.currentTimeMillis();
 
                 filterByPredicate(dataTuples, subQuery.getPredicate());
                 debugInfo.runningPosition = String.format("breakpoint 9.%d.5", count);
                 predicationTime += System.currentTimeMillis() - startTime;
-//            System.out.println("After predicates: " + dataTuples.size());
+            System.out.println("After predicates: " + dataTuples.size());
 
 
                 startTime = System.currentTimeMillis();
@@ -213,7 +213,8 @@ public class SubqueryHandler<TKey extends Number & Comparable<TKey>> {
 
         List<DataTuple> result =
                 tuples.stream().filter(p -> {
-                    Long timestamp = (Long) schema.getValue("timestamp", p);
+//                    Long timestamp = (Long) schema.getValue("timestamp", p);
+                    Long timestamp = (Long) schema.getTemporalValue(p);
                     return timestampLowerBound <= timestamp && timestampUpperBound >= timestamp;
                 }).collect(Collectors.toList());
         tuples.clear();

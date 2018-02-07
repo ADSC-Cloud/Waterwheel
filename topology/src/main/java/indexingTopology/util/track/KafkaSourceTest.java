@@ -26,23 +26,23 @@ public class KafkaSourceTest {
 
     public void sourceProducer(){
         long start = System.currentTimeMillis();
-        TrajectoryGenerator generator = new TrajectoryMovingGenerator(x1, x2, y1, y2, 100000, 45.0);
+        TrajectoryGenerator generator = new TrajectoryMovingGenerator(x1, x2, y1, y2, 10000, 60 * 10);
         JsonTest jsonTest = new JsonTest();
         String regEx = "[`~!@#$%^&*()+=|{}';'\\[\\]<>/?~！@#�%……&*（）——+|{}【】‘；：”“’。，、？]";
         Pattern p = Pattern.compile(regEx);
         Matcher m = p.matcher("[\"10.21.25.203:9092\",\"10.21.25.204:9092\",\"10.21.25.205:9092\"]");
         String currentKafkahost = m.replaceAll("").trim();
 //        IngestionKafkaBatchMode kafkaBatchMode = new IngestionKafkaBatchMode("10.21.25.203:9092,10.21.25.203:9092,10.21.25.203:9092", "gpis");
-        IngestionKafkaBatchMode kafkaBatchMode = new IngestionKafkaBatchMode("localhost:9092", "gpis");
+        IngestionKafkaBatchMode kafkaBatchMode = new IngestionKafkaBatchMode("192.168.0.150:9092", "gpis");
         kafkaBatchMode.ingestProducer();
-        int total = 10;
-        FrequencyRestrictor restrictor = new FrequencyRestrictor(1000, 5);
+        int batchSize = 10000;
+        FrequencyRestrictor restrictor = new FrequencyRestrictor(10000000, 5);
         RateTracker rateTracker = new RateTracker(1000, 5);
         Thread emittingThread = null;
         emittingThread = new Thread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    for (int i = 0; i < total; i++) {
+                    for (int i = 0; i < batchSize; i++) {
                         restrictor.getPermission();
                         rateTracker.notify(1);
                         Car car = generator.generate();
@@ -58,14 +58,14 @@ public class KafkaSourceTest {
                         String currentTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(date);
 //                            System.out.println(devbtype);
 //                            String Msg = "{\"lon\":"+ car.x + ",\"lat\":" + car.y + ",\"devbtype\":"+ devbtype +",\"devid\":\"asd\",\"city\":\"4401\",\"locationtime\":" + System.currentTimeMillis() +  "}";
-                        if (i  < total/2) {
-//                        if(i < 0){
-                            String Msg = jsonTest.CheckJingyiJson(1);
-//                            String Msg = "{\"asd\":\"\",\"reserve1\":\"1\",\"reserve2\":\"\",\"reserve3\":\"\",\"ssdwdm\":\"440100000000\"," +
-//                                    "\"ssdwmc\":\"字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数\",\"teamno\":\"44010001\",}";
-                            kafkaBatchMode.send(i, Msg);
-                        } else {
-                            String Msg = "{\"devbtype\":" + 11 + ",\"devstype\":" + 123 + ",\"devid\":\"75736331\",\"city\":\"4406\",\"longitude\":" + 113.123123 + ",\"latitude\":" + 23.874917
+//                        if (i  < batchSize/2) {
+////                        if(i < 0){
+//                            String Msg = jsonTest.CheckJingyiJson(1);
+////                            String Msg = "{\"asd\":\"\",\"reserve1\":\"1\",\"reserve2\":\"\",\"reserve3\":\"\",\"ssdwdm\":\"440100000000\"," +
+////                                    "\"ssdwmc\":\"字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数字数\",\"teamno\":\"44010001\",}";
+//                            kafkaBatchMode.send(i, Msg);
+//                        } else {
+                            String Msg = "{\"devbtype\":" + 11 + ",\"devstype\":" + 123 + ",\"devid\":\"" + car.id + "\",\"city\":\"4406\",\"longitude\":" + car.x + ",\"latitude\":" + car.y
                                     + ",\"altitude\":\"0\"," +
                                     "\"speed\":\"0\",\"direction\":\"0\",\"locationtime\":\"" + currentTime + "\",\"workstate\":\"1\",\"clzl\":\"\",\"hphm\":\"\",\"jzlx\":\"7\",\"jybh\":\"100011\"," +
                                     "\"jymc\":\"陈国基陈国基陈国基陈国基陈国基陈国基陈国基陈国基陈国基陈国基\",\"lxdh\":\"13576123212\",\"dth\":\"\",\"reserve1\":\"1\",\"reserve2\":\"\",\"reserve3\":\"\",\"ssdwdm\":\"440100000000\"," +
@@ -77,7 +77,7 @@ public class KafkaSourceTest {
 //                            String   Msg = "{\"devbtype\":" + 10 + ",\"devstype\":\"123\"}";
 //                            System.out.println(currentTime);
                             kafkaBatchMode.send(i, Msg);
-                        }
+//                        }
                         //                        this.producer.send(new ProducerRecord<String, String>("consumer",
                         //                                String.valueOf(i), "{\"employees\":[{\"firstName\":\"John\",\"lastName\":\"Doe\"},{\"firstName\":\"Anna\",\"lastName\":\"Smith\"},{\"firstName\":\"Peter\",\"lastName\":\"Jones\"}]}"));
                         //                        String.format("{\"type\":\"test\", \"t\":%d, \"k\":%d}", System.currentTimeMillis(), i)));

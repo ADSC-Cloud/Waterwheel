@@ -33,6 +33,9 @@ public class GeoTemporalQueryClient extends QueryClient {
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
             return null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 
@@ -59,6 +62,9 @@ public class GeoTemporalQueryClient extends QueryClient {
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
             return null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 
@@ -68,6 +74,9 @@ public class GeoTemporalQueryClient extends QueryClient {
         try {
             return (QueryResponse) objectInputStream.readUnshared();
         } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }

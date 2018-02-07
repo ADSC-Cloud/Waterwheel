@@ -88,6 +88,10 @@ public class BackPressure {
         return id;
     }
 
+    public boolean noPendingTuple() {
+        return tupleId.get() == currentCount.get();
+    }
+
     public synchronized Long tryAcquireNextTupleId() {
         if (tupleId.get() >= currentCount.get() + maxPending)
             return null;
