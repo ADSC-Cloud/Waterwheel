@@ -59,6 +59,9 @@ public class SearchTestByArgs {
     @Option(name = "--percent", aliases = {"-p"}, usage = "percentage of the shape search")
     private String Percent = "-1";
 
+    @Option(name = "--id", usage = "query over id")
+    private String id = null;
+
 
     static final double x1 = 111.012928;
     static final double x2 = 115.023983;
@@ -144,13 +147,14 @@ public class SearchTestByArgs {
         switch (Shape) {
             case "rectangle": {
                 for (int i = 0; i < 10; i++){
-                    double leftTop_x = Double.parseDouble(LeftTop.split(",")[0]) - 1;
-                    double leftTop_y = Double.parseDouble(LeftTop.split(",")[1]) + 1;
-                    double rightBottom_x = Double.parseDouble(RightBottom.split(",")[0]) + 1;
-                    double rightBottom_y = Double.parseDouble(RightBottom.split(",")[1]) - 1;
+                    double leftTop_x = x1;
+                    double leftTop_y = y1;
+                    double rightBottom_x = x2;
+                    double rightBottom_y = y2;
                     Rectangle rectangle = new Rectangle(new Point(leftTop_x, leftTop_y), new Point(rightBottom_x, rightBottom_y));
-                    if (Double.parseDouble(Percent) >= 0 && Double.parseDouble(Percent) < 1) {
-                        rectangle = GetPercentRect();
+                    double percentage = Double.parseDouble(Percent);
+                    if (percentage >= 0 && percentage < 1) {
+                        rectangle = zoomInRectangle(percentage);
                     }
                     LeftTop = rectangle.getLeftTopX() + "," + rectangle.getLeftTopY();
                     RightBottom = rectangle.getRightBottomX() + "," + rectangle.getRightBottomY();
@@ -158,7 +162,8 @@ public class SearchTestByArgs {
                             + "\",\"geoStr\":null,\"longitude\":null,\"latitude\":null,\"radius\":null,\"startTime\":" + startTime +
                             ",\"endTime\":" + endTime + "}";
                     long start = System.currentTimeMillis();
-                    posSpacialSearchWs.service(null, searchRectangle);
+                    System.out.println(String.format("%f-%f, %f-%f", leftTop_x, rightBottom_x, leftTop_y, rightBottom_y));
+                    posSpacialSearchWs.service(null, searchRectangle, startTime, endTime, id);
                     long end = System.currentTimeMillis();
                     long useTime = end - start;
                     System.out.println("Response time: " + useTime + "ms");
@@ -169,8 +174,9 @@ public class SearchTestByArgs {
                     double longitude = Double.parseDouble(Longitude);
                     double latitude = Double.parseDouble(Latitude);
                     double radius = Double.parseDouble(Radius) + i;
-                    if (Double.parseDouble(Percent) >= 0 && Double.parseDouble(Percent) < 1) {
-                        Rectangle rectangle = GetPercentRect();
+                    double percentage = Double.parseDouble(Percent);
+                    if (percentage >= 0 && percentage < 1) {
+                        Rectangle rectangle = zoomInRectangle(percentage);
                         double xLen = rectangle.getRightBottomX() - rectangle.getLeftTopX();
                         double yLen = rectangle.getLeftTopY() - rectangle.getRightBottomY();
                         double len = xLen < yLen ? xLen : yLen;
@@ -182,7 +188,7 @@ public class SearchTestByArgs {
                             + longitude + ",\"latitude\":" + latitude + ",\"radius\":" + radius + ",\"startTime\":" + startTime +
                             ",\"endTime\":" + endTime + "}";
                     long start = System.currentTimeMillis();
-                    posSpacialSearchWs.service(null, searchCircle);
+                    posSpacialSearchWs.service(null, searchCircle, startTime, endTime, id);
                     long end = System.currentTimeMillis();
                     long useTime = end - start;
                     System.out.println("Response time: " + useTime + "ms");
@@ -203,7 +209,7 @@ public class SearchTestByArgs {
                 String searchPolygon = "{\"type\":\"polygon\",\"leftTop\":null,\"rightBottom\":null,\"geoSt" +
                         "r\":" + geostr + ",\"lon\":null,\"lat\":null,\"radius\":null,\"startTime\":" + startTime +
                         ",\"endTime\":" + endTime + "}";
-                result = posSpacialSearchWs.service(null, searchPolygon);
+                result = posSpacialSearchWs.service(null, searchPolygon, startTime, endTime, id);
                 System.out.println(result);
                 long end = System.currentTimeMillis();
                 long useTime = end - start;
@@ -237,5 +243,19 @@ public class SearchTestByArgs {
             }
         }
         return new Rectangle(new Point(leftTop_x, leftTop_y), new Point(rightBottom_x, rightBottom_y));
+    }
+
+    Rectangle zoomInRectangle(double percentage) {
+        final double oneDimensionalPercentage = Math.sqrt(percentage);
+        double xLen = Math.abs(x2 - x1) * oneDimensionalPercentage;
+        double yLen = Math.abs(y1 - y2) * oneDimensionalPercentage;
+        Random random = new Random();
+
+        double lefttop_x = Math.min(x1, x2) + random.nextDouble() * Math.abs(x2 - x1) * (1 - oneDimensionalPercentage);
+        double lefttop_y = Math.min(y1, y2) + random.nextDouble() * Math.abs(y1 - y2) * (1 - oneDimensionalPercentage);
+        double rightbottm_x = lefttop_x + xLen;
+        double rightbotton_y = lefttop_y + yLen;
+        System.out.println(String.format("%f -> %f ======== %f -> %f", y1, y2, lefttop_y, rightbotton_y));
+        return new Rectangle(new Point(lefttop_x, lefttop_y), new Point(rightbottm_x, rightbotton_y));
     }
 }

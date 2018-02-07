@@ -77,8 +77,7 @@ public class TopologyTest extends TestCase {
             }
             config.dataChunkDir = "./target/tmp";
             config.metadataDir = "./target/tmp";
-            config.CHUNK_SIZE = 2 * 1024 * 1024;
-            config.HDFSFlag = false;
+            config.CHUNK_SIZE = 512 * 1024;
             config.HDFSFlag = false;
             config.previousTime = Integer.MAX_VALUE;
             System.out.println("dataChunkDir is set to " + config.dataChunkDir);
@@ -1101,12 +1100,6 @@ public class TopologyTest extends TestCase {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        final QueryClient queryClient = new QueryClient("localhost", queryPort);
-        try {
-            queryClient.connectWithTimeout(10000);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
         ExecutorService executorService = Executors.newCachedThreadPool();
 
@@ -1133,7 +1126,13 @@ public class TopologyTest extends TestCase {
 
         // wait for the tuples to be appended.
         ingestionClient.waitFinish();
-        Thread.sleep(3000);
+        Thread.sleep(8000);
+        final QueryClient queryClient = new QueryClient("localhost", queryPort);
+        try {
+            queryClient.connectWithTimeout(10000);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         try {
 
@@ -1167,6 +1166,126 @@ public class TopologyTest extends TestCase {
             KillOptions killOptions = new KillOptions();
             killOptions.set_wait_secs(0);
             cluster.killTopologyWithOpts("testSimpleTopologyTemporalQuery", killOptions);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        assertTrue(fullyExecuted);
+        socketPool.returnPort(ingestionPort);
+        socketPool.returnPort(queryPort);
+    }
+
+    @Test
+    public void testSimpleTopologyTemporalQueryWithSpecificTemporalField() throws InterruptedException {
+        DataSchema schema = new DataSchema();
+        schema.addIntField("a1");
+        schema.addDoubleField("a2");
+        schema.addLongField("time");
+        schema.setTemporalField("time");
+        schema.addVarcharField("a4", 100);
+        schema.setPrimaryIndexField("a1");
+
+        final int minIndex = 0;
+        final int maxIndex = 1000;
+
+        int ingestionPort = socketPool.getAvailablePort();
+        int queryPort = socketPool.getAvailablePort();
+
+        TopologyGenerator<Integer> topologyGenerator = new TopologyGenerator<>();
+
+        InputStreamReceiverBolt inputStreamReceiverBolt = new InputStreamReceiverBoltServer(schema, ingestionPort, config);
+        QueryCoordinatorBolt<Integer> coordinator = new QueryCoordinatorWithQueryReceiverServerBolt<>(minIndex, maxIndex, queryPort,
+                config, schema);
+
+        StormTopology topology = topologyGenerator.generateIndexingTopology(schema, minIndex, maxIndex, false, inputStreamReceiverBolt,
+                coordinator, config);
+
+        Config conf = new Config();
+        conf.setDebug(false);
+        conf.setNumWorkers(1);
+
+//        conf.put(Config.WORKER_CHILDOPTS, "-Xmx2048m");
+//        conf.put(Config.WORKER_HEAP_MEMORY_MB, 2048);
+
+
+//        LocalCluster cluster = new LocalCluster();
+        cluster.submitTopology("testSimpleTopologyTemporalQueryWithSpecificTemporalField", conf, topology);
+
+        final int tuples = 100000;
+
+
+        final IngestionClientBatchMode ingestionClient = new IngestionClientBatchMode("localhost", ingestionPort, schema, 1024);
+        try {
+            ingestionClient.connectWithTimeout(10000);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        final QueryClient queryClient = new QueryClient("localhost", queryPort);
+        try {
+            queryClient.connectWithTimeout(10000);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        ExecutorService executorService = Executors.newCachedThreadPool();
+
+
+        boolean fullyExecuted = false;
+
+        for (int i = 0; i < tuples; i++) {
+            DataTuple tuple = new DataTuple();
+            tuple.add(i % 100);
+            tuple.add((double)(i % 100));
+            tuple.add((long)(i / (tuples / 100)));
+            tuple.add("payload");
+            try {
+                ingestionClient.appendInBatch(tuple);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        try {
+            ingestionClient.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // wait for the tuples to be appended.
+        ingestionClient.waitFinish();
+        Thread.sleep(8000);
+
+        try {
+
+            Aggregator<Integer> aggregator = new Aggregator<>(schema, null,
+                    new AggregateField(new Count(), "*"));
+
+
+            // full temporal range query
+            QueryResponse response = queryClient.query(new QueryRequest<>(0, 1000, Long.MIN_VALUE,
+                    Long.MAX_VALUE, aggregator));
+            assertEquals((double)tuples, response.dataTuples.get(0).get(0));
+
+            //half temporal range query
+            response = queryClient.query(new QueryRequest<>(0, 100, 0, 49, aggregator));
+            assertEquals((double)tuples / 2, response.dataTuples.get(0).get(0));
+
+            //a temporal range query
+            response =  queryClient.query(new QueryRequest<>(0,100, 0, 0, aggregator));
+            assertEquals((double)tuples / 100, response.dataTuples.get(0).get(0));
+
+
+            fullyExecuted = true;
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            ingestionClient.close();
+            queryClient.close();
+            KillOptions killOptions = new KillOptions();
+            killOptions.set_wait_secs(0);
+            cluster.killTopologyWithOpts("testSimpleTopologyTemporalQueryWithSpecificTemporalField", killOptions);
         } catch (IOException e) {
             e.printStackTrace();
         }

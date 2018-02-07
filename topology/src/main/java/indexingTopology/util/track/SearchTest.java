@@ -11,10 +11,10 @@ public class SearchTest {
         Scanner scanner =new Scanner(System.in);
         while (scanner.hasNext()){
             String  querySelect = scanner.next();
+            long startTime = System.currentTimeMillis() - 30 * 1000;
+            long endTime = System.currentTimeMillis();
             switch (querySelect){
                 case "1" : {
-                    long startTime = System.currentTimeMillis() - 30 * 1000;
-                    long endTime = System.currentTimeMillis();
                     String businessParams = "{\"city\":\"4403\",\"devbtype\":1,\"devid\":\"75736331\",\"startTime\":" + startTime + ",\"endTime\":" + endTime + "}";
                     TrackSearchWs trackSearchWs = new TrackSearchWs();
                     String queryResult = trackSearchWs.services(permissionParams, businessParams);
@@ -22,8 +22,6 @@ public class SearchTest {
                     break;
                 }
                 case "2" : {
-                    long startTime = System.currentTimeMillis() - 30 * 1000;
-                    long endTime = System.currentTimeMillis();
                     String businessParamsPaged = "{\"city\":\"4403\",\"devbtype\":1,\"devid\":\"75736331\",\"startTime\":" + startTime + ",\"endTime\":" + endTime + ",\"page\":1,\"rows\":10}";
                     TrackPagedSearchWs trackPagedSearchWs = new TrackPagedSearchWs();
                     String queryResultPaged = trackPagedSearchWs.services(permissionParams, businessParamsPaged);
@@ -39,14 +37,14 @@ public class SearchTest {
                 case "4" : {
                     String searcRectangle = "{\"type\":\"rectangle\",\"leftTop\":\"10,1000\",\"rightBottom\":\"1000,10\",\"geoStr\":null,\"longitude\":null,\"latitude\":null,\"radius\":null}";
                     PosSpacialSearchWs posSpacialSearchWs = new PosSpacialSearchWs();
-                    String result = posSpacialSearchWs.service(null, searcRectangle);
+                    String result = posSpacialSearchWs.service(null, searcRectangle, startTime, endTime, null);
                     System.out.println(result);
                     break;
                 }
                 case "5" : {
                     String searchCircle = "{\"type\":\"circle\",\"leftTop\":null,\"rightBottom\":null,\"geoStr\":null,\"longitude\":110,\"latitude\":20,\"radius\":10}";
                     PosSpacialSearchWs posSpacialSearchWs = new PosSpacialSearchWs();
-                    String result = posSpacialSearchWs.service(null, searchCircle);
+                    String result = posSpacialSearchWs.service(null, searchCircle, startTime, endTime, null);
                     System.out.println(result);
                     break;
                 }
@@ -57,7 +55,7 @@ public class SearchTest {
                     String searchPolygon = "{\"type\":\"polygon\",\"leftTop\":null,\"rightBottom\":null,\"geoSt" +
                             "r\":[\"100 10\",\"120 10\",\"120 30\",\"100 30\"],\"lon\":null,\"lat\":null,\"radius\":null}";
                     PosSpacialSearchWs posSpacialSearchWs = new PosSpacialSearchWs();
-                    String result = posSpacialSearchWs.service(null, searchPolygon);
+                    String result = posSpacialSearchWs.service(null, searchPolygon, startTime, endTime, null);
                     System.out.println(result);
                     break;
                 }
