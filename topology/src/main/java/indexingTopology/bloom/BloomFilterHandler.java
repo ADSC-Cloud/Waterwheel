@@ -221,8 +221,9 @@ public class BloomFilterHandler {
     public void store() throws IOException, URISyntaxException {
 
         // writing to a local file before writing to HDFS, if file exist, overwrite it
-        OutputStream os = new FileOutputStream(this.localFileName, false);
-        this.bloomFilter.writeTo(os);
+        try (OutputStream os = new FileOutputStream(this.localFileName, false)) {
+            this.bloomFilter.writeTo(os);
+        }
 
         // writing to HDFS from local file
         BFHDFSHandler.writeHDFS(this.localFileName);

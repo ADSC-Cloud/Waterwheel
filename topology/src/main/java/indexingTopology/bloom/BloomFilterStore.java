@@ -28,7 +28,7 @@ public class BloomFilterStore {
     public BloomFilterStore(TopologyConfig config) {
         this.config = config;
         try {
-            Runtime.getRuntime().exec("mkdir -p " + config.metadataDir);
+            Runtime.getRuntime().exec(new String[]{ "mkdir", "-p", config.metadataDir });
         } catch (IOException e) {
             e.printStackTrace();
         }

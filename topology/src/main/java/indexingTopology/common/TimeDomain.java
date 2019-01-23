@@ -1,6 +1,7 @@
 package indexingTopology.common;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * Created by acelzj on 12/2/17.
@@ -28,8 +29,8 @@ public class TimeDomain implements Serializable {
         if (this == obj) return true;
         if (obj instanceof TimeDomain) {
             TimeDomain timeDomain = (TimeDomain) obj;
-            return timeDomain.getStartTimestamp() == this.startTimestamp &&
-                    timeDomain.getEndTimestamp() == this.endTimestamp;
+            return Objects.equals(timeDomain.getStartTimestamp(), this.startTimestamp) &&
+                    Objects.equals(timeDomain.getEndTimestamp(), this.endTimestamp);
         }
         return false;
     }
