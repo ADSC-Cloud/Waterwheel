@@ -990,7 +990,7 @@ public class Indexer<DataType extends Number & Comparable<DataType>> extends Obs
         if (!config.HDFSFlag || config.HybridStorage) {
             Runtime runtime = Runtime.getRuntime();
             try {
-                runtime.exec("mkdir -p " + config.dataChunkDir);
+                runtime.exec(new String[]{ "mkdir", "-p", config.dataChunkDir });
             } catch (IOException e) {
                 e.printStackTrace();
             }

@@ -582,7 +582,7 @@ public class MetadataServerBolt<Key extends Number> extends BaseRichBolt {
     private void initializeMetadataFolder() {
         Runtime runtime = Runtime.getRuntime();
         try {
-            runtime.exec("mkdir -p " + config.metadataDir);
+            runtime.exec(new String[]{ "mkdir", "-p", config.metadataDir });
         } catch (IOException e) {
             e.printStackTrace();
         }
